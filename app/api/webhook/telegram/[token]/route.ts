@@ -1,14 +1,19 @@
 import { NextResponse } from "next/server";
-// Path points correctly from the deep folder back to app/lib/supabase.ts
 import { supabase } from "../../../../lib/supabase";
 import OpenAI from "openai";
 import Anthropic from "@anthropic-ai/sdk";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
-export async function POST(request: Request, { params }: { params: { token: string } }) {
+// Next.js requires dynamic route params to be handled as a Promise
+export async function POST(
+  request: Request,
+  { params }: { params: Promise<{ token: string }> }
+) {
   try {
-    // Extract the Telegram Bot Token from the dynamic URL
-    const botToken = params.token;
+    // 1. Await the params to extract the Telegram Bot Token securely
+    const resolvedParams = await params;
+    const botToken = resolvedParams.token;
+    
     const body = await request.json();
 
     // Ignore the request if it does not contain a standard text message
@@ -19,7 +24,7 @@ export async function POST(request: Request, { params }: { params: { token: stri
     const chatId = body.message.chat.id;
     const userMessage = body.message.text;
 
-    // Verify the bot token and fetch the user's AI keys from Supabase
+    // 2. Verify the bot token and fetch the user's AI keys from Supabase
     const { data: config, error: dbError } = await supabase
       .from("user_configs")
       .select("*")
@@ -31,7 +36,7 @@ export async function POST(request: Request, { params }: { params: { token: stri
       return NextResponse.json({ error: "Bot not registered in ClawLink" }, { status: 404 });
     }
 
-    // AI Engine Logic: Route the message to the user's selected model
+    // 3. AI Engine Logic: Route the message to the user's selected model
     let aiReply = "Error: AI Engine is unreachable.";
 
     try {
@@ -70,7 +75,7 @@ export async function POST(request: Request, { params }: { params: { token: stri
       aiReply = "Sorry, my AI brain encountered an error processing your request. Please check your API credits or keys.";
     }
 
-    // Send the generated AI response back to the user on Telegram
+    // 4. Send the generated AI response back to the user on Telegram
     const telegramApiUrl = `https://api.telegram.org/bot${botToken}/sendMessage`;
     await fetch(telegramApiUrl, {
       method: "POST",
