@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
       if (activeConfig.selected_model === "gemini" && activeConfig.gemini_key) {
         const genAI = new GoogleGenerativeAI(activeConfig.gemini_key);
         // Using gemini-1.5-flash as it's best for the free tier
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
         const result = await model.generateContent(userMessage);
         aiReply = result.response.text();
       } 
