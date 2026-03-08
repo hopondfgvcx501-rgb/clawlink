@@ -1,15 +1,15 @@
-import { NextResponse, NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { supabase } from "../../../lib/supabase";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import OpenAI from "openai";
 import Anthropic from "@anthropic-ai/sdk";
-import { GoogleGenerativeAI } from "@google/generative-ai";
 
-// Fixed: Removed context params to match new flat folder structure
+// Final Webhook Logic - Simplified for ClawLink
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
 
-    // Ignore requests without a standard message
+    // Basic check: Message hai ya nahi?
     if (!body.message || !body.message.text) {
       return NextResponse.json({ status: "ignored" });
     }
@@ -17,18 +17,13 @@ export async function POST(request: NextRequest) {
     const chatId = body.message.chat.id;
     const userMessage = body.message.text;
 
-    /**
-     * CRITICAL FIX: Since we removed [token] from URL, we get the bot token
-     * from our environment variables or we can fetch the config using email.
-     * For ClawLink global logic, we'll fetch the config based on the bot's 
-     * token stored in your database.
+    /** * IMPORTANT: Since we fixed the 404 error by flattening the folder,
+     * we will fetch your specific config using your email or the bot token.
+     *
      */
-    
-    // Yahan aap apna default Telegram token manually bhi daal sakte hain 
-    // ya database se query kar sakte hain.
-    const botToken = "8569279311:AAFNOHoazE-vrvYfXivh4p5dQSNlFljAgo0"; 
+    const botToken = "8569279311:AAFNOHoazE-vrvYfXivh4p5dQSNlFljAgo0";
 
-    // Verify the bot token and fetch the user's AI configuration
+    // Fetching configuration from Supabase
     const { data: config, error: dbError } = await supabase
       .from("user_configs")
       .select("*")
@@ -36,29 +31,31 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (dbError || !config) {
-      console.error("Database Error:", dbError);
-      return NextResponse.json({ error: "Unauthorized Bot Token" }, { status: 404 });
+      console.error("Database Error (PGRST116 means no record found):", dbError);
+      return NextResponse.json({ error: "Configuration not found" }, { status: 200 }); 
     }
 
-    let aiReply = "AI Engine is currently unavailable.";
+    let aiReply = "AI is thinking...";
 
     try {
-      // Gemini Logic - Using the new key from your dashboard
+      // Logic for Gemini (Using your new Free Tier Key)
       if (config.selected_model === "gemini" && config.gemini_key) {
         const genAI = new GoogleGenerativeAI(config.gemini_key);
         const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
         const result = await model.generateContent(userMessage);
         aiReply = result.response.text();
-
-      } else if (config.selected_model === "gpt-5.2" && config.openai_key) {
+      } 
+      // Logic for OpenAI
+      else if (config.selected_model === "gpt-5.2" && config.openai_key) {
         const openai = new OpenAI({ apiKey: config.openai_key });
-        const chatCompletion = await openai.chat.completions.create({
-          messages: [{ role: 'user', content: userMessage }],
-          model: 'gpt-4o',
+        const completion = await openai.chat.completions.create({
+          messages: [{ role: "user", content: userMessage }],
+          model: "gpt-4o",
         });
-        aiReply = chatCompletion.choices[0].message.content || "";
-
-      } else if (config.selected_model === "claude" && config.anthropic_key) {
+        aiReply = completion.choices[0].message.content || "";
+      }
+      // Logic for Claude
+      else if (config.selected_model === "claude" && config.anthropic_key) {
         const anthropic = new Anthropic({ apiKey: config.anthropic_key });
         const msg = await anthropic.messages.create({
           model: "claude-3-opus-20240229",
@@ -69,21 +66,24 @@ export async function POST(request: NextRequest) {
         aiReply = msg.content[0].text;
       }
     } catch (aiErr) {
-      console.error("AI Error:", aiErr);
-      aiReply = "The AI model failed to respond. Please check your API keys.";
+      console.error("AI Generation Error:", aiErr);
+      aiReply = "Sorry, my AI brain is a bit tired. Check your API keys!";
     }
 
-    // Deliver the AI response back to the Telegram chat
+    // Sending reply back to Telegram
     await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ chat_id: chatId, text: aiReply }),
+      body: JSON.stringify({
+        chat_id: chatId,
+        text: aiReply,
+      }),
     });
 
     return NextResponse.json({ success: true });
 
   } catch (error) {
-    console.error("Fatal Error:", error);
+    console.error("Fatal Webhook Error:", error);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }
