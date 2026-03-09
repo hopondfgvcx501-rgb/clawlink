@@ -1,29 +1,26 @@
 import { NextResponse } from "next/server";
-// Path points correctly to app/lib/supabase.ts
 import { supabase } from "../../lib/supabase"; 
 
-// GET: Fetch the user's saved keys, personality, and usage stats
+// GET: Fetch user's settings and real-time AI word usage stats
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const email = searchParams.get("email");
 
     if (!email) {
-      return NextResponse.json({ error: "Email required" }, { status: 400 });
+      return NextResponse.json({ error: "Email is required" }, { status: 400 });
     }
 
-    // Fetch user core configuration
+    // 1. Fetch User Configuration and their specific Token Limit
     const { data: configData, error: configError } = await supabase
       .from("user_configs")
       .select("*")
       .eq("email", email)
       .single();
 
-    if (configError && configError.code !== "PGRST116") { 
-      throw configError;
-    }
+    if (configError && configError.code !== "PGRST116") throw configError;
 
-    // NEW LOGIC: Calculate total AI words (tokens) used by this user
+    // 2. Sum up total AI words (tokens) consumed from usage_logs
     let totalTokensUsed = 0;
     const { data: usageData, error: usageError } = await supabase
       .from("usage_logs")
@@ -31,55 +28,42 @@ export async function GET(request: Request) {
       .eq("email", email);
 
     if (!usageError && usageData) {
-      // Sum all the tokens from the logs
       totalTokensUsed = usageData.reduce((sum, record) => sum + record.estimated_tokens, 0);
     }
 
+    // 3. Return the complete package to the Frontend Dashboard
     const formattedData = configData ? {
       selectedModel: configData.selected_model,
       selectedChannel: configData.selected_channel,
       telegramToken: configData.telegram_token,
-      whatsappToken: configData.whatsapp_token,
-      whatsappPhoneId: configData.whatsapp_phone_id,
-      openAIKey: configData.openai_key,
-      anthropicKey: configData.anthropic_key,
       geminiKey: configData.gemini_key,
       systemPrompt: configData.system_prompt,
-      tokensUsed: totalTokensUsed // Sending the calculated usage to frontend
+      tokensUsed: totalTokensUsed,
+      tokenLimit: configData.token_limit || 50000 // Default limit if not set
     } : null;
 
     return NextResponse.json({ success: true, data: formattedData });
-  } catch (error) {
-    console.error("Fetch Error:", error);
-    return NextResponse.json({ error: "Failed to fetch configuration" }, { status: 500 });
+  } catch (error: any) {
+    console.error("Config API Error:", error.message);
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }
 
-// POST: Save or update the new keys, settings, and personality in Supabase
+// POST: Save or Update user settings and bot credentials
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { 
-      email, selectedModel, selectedChannel, 
-      telegramToken, whatsappToken, whatsappPhoneId, 
-      openAIKey, anthropicKey, geminiKey, systemPrompt
-    } = body;
+    const { email, selectedModel, selectedChannel, telegramToken, geminiKey, systemPrompt } = body;
 
-    if (!email) {
-      return NextResponse.json({ error: "Missing email" }, { status: 400 });
-    }
+    if (!email) return NextResponse.json({ error: "Missing identity" }, { status: 400 });
 
     const { data, error } = await supabase
       .from("user_configs")
       .upsert({ 
-        email: email, 
+        email, 
         selected_model: selectedModel, 
         selected_channel: selectedChannel, 
         telegram_token: telegramToken, 
-        whatsapp_token: whatsappToken,
-        whatsapp_phone_id: whatsappPhoneId,
-        openai_key: openAIKey, 
-        anthropic_key: anthropicKey, 
         gemini_key: geminiKey,
         system_prompt: systemPrompt 
       }, { onConflict: 'email' })
@@ -88,24 +72,9 @@ export async function POST(request: Request) {
 
     if (error) throw error;
 
-    // AUTO-WEBHOOK SETUP
-    if (selectedChannel === "telegram" && telegramToken) {
-      try {
-        const origin = request.headers.get("origin");
-        if (origin) {
-          const webhookUrl = `${origin}/api/webhook/telegram`;
-          const tgResponse = await fetch(`https://api.telegram.org/bot${telegramToken}/setWebhook?url=${webhookUrl}`);
-          const tgData = await tgResponse.json();
-          console.log("Auto-Webhook Setup Status:", tgData);
-        }
-      } catch (webhookErr) {
-        console.error("Failed to set Auto-Webhook:", webhookErr);
-      }
-    }
-
     return NextResponse.json({ success: true, data });
-  } catch (error) {
-    console.error("Database Error:", error);
-    return NextResponse.json({ error: "Failed to save configuration" }, { status: 500 });
+  } catch (error: any) {
+    console.error("Database Save Error:", error.message);
+    return NextResponse.json({ error: "Failed to persist configuration" }, { status: 500 });
   }
 }
