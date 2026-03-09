@@ -49,7 +49,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ status: "config_not_found" });
     }
 
-    // 3. AI Logic (Try Flash, Fallback to Pro)
+    // 3. AI Logic (Try Flash, Fallback to 1.5 Pro)
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
     let aiReply = "";
 
@@ -57,13 +57,13 @@ export async function POST(req: NextRequest) {
       const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash", systemInstruction: config.system_prompt });
       const result = await model.generateContent(userText);
       aiReply = result.response.text();
-    } catch (fallbackErr) {
-      console.warn("⚠️ Flash failed, using Pro model...");
-      const proModel = genAI.getGenerativeModel({ model: "gemini-pro", systemInstruction: config.system_prompt });
+    } catch (fallbackErr: any) {
+      console.warn("⚠️ Flash failed, using Pro model... Error was:", fallbackErr.message);
+      // 🚀 FIX: Google changed the name from "gemini-pro" to "gemini-1.5-pro"
+      const proModel = genAI.getGenerativeModel({ model: "gemini-1.5-pro", systemInstruction: config.system_prompt });
       const result = await proModel.generateContent(userText);
       aiReply = result.response.text();
     }
-
     // 4. Send Reply to WhatsApp
     const metaResponse = await fetch(`https://graph.facebook.com/v18.0/${phoneId}/messages`, {
       method: "POST",
