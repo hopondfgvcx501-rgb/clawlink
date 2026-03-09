@@ -11,17 +11,19 @@ export default function ClawLinkDashboard() {
   // 1. Core Configuration States
   const [selectedModel, setSelectedModel] = useState("gemini");
   const [selectedChannel, setSelectedChannel] = useState("telegram");
-
-  // 2. AI Personality State (The New Feature)
   const [systemPrompt, setSystemPrompt] = useState("You are an advanced AI assistant deployed via ClawLink. Provide helpful, concise, and accurate responses.");
 
-  // 3. API Key States
+  // 2. API Key States
   const [telegramToken, setTelegramToken] = useState("");
   const [whatsappToken, setWhatsappToken] = useState("");
   const [whatsappPhoneId, setWhatsappPhoneId] = useState("");
   const [openAIKey, setOpenAIKey] = useState("");
   const [anthropicKey, setAnthropicKey] = useState("");
   const [geminiKey, setGeminiKey] = useState("");
+
+  // 3. Billing & Usage States (NEW)
+  const [tokensUsed, setTokensUsed] = useState(0);
+  const TOKEN_LIMIT = 50000; // Demo limit for Pro Plan
 
   // 4. UI & Validation States
   const [isDeploying, setIsDeploying] = useState(false); 
@@ -48,7 +50,7 @@ export default function ClawLinkDashboard() {
     }
   }, [status, router]);
 
-  // Fetch Existing Configuration on Load
+  // Fetch Existing Configuration & Usage on Load
   useEffect(() => {
     const fetchConfig = async () => {
       if (session?.user?.email) {
@@ -58,7 +60,7 @@ export default function ClawLinkDashboard() {
           if (data.success && data.data) {
             if (data.data.selectedModel) setSelectedModel(data.data.selectedModel);
             if (data.data.selectedChannel) setSelectedChannel(data.data.selectedChannel);
-            if (data.data.systemPrompt) setSystemPrompt(data.data.systemPrompt); // Load Personality
+            if (data.data.systemPrompt) setSystemPrompt(data.data.systemPrompt); 
             
             if (data.data.telegramToken) setTelegramToken(data.data.telegramToken);
             if (data.data.whatsappToken) setWhatsappToken(data.data.whatsappToken);
@@ -66,6 +68,9 @@ export default function ClawLinkDashboard() {
             if (data.data.openAIKey) setOpenAIKey(data.data.openAIKey);
             if (data.data.anthropicKey) setAnthropicKey(data.data.anthropicKey);
             if (data.data.geminiKey) setGeminiKey(data.data.geminiKey);
+            
+            // Set Billing Usage Data
+            if (data.data.tokensUsed !== undefined) setTokensUsed(data.data.tokensUsed);
             
             setHasExistingConfig(true);
           }
@@ -78,11 +83,6 @@ export default function ClawLinkDashboard() {
     };
     if (status === "authenticated") fetchConfig();
   }, [status, session]);
-
-  // Loading Screen
-  if (status === "loading" || isFetching) {
-    return <div className="min-h-screen bg-[#0A0A0A] flex items-center justify-center text-gray-400 text-sm font-mono tracking-widest uppercase">Initializing Workspace...</div>;
-  }
 
   // Handle Deployment & Save to Supabase
   const handleStartServer = async () => {
@@ -97,7 +97,7 @@ export default function ClawLinkDashboard() {
           email: session?.user?.email,
           selectedModel,
           selectedChannel,
-          systemPrompt, // Save Personality to Backend
+          systemPrompt,
           telegramToken,
           whatsappToken,
           whatsappPhoneId,
@@ -118,6 +118,13 @@ export default function ClawLinkDashboard() {
       setIsDeploying(false);
     }
   };
+
+  if (status === "loading" || isFetching) {
+    return <div className="min-h-screen bg-[#0A0A0A] flex items-center justify-center text-gray-400 text-sm font-mono tracking-widest uppercase">Initializing Workspace...</div>;
+  }
+
+  // Calculate usage percentage for the progress bar
+  const usagePercentage = Math.min((tokensUsed / TOKEN_LIMIT) * 100, 100);
 
   return (
     <main className="min-h-screen flex flex-col items-center pt-20 px-4 relative font-sans pb-20 bg-[#0A0A0A] text-gray-200">
@@ -140,9 +147,7 @@ export default function ClawLinkDashboard() {
             </p>
           </div>
           <button 
-            onClick={() => {
-              import("next-auth/react").then((m) => m.signOut({ callbackUrl: '/' }));
-            }} 
+            onClick={() => { import("next-auth/react").then((m) => m.signOut({ callbackUrl: '/' })); }} 
             className="text-gray-400 hover:text-white text-sm font-medium transition-colors"
           >
             Sign Out
@@ -150,8 +155,10 @@ export default function ClawLinkDashboard() {
         </div>
 
         {hasExistingConfig ? (
-          // --- ACTIVE SERVER VIEW ---
+          // --- ACTIVE SERVER & BILLING VIEW ---
           <div className="space-y-6 animate-fade-in">
+            
+            {/* Active Status Box */}
             <div className="bg-black border border-white/5 p-8 rounded-xl flex items-center gap-6">
               <div className="relative flex items-center justify-center w-10 h-10">
                 <div className="w-3 h-3 rounded-full bg-green-500 animate-ping absolute"></div>
@@ -162,10 +169,40 @@ export default function ClawLinkDashboard() {
                 <p className="text-gray-400 text-sm mt-1">Traffic is currently routing to <span className="text-gray-200 font-medium">{selectedModel}</span> via <span className="text-gray-200 font-medium">{selectedChannel}</span>.</p>
               </div>
             </div>
+
+            {/* AI Usage Tracker (NEW) */}
+            <div className="bg-black border border-white/5 p-8 rounded-xl">
+              <div className="flex justify-between items-end mb-4">
+                <div>
+                  <h3 className="text-white font-medium text-lg tracking-tight">AI Compute Usage</h3>
+                  <p className="text-gray-500 text-sm mt-1">Monthly cycle tracking for active deployment.</p>
+                </div>
+                <div className="text-right">
+                  <span className="text-2xl font-bold text-white">{tokensUsed.toLocaleString()}</span>
+                  <span className="text-gray-500 text-sm"> / {TOKEN_LIMIT.toLocaleString()} Words</span>
+                </div>
+              </div>
+              
+              <div className="w-full bg-white/5 rounded-full h-3 overflow-hidden">
+                <div 
+                  className={`h-full rounded-full transition-all duration-1000 ${
+                    usagePercentage > 90 ? 'bg-red-500' : usagePercentage > 75 ? 'bg-amber-500' : 'bg-blue-500'
+                  }`}
+                  style={{ width: `${usagePercentage}%` }}
+                ></div>
+              </div>
+              
+              <div className="flex justify-between items-center mt-4">
+                <p className="text-xs text-gray-500">Active Plan: <span className="text-gray-300 font-medium">Pro Agent ($29/mo)</span></p>
+                <button className="text-xs font-medium text-blue-400 hover:text-blue-300 transition-colors">
+                  Upgrade Limits &rarr;
+                </button>
+              </div>
+            </div>
             
             <button 
               onClick={() => setHasExistingConfig(false)}
-              className="text-sm text-gray-400 hover:text-white transition-colors"
+              className="text-sm text-gray-400 hover:text-white transition-colors pt-4 block"
             >
               Modify Configuration &rarr;
             </button>
@@ -207,10 +244,9 @@ export default function ClawLinkDashboard() {
               </div>
             </div>
 
-            {/* AI Key Config */}
+            {/* Provider Credentials */}
             <div className="space-y-4">
               <label className="text-xs font-semibold text-gray-500 uppercase tracking-widest">Provider Credentials</label>
-              
               {selectedModel === "gpt-5.2" && (
                 <input type="password" placeholder="sk-proj-..." value={openAIKey} onChange={(e) => setOpenAIKey(e.target.value)} className="w-full bg-black border border-white/10 rounded-lg px-4 py-3 text-sm text-white focus:border-gray-400 outline-none transition-colors" />
               )}
@@ -222,7 +258,7 @@ export default function ClawLinkDashboard() {
               )}
             </div>
 
-            {/* AI Personality Config (New Feature) */}
+            {/* AI Personality Config */}
             <div className="space-y-4">
               <div className="flex justify-between items-end">
                 <label className="text-xs font-semibold text-gray-500 uppercase tracking-widest">Agent Personality (System Prompt)</label>

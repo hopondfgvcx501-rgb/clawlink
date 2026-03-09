@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 // Path points correctly to app/lib/supabase.ts
 import { supabase } from "../../lib/supabase"; 
 
-// GET: Fetch the user's saved keys and personality when the dashboard loads
+// GET: Fetch the user's saved keys, personality, and usage stats
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
@@ -12,27 +12,40 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "Email required" }, { status: 400 });
     }
 
-    const { data, error } = await supabase
+    // Fetch user core configuration
+    const { data: configData, error: configError } = await supabase
       .from("user_configs")
       .select("*")
       .eq("email", email)
       .single();
 
-    if (error && error.code !== "PGRST116") { 
-      throw error;
+    if (configError && configError.code !== "PGRST116") { 
+      throw configError;
     }
 
-    // Map database columns to frontend state variables
-    const formattedData = data ? {
-      selectedModel: data.selected_model,
-      selectedChannel: data.selected_channel,
-      telegramToken: data.telegram_token,
-      whatsappToken: data.whatsapp_token,
-      whatsappPhoneId: data.whatsapp_phone_id,
-      openAIKey: data.openai_key,
-      anthropicKey: data.anthropic_key,
-      geminiKey: data.gemini_key,
-      systemPrompt: data.system_prompt, // NEW: Fetching the personality prompt
+    // NEW LOGIC: Calculate total AI words (tokens) used by this user
+    let totalTokensUsed = 0;
+    const { data: usageData, error: usageError } = await supabase
+      .from("usage_logs")
+      .select("estimated_tokens")
+      .eq("email", email);
+
+    if (!usageError && usageData) {
+      // Sum all the tokens from the logs
+      totalTokensUsed = usageData.reduce((sum, record) => sum + record.estimated_tokens, 0);
+    }
+
+    const formattedData = configData ? {
+      selectedModel: configData.selected_model,
+      selectedChannel: configData.selected_channel,
+      telegramToken: configData.telegram_token,
+      whatsappToken: configData.whatsapp_token,
+      whatsappPhoneId: configData.whatsapp_phone_id,
+      openAIKey: configData.openai_key,
+      anthropicKey: configData.anthropic_key,
+      geminiKey: configData.gemini_key,
+      systemPrompt: configData.system_prompt,
+      tokensUsed: totalTokensUsed // Sending the calculated usage to frontend
     } : null;
 
     return NextResponse.json({ success: true, data: formattedData });
@@ -49,14 +62,13 @@ export async function POST(request: Request) {
     const { 
       email, selectedModel, selectedChannel, 
       telegramToken, whatsappToken, whatsappPhoneId, 
-      openAIKey, anthropicKey, geminiKey, systemPrompt // NEW: Receiving the personality prompt
+      openAIKey, anthropicKey, geminiKey, systemPrompt
     } = body;
 
     if (!email) {
       return NextResponse.json({ error: "Missing email" }, { status: 400 });
     }
 
-    // 1. Save all configuration parameters to Supabase
     const { data, error } = await supabase
       .from("user_configs")
       .upsert({ 
@@ -69,33 +81,25 @@ export async function POST(request: Request) {
         openai_key: openAIKey, 
         anthropic_key: anthropicKey, 
         gemini_key: geminiKey,
-        system_prompt: systemPrompt // NEW: Saving the personality prompt to the database
+        system_prompt: systemPrompt 
       }, { onConflict: 'email' })
       .select()
       .single();
 
     if (error) throw error;
 
-    // 2. THE CLAWLINK MAGIC: AUTO-WEBHOOK SETUP
-    // Automatically set the webhook if the user selected Telegram and provided a token
+    // AUTO-WEBHOOK SETUP
     if (selectedChannel === "telegram" && telegramToken) {
       try {
-        // Dynamically grab the current Vercel production or local URL
         const origin = request.headers.get("origin");
-        
         if (origin) {
-          // Pointing to our flat routing system structure
           const webhookUrl = `${origin}/api/webhook/telegram`;
-          
-          // Command Telegram API to route all messages to our webhook
           const tgResponse = await fetch(`https://api.telegram.org/bot${telegramToken}/setWebhook?url=${webhookUrl}`);
           const tgData = await tgResponse.json();
-          
           console.log("Auto-Webhook Setup Status:", tgData);
         }
       } catch (webhookErr) {
         console.error("Failed to set Auto-Webhook:", webhookErr);
-        // We do not throw the error here so that the DB save is not aborted
       }
     }
 
