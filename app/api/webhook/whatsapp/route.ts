@@ -19,9 +19,13 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
+    
+    // 🚀 THE MAHA-JASOOS: Print everything WhatsApp sends before any checks!
+    console.log("🔥 INCOMING META PAYLOAD:", JSON.stringify(body, null, 2));
 
-    // Ensure there is a valid message in the payload
+    // 1. Ignore if it's just a status update (like "message read") and not an actual text message
     if (!body.entry?.[0]?.changes?.[0]?.value?.messages?.[0]) {
+      console.log("⚠️ Ignored: Not a text message (probably a status update).");
       return NextResponse.json({ status: "ignored" });
     }
 
@@ -30,38 +34,37 @@ export async function POST(req: NextRequest) {
     const userText = message.text?.body;
     const phoneId = body.entry[0].changes[0].value.metadata.phone_number_id;
 
-    // Fetch configuration from Supabase using Phone ID
+    console.log(`📩 REAL MESSAGE -> From: ${from}, Text: ${userText}, PhoneID: ${phoneId}`);
+
+    // 2. Fetch User Config from Supabase
     const { data: config, error: configErr } = await supabase
       .from("user_configs")
       .select("*")
       .eq("whatsapp_phone_id", phoneId)
       .single();
 
-    if (configErr || !config || !userText) return NextResponse.json({ status: "config_not_found" });
+    if (configErr || !config) {
+      console.error(`❌ ERROR: No database config found for Phone ID: ${phoneId}`);
+      return NextResponse.json({ status: "config_not_found" });
+    }
 
-    // Initialize Gemini with Auto-Fallback logic
+    // 3. AI Logic
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
     let aiReply = "";
 
     try {
-      const model = genAI.getGenerativeModel({ 
-        model: "gemini-1.5-flash", 
-        systemInstruction: config.system_prompt 
-      });
+      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash", systemInstruction: config.system_prompt });
       const result = await model.generateContent(userText);
       aiReply = result.response.text();
     } catch (fallbackErr) {
-      // Fallback to Pro model if Flash fails
-      const proModel = genAI.getGenerativeModel({ 
-        model: "gemini-pro", 
-        systemInstruction: config.system_prompt 
-      });
+      console.warn("⚠️ Flash failed, using Pro model...");
+      const proModel = genAI.getGenerativeModel({ model: "gemini-pro", systemInstruction: config.system_prompt });
       const result = await proModel.generateContent(userText);
       aiReply = result.response.text();
     }
 
-    // Send AI response back to user via Meta Cloud API
-    await fetch(`https://graph.facebook.com/v18.0/${phoneId}/messages`, {
+    // 4. Send Reply to WhatsApp
+    const metaResponse = await fetch(`https://graph.facebook.com/v18.0/${phoneId}/messages`, {
       method: "POST",
       headers: {
         "Authorization": `Bearer ${config.whatsapp_token}`,
@@ -74,18 +77,24 @@ export async function POST(req: NextRequest) {
       }),
     });
 
-    // Save consumption to usage logs
-    await supabase.from("usage_logs").insert({
-      email: config.email,
-      bot_token: phoneId,
-      model_used: "gemini-whatsapp",
-      estimated_tokens: Math.ceil((userText.length + aiReply.length) / 4)
-    });
+    if (!metaResponse.ok) {
+      const errorData = await metaResponse.json();
+      console.error("❌ META REJECTED OUR REPLY:", errorData);
+    } else {
+      console.log("✅ SUCCESS: AI Reply Sent to WhatsApp!");
+      
+      // Update tokens in Supabase
+      await supabase.from("usage_logs").insert({
+        email: config.email,
+        bot_token: phoneId,
+        model_used: "gemini-whatsapp",
+        estimated_tokens: Math.ceil((userText.length + aiReply.length) / 4)
+      });
+    }
 
     return NextResponse.json({ success: true });
   } catch (error: any) {
-    // Send exact error for debugging if something breaks
-    console.error("WhatsApp Webhook Error:", error.message);
+    console.error("🚨 CRITICAL ERROR:", error.message);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
