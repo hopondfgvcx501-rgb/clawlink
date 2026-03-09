@@ -54,6 +54,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Missing email" }, { status: 400 });
     }
 
+    // 1. Save all keys to Supabase First
     const { data, error } = await supabase
       .from("user_configs")
       .upsert({ 
@@ -71,6 +72,29 @@ export async function POST(request: Request) {
       .single();
 
     if (error) throw error;
+
+    // 🚀 2. THE CLAWLINK MAGIC: AUTO-WEBHOOK SETUP 🚀
+    // Agar user ne Telegram select kiya hai aur token diya hai, toh webhook auto-set kar do!
+    if (selectedChannel === "telegram" && telegramToken) {
+      try {
+        // Automatically get your current Vercel Website URL
+        const origin = request.headers.get("origin");
+        
+        if (origin) {
+          // Pointing to our flat routing system!
+          const webhookUrl = `${origin}/api/webhook/telegram`;
+          
+          // Command Telegram to send messages to our webhook
+          const tgResponse = await fetch(`https://api.telegram.org/bot${telegramToken}/setWebhook?url=${webhookUrl}`);
+          const tgData = await tgResponse.json();
+          
+          console.log("Auto-Webhook Setup Status:", tgData);
+        }
+      } catch (webhookErr) {
+        console.error("Failed to set Auto-Webhook:", webhookErr);
+        // Hum yahan error throw nahi kar rahe hain taaki DB save fail na ho, bas log kar lenge.
+      }
+    }
 
     return NextResponse.json({ success: true, data });
   } catch (error) {
