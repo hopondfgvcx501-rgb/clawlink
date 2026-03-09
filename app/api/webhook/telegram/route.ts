@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
       console.log("Database empty or failed. Using hardcoded fallback config!");
       activeConfig = {
         selected_model: "gemini",
-        // IMPORTANT: PURI GEMINI KEY YAHAN PASTE KAREIN (Jo 7XQg pe khatam hoti hai)
+        // IMPORTANT: Hardcoded Gemini Key for fallback
         gemini_key: "AIzaSyBHjjO9MFzw7KR-o8nVd0dzR0MSdYA7XQg", 
         openai_key: "",
         anthropic_key: "",
@@ -51,8 +51,8 @@ export async function POST(request: NextRequest) {
       // Gemini Engine Logic
       if (activeConfig.selected_model === "gemini" && activeConfig.gemini_key) {
         const genAI = new GoogleGenerativeAI(activeConfig.gemini_key);
-        // Using gemini-1.5-flash as it's best for the free tier
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+        // Using gemini-pro for maximum compatibility with older SDKs
+        const model = genAI.getGenerativeModel({ model: "gemini-pro" }); 
         const result = await model.generateContent(userMessage);
         aiReply = result.response.text();
       } 
@@ -76,9 +76,12 @@ export async function POST(request: NextRequest) {
         // @ts-ignore
         aiReply = msg.content[0].text;
       }
-    } catch (aiErr) {
+    } catch (aiErr: any) {
       console.error("AI Generation Failed:", aiErr);
-      aiReply = "My AI engine encountered an error. Please check the API key.";
+      
+      // CRITICAL FIX: Send the exact system error directly to the Telegram chat
+      // So we don't have to guess what went wrong in Vercel logs.
+      aiReply = `System Error Log:\n\n${aiErr.message || "Unknown API Error occurred"}`;
     }
 
     // Deliver message back to Telegram
@@ -93,7 +96,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error("Fatal Webhook Error:", error);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
