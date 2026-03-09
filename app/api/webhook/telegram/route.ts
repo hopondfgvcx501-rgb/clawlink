@@ -58,31 +58,21 @@ export async function POST(request: NextRequest) {
         const genAI = new GoogleGenerativeAI(activeConfig.gemini_key);
         
         try {
-          // Attempt 1: Try the fast 'flash' model first
-          const primaryModel = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+          // Attempt 1: Try the NEWEST fast 'flash' model based on Google's list
+          console.log("Attempting primary model: gemini-flash-latest");
+          const primaryModel = genAI.getGenerativeModel({ model: "gemini-flash-latest" });
           const result = await primaryModel.generateContent(userMessage);
           aiReply = result.response.text();
         } catch (flashError) {
           try {
-            // Attempt 2: Auto-fallback to 'pro' if flash fails
-            const backupModel = genAI.getGenerativeModel({ model: "gemini-pro" });
+            // Attempt 2: Auto-fallback to the NEWEST 'pro' model
+            console.log("Flash failed. Attempting backup model: gemini-pro-latest");
+            const backupModel = genAI.getGenerativeModel({ model: "gemini-pro-latest" });
             const result = await backupModel.generateContent(userMessage);
             aiReply = result.response.text();
           } catch (proError: any) {
-            // Discover models if both fail
-            const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${activeConfig.gemini_key}`);
-            const data = await res.json();
-            
-            if (data.models) {
-              const supportedModels = data.models
-                .map((m: any) => m.name.replace('models/', ''))
-                .filter((name: string) => name.includes("gemini") || name.includes("learnlm"))
-                .join("\n✅ ");
-              
-              aiReply = `Model Name Error!\nGoogle is saying our model names are outdated.\n\nHere is the exact list of models your key ACTUALLY supports right now:\n\n✅ ${supportedModels}`;
-            } else {
-              aiReply = `API Key Error: Google refused to list models. Response: ${JSON.stringify(data)}`;
-            }
+            // Forward exact error
+            aiReply = `AI Generation Failed. Both Models Threw Error:\n\n${proError.message}`;
           }
         }
       } 
