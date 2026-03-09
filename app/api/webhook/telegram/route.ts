@@ -4,7 +4,7 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import OpenAI from "openai";
 import Anthropic from "@anthropic-ai/sdk";
 
-// Standard English code structure with Secure Env Variables & Auto-Fallback
+// Standard English code structure with Secure Env Override & Auto-Fallback
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
@@ -29,12 +29,11 @@ export async function POST(request: NextRequest) {
       .eq("telegram_token", botToken)
       .single();
 
-    // 2. THE FIX: If database is empty, use Vercel's Secret Environment Variable!
+    // 2. THE FIX: Secure fallback if DB is empty
     if (dbError || !dbConfig) {
-      console.log("Database empty or failed. Using SECURE fallback config!");
+      console.log("Database empty or failed. Using SECURE env variables!");
       activeConfig = {
         selected_model: "gemini",
-        // VVI: Ab key Vercel ke vault se aayegi (process.env se), code mein nahi dikhegi!
         gemini_key: process.env.GEMINI_API_KEY, 
         openai_key: process.env.OPENAI_API_KEY || "",
         anthropic_key: process.env.ANTHROPIC_API_KEY || "",
@@ -43,6 +42,12 @@ export async function POST(request: NextRequest) {
     } else {
       console.log("Successfully fetched config from database.");
       activeConfig = dbConfig;
+      
+      // 🚀 THE MASTER OVERRIDE FIX 🚀
+      // Overwrite the expired DB key with the fresh, secure key from Vercel!
+      if (process.env.GEMINI_API_KEY) {
+        activeConfig.gemini_key = process.env.GEMINI_API_KEY;
+      }
     }
 
     let aiReply = "AI is thinking...";
@@ -53,13 +58,13 @@ export async function POST(request: NextRequest) {
         const genAI = new GoogleGenerativeAI(activeConfig.gemini_key);
         
         try {
-          // Attempt 1: Try flash
+          // Attempt 1: Try the fast 'flash' model first
           const primaryModel = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
           const result = await primaryModel.generateContent(userMessage);
           aiReply = result.response.text();
         } catch (flashError) {
           try {
-            // Attempt 2: Try pro
+            // Attempt 2: Auto-fallback to 'pro' if flash fails
             const backupModel = genAI.getGenerativeModel({ model: "gemini-pro" });
             const result = await backupModel.generateContent(userMessage);
             aiReply = result.response.text();
@@ -102,6 +107,7 @@ export async function POST(request: NextRequest) {
         aiReply = msg.content[0].text;
       }
     } catch (globalErr: any) {
+      // Forward the exact error to Telegram so we never have to guess again
       aiReply = `Global Engine Error:\n\n${globalErr.message}`;
     }
 
