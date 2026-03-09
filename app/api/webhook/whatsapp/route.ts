@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { supabase } from "../../../../lib/supabase"; 
+import { supabase } from "../../../lib/supabase"; 
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
 // Meta requires a GET request to verify the webhook initially
