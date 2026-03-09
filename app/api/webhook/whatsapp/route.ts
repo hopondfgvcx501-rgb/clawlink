@@ -49,18 +49,19 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ status: "config_not_found" });
     }
 
-    // 3. AI Logic (Try Flash, Fallback to 1.5 Pro)
+    // 3. AI Logic (Try 2.5 Flash, Fallback to 2.5 Pro)
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
     let aiReply = "";
 
     try {
-      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash", systemInstruction: config.system_prompt });
+      // 🚀 FIX: Google killed 1.5 models. Upgraded to active 2.5 Flash!
+      const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash", systemInstruction: config.system_prompt });
       const result = await model.generateContent(userText);
       aiReply = result.response.text();
     } catch (fallbackErr: any) {
       console.warn("⚠️ Flash failed, using Pro model... Error was:", fallbackErr.message);
-      // 🚀 FIX: Google changed the name from "gemini-pro" to "gemini-1.5-pro"
-      const proModel = genAI.getGenerativeModel({ model: "gemini-1.5-pro", systemInstruction: config.system_prompt });
+      // 🚀 FIX: Upgraded fallback to active 2.5 Pro!
+      const proModel = genAI.getGenerativeModel({ model: "gemini-2.5-pro", systemInstruction: config.system_prompt });
       const result = await proModel.generateContent(userText);
       aiReply = result.response.text();
     }
