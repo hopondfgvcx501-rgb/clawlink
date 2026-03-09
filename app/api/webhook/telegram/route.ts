@@ -4,32 +4,27 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import OpenAI from "openai";
 import Anthropic from "@anthropic-ai/sdk";
 
-// Webhook endpoint to process incoming Telegram messages securely
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
 
-    // Ignore if the incoming payload is not a valid text message
     if (!body.message || !body.message.text) {
       return NextResponse.json({ status: "ignored" });
     }
 
-    const chatId = body.message.chat.id;
+    const chatId = body.message.chat.id.toString();
     const userMessage = body.message.text;
-    
-    // The exact Telegram bot token used for configuration mapping
     const botToken = "8569279311:AAFNOHoazE-vrvYfXivh4p5dQSNlFljAgo0";
 
     let activeConfig;
 
-    // 1. Fetch user configuration and personality from the database
+    // 1. Fetch user configuration and personality
     const { data: dbConfig, error: dbError } = await supabase
       .from("user_configs")
       .select("*")
       .eq("telegram_token", botToken)
       .single();
 
-    // 2. Fallback to secure environment variables if DB fails or is empty
     if (dbError || !dbConfig) {
       console.log("Database fetch failed. Engaging SECURE environment variables.");
       activeConfig = {
@@ -41,81 +36,120 @@ export async function POST(request: NextRequest) {
         system_prompt: "You are an advanced AI assistant powered by ClawLink. Be helpful and concise."
       };
     } else {
-      console.log("Configuration fetched successfully from database.");
       activeConfig = dbConfig;
-      
-      // 🚀 MASTER OVERRIDE: Overwrite any expired DB keys with fresh Vercel vault keys
-      if (process.env.GEMINI_API_KEY) {
-        activeConfig.gemini_key = process.env.GEMINI_API_KEY;
-      }
+      // MASTER OVERRIDE: Secure Keys
+      if (process.env.GEMINI_API_KEY) activeConfig.gemini_key = process.env.GEMINI_API_KEY;
     }
 
-    // Default response while AI is processing
+    // 2. Save the incoming user message to Chat History
+    await supabase.from("chat_history").insert({
+      bot_token: botToken,
+      chat_id: chatId,
+      role: "user",
+      content: userMessage
+    });
+
+    // 3. Fetch the last 15 messages for context (Memory)
+    const { data: historyData } = await supabase
+      .from("chat_history")
+      .select("*")
+      .eq("bot_token", botToken)
+      .eq("chat_id", chatId)
+      .order("created_at", { ascending: true })
+      .limit(15);
+
+    const chatHistory = historyData || [];
     let aiReply = "AI is processing your request...";
-    
-    // Extract the personality instruction or use a default one
     const systemInstruction = activeConfig.system_prompt || "You are a helpful AI assistant.";
 
     try {
-      // ==== SMART GEMINI ENGINE WITH PERSONALITY ====
+      // ==== SMART GEMINI ENGINE WITH MEMORY ====
       if (activeConfig.selected_model === "gemini" && activeConfig.gemini_key) {
         const genAI = new GoogleGenerativeAI(activeConfig.gemini_key);
         
+        // Format history exactly how Gemini expects it
+        const geminiHistory = chatHistory
+          .filter(msg => msg.content !== userMessage) // exclude current message to avoid duplication
+          .map(msg => ({
+            role: msg.role === "user" ? "user" : "model",
+            parts: [{ text: msg.content }]
+          }));
+
         try {
-          // Attempt 1: Route to the fastest 'flash' model with System Instructions
-          console.log("Routing to primary model: gemini-flash-latest");
+          console.log("Routing to primary model: gemini-flash-latest with memory");
           const primaryModel = genAI.getGenerativeModel({ 
             model: "gemini-flash-latest",
             systemInstruction: systemInstruction 
           });
-          const result = await primaryModel.generateContent(userMessage);
+          
+          const chat = primaryModel.startChat({ history: geminiHistory });
+          const result = await chat.sendMessage(userMessage);
           aiReply = result.response.text();
         } catch (flashError) {
           try {
-            // Attempt 2: Auto-fallback to the 'pro' model if flash fails
-            console.log("Primary model failed. Engaging fallback model: gemini-pro-latest");
+            console.log("Primary failed. Engaging fallback: gemini-pro-latest with memory");
             const backupModel = genAI.getGenerativeModel({ 
               model: "gemini-pro-latest",
               systemInstruction: systemInstruction 
             });
-            const result = await backupModel.generateContent(userMessage);
+            const chat = backupModel.startChat({ history: geminiHistory });
+            const result = await chat.sendMessage(userMessage);
             aiReply = result.response.text();
           } catch (proError: any) {
-            // Forward exact system errors directly to the user for instant debugging
-            aiReply = `AI Engine Failure. Both Models Threw Error:\n\n${proError.message}`;
+            aiReply = `AI Engine Failure:\n\n${proError.message}`;
           }
         }
       } 
-      // ==== OPENAI ENGINE WITH PERSONALITY ====
+      // ==== OPENAI ENGINE WITH MEMORY ====
       else if (activeConfig.selected_model === "gpt-5.2" && activeConfig.openai_key) {
         const openai = new OpenAI({ apiKey: activeConfig.openai_key });
+        
+        const openAIMessages: any = [
+          { role: "system", content: systemInstruction },
+          ...chatHistory.map(msg => ({
+            role: msg.role === "user" ? "user" : "assistant",
+            content: msg.content
+          }))
+        ];
+        
+        // The last message is already in chatHistory from our insert above
         const completion = await openai.chat.completions.create({
           model: "gpt-4o",
-          messages: [
-            { role: "system", content: systemInstruction },
-            { role: "user", content: userMessage }
-          ],
+          messages: openAIMessages,
         });
         aiReply = completion.choices[0].message.content || "";
       }
-      // ==== ANTHROPIC CLAUDE ENGINE WITH PERSONALITY ====
+      // ==== ANTHROPIC CLAUDE ENGINE WITH MEMORY ====
       else if (activeConfig.selected_model === "claude" && activeConfig.anthropic_key) {
         const anthropic = new Anthropic({ apiKey: activeConfig.anthropic_key });
+        
+        const claudeMessages: any = chatHistory.map(msg => ({
+          role: msg.role === "user" ? "user" : "assistant",
+          content: msg.content
+        }));
+
         const msg = await anthropic.messages.create({
           model: "claude-3-opus-20240229",
           max_tokens: 1024,
           system: systemInstruction,
-          messages: [{ role: "user", content: userMessage }],
+          messages: claudeMessages,
         });
         // @ts-ignore
         aiReply = msg.content[0].text;
       }
     } catch (globalErr: any) {
-      // Forward global execution errors to Telegram
       aiReply = `Global Engine Error:\n\n${globalErr.message}`;
     }
 
-    // Deliver the finalized AI response back to the Telegram chat
+    // 4. Save the AI's reply to Chat History
+    await supabase.from("chat_history").insert({
+      bot_token: botToken,
+      chat_id: chatId,
+      role: "model",
+      content: aiReply
+    });
+
+    // 5. Deliver message back to Telegram
     await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
