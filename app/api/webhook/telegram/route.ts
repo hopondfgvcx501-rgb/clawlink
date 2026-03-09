@@ -4,7 +4,7 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import OpenAI from "openai";
 import Anthropic from "@anthropic-ai/sdk";
 
-// Standard English code structure with Auto-Fallback Engine
+// Standard English code structure with Auto-Fallback Engine & Model Discovery
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
     if (dbError || !dbConfig) {
       activeConfig = {
         selected_model: "gemini",
-        gemini_key: "AIzaSyBHjjO9MFzw7KR-o8nVd0dzR0MSdYA7XQg", // Aapki key
+        gemini_key: "AIzaSyBHjjO9MFzw7KR-o8nVd0dzR0MSdYA7XQg", // Fallback Key
         openai_key: "",
         anthropic_key: "",
         telegram_token: botToken
@@ -40,27 +40,36 @@ export async function POST(request: NextRequest) {
     let aiReply = "AI is thinking...";
 
     try {
-      // ==== SMART GEMINI ENGINE (AUTO-FALLBACK) ====
+      // ==== SMART GEMINI ENGINE ====
       if (activeConfig.selected_model === "gemini" && activeConfig.gemini_key) {
         const genAI = new GoogleGenerativeAI(activeConfig.gemini_key);
         
         try {
-          // Attempt 1: Try the fast 'flash' model first
-          console.log("Trying primary model: gemini-1.5-flash...");
+          // Attempt 1: Try flash
           const primaryModel = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
           const result = await primaryModel.generateContent(userMessage);
           aiReply = result.response.text();
         } catch (flashError) {
-          console.log("Flash model failed or slept. Waking up Backup Model (gemini-pro)...");
-          
           try {
-            // Attempt 2: If flash fails, automatically switch to 'gemini-pro'
+            // Attempt 2: Try pro
             const backupModel = genAI.getGenerativeModel({ model: "gemini-pro" });
             const result = await backupModel.generateContent(userMessage);
             aiReply = result.response.text();
           } catch (proError: any) {
-            // If both fail, send the exact error to Telegram
-            aiReply = `Both AI models are sleeping. System Error:\n\n${proError.message}`;
+            // THE MASTER STROKE: Ask Google for the exact list of supported models!
+            const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${activeConfig.gemini_key}`);
+            const data = await res.json();
+            
+            if (data.models) {
+              const supportedModels = data.models
+                .map((m: any) => m.name.replace('models/', ''))
+                .filter((name: string) => name.includes("gemini") || name.includes("learnlm"))
+                .join("\n✅ ");
+              
+              aiReply = `Model Name Error!\nGoogle is saying our model names are outdated.\n\nHere is the exact list of models your key ACTUALLY supports right now:\n\n✅ ${supportedModels}\n\n(Bhai, mujhe is list mein se koi ek naam bataiye, hum usko code mein fix kar denge!)`;
+            } else {
+              aiReply = `API Key Error: Google refused to list models. Response: ${JSON.stringify(data)}`;
+            }
           }
         }
       } 
@@ -84,8 +93,8 @@ export async function POST(request: NextRequest) {
         // @ts-ignore
         aiReply = msg.content[0].text;
       }
-    } catch (aiErr: any) {
-      aiReply = `Global Engine Error:\n\n${aiErr.message}`;
+    } catch (globalErr: any) {
+      aiReply = `Global Engine Error:\n\n${globalErr.message}`;
     }
 
     // Deliver message back to Telegram
