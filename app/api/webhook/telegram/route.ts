@@ -1,66 +1,58 @@
 import { NextRequest, NextResponse } from "next/server";
-import { supabase } from "../../../lib/supabase";
+import { supabase } from "../../../lib/supabase"; 
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
-export async function POST(request: NextRequest) {
+export async function POST(req: NextRequest) {
   try {
-    const body = await request.json();
-    if (!body.message || !body.message.text) return NextResponse.json({ status: "ignored" });
+    const body = await req.json();
+    const message = body.message;
 
-    const chatId = body.message.chat.id.toString();
-    const userMessage = body.message.text;
-    const botToken = "8569279311:AAFNOHoazE-vrvYfXivh4p5dQSNlFljAgo0"; // Static for deployment
+    if (!message || !message.text) return NextResponse.json({ ok: true });
 
-    // 1. Fetch Config & Check Limit
-    const { data: config } = await supabase.from("user_configs").select("*").eq("telegram_token", botToken).single();
-    if (!config) return NextResponse.json({ error: "Bot not configured" }, { status: 404 });
+    const chatId = message.chat.id;
+    const userText = message.text;
+    const botToken = req.nextUrl.searchParams.get("token");
 
-    // 2. Fetch Usage to prevent over-limit responses
-    const { data: usage } = await supabase.from("usage_logs").select("estimated_tokens").eq("email", config.email);
-    const totalUsed = (usage || []).reduce((sum, r) => sum + r.estimated_tokens, 0);
+    // 1. Fetch Config from Supabase
+    const { data: config, error: configErr } = await supabase
+      .from("user_configs")
+      .select("*")
+      .eq("telegram_token", botToken)
+      .single();
 
-    if (totalUsed >= (config.token_limit || 50000)) {
-      await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ chat_id: chatId, text: "Quota Exhausted. Please upgrade your ClawLink plan." }),
-      });
-      return NextResponse.json({ status: "limit_reached" });
+    if (configErr || !config) {
+      console.error("❌ Telegram Config Not Found");
+      return NextResponse.json({ error: "Unauthorized Bot" }, { status: 401 });
     }
 
-    // 3. AI Logic with Auto-Fallback (Flash -> Pro)
-    let aiReply = "";
+    // 2. AI Logic (Upgraded to Gemini 2.5)
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
-    const systemInstruction = config.system_prompt || "You are a helpful AI.";
-
-    try {
-      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash", systemInstruction });
-      const result = await model.generateContent(userMessage);
-      aiReply = result.response.text();
-    } catch (err) {
-      // Fallback to Pro model if Flash fails
-      const backupModel = genAI.getGenerativeModel({ model: "gemini-pro", systemInstruction });
-      const result = await backupModel.generateContent(userMessage);
-      aiReply = result.response.text();
-    }
-
-    // 4. Save Logs & Send Response
-    await supabase.from("usage_logs").insert({
-      bot_token: botToken,
-      email: config.email,
-      model_used: "gemini",
-      estimated_tokens: Math.ceil((userMessage.length + aiReply.length) / 4)
+    const model = genAI.getGenerativeModel({ 
+      model: "gemini-2.5-flash", 
+      systemInstruction: config.system_prompt 
     });
 
+    const result = await model.generateContent(userText);
+    const aiReply = result.response.text();
+
+    // 3. Send Reply to Telegram
     await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ chat_id: chatId, text: aiReply }),
     });
 
-    return NextResponse.json({ success: true });
+    // 4. Log Usage
+    await supabase.from("usage_logs").insert({
+      email: config.email,
+      bot_token: botToken,
+      model_used: "gemini-telegram",
+      estimated_tokens: Math.ceil((userText.length + aiReply.length) / 4)
+    });
+
+    return NextResponse.json({ ok: true });
   } catch (error: any) {
-    // Exact system error message directly to bot for debugging
+    console.error("🚨 TELEGRAM ERROR:", error.message);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
