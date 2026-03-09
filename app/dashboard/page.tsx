@@ -81,6 +81,14 @@ export default function ClawLinkDashboard() {
   }, [status, session]);
 
   const handleDeploy = async () => {
+    // 🔒 SECURITY CHECK: Don't allow empty deployment!
+    if (selectedChannel === "whatsapp" && (!whatsappToken || !whatsappPhoneId)) {
+      return alert("Error: Please enter BOTH WhatsApp Access Token and Phone Number ID!");
+    }
+    if (selectedChannel === "telegram" && !telegramToken) {
+      return alert("Error: Please enter your Telegram Bot Token!");
+    }
+
     setIsDeploying(true);
     try {
       await fetch("/api/config", {
@@ -97,8 +105,11 @@ export default function ClawLinkDashboard() {
         }),
       });
       alert("Deployment Success! Your configuration is live.");
-    } catch (e) { alert("Deployment Error."); }
-    finally { setIsDeploying(false); }
+    } catch (e) { 
+      alert("Deployment Error."); 
+    } finally { 
+      setIsDeploying(false); 
+    }
   };
 
   const handleUpgrade = async () => {

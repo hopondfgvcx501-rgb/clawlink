@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+// 🛠️ EXACT 3 LEVELS BACK: app -> api -> webhook -> whatsapp -> route.ts
 import { supabase } from "../../../lib/supabase"; 
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
@@ -23,15 +24,15 @@ export async function POST(req: NextRequest) {
     // 🚀 THE MAHA-JASOOS: Print everything WhatsApp sends before any checks!
     console.log("🔥 INCOMING META PAYLOAD:", JSON.stringify(body, null, 2));
 
-    // 1. Ignore if it's just a status update (like "message read") and not an actual text message
-    if (!body.entry?.[0]?.changes?.[0]?.value?.messages?.[0]) {
+    // 1. Safe check: Ignore if it's not a proper message structure
+    if (!body?.entry?.[0]?.changes?.[0]?.value?.messages?.[0]) {
       console.log("⚠️ Ignored: Not a text message (probably a status update).");
       return NextResponse.json({ status: "ignored" });
     }
 
     const message = body.entry[0].changes[0].value.messages[0];
     const from = message.from; 
-    const userText = message.text?.body;
+    const userText = message.text?.body || "";
     const phoneId = body.entry[0].changes[0].value.metadata.phone_number_id;
 
     console.log(`📩 REAL MESSAGE -> From: ${from}, Text: ${userText}, PhoneID: ${phoneId}`);
@@ -48,7 +49,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ status: "config_not_found" });
     }
 
-    // 3. AI Logic
+    // 3. AI Logic (Try Flash, Fallback to Pro)
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
     let aiReply = "";
 
@@ -94,6 +95,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ success: true });
   } catch (error: any) {
+    // Exact system error message directly for debugging
     console.error("🚨 CRITICAL ERROR:", error.message);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
