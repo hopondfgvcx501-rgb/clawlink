@@ -4,36 +4,44 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import OpenAI from "openai";
 import Anthropic from "@anthropic-ai/sdk";
 
-// Standard English code structure with Auto-Fallback Engine & Model Discovery
+// Standard English code structure with Secure Env Variables & Auto-Fallback
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
 
+    // Ignore if not a text message
     if (!body.message || !body.message.text) {
       return NextResponse.json({ status: "ignored" });
     }
 
     const chatId = body.message.chat.id;
     const userMessage = body.message.text;
+    
+    // Your exact Telegram bot token
     const botToken = "8569279311:AAFNOHoazE-vrvYfXivh4p5dQSNlFljAgo0";
 
     let activeConfig;
 
+    // 1. Try to fetch from database
     const { data: dbConfig, error: dbError } = await supabase
       .from("user_configs")
       .select("*")
       .eq("telegram_token", botToken)
       .single();
 
+    // 2. THE FIX: If database is empty, use Vercel's Secret Environment Variable!
     if (dbError || !dbConfig) {
+      console.log("Database empty or failed. Using SECURE fallback config!");
       activeConfig = {
         selected_model: "gemini",
-        gemini_key: "AIzaSyBHjjO9MFzw7KR-o8nVd0dzR0MSdYA7XQg", // Fallback Key
-        openai_key: "",
-        anthropic_key: "",
+        // VVI: Ab key Vercel ke vault se aayegi (process.env se), code mein nahi dikhegi!
+        gemini_key: process.env.GEMINI_API_KEY, 
+        openai_key: process.env.OPENAI_API_KEY || "",
+        anthropic_key: process.env.ANTHROPIC_API_KEY || "",
         telegram_token: botToken
       };
     } else {
+      console.log("Successfully fetched config from database.");
       activeConfig = dbConfig;
     }
 
@@ -56,7 +64,7 @@ export async function POST(request: NextRequest) {
             const result = await backupModel.generateContent(userMessage);
             aiReply = result.response.text();
           } catch (proError: any) {
-            // THE MASTER STROKE: Ask Google for the exact list of supported models!
+            // Discover models if both fail
             const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${activeConfig.gemini_key}`);
             const data = await res.json();
             
@@ -66,7 +74,7 @@ export async function POST(request: NextRequest) {
                 .filter((name: string) => name.includes("gemini") || name.includes("learnlm"))
                 .join("\n✅ ");
               
-              aiReply = `Model Name Error!\nGoogle is saying our model names are outdated.\n\nHere is the exact list of models your key ACTUALLY supports right now:\n\n✅ ${supportedModels}\n\n(Bhai, mujhe is list mein se koi ek naam bataiye, hum usko code mein fix kar denge!)`;
+              aiReply = `Model Name Error!\nGoogle is saying our model names are outdated.\n\nHere is the exact list of models your key ACTUALLY supports right now:\n\n✅ ${supportedModels}`;
             } else {
               aiReply = `API Key Error: Google refused to list models. Response: ${JSON.stringify(data)}`;
             }
@@ -101,12 +109,16 @@ export async function POST(request: NextRequest) {
     await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ chat_id: chatId, text: aiReply }),
+      body: JSON.stringify({
+        chat_id: chatId,
+        text: aiReply,
+      }),
     });
 
     return NextResponse.json({ success: true });
 
   } catch (error: any) {
+    console.error("Fatal Webhook Error:", error);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }
