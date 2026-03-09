@@ -1,24 +1,24 @@
 import { NextResponse } from "next/server";
 import Razorpay from "razorpay";
 
-// Initialize Razorpay securely using environment variables
-const razorpay = new Razorpay({
-  key_id: process.env.RAZORPAY_KEY_ID || "",
-  key_secret: process.env.RAZORPAY_KEY_SECRET || "",
-});
-
 export async function POST(request: Request) {
   try {
+    // 🚀 FIX: MOVED INSIDE THE FUNCTION
+    // Now Razorpay only initializes when an actual payment is requested, saving Vercel from crashing during build.
+    const razorpay = new Razorpay({
+      key_id: process.env.RAZORPAY_KEY_ID || "",
+      key_secret: process.env.RAZORPAY_KEY_SECRET || "",
+    });
+
     const body = await request.json();
     const { email, planName, amount, currency } = body;
 
-    // Validate incoming data to ensure dynamic pricing details are present
+    // Validate incoming data
     if (!email || !amount || !currency) {
       return NextResponse.json({ error: "Missing required billing fields" }, { status: 400 });
     }
 
-    // Razorpay requires the amount in the smallest subunit (paise for INR, cents for USD).
-    // Multiply the base amount (e.g., 299 or 29) by 100.
+    // Amount needs to be in smallest currency unit (paise/cents)
     const options = {
       amount: amount * 100, 
       currency: currency.toUpperCase(),
@@ -29,7 +29,7 @@ export async function POST(request: Request) {
       }
     };
 
-    // Create the order on Razorpay servers with the dynamic currency
+    // Create the order on Razorpay servers
     const order = await razorpay.orders.create(options);
 
     return NextResponse.json({ success: true, order });
