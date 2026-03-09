@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 // Path points correctly to app/lib/supabase.ts
 import { supabase } from "../../lib/supabase"; 
 
-// GET: Fetch the user's saved keys when the dashboard loads
+// GET: Fetch the user's saved keys and personality when the dashboard loads
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
@@ -22,6 +22,7 @@ export async function GET(request: Request) {
       throw error;
     }
 
+    // Map database columns to frontend state variables
     const formattedData = data ? {
       selectedModel: data.selected_model,
       selectedChannel: data.selected_channel,
@@ -31,6 +32,7 @@ export async function GET(request: Request) {
       openAIKey: data.openai_key,
       anthropicKey: data.anthropic_key,
       geminiKey: data.gemini_key,
+      systemPrompt: data.system_prompt, // NEW: Fetching the personality prompt
     } : null;
 
     return NextResponse.json({ success: true, data: formattedData });
@@ -40,21 +42,21 @@ export async function GET(request: Request) {
   }
 }
 
-// POST: Save or update the new keys and settings in Supabase
+// POST: Save or update the new keys, settings, and personality in Supabase
 export async function POST(request: Request) {
   try {
     const body = await request.json();
     const { 
       email, selectedModel, selectedChannel, 
       telegramToken, whatsappToken, whatsappPhoneId, 
-      openAIKey, anthropicKey, geminiKey 
+      openAIKey, anthropicKey, geminiKey, systemPrompt // NEW: Receiving the personality prompt
     } = body;
 
     if (!email) {
       return NextResponse.json({ error: "Missing email" }, { status: 400 });
     }
 
-    // 1. Save all keys to Supabase First
+    // 1. Save all configuration parameters to Supabase
     const { data, error } = await supabase
       .from("user_configs")
       .upsert({ 
@@ -66,25 +68,26 @@ export async function POST(request: Request) {
         whatsapp_phone_id: whatsappPhoneId,
         openai_key: openAIKey, 
         anthropic_key: anthropicKey, 
-        gemini_key: geminiKey
+        gemini_key: geminiKey,
+        system_prompt: systemPrompt // NEW: Saving the personality prompt to the database
       }, { onConflict: 'email' })
       .select()
       .single();
 
     if (error) throw error;
 
-    // 🚀 2. THE CLAWLINK MAGIC: AUTO-WEBHOOK SETUP 🚀
-    // Agar user ne Telegram select kiya hai aur token diya hai, toh webhook auto-set kar do!
+    // 2. THE CLAWLINK MAGIC: AUTO-WEBHOOK SETUP
+    // Automatically set the webhook if the user selected Telegram and provided a token
     if (selectedChannel === "telegram" && telegramToken) {
       try {
-        // Automatically get your current Vercel Website URL
+        // Dynamically grab the current Vercel production or local URL
         const origin = request.headers.get("origin");
         
         if (origin) {
-          // Pointing to our flat routing system!
+          // Pointing to our flat routing system structure
           const webhookUrl = `${origin}/api/webhook/telegram`;
           
-          // Command Telegram to send messages to our webhook
+          // Command Telegram API to route all messages to our webhook
           const tgResponse = await fetch(`https://api.telegram.org/bot${telegramToken}/setWebhook?url=${webhookUrl}`);
           const tgData = await tgResponse.json();
           
@@ -92,7 +95,7 @@ export async function POST(request: Request) {
         }
       } catch (webhookErr) {
         console.error("Failed to set Auto-Webhook:", webhookErr);
-        // Hum yahan error throw nahi kar rahe hain taaki DB save fail na ho, bas log kar lenge.
+        // We do not throw the error here so that the DB save is not aborted
       }
     }
 
