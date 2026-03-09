@@ -4,57 +4,65 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import OpenAI from "openai";
 import Anthropic from "@anthropic-ai/sdk";
 
-// Standard English code structure for global scale
+// Standard English code structure with Auto-Fallback Engine
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
 
-    // Ignore if not a text message
     if (!body.message || !body.message.text) {
       return NextResponse.json({ status: "ignored" });
     }
 
     const chatId = body.message.chat.id;
     const userMessage = body.message.text;
-    
-    // Your exact Telegram bot token
     const botToken = "8569279311:AAFNOHoazE-vrvYfXivh4p5dQSNlFljAgo0";
 
     let activeConfig;
 
-    // 1. Try to fetch from database
     const { data: dbConfig, error: dbError } = await supabase
       .from("user_configs")
       .select("*")
       .eq("telegram_token", botToken)
       .single();
 
-    // 2. THE FIX: If database is empty (PGRST116), use hardcoded keys!
     if (dbError || !dbConfig) {
-      console.log("Database empty or failed. Using hardcoded fallback config!");
       activeConfig = {
         selected_model: "gemini",
-        // IMPORTANT: Hardcoded Gemini Key for fallback
-        gemini_key: "AIzaSyBHjjO9MFzw7KR-o8nVd0dzR0MSdYA7XQg", 
+        gemini_key: "AIzaSyBHjjO9MFzw7KR-o8nVd0dzR0MSdYA7XQg", // Aapki key
         openai_key: "",
         anthropic_key: "",
         telegram_token: botToken
       };
     } else {
-      console.log("Successfully fetched config from database.");
       activeConfig = dbConfig;
     }
 
     let aiReply = "AI is thinking...";
 
     try {
-      // Gemini Engine Logic
+      // ==== SMART GEMINI ENGINE (AUTO-FALLBACK) ====
       if (activeConfig.selected_model === "gemini" && activeConfig.gemini_key) {
         const genAI = new GoogleGenerativeAI(activeConfig.gemini_key);
-        // Using gemini-pro for maximum compatibility with older SDKs
-        const model = genAI.getGenerativeModel({ model: "gemini-pro" }); 
-        const result = await model.generateContent(userMessage);
-        aiReply = result.response.text();
+        
+        try {
+          // Attempt 1: Try the fast 'flash' model first
+          console.log("Trying primary model: gemini-1.5-flash...");
+          const primaryModel = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+          const result = await primaryModel.generateContent(userMessage);
+          aiReply = result.response.text();
+        } catch (flashError) {
+          console.log("Flash model failed or slept. Waking up Backup Model (gemini-pro)...");
+          
+          try {
+            // Attempt 2: If flash fails, automatically switch to 'gemini-pro'
+            const backupModel = genAI.getGenerativeModel({ model: "gemini-pro" });
+            const result = await backupModel.generateContent(userMessage);
+            aiReply = result.response.text();
+          } catch (proError: any) {
+            // If both fail, send the exact error to Telegram
+            aiReply = `Both AI models are sleeping. System Error:\n\n${proError.message}`;
+          }
+        }
       } 
       // OpenAI Logic
       else if (activeConfig.selected_model === "gpt-5.2" && activeConfig.openai_key) {
@@ -77,27 +85,19 @@ export async function POST(request: NextRequest) {
         aiReply = msg.content[0].text;
       }
     } catch (aiErr: any) {
-      console.error("AI Generation Failed:", aiErr);
-      
-      // CRITICAL FIX: Send the exact system error directly to the Telegram chat
-      // So we don't have to guess what went wrong in Vercel logs.
-      aiReply = `System Error Log:\n\n${aiErr.message || "Unknown API Error occurred"}`;
+      aiReply = `Global Engine Error:\n\n${aiErr.message}`;
     }
 
     // Deliver message back to Telegram
     await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        chat_id: chatId,
-        text: aiReply,
-      }),
+      body: JSON.stringify({ chat_id: chatId, text: aiReply }),
     });
 
     return NextResponse.json({ success: true });
 
   } catch (error: any) {
-    console.error("Fatal Webhook Error:", error);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }
