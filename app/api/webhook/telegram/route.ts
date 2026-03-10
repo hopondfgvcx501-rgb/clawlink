@@ -83,7 +83,7 @@ export async function POST(req: NextRequest) {
   } catch (error: any) {
     console.error("🚨 CRITICAL ERROR:", error.message);
     
-    // Exact system error messages directly to the Telegram bot for debugging (NEVER hide them)
+    // Exact system error messages directly to the Telegram bot for debugging
     if (chatIdToReply && botToken) {
        await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
          method: "POST",
@@ -92,6 +92,7 @@ export async function POST(req: NextRequest) {
        });
     }
 
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    // 🚀 FIX: Hamesha {ok: true} return karein, taaki Telegram spam (retry) na kare!
+    return NextResponse.json({ ok: true });
   }
 }
