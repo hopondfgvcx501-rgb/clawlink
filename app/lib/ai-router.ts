@@ -14,7 +14,7 @@ export async function generateAIReply(
   
   try {
     // ==========================================
-    // 1. GOOGLE GEMINI (With Auto-Fallback)
+    // 1. GOOGLE GEMINI (2026 Model Arsenal)
     // ==========================================
     if (provider === "gemini") {
       const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
@@ -30,25 +30,24 @@ export async function generateAIReply(
         const result = await chat.sendMessage(userText);
         return result.response.text();
       } catch (primaryErr: any) {
-        console.warn(`⚠️ Gemini [${modelName}] failed. Fallback to gemini-1.5-pro...`);
+        console.warn(`⚠️ Gemini [${modelName}] failed. Auto-Switching to gemini-3.1-pro...`);
         try {
-          // 🚀 FIX: Google ka sabse strict aur exact stable name
+          // 🚀 2026 Fallback: Gemini 3.1 Pro (Latest)
           const proModel = genAI.getGenerativeModel({ 
-            model: "gemini-1.5-pro", 
+            model: "gemini-3.1-pro", 
             systemInstruction: systemPrompt 
           }); 
-          
           const chat = proModel.startChat({ history: formattedHistory });
           const result = await chat.sendMessage(userText);
           return result.response.text();
         } catch (fallbackErr: any) {
-           throw new Error(`Gemini Fallback also failed: ${fallbackErr.message}`);
+           throw new Error(`Gemini Fallback failed: ${fallbackErr.message}`);
         }
       }
     }
 
     // ==========================================
-    // 2. OPENAI (With Auto-Fallback)
+    // 2. OPENAI (2026 Model Arsenal)
     // ==========================================
     else if (provider === "openai") {
       const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY || "" });
@@ -66,21 +65,22 @@ export async function generateAIReply(
         });
         return response.choices[0].message?.content || "No reply from OpenAI.";
       } catch (primaryErr: any) {
-        console.warn(`⚠️ OpenAI [${modelName}] failed. Fallback to gpt-4-turbo...`);
+        console.warn(`⚠️ OpenAI [${modelName}] failed. Auto-Switching to gpt-5.4...`);
         try {
+          // 🚀 2026 Fallback: GPT-5.4 (Latest Flagship)
           const response = await openai.chat.completions.create({
-            model: "gpt-4-turbo", 
+            model: "gpt-5.4", 
             messages: messages,
           });
           return response.choices[0].message?.content || "No reply from OpenAI fallback.";
         } catch (fallbackErr: any) {
-          throw new Error(`OpenAI Fallback also failed: ${fallbackErr.message}`);
+          throw new Error(`OpenAI Fallback failed: ${fallbackErr.message}`);
         }
       }
     }
 
     // ==========================================
-    // 3. ANTHROPIC (With Auto-Fallback)
+    // 3. ANTHROPIC CLAUDE (2026 Model Arsenal)
     // ==========================================
     else if (provider === "anthropic") {
       const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY || "" });
@@ -102,10 +102,11 @@ export async function generateAIReply(
         if (contentBlock.type === 'text') return contentBlock.text;
         return "No text reply from Claude.";
       } catch (primaryErr: any) {
-        console.warn(`⚠️ Claude [${modelName}] failed. Fallback to claude-3-haiku...`);
+        console.warn(`⚠️ Claude [${modelName}] failed. Auto-Switching to claude-sonnet-4.6...`);
         try {
+          // 🚀 2026 Fallback: Claude Sonnet 4.6
           const response = await anthropic.messages.create({
-            model: "claude-3-haiku-20240307", 
+            model: "claude-sonnet-4.6", 
             system: systemPrompt,
             max_tokens: 1024,
             messages: messages,
@@ -114,7 +115,7 @@ export async function generateAIReply(
           if (contentBlock.type === 'text') return contentBlock.text;
           return "No text reply from Claude fallback.";
         } catch (fallbackErr: any) {
-          throw new Error(`Claude Fallback also failed: ${fallbackErr.message}`);
+          throw new Error(`Claude Fallback failed: ${fallbackErr.message}`);
         }
       }
     }
