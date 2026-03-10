@@ -30,11 +30,14 @@ export async function generateAIReply(
         const result = await chat.sendMessage(userText);
         return result.response.text();
       } catch (primaryErr: any) {
-        console.warn(`⚠️ Gemini [${modelName}] failed. Fallback to gemini-pro...`);
+        console.warn(`⚠️ Gemini [${modelName}] failed. Fallback to gemini-1.5-pro-latest...`);
         try {
-          // 🚀 FIX: Corrected model name to standard 'gemini-pro'
-          const proModel = genAI.getGenerativeModel({ model: "gemini-pro" }); 
-          // Note: Older gemini-pro sometimes rejects systemInstructions, so we keep it simple for pure fallback
+          // 🚀 FIX: Google ka sabse stable aur latest fallback model name
+          const proModel = genAI.getGenerativeModel({ 
+            model: "gemini-1.5-pro-latest", 
+            systemInstruction: systemPrompt 
+          }); 
+          
           const chat = proModel.startChat({ history: formattedHistory });
           const result = await chat.sendMessage(userText);
           return result.response.text();
