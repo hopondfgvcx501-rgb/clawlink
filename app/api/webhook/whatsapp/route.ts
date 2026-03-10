@@ -1,72 +1,75 @@
 import { NextRequest, NextResponse } from "next/server";
-// 🛠️ EXACT 3 LEVELS BACK: app -> api -> webhook -> whatsapp -> route.ts
-import { supabase } from "../../../lib/supabase"; 
+import { supabase } from "../../../lib/supabase";
 import { GoogleGenerativeAI } from "@google/generative-ai";
-
-// Meta requires a GET request to verify the webhook initially
-export async function GET(req: NextRequest) {
-  const { searchParams } = new URL(req.url);
-  const mode = searchParams.get("hub.mode");
-  const token = searchParams.get("hub.verify_token");
-  const challenge = searchParams.get("hub.challenge");
-
-  // This token must be added to your Vercel Environment Variables
-  if (mode === "subscribe" && token === process.env.WHATSAPP_VERIFY_TOKEN) {
-    return new NextResponse(challenge, { status: 200 });
-  }
-  return new NextResponse("Forbidden", { status: 403 });
-}
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    
-    // 🚀 THE MAHA-JASOOS: Print everything WhatsApp sends before any checks!
-    console.log("🔥 INCOMING META PAYLOAD:", JSON.stringify(body, null, 2));
 
-    // 1. Safe check: Ignore if it's not a proper message structure
-    if (!body?.entry?.[0]?.changes?.[0]?.value?.messages?.[0]) {
-      console.log("⚠️ Ignored: Not a text message (probably a status update).");
-      return NextResponse.json({ status: "ignored" });
+    // Check if it's a valid WhatsApp text message, ignore status updates
+    if (
+      !body.entry ||
+      !body.entry[0].changes ||
+      !body.entry[0].changes[0].value.messages ||
+      !body.entry[0].changes[0].value.messages[0]
+    ) {
+      return NextResponse.json({ ok: true }); 
     }
 
-    const message = body.entry[0].changes[0].value.messages[0];
-    const from = message.from; 
-    const userText = message.text?.body || "";
-    const phoneId = body.entry[0].changes[0].value.metadata.phone_number_id;
+    const messageObj = body.entry[0].changes[0].value.messages[0];
+    if (messageObj.type !== "text") {
+      return NextResponse.json({ ok: true }); 
+    }
 
-    console.log(`📩 REAL MESSAGE -> From: ${from}, Text: ${userText}, PhoneID: ${phoneId}`);
+    const userPhone = messageObj.from;
+    const userText = messageObj.text.body;
+    const phoneNumberId = body.entry[0].changes[0].value.metadata.phone_number_id;
 
-    // 2. Fetch User Config from Supabase
+    // 1. Fetch Config from Supabase
     const { data: config, error: configErr } = await supabase
       .from("user_configs")
       .select("*")
-      .eq("whatsapp_phone_id", phoneId)
+      .eq("whatsapp_phone_id", phoneNumberId)
       .single();
 
     if (configErr || !config) {
-      console.error(`❌ ERROR: No database config found for Phone ID: ${phoneId}`);
-      return NextResponse.json({ status: "config_not_found" });
+      console.error("❌ WhatsApp Config Not Found");
+      return NextResponse.json({ ok: true });
     }
 
-    // 3. AI Logic (Try 2.5 Flash, Fallback to 2.5 Pro)
+    // 2. FETCH MEMORY (Chat History) 🧠
+    const { data: historyData } = await supabase
+      .from("chat_history")
+      .select("*")
+      .eq("session_id", userPhone)
+      .order("created_at", { ascending: true })
+      .limit(20);
+
+    // Format history for Gemini API
+    const formattedHistory = historyData ? historyData.map((msg) => ({
+      role: msg.role === "assistant" ? "model" : "user",
+      parts: [{ text: msg.message }]
+    })) : [];
+
+    // 3. AI Logic (Auto-Fallback: 2.5 Flash -> 2.5 Pro)
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
     let aiReply = "";
 
     try {
-      // 🚀 FIX: Google killed 1.5 models. Upgraded to active 2.5 Flash!
       const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash", systemInstruction: config.system_prompt });
-      const result = await model.generateContent(userText);
+      const chat = model.startChat({ history: formattedHistory });
+      const result = await chat.sendMessage(userText);
       aiReply = result.response.text();
-    } catch (fallbackErr: any) {
-      console.warn("⚠️ Flash failed, using Pro model... Error was:", fallbackErr.message);
-      // 🚀 FIX: Upgraded fallback to active 2.5 Pro!
+    } catch (fallbackErr) {
+      console.warn("⚠️ Flash failed, using Pro model...");
       const proModel = genAI.getGenerativeModel({ model: "gemini-2.5-pro", systemInstruction: config.system_prompt });
-      const result = await proModel.generateContent(userText);
+      const chat = proModel.startChat({ history: formattedHistory });
+      const result = await chat.sendMessage(userText);
       aiReply = result.response.text();
     }
+
     // 4. Send Reply to WhatsApp
-    const metaResponse = await fetch(`https://graph.facebook.com/v18.0/${phoneId}/messages`, {
+    const metaResponse = await fetch(`https://graph.facebook.com/v18.0/${phoneNumberId}/messages`, {
       method: "POST",
       headers: {
         "Authorization": `Bearer ${config.whatsapp_token}`,
@@ -74,30 +77,37 @@ export async function POST(req: NextRequest) {
       },
       body: JSON.stringify({
         messaging_product: "whatsapp",
-        to: from,
+        to: userPhone,
         text: { body: aiReply },
       }),
     });
-
-    if (!metaResponse.ok) {
-      const errorData = await metaResponse.json();
-      console.error("❌ META REJECTED OUR REPLY:", errorData);
+    
+    const metaData = await metaResponse.json();
+    
+    // 5. Check Meta Response & Save Memory
+    if (metaData.error) {
+       console.error("❌ META REJECTED OUR REPLY:", JSON.stringify(metaData));
     } else {
-      console.log("✅ SUCCESS: AI Reply Sent to WhatsApp!");
-      
-      // Update tokens in Supabase
-      await supabase.from("usage_logs").insert({
-        email: config.email,
-        bot_token: phoneId,
-        model_used: "gemini-whatsapp",
-        estimated_tokens: Math.ceil((userText.length + aiReply.length) / 4)
-      });
+       // Save user + AI message to DB
+       await supabase.from("chat_history").insert([
+         { session_id: userPhone, role: "user", message: userText },
+         { session_id: userPhone, role: "assistant", message: aiReply }
+       ]);
+
+       // Log Usage
+       await supabase.from("usage_logs").insert({
+         email: config.email,
+         model_used: "gemini-whatsapp-memory",
+         estimated_tokens: Math.ceil((userText.length + aiReply.length) / 4)
+       });
     }
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ ok: true });
   } catch (error: any) {
-    // Exact system error message directly for debugging
-    console.error("🚨 CRITICAL ERROR:", error.message);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    // 🚨 System Error Tracking (Never hide)
+    console.error("🚨 CRITICAL ERROR IN WHATSAPP:", error.message);
+    
+    // 🚀 FIX: Hamesha {ok: true} return karein taaki Meta ka spam loop hamesha ke liye band ho jaye!
+    return NextResponse.json({ ok: true });
   }
 }
