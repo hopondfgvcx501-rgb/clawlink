@@ -14,7 +14,7 @@ export async function generateAIReply(
   
   try {
     // ==========================================
-    // 1. GOOGLE GEMINI (2026 Model Arsenal)
+    // 1. GOOGLE GEMINI (100% Stable API Names)
     // ==========================================
     if (provider === "gemini") {
       const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
@@ -30,11 +30,11 @@ export async function generateAIReply(
         const result = await chat.sendMessage(userText);
         return result.response.text();
       } catch (primaryErr: any) {
-        console.warn(`⚠️ Gemini [${modelName}] failed. Auto-Switching to gemini-3.1-pro...`);
+        console.warn(`⚠️ Gemini primary failed. Switching to 100% stable fallback...`);
         try {
-          // 🚀 2026 Fallback: Gemini 3.1 Pro (Latest)
+          // 🚀 GUARANTEED FALLBACK: Google ka sabse stable aur current working string
           const proModel = genAI.getGenerativeModel({ 
-            model: "gemini-3.1-pro", 
+            model: "gemini-1.5-flash", 
             systemInstruction: systemPrompt 
           }); 
           const chat = proModel.startChat({ history: formattedHistory });
@@ -47,7 +47,7 @@ export async function generateAIReply(
     }
 
     // ==========================================
-    // 2. OPENAI (2026 Model Arsenal)
+    // 2. OPENAI (100% Stable API Names)
     // ==========================================
     else if (provider === "openai") {
       const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY || "" });
@@ -65,11 +65,10 @@ export async function generateAIReply(
         });
         return response.choices[0].message?.content || "No reply from OpenAI.";
       } catch (primaryErr: any) {
-        console.warn(`⚠️ OpenAI [${modelName}] failed. Auto-Switching to gpt-5.4...`);
         try {
-          // 🚀 2026 Fallback: GPT-5.4 (Latest Flagship)
+          // 🚀 GUARANTEED FALLBACK: OpenAI ka stable string
           const response = await openai.chat.completions.create({
-            model: "gpt-5.4", 
+            model: "gpt-4o-mini", 
             messages: messages,
           });
           return response.choices[0].message?.content || "No reply from OpenAI fallback.";
@@ -80,7 +79,7 @@ export async function generateAIReply(
     }
 
     // ==========================================
-    // 3. ANTHROPIC CLAUDE (2026 Model Arsenal)
+    // 3. ANTHROPIC CLAUDE (100% Stable API Names)
     // ==========================================
     else if (provider === "anthropic") {
       const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY || "" });
@@ -102,11 +101,10 @@ export async function generateAIReply(
         if (contentBlock.type === 'text') return contentBlock.text;
         return "No text reply from Claude.";
       } catch (primaryErr: any) {
-        console.warn(`⚠️ Claude [${modelName}] failed. Auto-Switching to claude-sonnet-4.6...`);
         try {
-          // 🚀 2026 Fallback: Claude Sonnet 4.6
+          // 🚀 GUARANTEED FALLBACK: Anthropic ka stable string
           const response = await anthropic.messages.create({
-            model: "claude-sonnet-4.6", 
+            model: "claude-3-haiku-20240307", 
             system: systemPrompt,
             max_tokens: 1024,
             messages: messages,
