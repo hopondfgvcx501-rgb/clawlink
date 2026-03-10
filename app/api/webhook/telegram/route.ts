@@ -83,12 +83,15 @@ export async function POST(req: NextRequest) {
   } catch (error: any) {
     console.error("🚨 CRITICAL ERROR:", error.message);
     
-    // Exact system error messages directly to the Telegram bot for debugging
+    // Exact system error messages directly to the Telegram bot for debugging (NEVER hide them)
+    // Par ab ek user-friendly message ke saath aayega!
     if (chatIdToReply && botToken) {
+       const userFriendlyMsg = "⚠️ *ClawLink Alert*\nAI ka free quota abhi thodi der ke liye full ho gaya hai. Kripya 1-2 minute baad dobara message karein! 🙏\n\n----------------------------\n🛠️ DEBUG INFO (System Error):\n" + error.message;
+
        await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
          method: "POST",
          headers: { "Content-Type": "application/json" },
-         body: JSON.stringify({ chat_id: chatIdToReply, text: `🚨 CLAWLINK SYSTEM ERROR:\n${error.message}` }),
+         body: JSON.stringify({ chat_id: chatIdToReply, text: userFriendlyMsg }),
        });
     }
 
