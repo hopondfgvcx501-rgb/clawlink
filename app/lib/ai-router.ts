@@ -2,7 +2,6 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import OpenAI from "openai";
 import Anthropic from "@anthropic-ai/sdk";
 
-// Define the type for our raw database history
 type ChatMessage = { role: string; message: string };
 
 export async function generateAIReply(
@@ -31,9 +30,11 @@ export async function generateAIReply(
         const result = await chat.sendMessage(userText);
         return result.response.text();
       } catch (primaryErr: any) {
-        console.warn(`⚠️ Gemini [${modelName}] failed. Fallback to Gemini Pro...`);
+        console.warn(`⚠️ Gemini [${modelName}] failed. Fallback to gemini-pro...`);
         try {
-          const proModel = genAI.getGenerativeModel({ model: "gemini-1.5-pro", systemInstruction: systemPrompt });
+          // 🚀 FIX: Corrected model name to standard 'gemini-pro'
+          const proModel = genAI.getGenerativeModel({ model: "gemini-pro" }); 
+          // Note: Older gemini-pro sometimes rejects systemInstructions, so we keep it simple for pure fallback
           const chat = proModel.startChat({ history: formattedHistory });
           const result = await chat.sendMessage(userText);
           return result.response.text();
@@ -65,7 +66,7 @@ export async function generateAIReply(
         console.warn(`⚠️ OpenAI [${modelName}] failed. Fallback to gpt-4-turbo...`);
         try {
           const response = await openai.chat.completions.create({
-            model: "gpt-4-turbo", // 🚀 OpenAI Fallback Model
+            model: "gpt-4-turbo", 
             messages: messages,
           });
           return response.choices[0].message?.content || "No reply from OpenAI fallback.";
@@ -101,7 +102,7 @@ export async function generateAIReply(
         console.warn(`⚠️ Claude [${modelName}] failed. Fallback to claude-3-haiku...`);
         try {
           const response = await anthropic.messages.create({
-            model: "claude-3-haiku-20240307", // 🚀 Anthropic Fallback Model
+            model: "claude-3-haiku-20240307", 
             system: systemPrompt,
             max_tokens: 1024,
             messages: messages,
