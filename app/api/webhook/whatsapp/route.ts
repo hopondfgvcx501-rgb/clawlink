@@ -1,12 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabase } from "../../../lib/supabase";
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { generateAIReply } from "../../../lib/ai-router"; // 🚀 Hamara Naya Dimaag
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
 
-    // Check if it's a valid WhatsApp text message, ignore status updates
     if (
       !body.entry ||
       !body.entry[0].changes ||
@@ -45,28 +44,19 @@ export async function POST(req: NextRequest) {
       .order("created_at", { ascending: true })
       .limit(20);
 
-    // Format history for Gemini API
-    const formattedHistory = historyData ? historyData.map((msg) => ({
-      role: msg.role === "assistant" ? "model" : "user",
-      parts: [{ text: msg.message }]
-    })) : [];
+    const history = historyData || [];
 
-    // 3. AI Logic (Auto-Fallback: 2.5 Flash -> 2.5 Pro)
-    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
-    let aiReply = "";
+    // 3. 🚀 MASTER AI ROUTER KO CALL KARNA
+    const provider = config.ai_provider || "gemini";
+    const modelName = config.ai_model || "gemini-1.5-flash";
 
-    try {
-      const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash", systemInstruction: config.system_prompt });
-      const chat = model.startChat({ history: formattedHistory });
-      const result = await chat.sendMessage(userText);
-      aiReply = result.response.text();
-    } catch (fallbackErr) {
-      console.warn("⚠️ Flash failed, using Pro model...");
-      const proModel = genAI.getGenerativeModel({ model: "gemini-2.5-pro", systemInstruction: config.system_prompt });
-      const chat = proModel.startChat({ history: formattedHistory });
-      const result = await chat.sendMessage(userText);
-      aiReply = result.response.text();
-    }
+    const aiReply = await generateAIReply(
+      provider,
+      modelName,
+      config.system_prompt || "You are a helpful AI.",
+      history,
+      userText
+    );
 
     // 4. Send Reply to WhatsApp
     const metaResponse = await fetch(`https://graph.facebook.com/v18.0/${phoneNumberId}/messages`, {
@@ -88,25 +78,21 @@ export async function POST(req: NextRequest) {
     if (metaData.error) {
        console.error("❌ META REJECTED OUR REPLY:", JSON.stringify(metaData));
     } else {
-       // Save user + AI message to DB
        await supabase.from("chat_history").insert([
          { session_id: userPhone, role: "user", message: userText },
          { session_id: userPhone, role: "assistant", message: aiReply }
        ]);
 
-       // Log Usage
        await supabase.from("usage_logs").insert({
          email: config.email,
-         model_used: "gemini-whatsapp-memory",
+         model_used: `${provider}-${modelName}`,
          estimated_tokens: Math.ceil((userText.length + aiReply.length) / 4)
        });
     }
 
     return NextResponse.json({ ok: true });
   } catch (error: any) {
-    // 🚨 System Error Tracking (Never hide)
     console.error("🚨 CRITICAL ERROR IN WHATSAPP:", error.message);
-    
     // 🚀 FIX: Hamesha {ok: true} return karein taaki Meta ka spam loop hamesha ke liye band ho jaye!
     return NextResponse.json({ ok: true });
   }

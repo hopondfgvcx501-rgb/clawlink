@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabase } from "../../../lib/supabase"; 
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { generateAIReply } from "../../../lib/ai-router"; // 🚀 Hamara Naya Dimaag
 
 export async function POST(req: NextRequest) {
   let chatIdToReply: string | null = null;
@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
 
     if (configErr || !config) {
       console.error("❌ Telegram Config Not Found for Token:", botToken);
-      return NextResponse.json({ error: "Unauthorized Bot" }, { status: 401 });
+      return NextResponse.json({ ok: true });
     }
 
     // 2. FETCH MEMORY (Chat History) 🧠
@@ -35,28 +35,20 @@ export async function POST(req: NextRequest) {
       .order("created_at", { ascending: true })
       .limit(20);
 
-    // Format history for Gemini API
-    const formattedHistory = historyData ? historyData.map((msg) => ({
-      role: msg.role === "assistant" ? "model" : "user",
-      parts: [{ text: msg.message }]
-    })) : [];
+    const history = historyData || [];
 
-    // 3. AI Logic (Auto-Fallback: 2.5 Flash -> 2.5 Pro)
-    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
-    let aiReply = "";
+    // 3. 🚀 MASTER AI ROUTER KO CALL KARNA
+    // Agar database mein provider set nahi hai, toh by default gemini flash chalega
+    const provider = config.ai_provider || "gemini";
+    const modelName = config.ai_model || "gemini-1.5-flash";
 
-    try {
-      const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash", systemInstruction: config.system_prompt });
-      const chat = model.startChat({ history: formattedHistory });
-      const result = await chat.sendMessage(userText);
-      aiReply = result.response.text();
-    } catch (fallbackErr) {
-      console.warn("⚠️ Flash failed, using Pro model...");
-      const proModel = genAI.getGenerativeModel({ model: "gemini-2.5-pro", systemInstruction: config.system_prompt });
-      const chat = proModel.startChat({ history: formattedHistory });
-      const result = await chat.sendMessage(userText);
-      aiReply = result.response.text();
-    }
+    const aiReply = await generateAIReply(
+      provider,
+      modelName,
+      config.system_prompt || "You are a helpful AI.",
+      history,
+      userText
+    );
 
     // 4. Send Reply to Telegram
     await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
@@ -65,17 +57,16 @@ export async function POST(req: NextRequest) {
       body: JSON.stringify({ chat_id: chatIdToReply, text: aiReply }),
     });
 
-    // 5. SAVE MEMORY (Save User + AI message to DB)
+    // 5. SAVE MEMORY & LOG USAGE
     await supabase.from("chat_history").insert([
       { session_id: chatIdToReply, role: "user", message: userText },
       { session_id: chatIdToReply, role: "assistant", message: aiReply }
     ]);
 
-    // 6. Log Usage
     await supabase.from("usage_logs").insert({
       email: config.email,
       bot_token: botToken,
-      model_used: "gemini-telegram-memory",
+      model_used: `${provider}-${modelName}`, // Track hoga ki kaunsa AI use hua
       estimated_tokens: Math.ceil((userText.length + aiReply.length) / 4)
     });
 
@@ -84,9 +75,8 @@ export async function POST(req: NextRequest) {
     console.error("🚨 CRITICAL ERROR:", error.message);
     
     // Exact system error messages directly to the Telegram bot for debugging (NEVER hide them)
-    // Par ab ek user-friendly message ke saath aayega!
     if (chatIdToReply && botToken) {
-       const userFriendlyMsg = "⚠️ *ClawLink Alert*\nAI ka free quota abhi thodi der ke liye full ho gaya hai. Kripya 1-2 minute baad dobara message karein! 🙏\n\n----------------------------\n🛠️ DEBUG INFO (System Error):\n" + error.message;
+       const userFriendlyMsg = "⚠️ *ClawLink Alert*\nAI server abhi busy hai ya error face kar raha hai. Kripya thodi der baad try karein! 🙏\n\n----------------------------\n🛠️ DEBUG INFO (System Error):\n" + error.message;
 
        await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
          method: "POST",
