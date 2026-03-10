@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { supabase } from "../../lib/supabase"; // 🚀 EXACT PATH (Sirf 2 step peeche)
+
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
@@ -15,7 +16,6 @@ export async function GET(request: Request) {
 
     if (configError && configError.code !== "PGRST116") throw configError;
 
-    // Calculate total AI word consumption
     let totalTokensUsed = 0;
     const { data: usageData, error: usageError } = await supabase
       .from("usage_logs")
@@ -23,11 +23,9 @@ export async function GET(request: Request) {
       .eq("email", email);
 
     if (!usageError && usageData) {
-      // 🚀 FIX: Added strict TypeScript definitions (sum: number, record: any) to clear the error
       totalTokensUsed = usageData.reduce((sum: number, record: any) => sum + (record.estimated_tokens || 0), 0);
     }
 
-    // Map database columns back to UI state
     let uiSelectedModel = "gemini";
     if (configData?.ai_provider === "openai") uiSelectedModel = "gpt";
     if (configData?.ai_provider === "anthropic") uiSelectedModel = "claude";
@@ -57,9 +55,8 @@ export async function POST(request: Request) {
 
     if (!email) return NextResponse.json({ error: "Missing identity" }, { status: 400 });
 
-    // Map UI selection to strictly verified AI Router requirements
     let aiProvider = "gemini";
-    let aiModelName = "gemini-2.5-flash"; // Stable default
+    let aiModelName = "gemini-2.5-flash"; 
 
     if (selectedModel === "gpt") {
       aiProvider = "openai";
@@ -69,7 +66,30 @@ export async function POST(request: Request) {
       aiModelName = "claude-4.6-haiku";
     }
 
-    // Lock configuration in the database
+    // 🚀 NEW LOGIC: Auto-Set Telegram Webhook & Fetch Bot Info
+    let botLink = "";
+    if (selectedChannel === "telegram" && telegramToken) {
+       const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://clawlink-six.vercel.app";
+       const webhookUrl = `${baseUrl}/api/webhook/telegram?token=${telegramToken}`;
+       
+       // 1. Set Webhook automatically
+       const webhookRes = await fetch(`https://api.telegram.org/bot${telegramToken}/setWebhook?url=${webhookUrl}`);
+       const webhookData = await webhookRes.json();
+       
+       if (!webhookData.ok) {
+          throw new Error("Telegram API rejected the webhook setup.");
+       }
+
+       // 2. Fetch Bot Username to generate the exact t.me link
+       const meRes = await fetch(`https://api.telegram.org/bot${telegramToken}/getMe`);
+       const meData = await meRes.json();
+       
+       if (meData.ok && meData.result.username) {
+          botLink = `https://t.me/${meData.result.username}`;
+       }
+    }
+
+    // Save to Supabase
     const { data, error } = await supabase
       .from("user_configs")
       .upsert({ 
@@ -80,14 +100,16 @@ export async function POST(request: Request) {
         telegram_token: telegramToken || null, 
         whatsapp_token: whatsappToken || null,        
         whatsapp_phone_id: whatsappPhoneId || null,   
-        system_prompt: systemPrompt || "You are an advanced AI assistant."
+        system_prompt: systemPrompt || "You are an advanced AI assistant.",
+        bot_link: botLink // Assuming you add this column later, or we just return it
       }, { onConflict: 'email' })
       .select()
       .single();
 
     if (error) throw error;
 
-    return NextResponse.json({ success: true, data });
+    // Return the botLink to the frontend so we can show the "Success UI"
+    return NextResponse.json({ success: true, botLink: botLink, data });
   } catch (error: any) {
     console.error("🚨 POST Config Error:", error.message);
     return NextResponse.json({ error: "Failed to persist configuration" }, { status: 500 });
