@@ -1,211 +1,163 @@
 "use client";
 
-import { useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
+import { useSession, signOut } from "next-auth/react";
 import { useEffect, useState } from "react";
+import { motion } from "framer-motion";
+import { Activity, Bot, Zap, Database, LogOut, ArrowUpRight } from "lucide-react";
+import { useRouter } from "next/navigation";
 
-export default function ClawLinkDeployer() {
+export default function Dashboard() {
   const { data: session, status } = useSession();
   const router = useRouter();
-
-  // Selections
-  const [selectedModel, setSelectedModel] = useState("gemini");
-  
-  // States for Integrations
-  const [telegramToken, setTelegramToken] = useState("");
-  const [whatsappToken, setWhatsappToken] = useState("");
-  const [whatsappPhoneId, setWhatsappPhoneId] = useState("");
-  
-  const [isDeploying, setIsDeploying] = useState(false);
-  const [deploymentStatus, setDeploymentStatus] = useState({ telegram: false, whatsapp: false });
-  const [botLinks, setBotLinks] = useState({ telegram: "", whatsapp: "" });
+  const [userData, setUserData] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    if (status === "unauthenticated") router.push("/");
-  }, [status, router]);
-
-  const handleGlobalDeploy = async () => {
-    if (!telegramToken && !whatsappToken) {
-      alert("Please provide at least one Token (Telegram or WhatsApp) to deploy.");
-      return;
+    if (status === "unauthenticated") {
+      router.push("/");
     }
 
-    setIsDeploying(true);
-    try {
-      const response = await fetch("/api/config", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: session?.user?.email,
-          selectedModel,
-          telegramToken,
-          whatsappToken,
-          whatsappPhoneId,
-          selectedChannel: "dual" // Both channels active
+    if (session?.user?.email) {
+      fetch(`/api/user?email=${session.user.email}`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.success) {
+            setUserData(data.data);
+          }
+          setIsLoading(false);
         })
-      });
-
-      const data = await response.json();
-      
-      if (data.success) {
-        setDeploymentStatus({ 
-          telegram: !!telegramToken, 
-          whatsapp: !!whatsappToken 
+        .catch((err) => {
+          console.error("Failed to fetch dashboard data:", err);
+          setIsLoading(false);
         });
-        // Assuming API returns links if generated
-        if(data.botLink) setBotLinks(prev => ({...prev, telegram: data.botLink}));
-        
-        // Custom Success UI Trigger
-        const successMsg = document.getElementById("success-banner");
-        if(successMsg) {
-          successMsg.classList.remove("translate-y-[-100%]", "opacity-0");
-          setTimeout(() => successMsg.classList.add("translate-y-[-100%]", "opacity-0"), 5000);
-        }
-      } else {
-        alert("Deployment failed: " + data.error);
-      }
-    } catch (e) {
-      alert("System Error in dual deployment.");
-    } finally {
-      setIsDeploying(false);
     }
-  };
+  }, [session, status, router]);
 
-  if (status === "loading") {
+  if (isLoading || status === "loading") {
     return (
-      <div className="min-h-screen bg-[#050505] flex flex-col items-center justify-center text-gray-500 font-mono uppercase tracking-widest">
-        <div className="w-12 h-12 border-4 border-blue-500/30 border-t-blue-500 rounded-full animate-spin mb-4"></div>
-        Booting Infrastructure...
+      <div className="min-h-screen bg-[#0A0A0B] flex items-center justify-center text-white">
+        <div className="animate-spin text-4xl">⚙️</div>
       </div>
     );
   }
 
+  const usagePercentage = userData?.isUnlimited 
+    ? 0 
+    : Math.min(((userData?.tokensUsed || 0) / (userData?.tokensAllocated || 1)) * 100, 100);
+
   return (
-    <main className="min-h-screen bg-[#050505] text-white p-6 md:p-12 font-sans selection:bg-blue-500/30 relative overflow-hidden">
-      
-      {/* 🚀 HIDDEN SUCCESS BANNER */}
-      <div id="success-banner" className="fixed top-0 left-0 w-full bg-green-500 text-black font-black text-center py-3 uppercase tracking-widest transform translate-y-[-100%] opacity-0 transition-all duration-500 z-50 shadow-[0_0_30px_rgba(34,197,94,0.5)]">
-        CLAWLINK ENGINES DEPLOYED SUCCESSFULLY!
-      </div>
-
-      <div className="max-w-4xl mx-auto relative z-10">
-        
-        {/* Header */}
-        <div className="flex justify-between items-center mb-12">
-          <h1 className="text-3xl font-black tracking-tighter uppercase italic text-blue-500">ClawLink Workspace</h1>
-          <div className="text-right flex items-center gap-3">
-             <div className="hidden md:block">
-               <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest text-right">Active Identity</p>
-               <p className="text-sm font-bold truncate max-w-[150px]">{session?.user?.email}</p>
-             </div>
-             <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center font-bold shadow-[0_0_15px_rgba(37,99,235,0.5)]">
-                {session?.user?.email?.charAt(0).toUpperCase() || "U"}
-             </div>
+    <div className="min-h-screen bg-[#0A0A0B] text-white p-6 md:p-12 font-sans selection:bg-blue-500/30">
+      <nav className="max-w-6xl mx-auto flex justify-between items-center mb-16 border-b border-white/10 pb-6">
+        <div className="text-2xl font-bold tracking-wider font-mono">clawlink<span className="text-blue-500">.</span>dashboard</div>
+        <div className="flex items-center gap-6">
+          <div className="flex items-center gap-3">
+            <img src={session?.user?.image || ""} alt="Profile" className="w-10 h-10 rounded-full border border-white/20" />
+            <div className="hidden md:block">
+              <p className="text-sm font-bold">{session?.user?.name}</p>
+              <p className="text-xs text-gray-500">{session?.user?.email}</p>
+            </div>
           </div>
+          <button onClick={() => signOut({ callbackUrl: '/' })} className="text-gray-400 hover:text-white transition-colors">
+            <LogOut className="w-5 h-5" />
+          </button>
         </div>
+      </nav>
 
-        {/* AI Model Selection */}
-        <section className="bg-[#0A0A0A] border border-white/5 p-8 rounded-3xl mb-8 shadow-xl">
-          <h2 className="text-sm font-black text-gray-500 uppercase tracking-[0.2em] mb-6 flex items-center gap-2">
-            <span className="w-6 h-6 rounded-full bg-white/10 flex items-center justify-center text-white">1</span> Select AI Brain
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {['gemini', 'gpt', 'claude'].map((m) => (
-              <button key={m} onClick={() => setSelectedModel(m)} className={`py-4 rounded-2xl border transition-all uppercase text-xs font-black tracking-widest ${selectedModel === m ? 'border-blue-500 bg-blue-500/10 text-white shadow-[0_0_20px_rgba(37,99,235,0.2)] scale-[1.02]' : 'border-white/5 bg-white/5 text-gray-500 hover:border-white/20'}`}>
-                {m === 'gemini' ? '✨ Gemini 3.1' : m === 'gpt' ? '🤖 GPT-5.4' : '✴️ Claude 4.6'}
-              </button>
-            ))}
-          </div>
-        </section>
-
-        {/* Multi-Channel Integration */}
-        <section className="grid md:grid-cols-2 gap-8 mb-10">
+      <main className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8">
+        
+        {/* Plan Overview Card */}
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="md:col-span-2 bg-[#111] border border-white/10 rounded-3xl p-8 relative overflow-hidden shadow-2xl">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/10 blur-[100px] rounded-full pointer-events-none"></div>
           
-          {/* Telegram Box */}
-          <div className="bg-[#0A0A0A] border border-white/5 p-8 rounded-3xl relative overflow-hidden shadow-xl transition-all hover:border-blue-500/30">
-            <div className="flex items-center justify-between mb-6">
-               <h2 className="text-sm font-black text-gray-500 uppercase tracking-widest italic flex items-center gap-2">
-                 <span className="text-blue-500">✈️</span> Telegram API
-               </h2>
-               {deploymentStatus.telegram && <span className="bg-blue-500/20 text-blue-400 text-[10px] px-2 py-0.5 rounded font-black border border-blue-500/50 flex items-center gap-1"><span className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-pulse"></span> SYNCED</span>}
+          <div className="flex justify-between items-start mb-8">
+            <div>
+              <p className="text-sm font-bold text-gray-500 uppercase tracking-widest mb-2">Current Plan</p>
+              <h2 className="text-4xl font-black tracking-tight text-white mb-2">{userData?.plan || "No Active Plan"}</h2>
+              <p className="text-gray-400 text-sm">Powered by <span className="text-white font-medium capitalize">{userData?.provider || "ClawLink Engine"}</span> ({userData?.model})</p>
             </div>
-            
-            {!deploymentStatus.telegram ? (
-              <input 
-                type="password" 
-                value={telegramToken} 
-                onChange={e => setTelegramToken(e.target.value)}
-                placeholder="Enter Bot Token..." 
-                className="w-full bg-black border-b border-white/10 py-3 text-sm outline-none focus:border-blue-500 transition-all font-mono"
-              />
-            ) : (
-              <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-4 text-center">
-                <p className="text-xs text-gray-400 mb-3">Bot is successfully connected to ClawLink.</p>
-                {botLinks.telegram && (
-                   <a href={botLinks.telegram} target="_blank" className="inline-block bg-blue-600 text-white font-bold text-xs px-6 py-2 rounded-lg uppercase tracking-widest hover:bg-blue-500 transition-colors">
-                     Open Bot
-                   </a>
-                )}
-                <button onClick={() => setDeploymentStatus(prev => ({...prev, telegram: false}))} className="block w-full mt-3 text-[10px] text-gray-500 hover:text-white underline">Change Token</button>
-              </div>
+            {userData?.plan !== "Omni Max" && (
+              <button onClick={() => router.push('/')} className="bg-white/10 hover:bg-white hover:text-black transition-all text-white px-6 py-2 rounded-full text-sm font-bold flex items-center gap-2 border border-white/20">
+                <Zap className="w-4 h-4" /> Upgrade
+              </button>
             )}
           </div>
 
-          {/* WhatsApp Box */}
-          <div className="bg-[#0A0A0A] border border-white/5 p-8 rounded-3xl relative overflow-hidden shadow-xl transition-all hover:border-green-500/30">
-            <div className="flex items-center justify-between mb-6">
-               <h2 className="text-sm font-black text-gray-500 uppercase tracking-widest italic flex items-center gap-2">
-                 <span className="text-green-500">💬</span> WhatsApp API
-               </h2>
-               {deploymentStatus.whatsapp && <span className="bg-green-500/20 text-green-400 text-[10px] px-2 py-0.5 rounded font-black border border-green-500/50 flex items-center gap-1"><span className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse"></span> SYNCED</span>}
+          <div className="bg-black/50 rounded-2xl p-6 border border-white/5">
+            <div className="flex justify-between items-end mb-4">
+              <div>
+                <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">API Usage</p>
+                <p className="text-2xl font-bold text-white">
+                  {userData?.isUnlimited ? "Unlimited" : userData?.tokensUsed.toLocaleString() || 0} 
+                  <span className="text-sm text-gray-500 font-normal"> / {userData?.isUnlimited ? "∞" : userData?.tokensAllocated.toLocaleString()} words</span>
+                </p>
+              </div>
+              <p className="text-sm font-mono text-blue-400">{userData?.isUnlimited ? "∞" : `${usagePercentage.toFixed(1)}%`}</p>
             </div>
             
-            {!deploymentStatus.whatsapp ? (
-              <div className="space-y-4">
-                <input 
-                  type="password" 
-                  value={whatsappToken} 
-                  onChange={e => setWhatsappToken(e.target.value)}
-                  placeholder="Access Token (EAAG...)" 
-                  className="w-full bg-black border-b border-white/10 py-3 text-sm outline-none focus:border-green-500 transition-all font-mono"
+            {!userData?.isUnlimited && (
+              <div className="w-full h-3 bg-gray-800 rounded-full overflow-hidden">
+                <motion.div 
+                  initial={{ width: 0 }} 
+                  animate={{ width: `${usagePercentage}%` }} 
+                  transition={{ duration: 1, ease: "easeOut" }}
+                  className={`h-full ${usagePercentage > 90 ? 'bg-red-500' : 'bg-blue-500'}`}
                 />
-                <input 
-                  type="text" 
-                  value={whatsappPhoneId} 
-                  onChange={e => setWhatsappPhoneId(e.target.value)}
-                  placeholder="Phone Number ID" 
-                  className="w-full bg-black border-b border-white/10 py-3 text-sm outline-none focus:border-green-500 transition-all font-mono"
-                />
-              </div>
-            ) : (
-              <div className="bg-green-500/10 border border-green-500/20 rounded-xl p-4 text-center">
-                <p className="text-xs text-gray-400 mb-3">WhatsApp Number is successfully connected.</p>
-                <button onClick={() => setDeploymentStatus(prev => ({...prev, whatsapp: false}))} className="block w-full mt-3 text-[10px] text-gray-500 hover:text-white underline">Update Credentials</button>
               </div>
             )}
           </div>
+        </motion.div>
 
-        </section>
+        {/* Active Deployments Card */}
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="bg-[#111] border border-white/10 rounded-3xl p-8 shadow-2xl">
+          <div className="flex items-center gap-3 mb-8">
+            <Activity className="w-5 h-5 text-green-400" />
+            <h3 className="text-lg font-bold text-white tracking-wide">Active Instances</h3>
+          </div>
 
-        {/* Global Deploy Button */}
-        <button 
-          onClick={handleGlobalDeploy} 
-          disabled={isDeploying || (deploymentStatus.telegram && deploymentStatus.whatsapp)}
-          className={`w-full font-black py-6 rounded-3xl transition-all uppercase tracking-[0.3em] text-sm shadow-[0_0_50px_rgba(255,255,255,0.1)] flex items-center justify-center gap-3 ${
-             (deploymentStatus.telegram && deploymentStatus.whatsapp) 
-             ? "bg-white/10 text-gray-500 cursor-not-allowed"
-             : "bg-white text-black hover:bg-gray-200 active:scale-[0.98]"
-          }`}
-        >
-          {isDeploying ? (
-            <>
-               <span className="w-4 h-4 border-2 border-black/30 border-t-black rounded-full animate-spin"></span>
-               Deploying Infrastructure...
-            </>
-          ) : (deploymentStatus.telegram && deploymentStatus.whatsapp) ? "All Channels Synced ✓" : "Sync & Launch ClawLink 🚀"}
-        </button>
+          <div className="space-y-4">
+            {userData?.telegramActive ? (
+              <div className="bg-blue-500/10 border border-blue-500/30 p-4 rounded-xl flex items-center justify-between group cursor-pointer hover:bg-blue-500/20 transition-all">
+                <div className="flex items-center gap-3">
+                  <span className="text-2xl">✈️</span>
+                  <div>
+                    <p className="text-sm font-bold text-white">Telegram Bot</p>
+                    <p className="text-xs text-blue-400">Online & Routing</p>
+                  </div>
+                </div>
+                <ArrowUpRight className="w-4 h-4 text-gray-400 group-hover:text-white" />
+              </div>
+            ) : (
+              <div className="bg-black/50 border border-white/5 p-4 rounded-xl flex items-center gap-3 opacity-50">
+                <span className="text-2xl grayscale">✈️</span>
+                <p className="text-sm font-medium text-gray-500">Telegram Not Configured</p>
+              </div>
+            )}
 
-      </div>
-    </main>
+            {userData?.whatsappActive ? (
+              <div className="bg-green-500/10 border border-green-500/30 p-4 rounded-xl flex items-center justify-between group cursor-pointer hover:bg-green-500/20 transition-all">
+                <div className="flex items-center gap-3">
+                  <span className="text-2xl">💬</span>
+                  <div>
+                    <p className="text-sm font-bold text-white">WhatsApp Cloud</p>
+                    <p className="text-xs text-green-400">Online & Routing</p>
+                  </div>
+                </div>
+                <ArrowUpRight className="w-4 h-4 text-gray-400 group-hover:text-white" />
+              </div>
+            ) : (
+              <div className="bg-black/50 border border-white/5 p-4 rounded-xl flex items-center gap-3 opacity-50">
+                <span className="text-2xl grayscale">💬</span>
+                <p className="text-sm font-medium text-gray-500">WhatsApp Not Configured</p>
+              </div>
+            )}
+          </div>
+          
+          <div className="mt-8 pt-6 border-t border-white/10 flex items-center gap-2 text-xs text-gray-500">
+            <Database className="w-4 h-4" /> Connected to Global Edge Network
+          </div>
+        </motion.div>
+
+      </main>
+    </div>
   );
 }
