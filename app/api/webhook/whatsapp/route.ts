@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { supabase } from "@/app/lib/supabase";
 import { generateAIReply } from "@/app/lib/ai-router";
 
-// 1. META VERIFICATION ENDPOINT
+// 1. META PLATFORM VERIFICATION ENDPOINT
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const mode = searchParams.get("hub.mode");
@@ -17,7 +17,7 @@ export async function GET(req: NextRequest) {
   return new NextResponse("Forbidden Verification", { status: 403 });
 }
 
-// 2. META MESSAGE INGESTION ENDPOINT
+// 2. ADVANCED CRM MESSAGE INGESTION ENDPOINT
 export async function POST(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const urlToken = searchParams.get("token");
@@ -29,7 +29,6 @@ export async function POST(req: NextRequest) {
     const changes = entry?.changes?.[0]?.value;
     const message = changes?.messages?.[0];
 
-    // Acknowledge non-message status updates immediately
     if (!message || !message.text) {
       return NextResponse.json({ ok: true });
     }
@@ -39,10 +38,10 @@ export async function POST(req: NextRequest) {
     const phoneId = changes.metadata.phone_number_id;
 
     if (!urlToken) {
-      throw new Error("Missing routing token in WhatsApp webhook URL.");
+      throw new Error("Critical: Missing routing token in WhatsApp webhook payload.");
     }
 
-    // Database lookup for active configuration
+    // 1. Authenticate Bot Owner Configuration
     const { data: config, error: configErr } = await supabase
       .from("user_configs")
       .select("*")
@@ -50,10 +49,10 @@ export async function POST(req: NextRequest) {
       .single();
 
     if (configErr || !config) {
-      throw new Error("WhatsApp configuration not found in database.");
+      throw new Error("Authentication Failed: WhatsApp configuration not found.");
     }
 
-    // Quota Validation (Paywall Logic)
+    // 2. Validate Usage Quota (Paywall Enforcement)
     const tokenLimit = config.available_tokens || 50000;
     const { data: usageData } = await supabase
       .from("usage_logs")
@@ -63,7 +62,7 @@ export async function POST(req: NextRequest) {
     const tokensUsed = usageData?.reduce((sum: number, record: any) => sum + (record.estimated_tokens || 0), 0) || 0;
 
     if (tokensUsed >= tokenLimit && !config.is_unlimited) {
-      const upgradeMsg = `System Alert:\nYour API quota (${tokenLimit.toLocaleString()} words) has been exhausted.\nPlease upgrade your plan at ClawLink Dashboard.`;
+      const upgradeMsg = `System Alert:\nYour AI processing quota (${tokenLimit.toLocaleString()} tokens) has been exhausted.\nPlease navigate to the ClawLink Dashboard to upgrade your service tier.`;
       
       await fetch(`https://graph.facebook.com/v18.0/${phoneId}/messages`, {
         method: "POST",
@@ -80,19 +79,65 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: true });
     }
 
-    // AI Processing via Master Router
+    // 3. FETCH CUSTOMER MEMORY & CRM DATA
+    let customerData = {
+      customer_name: "Valued Customer",
+      outstanding_balance: 0.00,
+      last_order_status: "No active orders",
+      active_ticket_id: "None",
+      past_behavior_notes: "First time interaction"
+    };
+
+    const { data: memoryRecord, error: memoryErr } = await supabase
+      .from("customer_memory")
+      .select("*")
+      .eq("bot_owner_email", config.email)
+      .eq("customer_phone", userPhone)
+      .single();
+
+    if (memoryRecord) {
+      customerData = memoryRecord;
+      // Update last interaction timestamp
+      await supabase.from("customer_memory").update({ last_interaction: new Date() }).eq("id", memoryRecord.id);
+    } else {
+      // Create new customer profile on first interaction
+      await supabase.from("customer_memory").insert({
+        bot_owner_email: config.email,
+        customer_phone: userPhone
+      });
+    }
+
+    // 4. DYNAMIC CONTEXT INJECTION (The Secret Sauce)
+    const baseSystemPrompt = config.system_prompt || "You are an advanced enterprise AI assistant.";
+    const dynamicPrompt = `
+      ${baseSystemPrompt}
+      
+      CUSTOMER CONTEXT (CRITICAL):
+      - Phone Number: ${userPhone}
+      - Name: ${customerData.customer_name}
+      - Outstanding Billing Balance: $${customerData.outstanding_balance}
+      - Last Order Status: ${customerData.last_order_status}
+      - Active Support Ticket: ${customerData.active_ticket_id}
+      - Behavioral Notes: ${customerData.past_behavior_notes}
+
+      INSTRUCTIONS:
+      If the user asks about their bill, orders, or support, use the exact data provided above. 
+      Maintain a highly professional, polite, and helpful tone.
+    `;
+
+    // 5. Route to AI Engine
     const provider = config.ai_provider || "openai";
     const modelName = config.ai_model || "gpt-5.2";
 
     const aiReply = await generateAIReply(
       provider,
       modelName,
-      config.system_prompt || "You are an advanced enterprise AI assistant.",
+      dynamicPrompt,
       [],
       userText
     );
 
-    // Dispatch Meta Response
+    // 6. Dispatch Response via Meta Graph API
     await fetch(`https://graph.facebook.com/v18.0/${phoneId}/messages`, {
       method: "POST",
       headers: {
@@ -106,7 +151,7 @@ export async function POST(req: NextRequest) {
       }),
     });
 
-    // Logging consumption
+    // 7. Log Consumption
     await supabase.from("usage_logs").insert({
       email: config.email,
       channel: "whatsapp",
@@ -117,7 +162,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true });
 
   } catch (error: any) {
-    console.error("WhatsApp Webhook Error:", error.message);
+    console.error("Critical WhatsApp Webhook Processing Error:", error.message);
     return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
   }
 }
