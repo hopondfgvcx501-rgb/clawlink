@@ -137,11 +137,17 @@ export default function Home() {
               : "Your Telegram webhook is fully connected and processing data."}
           </p>
           
-          <a href={botLink} target="_blank" rel="noopener noreferrer" className="bg-white text-black font-black px-8 py-3 rounded-xl inline-block hover:bg-gray-200 transition-colors mb-6">
-            {selectedChannel === "whatsapp" ? "Open WhatsApp Bot" : "Open Telegram Bot"}
-          </a>
+          {/* 🚀 MOVED DASHBOARD BUTTON HERE TO THE SUCCESS SCREEN */}
+          <div className="flex flex-col sm:flex-row gap-3 justify-center mb-6">
+            <a href={botLink} target="_blank" rel="noopener noreferrer" className="w-full sm:w-auto bg-white text-black font-black px-6 py-3 rounded-xl hover:bg-gray-200 transition-colors text-sm flex items-center justify-center">
+              {selectedChannel === "whatsapp" ? "Open WhatsApp Bot" : "Open Telegram Bot"}
+            </a>
+            <button onClick={() => router.push('/dashboard')} className="w-full sm:w-auto bg-[#1A1A1A] border border-white/20 text-white font-bold px-6 py-3 rounded-xl hover:bg-white/10 transition-colors flex items-center justify-center gap-2 text-sm">
+              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+              Access Dashboard
+            </button>
+          </div>
 
-          {/* 🚀 DYNAMIC CAPABILITIES SHOWCASE BASED ON CHANNEL */}
           <div className="text-left bg-black/50 p-4 rounded-xl border border-white/5 max-h-48 overflow-y-auto custom-scrollbar">
             <p className="text-[10px] font-bold text-green-400 mb-3 uppercase tracking-widest flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span> System Capabilities Unlocked
@@ -200,13 +206,8 @@ export default function Home() {
           <button onClick={() => signOut()} className="text-xs text-gray-500 hover:text-white font-bold uppercase tracking-widest">Logout</button>
         </div>
 
-        <button onClick={() => router.push('/dashboard')} className="w-full bg-[#1A1A1A] border border-white/10 text-white py-3 rounded-xl text-sm font-bold tracking-widest hover:bg-[#222] transition-all flex justify-center items-center gap-2">
-          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
-          ACCESS DASHBOARD
-        </button>
-
         {!isTokenSaved ? (
-          <button onClick={() => handleOpenIntegration(selectedModel, selectedChannel)} className="w-full bg-[#1A1A1A] border border-white/20 text-white py-4 rounded-xl font-bold tracking-wide hover:bg-white hover:text-black transition-all mt-2">
+          <button onClick={() => handleOpenIntegration(selectedModel, selectedChannel)} className="w-full bg-[#1A1A1A] border border-white/20 text-white py-4 rounded-xl font-bold tracking-wide hover:bg-white hover:text-black transition-all">
             CONNECT {selectedChannel.toUpperCase()} TO CONTINUE
           </button>
         ) : (
