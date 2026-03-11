@@ -5,6 +5,7 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
 const supabase = createClient(supabaseUrl, supabaseKey);
 
+// GET: Fetch User Data & Quota
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
@@ -14,7 +15,6 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: "Email is required" }, { status: 400 });
     }
 
-    // Fetch user configuration and plan limits
     const { data: config, error: configError } = await supabase
       .from("user_configs")
       .select("*")
@@ -25,8 +25,7 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: "User configuration not found" }, { status: 404 });
     }
 
-    // Fetch total usage to calculate remaining tokens
-    const { data: usageData, error: usageError } = await supabase
+    const { data: usageData } = await supabase
       .from("usage_logs")
       .select("estimated_tokens")
       .eq("email", email);
@@ -44,11 +43,36 @@ export async function GET(req: Request) {
         isUnlimited: config.is_unlimited,
         telegramActive: !!config.telegram_token,
         whatsappActive: !!config.whatsapp_token,
+        systemPrompt: config.system_prompt || "You are an advanced enterprise AI assistant."
       }
     });
 
   } catch (error: any) {
-    console.error("User API Error:", error);
+    console.error("User API GET Error:", error);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+  }
+}
+
+// PUT: Update Bot System Prompt
+export async function PUT(req: Request) {
+  try {
+    const body = await req.json();
+    const { email, systemPrompt } = body;
+
+    if (!email || !systemPrompt) {
+      return NextResponse.json({ success: false, error: "Missing required fields" }, { status: 400 });
+    }
+
+    const { error } = await supabase
+      .from("user_configs")
+      .update({ system_prompt: systemPrompt })
+      .eq("email", email);
+
+    if (error) throw new Error(error.message);
+
+    return NextResponse.json({ success: true, message: "Persona updated successfully" });
+  } catch (error: any) {
+    console.error("User API PUT Error:", error);
+    return NextResponse.json({ success: false, error: "Failed to update persona" }, { status: 500 });
   }
 }
