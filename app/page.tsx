@@ -5,43 +5,55 @@ import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import LandingUI from "../components/LandingUI";
 
-// 🚀 NAYA: Balanced Pricing to beat OpenClaw (High Profit Margin)
-const MODEL_DETAILS: Record<string, { name: string; starter: number; pro: number }> = {
-  gemini: { name: "Gemini 3 Flash", starter: 9, pro: 19 }, // Sasta model, low price
-  "gpt-5.2": { name: "GPT-5.2", starter: 19, pro: 39 }, // Standard model
-  claude: { name: "Opus 4.6", starter: 29, pro: 59 } // Premium model, high API cost
+// 🌍 Helper function to read cookies on the client side
+const getCookie = (name: string) => {
+  if (typeof document === 'undefined') return null;
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+  if (parts.length === 2) return parts.pop()?.split(';').shift();
+  return null;
 };
-const MAX_PLAN_PRICE = 89; // The Ultimate Omni Plan
+
+const MODEL_DETAILS: Record<string, { name: string; starter: number; pro: number }> = {
+  gemini: { name: "Gemini 3 Flash", starter: 9, pro: 19 },
+  "gpt-5.2": { name: "GPT-5.2", starter: 19, pro: 39 }, 
+  claude: { name: "Opus 4.6", starter: 29, pro: 59 } 
+};
+const MAX_PLAN_PRICE = 89; 
 
 export default function Home() {
   const { data: session, status } = useSession();
   
-  // States
   const [isTelegramModalOpen, setIsTelegramModalOpen] = useState(false);
   const [telegramToken, setTelegramToken] = useState("");
   const [isTokenSaved, setIsTokenSaved] = useState(false);
+  
   const [showPricingPopup, setShowPricingPopup] = useState(false);
   const [isDeploying, setIsDeploying] = useState(false);
   const [botLink, setBotLink] = useState("");
+  
   const [activeModel, setActiveModel] = useState("gpt-5.2");
   const [activeChannel, setActiveChannel] = useState("telegram");
   const [selectedTier, setSelectedTier] = useState<"starter" | "pro" | "max">("pro"); 
   
-  // 🌍 Global Pricing State
   const [currency, setCurrency] = useState<"USD" | "INR">("USD");
   const [currencySymbol, setCurrencySymbol] = useState("$");
-  const EXCHANGE_RATE = 83; // 1 USD = ~83 INR
+  const EXCHANGE_RATE = 83; 
 
   useEffect(() => {
-    // Check user's country
-    fetch("https://ipapi.co/json/")
-      .then(res => res.json())
-      .then(data => {
-        if (data.country_code === "IN") {
-          setCurrency("INR");
-          setCurrencySymbol("₹");
-        }
-      }).catch(err => console.log("Location fetch failed", err));
+    // 🚀 ULTRA-FAST EDGE DETECTION (Reads cookie set by middleware)
+    // This is unblockable and instantaneous.
+    const countryCode = getCookie('user-country');
+    console.log("Detected Country:", countryCode); // Debugging ke liye
+
+    if (countryCode === 'IN') {
+      setCurrency("INR");
+      setCurrencySymbol("₹");
+    } else {
+      // Default is already USD, no action needed for rest of world
+      setCurrency("USD");
+      setCurrencySymbol("$");
+    }
 
     const script = document.createElement("script");
     script.src = "https://checkout.razorpay.com/v1/checkout.js";
@@ -63,7 +75,6 @@ export default function Home() {
 
   const getCurrentPrice = (tier = selectedTier) => {
     let basePrice = tier === "max" ? MAX_PLAN_PRICE : (MODEL_DETAILS[activeModel]?.[tier as "starter"|"pro"] || 39);
-    // Convert to INR if user is in India
     return currency === "INR" ? basePrice * EXCHANGE_RATE : basePrice;
   };
 
@@ -75,7 +86,6 @@ export default function Home() {
       const response = await fetch("/api/razorpay", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        // Send the correct currency to Razorpay (INR ya USD)
         body: JSON.stringify({ amount: finalPrice * 100, currency: currency }), 
       });
       const order = await response.json();
@@ -83,8 +93,9 @@ export default function Home() {
       const options = {
         key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID, 
         amount: order.amount,
-        currency: order.currency, // Razorpay ab INR dekhega toh UPI/QR sab dega
-        name: "ClawLink Premium",
+        currency: order.currency, 
+        // ✏️ UPDATED TITLE HERE AS REQUESTED
+        name: "Pay & Link & Finish",
         description: `Plan: ${selectedTier.toUpperCase()} | Model: ${selectedTier === 'max' ? 'ALL' : MODEL_DETAILS[activeModel]?.name}`,
         order_id: order.id,
         handler: async function (response: any) {
