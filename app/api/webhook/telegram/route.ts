@@ -1,115 +1,91 @@
 import { NextRequest, NextResponse } from "next/server";
-import { supabase } from "../../../lib/supabase"; 
-import { generateAIReply } from "../../../lib/ai-router"; 
+import { supabase } from "@/app/lib/supabase"; // Path alias fixed
+import { generateAIReply } from "@/app/lib/ai-router"; // Path alias fixed
 
 export async function POST(req: NextRequest) {
-  let chatIdToReply: string | null = null;
-  const botToken = req.nextUrl.searchParams.get("token");
-
   try {
+    // 1. URL se token nikalna
+    const { searchParams } = new URL(req.url);
+    const token = searchParams.get("token");
+
+    if (!token) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
     const body = await req.json();
     const message = body.message;
 
     if (!message || !message.text) return NextResponse.json({ ok: true });
 
-    chatIdToReply = message.chat.id.toString();
+    const chatId = message.chat.id;
     const userText = message.text;
 
-    // 1. Fetch Config & Plan Info from Supabase
+    // 2. Supabase se User ki details nikalna
     const { data: config, error: configErr } = await supabase
       .from("user_configs")
       .select("*")
-      .eq("telegram_token", botToken)
+      .eq("telegram_token", token)
       .single();
 
     if (configErr || !config) {
-      console.error("❌ Telegram Config Not Found for Token:", botToken);
+      console.error("Bot Config not found!");
       return NextResponse.json({ ok: true });
     }
 
-    // 2. 🚨 THE GATEKEEPER: Check Token Limits
-    if (!config.is_unlimited && config.available_tokens <= 0) {
-       const upgradeMsg = "⚠️ *ClawLink Alert*\nAapke account ka AI quota khatam ho gaya hai. Kripya naye tokens recharge karein ya Pro plan mein upgrade karein! 🚀";
-       
-       await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
-         method: "POST",
-         headers: { "Content-Type": "application/json" },
-         body: JSON.stringify({ chat_id: chatIdToReply, text: upgradeMsg }),
-       });
-       
-       return NextResponse.json({ ok: true }); // Rok do, AI ko call mat karo
+    // ==========================================
+    // 🚀 NEW: QUOTA CHECKER (THE PAYWALL)
+    // ==========================================
+    const tokenLimit = config.available_tokens || 50000;
+    
+    // Check total tokens used by this email
+    const { data: usageData } = await supabase
+      .from("usage_logs")
+      .select("estimated_tokens")
+      .eq("email", config.email);
+
+    const tokensUsed = usageData?.reduce((sum: number, record: any) => sum + (record.estimated_tokens || 0), 0) || 0;
+
+    // Agar limit cross ho gayi aur plan "Unlimited/Pro" nahi hai
+    if (tokensUsed >= tokenLimit && !config.is_unlimited) {
+      const upgradeMsg = `⚠️ *ClawLink Alert:*\n\nYour AI word quota (${tokenLimit.toLocaleString()} words) has been exhausted.\n\nPlease visit your dashboard to upgrade your plan and restore bot functionality: https://clawlink.com/dashboard`;
+      
+      await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ chat_id: chatId, text: upgradeMsg, parse_mode: "Markdown" }),
+      });
+      
+      // Yahan se return kar denge taaki AI API hit na ho (Aapke paise bachenge)
+      return NextResponse.json({ ok: true });
     }
+    // ==========================================
 
-    // 3. FETCH MEMORY (Chat History) 🧠
-    const { data: historyData } = await supabase
-      .from("chat_history")
-      .select("*")
-      .eq("session_id", chatIdToReply)
-      .order("created_at", { ascending: true })
-      .limit(20);
-
-    const history = historyData || [];
-
-    // 4. 🚀 MASTER AI ROUTER KO CALL KARNA
+    // 3. Agar quota hai, toh AI se reply maango
     const provider = config.ai_provider || "gemini";
     const modelName = config.ai_model || "gemini-1.5-flash";
+    const systemPrompt = config.system_prompt || "You are an advanced AI assistant.";
 
-    const aiReply = await generateAIReply(
-      provider,
-      modelName,
-      config.system_prompt || "You are a helpful AI.",
-      history,
-      userText
-    );
+    const aiReply = await generateAIReply(provider, modelName, systemPrompt, [], userText);
 
-    // 5. Send Reply to Telegram
-    await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+    // 4. Telegram par reply bhejna
+    await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ chat_id: chatIdToReply, text: aiReply }),
+      body: JSON.stringify({
+        chat_id: chatId,
+        text: aiReply,
+      }),
     });
 
-    // 6. SAVE MEMORY
-    await supabase.from("chat_history").insert([
-      { session_id: chatIdToReply, role: "user", message: userText },
-      { session_id: chatIdToReply, role: "assistant", message: aiReply }
-    ]);
-
-    // 7. 💰 THE ACCOUNTANT: Token Deduction & Usage Logging
-    const estimatedTokens = Math.ceil((userText.length + aiReply.length) / 4);
-
+    // 5. Usage Log save karna Supabase mein
     await supabase.from("usage_logs").insert({
       email: config.email,
-      bot_token: botToken,
-      model_used: `${provider}-${modelName}`,
-      estimated_tokens: estimatedTokens
+      channel: "telegram",
+      model_used: modelName,
+      estimated_tokens: userText.split(" ").length + aiReply.split(" ").length // Rough word count
     });
-
-    // Agar user Pro nahi hai, toh uske balance se tokens kaat lo
-    if (!config.is_unlimited) {
-      const newBalance = Math.max(0, config.available_tokens - estimatedTokens);
-      await supabase
-        .from("user_configs")
-        .update({ available_tokens: newBalance })
-        .eq("telegram_token", botToken);
-    }
 
     return NextResponse.json({ ok: true });
   } catch (error: any) {
-    console.error("🚨 CRITICAL ERROR:", error.message);
-    
-    // Exact system error messages directly to the Telegram bot for debugging (NEVER hide them)
-    if (chatIdToReply && botToken) {
-       const userFriendlyMsg = "⚠️ *ClawLink Alert*\nAI server abhi busy hai ya error face kar raha hai. Kripya thodi der baad try karein! 🙏\n\n----------------------------\n🛠️ DEBUG INFO (System Error):\n" + error.message;
-
-       await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
-         method: "POST",
-         headers: { "Content-Type": "application/json" },
-         body: JSON.stringify({ chat_id: chatIdToReply, text: userFriendlyMsg }),
-       });
-    }
-
-    // 🚀 FIX: Hamesha {ok: true} return karein taaki spam na ho
+    console.error("🚨 TELEGRAM WEBHOOK ERROR:", error.message);
     return NextResponse.json({ ok: true });
   }
 }
