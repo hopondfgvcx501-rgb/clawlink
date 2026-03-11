@@ -31,8 +31,8 @@ export async function POST(req: Request) {
     } catch (flashError: any) {
       console.warn("Gemini Flash failed, falling back to Pro...");
       try {
-        // 🔄 2. FALLBACK: Agar Flash fail hua, toh Gemini Pro use karo
-        const fallbackModel = genAI.getGenerativeModel({ model: "gemini-pro" });
+        // 🔄 2. FALLBACK FIX: Yahan 'gemini-1.5-pro' kar diya hai
+        const fallbackModel = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
         const result = await fallbackModel.generateContent(userText);
         aiReply = result.response.text();
         
