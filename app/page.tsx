@@ -5,29 +5,44 @@ import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import LandingUI from "../components/LandingUI";
 
+// 🚀 NAYA: Balanced Pricing to beat OpenClaw (High Profit Margin)
 const MODEL_DETAILS: Record<string, { name: string; starter: number; pro: number }> = {
-  gemini: { name: "Gemini 3 Flash", starter: 15, pro: 29 },
-  "gpt-5.2": { name: "GPT-5.2", starter: 25, pro: 49 },
-  claude: { name: "Opus 4.6", starter: 35, pro: 69 }
+  gemini: { name: "Gemini 3 Flash", starter: 9, pro: 19 }, // Sasta model, low price
+  "gpt-5.2": { name: "GPT-5.2", starter: 19, pro: 39 }, // Standard model
+  claude: { name: "Opus 4.6", starter: 29, pro: 59 } // Premium model, high API cost
 };
-const MAX_PLAN_PRICE = 99; 
+const MAX_PLAN_PRICE = 89; // The Ultimate Omni Plan
 
 export default function Home() {
   const { data: session, status } = useSession();
   
+  // States
   const [isTelegramModalOpen, setIsTelegramModalOpen] = useState(false);
   const [telegramToken, setTelegramToken] = useState("");
   const [isTokenSaved, setIsTokenSaved] = useState(false);
-  
   const [showPricingPopup, setShowPricingPopup] = useState(false);
   const [isDeploying, setIsDeploying] = useState(false);
   const [botLink, setBotLink] = useState("");
-  
   const [activeModel, setActiveModel] = useState("gpt-5.2");
   const [activeChannel, setActiveChannel] = useState("telegram");
   const [selectedTier, setSelectedTier] = useState<"starter" | "pro" | "max">("pro"); 
+  
+  // 🌍 Global Pricing State
+  const [currency, setCurrency] = useState<"USD" | "INR">("USD");
+  const [currencySymbol, setCurrencySymbol] = useState("$");
+  const EXCHANGE_RATE = 83; // 1 USD = ~83 INR
 
   useEffect(() => {
+    // Check user's country
+    fetch("https://ipapi.co/json/")
+      .then(res => res.json())
+      .then(data => {
+        if (data.country_code === "IN") {
+          setCurrency("INR");
+          setCurrencySymbol("₹");
+        }
+      }).catch(err => console.log("Location fetch failed", err));
+
     const script = document.createElement("script");
     script.src = "https://checkout.razorpay.com/v1/checkout.js";
     script.async = true;
@@ -46,9 +61,10 @@ export default function Home() {
     setShowPricingPopup(true);
   };
 
-  const getCurrentPrice = () => {
-    if (selectedTier === "max") return MAX_PLAN_PRICE;
-    return MODEL_DETAILS[activeModel]?.[selectedTier] || 49;
+  const getCurrentPrice = (tier = selectedTier) => {
+    let basePrice = tier === "max" ? MAX_PLAN_PRICE : (MODEL_DETAILS[activeModel]?.[tier as "starter"|"pro"] || 39);
+    // Convert to INR if user is in India
+    return currency === "INR" ? basePrice * EXCHANGE_RATE : basePrice;
   };
 
   const triggerRazorpayPayment = async () => {
@@ -59,14 +75,15 @@ export default function Home() {
       const response = await fetch("/api/razorpay", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ amount: finalPrice * 100, currency: "USD" }), 
+        // Send the correct currency to Razorpay (INR ya USD)
+        body: JSON.stringify({ amount: finalPrice * 100, currency: currency }), 
       });
       const order = await response.json();
 
       const options = {
         key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID, 
         amount: order.amount,
-        currency: order.currency,
+        currency: order.currency, // Razorpay ab INR dekhega toh UPI/QR sab dega
         name: "ClawLink Premium",
         description: `Plan: ${selectedTier.toUpperCase()} | Model: ${selectedTier === 'max' ? 'ALL' : MODEL_DETAILS[activeModel]?.name}`,
         order_id: order.id,
@@ -135,7 +152,6 @@ export default function Home() {
           </button>
         ) : (
           <button onClick={() => handleOpenPricing(selectedModel, selectedChannel)} className="w-full bg-white text-black py-4 rounded-xl font-bold tracking-wide shadow-[0_0_30px_rgba(255,255,255,0.2)] hover:scale-[1.02] transition-all flex justify-center items-center gap-3">
-            {/* 🚀 NAYA CLAWLINK LOGO SVG (Premium Spark/Link Mix) */}
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-black">
               <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
               <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
@@ -151,10 +167,8 @@ export default function Home() {
   return (
     <div className="bg-[#0A0A0B] min-h-screen relative text-white">
       
-      {/* 🚀 PASSING THE LOCK STATE TO UI */}
       <LandingUI renderActionArea={renderDynamicButtons} isLocked={isTokenSaved} />
 
-      {/* 🌟 TELEGRAM VIDEO MODAL */}
       <AnimatePresence>
         {isTelegramModalOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-sm p-4">
@@ -215,7 +229,6 @@ export default function Home() {
         )}
       </AnimatePresence>
 
-      {/* 🌟 3. 3-TIER PRICING POPUP MODAL */}
       <AnimatePresence>
         {showPricingPopup && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-md p-4 overflow-y-auto">
@@ -232,7 +245,7 @@ export default function Home() {
                 <div onClick={() => setSelectedTier("starter")} className={`relative p-6 rounded-2xl border transition-all cursor-pointer ${selectedTier === "starter" ? "bg-[#111] border-white shadow-[0_0_20px_rgba(255,255,255,0.1)] scale-105 z-10" : "bg-black border-white/10 hover:border-white/30"}`}>
                   <h3 className="text-gray-400 font-bold uppercase tracking-widest text-xs mb-2">Starter</h3>
                   <div className="text-3xl font-black text-white mb-4">
-                    ${MODEL_DETAILS[activeModel]?.starter}<span className="text-sm font-normal text-gray-500">/mo</span>
+                    {currencySymbol}{getCurrentPrice("starter")}<span className="text-sm font-normal text-gray-500">/mo</span>
                   </div>
                   <p className="text-sm text-gray-300 font-medium mb-6">Limited tokens specifically for {MODEL_DETAILS[activeModel]?.name}. Best for personal use.</p>
                   <div className="w-4 h-4 rounded-full border-2 border-gray-500 flex items-center justify-center ml-auto">
@@ -244,9 +257,9 @@ export default function Home() {
                   <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-blue-500 text-white text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-full">Most Popular</div>
                   <h3 className="text-blue-400 font-bold uppercase tracking-widest text-xs mb-2">Pro</h3>
                   <div className="text-3xl font-black text-white mb-4">
-                    ${MODEL_DETAILS[activeModel]?.pro}<span className="text-sm font-normal text-gray-500">/mo</span>
+                    {currencySymbol}{getCurrentPrice("pro")}<span className="text-sm font-normal text-gray-500">/mo</span>
                   </div>
-                  <p className="text-sm text-gray-300 font-medium mb-6">Unlimited credits and priority routing for {MODEL_DETAILS[activeModel]?.name}.</p>
+                  <p className="text-sm text-gray-300 font-medium mb-6">Unlimited credits and Priority Routing for {MODEL_DETAILS[activeModel]?.name}.</p>
                   <div className="w-4 h-4 rounded-full border-2 border-blue-500 flex items-center justify-center ml-auto">
                     {selectedTier === "pro" && <div className="w-2 h-2 bg-blue-500 rounded-full"></div>}
                   </div>
@@ -256,9 +269,9 @@ export default function Home() {
                   <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-gradient-to-r from-orange-500 to-pink-500 text-white text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-full">Ultimate</div>
                   <h3 className="text-orange-400 font-bold uppercase tracking-widest text-xs mb-2">Omni Max</h3>
                   <div className="text-3xl font-black text-white mb-4">
-                    ${MAX_PLAN_PRICE}<span className="text-sm font-normal text-gray-500">/mo</span>
+                    {currencySymbol}{getCurrentPrice("max")}<span className="text-sm font-normal text-gray-500">/mo</span>
                   </div>
-                  <p className="text-sm text-gray-300 font-medium mb-6">Multi-AI access. Use GPT, Claude, and Gemini simultaneously without limits.</p>
+                  <p className="text-sm text-gray-300 font-medium mb-6">Multi-AI access. Use GPT, Claude, and Gemini simultaneously with Lightning Speed.</p>
                   <div className="w-4 h-4 rounded-full border-2 border-orange-500 flex items-center justify-center ml-auto">
                     {selectedTier === "max" && <div className="w-2 h-2 bg-orange-500 rounded-full"></div>}
                   </div>
@@ -266,7 +279,7 @@ export default function Home() {
               </div>
 
               <button onClick={triggerRazorpayPayment} disabled={isDeploying} className="w-full max-w-sm mx-auto bg-white text-black hover:bg-gray-200 font-black py-4 rounded-xl transition-all uppercase tracking-widest text-sm shadow-[0_0_20px_rgba(255,255,255,0.2)] flex justify-center items-center gap-2">
-                {isDeploying ? <span className="animate-spin text-xl">⚙️</span> : `Pay Securely $${getCurrentPrice()}`}
+                {isDeploying ? <span className="animate-spin text-xl">⚙️</span> : `Pay Securely ${currencySymbol}${getCurrentPrice()}`}
               </button>
               <p className="mt-4 text-[10px] text-gray-500 uppercase tracking-widest font-bold">Secured by Razorpay</p>
             </motion.div>

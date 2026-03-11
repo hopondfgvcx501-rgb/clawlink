@@ -1,91 +1,77 @@
-import { NextRequest, NextResponse } from "next/server";
-import { supabase } from "@/app/lib/supabase"; // Path alias fixed
-import { generateAIReply } from "@/app/lib/ai-router"; // Path alias fixed
+import { NextResponse } from "next/server";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
-export async function POST(req: NextRequest) {
+// API key process.env se le rahe hain (Kabhi hardcode nahi karna)
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
+
+export async function POST(req: Request) {
+  let chatId = null;
+  let botToken = process.env.TELEGRAM_BOT_TOKEN!; // Test karne ke liye Env variable use karenge
+
   try {
-    // 1. URL se token nikalna
-    const { searchParams } = new URL(req.url);
-    const token = searchParams.get("token");
-
-    if (!token) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
     const body = await req.json();
+    
+    // Telegram message body ke andar text bhejta hai
     const message = body.message;
+    if (!message || !message.text) {
+      return NextResponse.json({ ok: true }); // Agar photo/sticker ho toh ignore karo (abhi ke liye)
+    }
 
-    if (!message || !message.text) return NextResponse.json({ ok: true });
-
-    const chatId = message.chat.id;
+    chatId = message.chat.id;
     const userText = message.text;
 
-    // 2. Supabase se User ki details nikalna
-    const { data: config, error: configErr } = await supabase
-      .from("user_configs")
-      .select("*")
-      .eq("telegram_token", token)
-      .single();
+    let aiReply = "";
 
-    if (configErr || !config) {
-      console.error("Bot Config not found!");
-      return NextResponse.json({ ok: true });
+    try {
+      // 🚀 1. AUTO-FALLBACK LOGIC: Pehle Fast & Sasta model try karo
+      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+      const result = await model.generateContent(userText);
+      aiReply = result.response.text();
+      
+    } catch (flashError: any) {
+      console.warn("Gemini Flash failed, falling back to Pro...");
+      try {
+        // 🔄 2. FALLBACK: Agar Flash fail hua, toh Gemini Pro use karo
+        const fallbackModel = genAI.getGenerativeModel({ model: "gemini-pro" });
+        const result = await fallbackModel.generateContent(userText);
+        aiReply = result.response.text();
+        
+      } catch (proError: any) {
+        // Dono fail ho gaye toh error feko
+        throw new Error(`AI_FALLBACK_FAILED: ${proError.message}`);
+      }
     }
 
-    // ==========================================
-    // 🚀 NEW: QUOTA CHECKER (THE PAYWALL)
-    // ==========================================
-    const tokenLimit = config.available_tokens || 50000;
-    
-    // Check total tokens used by this email
-    const { data: usageData } = await supabase
-      .from("usage_logs")
-      .select("estimated_tokens")
-      .eq("email", config.email);
-
-    const tokensUsed = usageData?.reduce((sum: number, record: any) => sum + (record.estimated_tokens || 0), 0) || 0;
-
-    // Agar limit cross ho gayi aur plan "Unlimited/Pro" nahi hai
-    if (tokensUsed >= tokenLimit && !config.is_unlimited) {
-      const upgradeMsg = `⚠️ *ClawLink Alert:*\n\nYour AI word quota (${tokenLimit.toLocaleString()} words) has been exhausted.\n\nPlease visit your dashboard to upgrade your plan and restore bot functionality: https://clawlink.com/dashboard`;
-      
-      await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ chat_id: chatId, text: upgradeMsg, parse_mode: "Markdown" }),
-      });
-      
-      // Yahan se return kar denge taaki AI API hit na ho (Aapke paise bachenge)
-      return NextResponse.json({ ok: true });
-    }
-    // ==========================================
-
-    // 3. Agar quota hai, toh AI se reply maango
-    const provider = config.ai_provider || "gemini";
-    const modelName = config.ai_model || "gemini-1.5-flash";
-    const systemPrompt = config.system_prompt || "You are an advanced AI assistant.";
-
-    const aiReply = await generateAIReply(provider, modelName, systemPrompt, [], userText);
-
-    // 4. Telegram par reply bhejna
-    await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+    // 🚀 3. TELEGRAM KO WAPAS JAWAB BHEJO
+    await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         chat_id: chatId,
         text: aiReply,
-      }),
-    });
-
-    // 5. Usage Log save karna Supabase mein
-    await supabase.from("usage_logs").insert({
-      email: config.email,
-      channel: "telegram",
-      model_used: modelName,
-      estimated_tokens: userText.split(" ").length + aiReply.split(" ").length // Rough word count
+        parse_mode: "Markdown"
+      })
     });
 
     return NextResponse.json({ ok: true });
+
   } catch (error: any) {
-    console.error("🚨 TELEGRAM WEBHOOK ERROR:", error.message);
-    return NextResponse.json({ ok: true });
+    console.error("🚨 Webhook Error:", error);
+    
+    // ⚠️ AAPKI REQUEST: Error ko kabhi hide nahi karna, seedha Telegram par bhejna hai!
+    if (chatId && botToken) {
+      await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          chat_id: chatId,
+          text: `🚨 *SYSTEM ERROR (Do Not Hide):*\n\n\`${error.message}\``,
+          parse_mode: "Markdown"
+        })
+      });
+    }
+
+    // Vercel logs ke liye bhi return karo
+    return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
   }
 }
