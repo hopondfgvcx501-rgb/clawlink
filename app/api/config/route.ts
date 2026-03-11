@@ -1,117 +1,53 @@
 import { NextResponse } from "next/server";
-import { supabase } from "../../lib/supabase"; // 🚀 EXACT PATH (Sirf 2 step peeche)
 
-export async function GET(request: Request) {
+export async function POST(req: Request) {
   try {
-    const { searchParams } = new URL(request.url);
-    const email = searchParams.get("email");
+    const body = await req.json();
+    const { email, selectedModel, selectedChannel, telegramToken } = body;
 
-    if (!email) return NextResponse.json({ error: "Email is required" }, { status: 400 });
-
-    const { data: configData, error: configError } = await supabase
-      .from("user_configs")
-      .select("*")
-      .eq("email", email)
-      .single();
-
-    if (configError && configError.code !== "PGRST116") throw configError;
-
-    let totalTokensUsed = 0;
-    const { data: usageData, error: usageError } = await supabase
-      .from("usage_logs")
-      .select("estimated_tokens")
-      .eq("email", email);
-
-    if (!usageError && usageData) {
-      totalTokensUsed = usageData.reduce((sum: number, record: any) => sum + (record.estimated_tokens || 0), 0);
+    if (!telegramToken) {
+      return NextResponse.json({ success: false, error: "Telegram token is missing" }, { status: 400 });
     }
 
-    let uiSelectedModel = "gemini";
-    if (configData?.ai_provider === "openai") uiSelectedModel = "gpt";
-    if (configData?.ai_provider === "anthropic") uiSelectedModel = "claude";
+    // 🚀 STEP 1: Telegram Webhook Set Karna
+    // (Yeh Telegram ko batayega ki jab bhi koi message aaye, toh hamare Vercel URL par bhejo)
+    
+    // Note: Localhost pe webhook set nahi hota, Vercel ka live URL chahiye. 
+    // Isliye hum hardcode nahi kar rahe, environment variable use kar rahe hain.
+    const baseUrl = process.env.NEXTAUTH_URL || "https://clawlink-six.vercel.app"; 
+    const WEBHOOK_URL = `${baseUrl}/api/webhook/telegram`;
+    
+    const telegramRes = await fetch(`https://api.telegram.org/bot${telegramToken}/setWebhook?url=${WEBHOOK_URL}`);
+    const telegramData = await telegramRes.json();
 
-    const formattedData = configData ? {
-      selectedModel: uiSelectedModel,
-      selectedChannel: configData.selected_channel || "telegram",
-      telegramToken: configData.telegram_token || "",
-      whatsappToken: configData.whatsapp_token || "",        
-      whatsappPhoneId: configData.whatsapp_phone_id || "",   
-      systemPrompt: configData.system_prompt || "You are an advanced AI assistant.",
-      tokensUsed: totalTokensUsed,
-      tokenLimit: configData.available_tokens || 50000 
-    } : null;
+    if (!telegramData.ok) {
+      // Exact error bhej rahe hain bina hide kiye
+      return NextResponse.json({ 
+        success: false, 
+        error: `Telegram Webhook Failed: ${telegramData.description}` 
+      }, { status: 500 });
+    }
 
-    return NextResponse.json({ success: true, data: formattedData });
+    // 🚀 STEP 2: Supabase mein Save Karna (Yeh hum agle step mein setup karenge)
+    // console.log("Saving to database...", email, selectedModel);
+
+    // 🚀 STEP 3: Bot ka Username nikalna taaki Success Button ban sake
+    const meRes = await fetch(`https://api.telegram.org/bot${telegramToken}/getMe`);
+    const meData = await meRes.json();
+    const botUsername = meData.ok ? meData.result.username : "your_bot";
+
+    // ✅ SUCCESS: Frontend ko bot ka link bhej do
+    return NextResponse.json({ 
+      success: true, 
+      botLink: `https://t.me/${botUsername}` 
+    });
+
   } catch (error: any) {
-    console.error("🚨 GET Config Error:", error.message);
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
-  }
-}
-
-export async function POST(request: Request) {
-  try {
-    const body = await request.json();
-    const { email, selectedModel, selectedChannel, telegramToken, whatsappToken, whatsappPhoneId, systemPrompt } = body;
-
-    if (!email) return NextResponse.json({ error: "Missing identity" }, { status: 400 });
-
-    let aiProvider = "gemini";
-    let aiModelName = "gemini-2.5-flash"; 
-
-    if (selectedModel === "gpt") {
-      aiProvider = "openai";
-      aiModelName = "gpt-4.5"; 
-    } else if (selectedModel === "claude") {
-      aiProvider = "anthropic";
-      aiModelName = "claude-4.6-haiku";
-    }
-
-    // 🚀 NEW LOGIC: Auto-Set Telegram Webhook & Fetch Bot Info
-    let botLink = "";
-    if (selectedChannel === "telegram" && telegramToken) {
-       const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://clawlink-six.vercel.app";
-       const webhookUrl = `${baseUrl}/api/webhook/telegram?token=${telegramToken}`;
-       
-       // 1. Set Webhook automatically
-       const webhookRes = await fetch(`https://api.telegram.org/bot${telegramToken}/setWebhook?url=${webhookUrl}`);
-       const webhookData = await webhookRes.json();
-       
-       if (!webhookData.ok) {
-          throw new Error("Telegram API rejected the webhook setup.");
-       }
-
-       // 2. Fetch Bot Username to generate the exact t.me link
-       const meRes = await fetch(`https://api.telegram.org/bot${telegramToken}/getMe`);
-       const meData = await meRes.json();
-       
-       if (meData.ok && meData.result.username) {
-          botLink = `https://t.me/${meData.result.username}`;
-       }
-    }
-
-    // Save to Supabase
-    const { data, error } = await supabase
-      .from("user_configs")
-      .upsert({ 
-        email, 
-        ai_provider: aiProvider,
-        ai_model: aiModelName,
-        selected_channel: selectedChannel || "telegram", 
-        telegram_token: telegramToken || null, 
-        whatsapp_token: whatsappToken || null,        
-        whatsapp_phone_id: whatsappPhoneId || null,   
-        system_prompt: systemPrompt || "You are an advanced AI assistant.",
-        bot_link: botLink // Assuming you add this column later, or we just return it
-      }, { onConflict: 'email' })
-      .select()
-      .single();
-
-    if (error) throw error;
-
-    // Return the botLink to the frontend so we can show the "Success UI"
-    return NextResponse.json({ success: true, botLink: botLink, data });
-  } catch (error: any) {
-    console.error("🚨 POST Config Error:", error.message);
-    return NextResponse.json({ error: "Failed to persist configuration" }, { status: 500 });
+    console.error("🚨 Config API Error:", error);
+    // Exact system error wapas frontend par bhej rahe hain debugging ke liye
+    return NextResponse.json(
+      { success: false, error: error.message || "Unknown Server Error" }, 
+      { status: 500 }
+    );
   }
 }
