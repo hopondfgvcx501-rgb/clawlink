@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
-import { motion } from "framer-motion";
-import { CheckCircle2, ChevronRight } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { CheckCircle2, ChevronRight, HelpCircle, X, Send } from "lucide-react";
 import StarBackground from "./StarBackground";
 
 interface ModelType {
@@ -27,6 +27,13 @@ export default function LandingUI({ renderActionArea, isLocked = false }: Landin
   const [selectedModel, setSelectedModel] = useState<string>("gpt-5.2");
   const [selectedChannel, setSelectedChannel] = useState<string>("telegram");
 
+  // Support Modal State
+  const [isSupportOpen, setIsSupportOpen] = useState(false);
+  const [supportEmail, setSupportEmail] = useState("");
+  const [supportType, setSupportType] = useState("Technical Issue");
+  const [supportDesc, setSupportDesc] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const models: ModelType[] = [
     { id: "gpt-5.2", name: "GPT-5.2", icon: <svg className="w-5 h-5" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path fill="#10A37F" d="M22.2819 9.8211a5.9847 5.9847 0 0 0-.5157-4.9108 6.0462 6.0462 0 0 0-6.5098-2.9A6.0651 6.0651 0 0 0 4.9807 4.1818a5.9847 5.9847 0 0 0-3.9977 2.9 6.0462 6.0462 0 0 0 .7427 7.0966 5.98 5.98 0 0 0 .511 4.9107 6.051 6.051 0 0 0 6.5146 2.9001A5.9847 5.9847 0 0 0 13.2599 24a6.0557 6.0557 0 0 0 5.7718-4.2058 5.9894 5.9894 0 0 0 3.9977-2.9001 6.0557 6.0557 0 0 0-.7475-7.073zM13.2599 22.0627a4.123 4.123 0 0 1-3.565-2.0076l1.3268-1.3268a2.128 2.128 0 0 0 3.0073 0l5.881-5.881a4.123 4.123 0 0 1-6.65 9.2154zM5.9847 19.1627a4.123 4.123 0 0 1-2.0076-3.565l1.3268 1.3268a2.128 2.128 0 0 0 0-3.0073l-5.881-5.881a4.123 4.123 0 0 1 6.5618 11.1265zM2.0076 9.8211A4.123 4.123 0 0 1 5.5726 7.8135L4.2458 9.1403a2.128 2.128 0 0 0 0 3.0073l5.881 5.881a4.123 4.123 0 0 1-8.1192-8.2075zM9.8211 2.0076a4.123 4.123 0 0 1 3.565 2.0076L12.0593 5.342a2.128 2.128 0 0 0-3.0073 0l-5.881 5.881a4.123 4.123 0 0 1 6.65-9.2154zM18.0153 4.8373a4.123 4.123 0 0 1 2.0076 3.565l-1.3268-1.3268a2.128 2.128 0 0 0 0 3.0073l5.881 5.881a4.123 4.123 0 0 1-6.5618-11.1265zM21.9924 14.1789a4.123 4.123 0 0 1-3.565 2.0076l1.3268-1.3268a2.128 2.128 0 0 0 0-3.0073l-5.881-5.881a4.123 4.123 0 0 1 8.1192 8.2075zM12 14.128A2.128 2.128 0 1 1 12 9.872a2.128 2.128 0 0 1 0 4.256z"/></svg> },
     { id: "claude", name: "Opus 4.6", icon: <svg className="w-5 h-5" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path fill="#D97757" d="M12 0l2.3 8.3c.2.6.7 1.1 1.3 1.3L24 12l-8.4 2.4c-.6.2-1.1.7-1.3 1.3L12 24l-2.3-8.3c-.2-.6-.7-1.1-1.3-1.3L0 12l8.4-2.4c.6-.2 1.1-.7 1.3-1.3L12 0z"/></svg> },
@@ -46,6 +53,35 @@ export default function LandingUI({ renderActionArea, isLocked = false }: Landin
   const row3 = ["Run payroll calculations", "Negotiate refunds", "Find best prices online", "Find discount codes", "Compare product specs"];
   const row4 = ["Write contracts and NDAs", "Research competitors", "Screen leads", "Generate invoices", "Monitor news and alerts"];
 
+  const submitSupportTicket = async () => {
+    if (!supportEmail || !supportDesc) {
+      alert("Please provide your email address and issue description.");
+      return;
+    }
+    
+    setIsSubmitting(true);
+    try {
+      const res = await fetch("/api/support", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: supportEmail, issueType: supportType, description: supportDesc })
+      });
+      const data = await res.json();
+      
+      if (data.success) {
+        alert("Support ticket created successfully. Our team will review this shortly.");
+        setIsSupportOpen(false);
+        setSupportDesc("");
+      } else {
+        alert("Error submitting ticket: " + data.error);
+      }
+    } catch (e) {
+      alert("Network error. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <main className="min-h-screen flex flex-col items-center pt-8 pb-20 px-4 relative overflow-x-hidden">
       <div className="fixed inset-0 z-[-1]">
@@ -55,13 +91,60 @@ export default function LandingUI({ renderActionArea, isLocked = false }: Landin
       <nav className="w-full max-w-6xl flex justify-between items-center mb-20 px-6">
         <div className="text-xl font-medium tracking-wider font-mono text-white">clawlink.com</div>
         <div className="flex gap-8 items-center text-sm tracking-widest uppercase font-semibold text-gray-400">
-          <span className="cursor-pointer hover:text-white transition">Home</span>
-          <span className="cursor-pointer hover:text-white transition">Features</span>
-          <button className="flex items-center gap-2 border border-white/20 px-4 py-2 rounded-md hover:bg-white/10 transition text-white">
-            <span className="w-4 h-4 bg-white rounded-full block"></span> Contact Support
+          <button onClick={() => setIsSupportOpen(true)} className="flex items-center gap-2 border border-white/20 px-4 py-2 rounded-lg hover:bg-white hover:text-black transition-all text-white group shadow-[0_0_15px_rgba(255,255,255,0.1)]">
+            <HelpCircle className="w-4 h-4 group-hover:text-black" /> Contact Support
           </button>
         </div>
       </nav>
+
+      <AnimatePresence>
+        {isSupportOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-sm p-4">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95 }} 
+              animate={{ opacity: 1, scale: 1 }} 
+              exit={{ opacity: 0, scale: 0.95 }} 
+              className="bg-[#0A0A0B] border border-white/20 rounded-3xl w-full max-w-lg p-8 shadow-[0_0_50px_rgba(255,255,255,0.1)] relative"
+            >
+              <button onClick={() => setIsSupportOpen(false)} className="absolute top-6 right-6 text-gray-500 hover:text-white transition-colors"><X className="w-5 h-5"/></button>
+              
+              <div className="flex items-center gap-3 mb-6">
+                <div className="p-3 bg-white/10 rounded-xl text-white"><HelpCircle className="w-6 h-6"/></div>
+                <div>
+                  <h2 className="text-2xl font-bold text-white tracking-tight">ClawLink Support</h2>
+                  <p className="text-xs text-gray-400 uppercase tracking-widest">Global Technical Desk</p>
+                </div>
+              </div>
+
+              <div className="space-y-5">
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Registered Email Address</label>
+                  <input type="email" value={supportEmail} onChange={(e) => setSupportEmail(e.target.value)} placeholder="your@email.com" className="w-full bg-[#111] border border-white/10 rounded-xl px-4 py-3 text-sm focus:border-white outline-none text-white transition-all"/>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Issue Category</label>
+                  <select value={supportType} onChange={(e) => setSupportType(e.target.value)} className="w-full bg-[#111] border border-white/10 rounded-xl px-4 py-3 text-sm focus:border-white outline-none text-white transition-all appearance-none cursor-pointer">
+                    <option>Technical Issue (Bot Offline)</option>
+                    <option>Billing & Subscription</option>
+                    <option>Integration Problem</option>
+                    <option>General Feedback / Feature Request</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Describe Your Problem</label>
+                  <textarea value={supportDesc} onChange={(e) => setSupportDesc(e.target.value)} placeholder="Please include your Bot ID or specific error messages so our admin team can assist you faster." rows={4} className="w-full bg-[#111] border border-white/10 rounded-xl px-4 py-3 text-sm focus:border-white outline-none text-white transition-all resize-none"></textarea>
+                </div>
+              </div>
+
+              <button onClick={submitSupportTicket} disabled={isSubmitting} className="w-full mt-8 bg-white text-black font-black py-4 rounded-xl text-sm hover:bg-gray-200 transition-all uppercase tracking-widest flex justify-center items-center gap-2">
+                {isSubmitting ? "Submitting..." : <><Send className="w-4 h-4"/> Submit Ticket</>}
+              </button>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       <div className="text-center max-w-3xl mb-16">
         <h1 className="text-4xl md:text-6xl font-bold mb-6 tracking-tight bg-clip-text text-transparent bg-gradient-to-b from-white to-white/60">Deploy ClawLink under 30 SECONDS</h1>
@@ -184,11 +267,12 @@ export default function LandingUI({ renderActionArea, isLocked = false }: Landin
 
       <footer className="w-full max-w-5xl mt-32 flex flex-col items-start px-6 border-t border-white/10 pt-16 pb-10">
         <h2 className="text-4xl font-bold mb-6 text-white">Deploy. Automate. Relax.</h2>
-        <button className="bg-[#FFA07A] text-black px-8 py-3 rounded-lg font-bold flex items-center gap-2 hover:bg-[#FF8C61] transition-colors">
-          Learn More <ChevronRight className="w-5 h-5" />
+        <button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="bg-[#FFA07A] text-black px-8 py-3 rounded-lg font-bold flex items-center gap-2 hover:bg-[#FF8C61] transition-colors">
+          Start Deploying <ChevronRight className="w-5 h-5" />
         </button>
-        <div className="w-full mt-20 pt-8 border-t border-white/10 text-xs text-gray-500 uppercase tracking-wider">
+        <div className="w-full mt-20 pt-8 border-t border-white/10 flex justify-between items-center text-xs text-gray-500 uppercase tracking-wider">
           <p>© 2026 CLAWLINK INC. GLOBAL AI SAAS INFRASTRUCTURE.</p>
+          <button onClick={() => setIsSupportOpen(true)} className="hover:text-white transition-colors">Help Desk</button>
         </div>
       </footer>
     </main>
