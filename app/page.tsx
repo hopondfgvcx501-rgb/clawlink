@@ -171,7 +171,7 @@ export default function Home() {
 
         {!isTokenSaved ? (
           <button onClick={() => handleOpenTelegram(selectedModel, selectedChannel)} className="w-full bg-[#1A1A1A] border border-white/20 text-white py-4 rounded-xl font-bold tracking-wide hover:bg-white hover:text-black transition-all">
-            CONNECT TELEGRAM TO CONTINUE
+            CONNECT {selectedChannel.toUpperCase()} TO CONTINUE
           </button>
         ) : (
           <button onClick={() => handleOpenPricing(selectedModel, selectedChannel)} className="w-full bg-white text-black py-4 rounded-xl font-bold tracking-wide shadow-[0_0_30px_rgba(255,255,255,0.2)] hover:scale-[1.02] transition-all flex justify-center items-center gap-3">
@@ -180,56 +180,71 @@ export default function Home() {
               <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
               <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41"></path>
             </svg>
-            Deploy ClawLink
+            Deploy OpenClaw
           </button>
         )}
       </motion.div>
     );
   };
 
+  // 🚀 Added dynamic theme colors for the pro modal
+  const themeColor = activeChannel === "telegram" ? "rgba(42, 171, 238, 0.15)" : "rgba(37, 211, 102, 0.15)";
+  const borderColor = activeChannel === "telegram" ? "border-blue-500/30" : "border-green-500/30";
+
   return (
     <div className="bg-[#0A0A0B] min-h-screen relative text-white">
       
       <LandingUI renderActionArea={renderDynamicButtons} isLocked={isTokenSaved} />
 
+      {/* 🌟 ENHANCED ENTERPRISE INTEGRATION MODAL */}
       <AnimatePresence>
         {isTelegramModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-sm p-4">
-            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="bg-[#111] border border-white/10 rounded-3xl w-full max-w-[900px] flex flex-col md:flex-row overflow-hidden shadow-[0_0_50px_rgba(0,0,0,0.5)] relative">
-              <button onClick={() => setIsTelegramModalOpen(false)} className="absolute top-4 right-4 z-20 text-[#888] hover:text-white bg-black/50 p-2 rounded-full">✕</button>
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95, y: 20 }} 
+              animate={{ opacity: 1, scale: 1, y: 0 }} 
+              exit={{ opacity: 0, scale: 0.95, y: 20 }} 
+              className={`bg-[#0A0A0B]/90 backdrop-blur-2xl border ${borderColor} rounded-3xl w-full max-w-[950px] flex flex-col md:flex-row overflow-hidden relative`}
+              style={{ boxShadow: `0 0 100px ${themeColor}` }}
+            >
+              <button onClick={() => setIsTelegramModalOpen(false)} className="absolute top-6 right-6 z-20 text-gray-500 hover:text-white bg-white/5 hover:bg-white/10 p-2 rounded-full transition-all">✕</button>
 
-              <div className="w-full md:w-[45%] p-8 flex flex-col justify-center">
+              {/* LEFT PANEL - INSTRUCTIONS & INPUT */}
+              <div className="w-full md:w-1/2 p-10 flex flex-col justify-center relative z-10">
                 
-                {/* 🚀 LOGIC: Check selected channel */}
                 {activeChannel === "telegram" ? (
                   <>
-                    <div className="flex items-center gap-3 mb-6">
-                      <div className="w-8 h-8 rounded-full bg-[#2AABEE] flex items-center justify-center text-white text-sm">✈️</div>
-                      <h2 className="text-[18px] font-bold text-white">Connect Telegram</h2>
+                    <div className="flex items-center gap-4 mb-8">
+                      <div className="w-12 h-12 rounded-2xl bg-[#2AABEE]/20 flex items-center justify-center text-[#2AABEE] shadow-[0_0_30px_rgba(42,171,238,0.3)]">
+                        <svg className="w-6 h-6" viewBox="0 0 24 24" fill="currentColor"><path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.892-.661 3.495-1.524 5.83-2.529 7.005-3.02 3.333-1.392 4.025-1.636 4.476-1.636z"/></svg>
+                      </div>
+                      <h2 className="text-2xl font-bold text-white tracking-tight">Connect Telegram</h2>
                     </div>
-                    <ol className="space-y-4 text-sm text-gray-400 list-decimal pl-4 mb-8 font-medium">
+                    <ol className="space-y-5 text-sm text-gray-300 list-decimal pl-5 mb-10 font-medium leading-relaxed">
                       <li>Open Telegram and search for <strong className="text-white">@BotFather</strong>.</li>
-                      <li>Send the command <code className="bg-black border border-white/10 px-2 py-1 rounded text-white">/newbot</code>.</li>
-                      <li>Provide a name and unique username for your AI agent.</li>
-                      <li>BotFather will give you a long API token. Copy it.</li>
+                      <li>Send the command <code className="bg-white/10 px-2 py-1 rounded text-white font-mono text-xs">/newbot</code>.</li>
+                      <li>Provide a unique name and username for your agent.</li>
+                      <li>Copy the HTTP API token provided by BotFather.</li>
                     </ol>
                   </>
                 ) : (
                   <>
-                    <div className="flex items-center gap-3 mb-6">
-                      <div className="w-8 h-8 rounded-full bg-[#25D366] flex items-center justify-center text-white text-sm">💬</div>
-                      <h2 className="text-[18px] font-bold text-white">Connect WhatsApp Cloud</h2>
+                    <div className="flex items-center gap-4 mb-8">
+                      <div className="w-12 h-12 rounded-2xl bg-[#25D366]/20 flex items-center justify-center text-[#25D366] shadow-[0_0_30px_rgba(37,211,102,0.3)]">
+                        <svg className="w-6 h-6" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51a5.8 5.8 0 0 0-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413Z"/></svg>
+                      </div>
+                      <h2 className="text-2xl font-bold text-white tracking-tight">Connect WhatsApp Cloud</h2>
                     </div>
-                    <ol className="space-y-4 text-sm text-gray-400 list-decimal pl-4 mb-8 font-medium">
-                      <li>Go to the <strong className="text-white">Meta for Developers</strong> Dashboard.</li>
+                    <ol className="space-y-5 text-sm text-gray-300 list-decimal pl-5 mb-10 font-medium leading-relaxed">
+                      <li>Navigate to the <strong className="text-white">Meta for Developers</strong> console.</li>
                       <li>Create an App and add the <strong className="text-white">WhatsApp Product</strong>.</li>
                       <li>Generate a <strong className="text-white">Permanent Access Token</strong>.</li>
-                      <li>Copy the Token and paste it below securely.</li>
+                      <li>Securely paste the token below to authenticate.</li>
                     </ol>
                   </>
                 )}
 
-                <div className="bg-black/50 p-6 rounded-2xl border border-white/5">
+                <div className="bg-[#111] p-6 rounded-2xl border border-white/5 shadow-inner">
                   <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">
                     {activeChannel === "telegram" ? "HTTP API Token" : "Meta Access Token"}
                   </label>
@@ -238,7 +253,7 @@ export default function Home() {
                     value={telegramToken} 
                     onChange={(e) => setTelegramToken(e.target.value)} 
                     placeholder={activeChannel === "telegram" ? "1234567890:ABCdefGhI..." : "EAABwzL..."} 
-                    className="w-full bg-black border border-white/10 rounded-xl px-4 py-4 text-sm focus:outline-none focus:border-white transition-all mb-4 font-mono text-white" 
+                    className={`w-full bg-black/50 border border-white/10 rounded-xl px-4 py-4 text-sm focus:outline-none transition-all mb-6 font-mono text-white ${activeChannel === "telegram" ? "focus:border-blue-500 focus:shadow-[0_0_15px_rgba(42,171,238,0.2)]" : "focus:border-green-500 focus:shadow-[0_0_15px_rgba(37,211,102,0.2)]"}`} 
                   />
                   <button 
                     onClick={() => { 
@@ -246,57 +261,77 @@ export default function Home() {
                         const match = telegramToken.match(/\d{8,10}:[a-zA-Z0-9_-]{35}/);
                         if (match) { 
                           setTelegramToken(match[0]); setIsTokenSaved(true); setIsTelegramModalOpen(false); 
-                        } else alert("Invalid token format! Please copy the exact API token from BotFather."); 
+                        } else alert("Invalid token structure. Please verify the BotFather token."); 
                       } else {
-                        // WhatsApp token format validation (Starts with EAA)
                         if (telegramToken.startsWith("EAA") && telegramToken.length > 20) {
                           setTelegramToken(telegramToken); setIsTokenSaved(true); setIsTelegramModalOpen(false);
-                        } else alert("Invalid Meta Token! WhatsApp tokens usually start with 'EAA'.");
+                        } else alert("Invalid Meta Token structure. WhatsApp tokens typically begin with 'EAA'.");
                       }
                     }} 
-                    className="w-full bg-white text-black font-black py-4 rounded-xl text-sm hover:bg-gray-200 transition-all uppercase tracking-widest shadow-[0_0_15px_rgba(255,255,255,0.2)]"
+                    className="w-full bg-white text-black font-black py-4 rounded-xl text-sm hover:bg-gray-200 transition-transform active:scale-95 uppercase tracking-widest shadow-[0_0_20px_rgba(255,255,255,0.2)]"
                   >
-                    Save & Proceed ✓
+                    Authenticate & Proceed
                   </button>
                 </div>
               </div>
 
-              {/* SIDE UI PANEL */}
-              <div className="hidden md:flex md:w-[55%] bg-black items-center justify-center p-8 border-l border-white/10">
-                 <div className="w-[280px] h-[580px] border-[6px] border-[#222] rounded-[2.5rem] bg-[#0A0A0B] relative overflow-hidden shadow-[0_0_50px_rgba(0,0,0,0.5)]">
-                    <div className="absolute top-0 inset-x-0 h-6 bg-[#222] rounded-b-xl w-32 mx-auto z-20"></div>
-                    <div className="bg-[#111] p-4 pt-8 flex items-center gap-3 border-b border-white/5 z-10 relative">
-                      <div className={`w-8 h-8 rounded-full ${activeChannel === "telegram" ? "bg-blue-500/20" : "bg-green-500/20"} flex items-center justify-center text-xl`}>
-                        {activeChannel === "telegram" ? "🤖" : "📱"}
+              {/* RIGHT PANEL - PREMIUM PHONE MOCKUP */}
+              <div className="hidden md:flex md:w-1/2 bg-black/40 items-center justify-center p-10 border-l border-white/5 relative">
+                 
+                 {/* Decorative background blur */}
+                 <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 rounded-full blur-[100px] pointer-events-none ${activeChannel === "telegram" ? "bg-blue-500/20" : "bg-green-500/20"}`}></div>
+
+                 {/* Phone Mockup Frame */}
+                 <div className="w-[300px] h-[600px] border-[8px] border-[#1A1A1A] rounded-[3rem] bg-[#0A0A0B] relative overflow-hidden shadow-2xl z-10 flex flex-col">
+                    
+                    {/* iPhone Notch */}
+                    <div className="absolute top-0 inset-x-0 h-7 bg-[#1A1A1A] rounded-b-3xl w-40 mx-auto z-20 flex justify-center items-end pb-1">
+                      <div className="w-12 h-1.5 bg-black/50 rounded-full"></div>
+                    </div>
+
+                    {/* App Header */}
+                    <div className="bg-[#111]/80 backdrop-blur-md p-4 pt-10 flex items-center gap-3 border-b border-white/5 z-10">
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center text-xl shadow-lg ${activeChannel === "telegram" ? "bg-[#2AABEE]" : "bg-[#25D366]"}`}>
+                        {activeChannel === "telegram" ? "🤖" : "🏢"}
                       </div>
                       <div>
-                        <p className="text-white text-sm font-bold">
-                          {activeChannel === "telegram" ? "BotFather" : "Meta Cloud"} <span className={`${activeChannel === "telegram" ? "text-blue-400" : "text-green-400"} text-xs`}>✓</span>
+                        <p className="text-white text-sm font-bold flex items-center gap-1">
+                          {activeChannel === "telegram" ? "BotFather" : "Meta Cloud"} 
+                          <svg className={`w-3 h-3 ${activeChannel === "telegram" ? "text-blue-200" : "text-green-200"}`} viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
                         </p>
-                        <p className="text-gray-500 text-[10px] font-mono">{activeChannel === "telegram" ? "bot" : "verified"}</p>
+                        <p className="text-gray-400 text-[10px] font-mono tracking-wider">{activeChannel === "telegram" ? "verified bot" : "system user"}</p>
                       </div>
                     </div>
                     
-                    <div className="p-4 space-y-4 text-[11px] h-full font-mono bg-[url('https://www.transparenttextures.com/patterns/stardust.png')]">
+                    {/* Chat Area */}
+                    <div className="p-4 space-y-5 flex-1 overflow-hidden text-[12px] font-mono bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-90 flex flex-col justify-end pb-8">
                        {activeChannel === "telegram" ? (
-                         // Telegram Mock UI
                          <>
-                           <div className="bg-blue-600 text-white p-2.5 rounded-xl rounded-tr-sm w-fit ml-auto shadow-sm">/newbot</div>
-                           <div className="bg-[#111] border border-white/5 text-gray-300 p-2.5 rounded-xl rounded-tl-sm w-[85%] shadow-sm">Alright, a new bot. How are we going to call it?</div>
-                           <div className="bg-blue-600 text-white p-2.5 rounded-xl rounded-tr-sm w-fit ml-auto shadow-sm">ClawLink AI</div>
-                           <div className="bg-[#111] text-gray-300 p-3 rounded-xl rounded-tl-sm w-[90%] shadow-sm border border-white/10">Done!<br/><br/>Use this token:<br/><span className="text-blue-400 break-all select-all animate-pulse">1234567890:AAH8...</span></div>
+                           <div className="bg-[#2AABEE] text-white p-3 rounded-2xl rounded-tr-sm w-fit ml-auto shadow-md">/newbot</div>
+                           <div className="bg-[#1A1A1A] border border-white/5 text-gray-200 p-3 rounded-2xl rounded-tl-sm w-[85%] shadow-md">Alright, a new bot. How are we going to call it? Please choose a name.</div>
+                           <div className="bg-[#2AABEE] text-white p-3 rounded-2xl rounded-tr-sm w-fit ml-auto shadow-md">ClawLink AI</div>
+                           <div className="bg-[#1A1A1A] text-gray-200 p-4 rounded-2xl rounded-tl-sm w-[90%] shadow-lg border border-blue-500/20">
+                             Done! Congratulations on your new bot.<br/><br/>
+                             <span className="text-gray-400">Use this token to access the HTTP API:</span><br/>
+                             <span className="text-blue-400 break-all select-all animate-pulse mt-2 block bg-black/50 p-2 rounded-lg border border-white/5">1234567890:AAH8...</span>
+                           </div>
                          </>
                        ) : (
-                         // WhatsApp Mock UI
                          <>
-                           <div className="bg-[#111] border border-white/5 text-gray-300 p-2.5 rounded-xl rounded-tl-sm w-[90%] shadow-sm">Welcome to Meta for Developers.</div>
-                           <div className="bg-green-600 text-white p-2.5 rounded-xl rounded-tr-sm w-fit ml-auto shadow-sm">Create WhatsApp App</div>
-                           <div className="bg-[#111] border border-white/5 text-gray-300 p-2.5 rounded-xl rounded-tl-sm w-[90%] shadow-sm">Generating System User Token...</div>
-                           <div className="bg-[#111] text-gray-300 p-3 rounded-xl rounded-tl-sm w-[90%] shadow-sm border border-green-500/30">Success!<br/><br/>Access Token:<br/><span className="text-green-400 break-all select-all animate-pulse">EAABwzL8x...</span></div>
+                           <div className="bg-[#1A1A1A] border border-white/5 text-gray-200 p-3 rounded-2xl rounded-tl-sm w-[90%] shadow-md">Welcome to the Meta App Dashboard.</div>
+                           <div className="bg-[#25D366] text-black font-medium p-3 rounded-2xl rounded-tr-sm w-fit ml-auto shadow-md">Generate Token</div>
+                           <div className="bg-[#1A1A1A] border border-white/5 text-gray-400 p-3 rounded-2xl rounded-tl-sm w-[85%] shadow-md animate-pulse">Authenticating System User...</div>
+                           <div className="bg-[#1A1A1A] text-gray-200 p-4 rounded-2xl rounded-tl-sm w-[95%] shadow-lg border border-green-500/20">
+                             Success! Configuration updated.<br/><br/>
+                             <span className="text-gray-400">Permanent Access Token:</span><br/>
+                             <span className="text-green-400 break-all select-all animate-pulse mt-2 block bg-black/50 p-2 rounded-lg border border-white/5">EAABwzL8x...</span>
+                           </div>
                          </>
                        )}
                     </div>
-                    <div className="absolute bottom-2 inset-x-0 h-1 bg-[#333] rounded-full w-24 mx-auto z-20"></div>
+
+                    {/* iPhone Home Indicator */}
+                    <div className="absolute bottom-2 inset-x-0 h-1.5 bg-[#333] rounded-full w-32 mx-auto z-20"></div>
                  </div>
               </div>
             </motion.div>
@@ -354,7 +389,6 @@ export default function Home() {
               </div>
 
               <button onClick={triggerRazorpayPayment} disabled={isDeploying} className="w-full max-w-sm mx-auto bg-white text-black hover:bg-gray-200 font-black py-4 rounded-xl transition-all uppercase tracking-widest text-sm shadow-[0_0_20px_rgba(255,255,255,0.2)] flex justify-center items-center gap-2">
-                {/* 🚀 CHANGED TEXT HERE */}
                 {isDeploying ? <span className="animate-spin text-xl">⚙️</span> : `Deploy OpenClaw ${currencySymbol}${getCurrentPrice()}`}
               </button>
               <p className="mt-4 text-[10px] text-gray-500 uppercase tracking-widest font-bold">Secured by Razorpay</p>
