@@ -27,7 +27,6 @@ export async function POST(req: Request) {
     }
 
     // 💾 2. SAVE TO SUPABASE: Payment ke turant baad user ka record save karo
-    // Note: frontend se hum 'telegramToken' variable bhej rahe hain dono ke liye
     const dbData = {
       email: email,
       ai_provider: selectedModel.includes("gpt") ? "openai" : selectedModel.includes("claude") ? "anthropic" : "gemini",
@@ -52,7 +51,9 @@ export async function POST(req: Request) {
     if (selectedChannel === "telegram") {
       // TELEGRAM WEBHOOK SETUP
       const baseUrl = process.env.NEXTAUTH_URL || "https://clawlink-six.vercel.app"; 
-      const WEBHOOK_URL = `${baseUrl}/api/webhook/telegram`;
+      
+      // 🚀 THE FIX: Yahan webhook URL mein ?token= attach karna zaroori hai
+      const WEBHOOK_URL = `${baseUrl}/api/webhook/telegram?token=${telegramToken}`;
       
       const telegramRes = await fetch(`https://api.telegram.org/bot${telegramToken}/setWebhook?url=${WEBHOOK_URL}`);
       const telegramData = await telegramRes.json();
@@ -71,8 +72,7 @@ export async function POST(req: Request) {
     
     else if (selectedChannel === "whatsapp") {
       // WHATSAPP SETUP
-      // WhatsApp webhook Meta Dashboard se manually lagta hai, code se nahi. 
-      // Toh hum yahan bas Success bhej denge taaki UI aage badh jaye.
+      // WhatsApp webhook Meta Dashboard se manually lagta hai. 
       return NextResponse.json({ success: true, botLink: `https://business.facebook.com/wa/manage/` }); 
     }
 
