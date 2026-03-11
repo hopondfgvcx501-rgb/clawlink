@@ -4,7 +4,6 @@ import { motion } from "framer-motion";
 import { CheckCircle2, ChevronRight } from "lucide-react";
 import StarBackground from "./StarBackground";
 
-// Strict TypeScript Interfaces
 interface ModelType {
   id: string;
   name: string;
@@ -20,31 +19,18 @@ interface ChannelType {
 }
 
 interface LandingUIProps {
-  // 🚀 NAYA: Brain file se dynamic buttons yahan aayenge
   renderActionArea: (selectedModel: string, selectedChannel: string) => React.ReactNode;
+  isLocked?: boolean; // 🚀 NAYA: Options ko lock karne ke liye
 }
 
-export default function LandingUI({ renderActionArea }: LandingUIProps) {
+export default function LandingUI({ renderActionArea, isLocked = false }: LandingUIProps) {
   const [selectedModel, setSelectedModel] = useState<string>("gpt-5.2");
   const [selectedChannel, setSelectedChannel] = useState<string>("telegram");
 
-  // LOCKED: ORIGINAL BRAND COLORS & SVGS
   const models: ModelType[] = [
-    { 
-      id: "gpt-5.2", 
-      name: "GPT-5.2", 
-      icon: <svg className="w-5 h-5" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path fill="#10A37F" d="M22.2819 9.8211a5.9847 5.9847 0 0 0-.5157-4.9108 6.0462 6.0462 0 0 0-6.5098-2.9A6.0651 6.0651 0 0 0 4.9807 4.1818a5.9847 5.9847 0 0 0-3.9977 2.9 6.0462 6.0462 0 0 0 .7427 7.0966 5.98 5.98 0 0 0 .511 4.9107 6.051 6.051 0 0 0 6.5146 2.9001A5.9847 5.9847 0 0 0 13.2599 24a6.0557 6.0557 0 0 0 5.7718-4.2058 5.9894 5.9894 0 0 0 3.9977-2.9001 6.0557 6.0557 0 0 0-.7475-7.073zM13.2599 22.0627a4.123 4.123 0 0 1-3.565-2.0076l1.3268-1.3268a2.128 2.128 0 0 0 3.0073 0l5.881-5.881a4.123 4.123 0 0 1-6.65 9.2154zM5.9847 19.1627a4.123 4.123 0 0 1-2.0076-3.565l1.3268 1.3268a2.128 2.128 0 0 0 0-3.0073l-5.881-5.881a4.123 4.123 0 0 1 6.5618 11.1265zM2.0076 9.8211A4.123 4.123 0 0 1 5.5726 7.8135L4.2458 9.1403a2.128 2.128 0 0 0 0 3.0073l5.881 5.881a4.123 4.123 0 0 1-8.1192-8.2075zM9.8211 2.0076a4.123 4.123 0 0 1 3.565 2.0076L12.0593 5.342a2.128 2.128 0 0 0-3.0073 0l-5.881 5.881a4.123 4.123 0 0 1 6.65-9.2154zM18.0153 4.8373a4.123 4.123 0 0 1 2.0076 3.565l-1.3268-1.3268a2.128 2.128 0 0 0 0 3.0073l5.881 5.881a4.123 4.123 0 0 1-6.5618-11.1265zM21.9924 14.1789a4.123 4.123 0 0 1-3.565 2.0076l1.3268-1.3268a2.128 2.128 0 0 0 0-3.0073l-5.881-5.881a4.123 4.123 0 0 1 8.1192 8.2075zM12 14.128A2.128 2.128 0 1 1 12 9.872a2.128 2.128 0 0 1 0 4.256z"/></svg> 
-    },
-    { 
-      id: "claude", 
-      name: "Opus 4.6", 
-      icon: <svg className="w-5 h-5" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path fill="#D97757" d="M12 0l2.3 8.3c.2.6.7 1.1 1.3 1.3L24 12l-8.4 2.4c-.6.2-1.1.7-1.3 1.3L12 24l-2.3-8.3c-.2-.6-.7-1.1-1.3-1.3L0 12l8.4-2.4c.6-.2 1.1-.7 1.3-1.3L12 0z"/></svg> 
-    },
-    { 
-      id: "gemini", 
-      name: "Gemini 3 Flash", 
-      icon: <svg className="w-5 h-5" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path fill="#8AB4F8" d="M12 2l2.5 7.5L22 12l-7.5 2.5L12 22l-2.5-7.5L2 12l7.5-2.5z"/></svg> 
-    },
+    { id: "gpt-5.2", name: "GPT-5.2", icon: <svg className="w-5 h-5" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path fill="#10A37F" d="M22.2819 9.8211a5.9847 5.9847 0 0 0-.5157-4.9108 6.0462 6.0462 0 0 0-6.5098-2.9A6.0651 6.0651 0 0 0 4.9807 4.1818a5.9847 5.9847 0 0 0-3.9977 2.9 6.0462 6.0462 0 0 0 .7427 7.0966 5.98 5.98 0 0 0 .511 4.9107 6.051 6.051 0 0 0 6.5146 2.9001A5.9847 5.9847 0 0 0 13.2599 24a6.0557 6.0557 0 0 0 5.7718-4.2058 5.9894 5.9894 0 0 0 3.9977-2.9001 6.0557 6.0557 0 0 0-.7475-7.073zM13.2599 22.0627a4.123 4.123 0 0 1-3.565-2.0076l1.3268-1.3268a2.128 2.128 0 0 0 3.0073 0l5.881-5.881a4.123 4.123 0 0 1-6.65 9.2154zM5.9847 19.1627a4.123 4.123 0 0 1-2.0076-3.565l1.3268 1.3268a2.128 2.128 0 0 0 0-3.0073l-5.881-5.881a4.123 4.123 0 0 1 6.5618 11.1265zM2.0076 9.8211A4.123 4.123 0 0 1 5.5726 7.8135L4.2458 9.1403a2.128 2.128 0 0 0 0 3.0073l5.881 5.881a4.123 4.123 0 0 1-8.1192-8.2075zM9.8211 2.0076a4.123 4.123 0 0 1 3.565 2.0076L12.0593 5.342a2.128 2.128 0 0 0-3.0073 0l-5.881 5.881a4.123 4.123 0 0 1 6.65-9.2154zM18.0153 4.8373a4.123 4.123 0 0 1 2.0076 3.565l-1.3268-1.3268a2.128 2.128 0 0 0 0 3.0073l5.881 5.881a4.123 4.123 0 0 1-6.5618-11.1265zM21.9924 14.1789a4.123 4.123 0 0 1-3.565 2.0076l1.3268-1.3268a2.128 2.128 0 0 0 0-3.0073l-5.881-5.881a4.123 4.123 0 0 1 8.1192 8.2075zM12 14.128A2.128 2.128 0 1 1 12 9.872a2.128 2.128 0 0 1 0 4.256z"/></svg> },
+    { id: "claude", name: "Opus 4.6", icon: <svg className="w-5 h-5" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path fill="#D97757" d="M12 0l2.3 8.3c.2.6.7 1.1 1.3 1.3L24 12l-8.4 2.4c-.6.2-1.1.7-1.3 1.3L12 24l-2.3-8.3c-.2-.6-.7-1.1-1.3-1.3L0 12l8.4-2.4c.6-.2 1.1-.7 1.3-1.3L12 0z"/></svg> },
+    { id: "gemini", name: "Gemini 3 Flash", icon: <svg className="w-5 h-5" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path fill="#8AB4F8" d="M12 2l2.5 7.5L22 12l-7.5 2.5L12 22l-2.5-7.5L2 12l7.5-2.5z"/></svg> },
     { id: "llama", name: "Llama 3 (Soon)", icon: <span className="text-lg">🦙</span>, disabled: true },
   ];
 
@@ -62,10 +48,8 @@ export default function LandingUI({ renderActionArea }: LandingUIProps) {
 
   return (
     <main className="min-h-screen flex flex-col items-center pt-8 pb-20 px-4 relative">
-      {/* 🚀 IGNORE THE WARNING IF STARBACKGROUND IS NOT IMPORTED, IT WILL WORK IN YOUR APP */}
       {typeof StarBackground !== 'undefined' && <StarBackground />}
 
-      {/* Navbar */}
       <nav className="w-full max-w-6xl flex justify-between items-center mb-20 px-6">
         <div className="text-xl font-medium tracking-wider font-mono text-white">clawlink.com</div>
         <div className="flex gap-8 items-center text-sm tracking-widest uppercase font-semibold text-gray-400">
@@ -77,30 +61,29 @@ export default function LandingUI({ renderActionArea }: LandingUIProps) {
         </div>
       </nav>
 
-      {/* Hero Section */}
       <div className="text-center max-w-3xl mb-16">
-        <h1 className="text-4xl md:text-6xl font-bold mb-6 tracking-tight bg-clip-text text-transparent bg-gradient-to-b from-white to-white/60">Deploy OpenClaw under 30 SECONDS</h1>
-        <p className="text-gray-400 text-lg md:text-xl font-normal leading-relaxed">Avoid all technical complexity and one-click<br/>deploy your own 24/7 active OpenClaw instance under 1 minute.</p>
+        <h1 className="text-4xl md:text-6xl font-bold mb-6 tracking-tight bg-clip-text text-transparent bg-gradient-to-b from-white to-white/60">Deploy ClawLink under 30 SECONDS</h1>
+        <p className="text-gray-400 text-lg md:text-xl font-normal leading-relaxed">Avoid all technical complexity and one-click<br/>deploy your own 24/7 active ClawLink instance under 30 seconds.</p>
       </div>
 
-      {/* Selectors Area */}
       <div className="w-full max-w-3xl flex flex-col gap-12">
-        
-        {/* Model Selection */}
         <div className="flex flex-col items-center gap-5">
-          <p className="text-xl font-semibold tracking-tight text-white">Choose a model to use as your default</p>
+          <p className="text-xl font-semibold tracking-tight text-white">
+            {isLocked ? "Your selected AI Model" : "Choose a model to use as your default"}
+          </p>
           <div className="flex flex-wrap justify-center gap-3">
             {models.map((model) => (
               <motion.button
                 key={model.id}
-                whileHover={model.disabled ? {} : { scale: 1.05 }}
-                whileTap={model.disabled ? {} : { scale: 0.95 }}
-                onClick={() => !model.disabled && setSelectedModel(model.id)}
+                whileHover={model.disabled || isLocked ? {} : { scale: 1.05 }}
+                whileTap={model.disabled || isLocked ? {} : { scale: 0.95 }}
+                // 🚀 NAYA LOGIC: Agar locked hai, toh click kaam nahi karega
+                onClick={() => !model.disabled && !isLocked && setSelectedModel(model.id)}
                 className={`px-6 py-3 rounded-full flex items-center gap-3 text-base font-medium transition-all duration-200 border ${
                   selectedModel === model.id 
                     ? "bg-white text-black border-white shadow-[0_0_20px_rgba(255,255,255,0.3)]" 
                     : "bg-[#1A1A1A]/60 text-gray-300 border-white/10 hover:bg-[#2A2A2A] hover:border-white/30"
-                } ${model.disabled ? "opacity-50 cursor-not-allowed" : ""}`}
+                } ${model.disabled ? "opacity-50 cursor-not-allowed" : ""} ${isLocked && selectedModel !== model.id ? "opacity-30 cursor-not-allowed" : ""}`}
               >
                 {model.icon} {model.name}
               </motion.button>
@@ -108,21 +91,23 @@ export default function LandingUI({ renderActionArea }: LandingUIProps) {
           </div>
         </div>
 
-        {/* Channel Selection */}
         <div className="flex flex-col items-center gap-5">
-          <p className="text-xl font-semibold tracking-tight text-white">Select a channel for sending messages</p>
+          <p className="text-xl font-semibold tracking-tight text-white">
+            {isLocked ? "Your selected channel" : "Select a channel for sending messages"}
+          </p>
           <div className="flex flex-wrap justify-center gap-3">
             {channels.map((channel) => (
               <motion.button
                 key={channel.id}
-                whileHover={channel.disabled ? {} : { scale: 1.05 }}
-                whileTap={channel.disabled ? {} : { scale: 0.95 }}
-                onClick={() => !channel.disabled && setSelectedChannel(channel.id)}
+                whileHover={channel.disabled || isLocked ? {} : { scale: 1.05 }}
+                whileTap={channel.disabled || isLocked ? {} : { scale: 0.95 }}
+                // 🚀 NAYA LOGIC: Agar locked hai, toh click kaam nahi karega
+                onClick={() => !channel.disabled && !isLocked && setSelectedChannel(channel.id)}
                 className={`px-6 py-4 rounded-xl flex items-center gap-3 text-base font-medium transition-all duration-200 border ${
                   selectedChannel === channel.id 
                     ? "bg-white text-black border-white shadow-[0_0_20px_rgba(255,255,255,0.3)]" 
                     : "bg-[#1A1A1A]/60 text-gray-300 border-white/10 hover:bg-[#2A2A2A] hover:border-white/30"
-                } ${channel.disabled ? "opacity-50 cursor-not-allowed flex-col py-3" : ""}`}
+                } ${channel.disabled ? "opacity-50 cursor-not-allowed flex-col py-3" : ""} ${isLocked && selectedChannel !== channel.id ? "opacity-30 cursor-not-allowed" : ""}`}
               >
                 {channel.icon} 
                 <span className={channel.disabled ? "text-xs" : ""}>{channel.name}</span>
@@ -131,7 +116,6 @@ export default function LandingUI({ renderActionArea }: LandingUIProps) {
           </div>
         </div>
 
-        {/* 🚀 YAHAN CHANGE HUA HAI: Ab ye area Brain file (page.tsx) control karegi */}
         <div className="flex flex-col items-center mt-8 min-h-[120px]">
           {renderActionArea(selectedModel, selectedChannel)}
         </div>
@@ -143,8 +127,6 @@ export default function LandingUI({ renderActionArea }: LandingUIProps) {
           <h2 className="text-3xl md:text-4xl font-bold tracking-tight mb-4 text-white">Unleash thousands of use cases</h2>
           <p className="text-gray-400 text-lg">Your ClawLink agent handles complex cognitive tasks instantly.</p>
         </div>
-
-        {/* Rows ... */}
         <div className="flex w-max animate-marquee gap-4 mb-4">
           {[...row1, ...row1].map((text, i) => (
             <div key={`r1-${i}`} className="flex-shrink-0 border border-white/10 bg-[#1A1A1A]/80 backdrop-blur-sm rounded-full px-6 py-3 text-sm font-medium text-gray-300 flex items-center gap-3">
@@ -173,38 +155,32 @@ export default function LandingUI({ renderActionArea }: LandingUIProps) {
             </div>
           ))}
         </div>
-        
-        {/* Fading Edges */}
-        <div className="absolute top-0 left-0 w-40 h-full bg-gradient-to-r from-[#111214] via-[#111214]/80 to-transparent pointer-events-none z-10"></div>
-        <div className="absolute top-0 right-0 w-40 h-full bg-gradient-to-l from-[#111214] via-[#111214]/80 to-transparent pointer-events-none z-10"></div>
+        <div className="absolute top-0 left-0 w-40 h-full bg-gradient-to-r from-[#0A0A0B] via-[#0A0A0B]/80 to-transparent pointer-events-none z-10"></div>
+        <div className="absolute top-0 right-0 w-40 h-full bg-gradient-to-l from-[#0A0A0B] via-[#0A0A0B]/80 to-transparent pointer-events-none z-10"></div>
       </div>
 
-      {/* Comparison Section */}
       <div className="w-full max-w-5xl mt-24 text-center">
         <p className="text-sm text-gray-400 font-semibold tracking-wider uppercase mb-3">Comparison</p>
         <h2 className="text-3xl md:text-4xl font-bold mb-16 tracking-tight text-white">Traditional Method vs. ClawLink</h2>
-        
         <div className="flex flex-col md:flex-row justify-between items-start gap-12 text-left border-b border-white/10 pb-16">
           <div className="w-full md:w-1/2 space-y-5 text-gray-300 text-base font-medium">
             <div className="flex justify-between border-b border-white/5 pb-3"><span>Purchasing local virtual machine</span> <span className="font-mono text-gray-500">15 min</span></div>
             <div className="flex justify-between border-b border-white/5 pb-3"><span>Creating SSH keys and storing securely</span> <span className="font-mono text-gray-500">10 min</span></div>
             <div className="flex justify-between border-b border-white/5 pb-3"><span>Connecting to the server via SSH</span> <span className="font-mono text-gray-500">5 min</span></div>
             <div className="flex justify-between border-b border-white/5 pb-3"><span>Installing Node.js and NPM</span> <span className="font-mono text-gray-500">5 min</span></div>
-            <div className="flex justify-between border-b border-white/5 pb-3"><span>Installing OpenClaw</span> <span className="font-mono text-gray-500">7 min</span></div>
-            <div className="flex justify-between border-b border-white/5 pb-3"><span>Setting up OpenClaw</span> <span className="font-mono text-gray-500">10 min</span></div>
+            <div className="flex justify-between border-b border-white/5 pb-3"><span>Installing Custom AI Bot</span> <span className="font-mono text-gray-500">7 min</span></div>
+            <div className="flex justify-between border-b border-white/5 pb-3"><span>Setting up Environment</span> <span className="font-mono text-gray-500">10 min</span></div>
             <div className="flex justify-between font-bold text-lg text-white pt-4"><span>Total Time</span> <span className="text-red-400">60 MINUTES</span></div>
           </div>
-          
           <div className="w-full md:w-1/2 flex flex-col items-center justify-center border border-white/10 bg-[#1A1A1A]/50 backdrop-blur-md p-10 rounded-2xl relative overflow-hidden group shadow-2xl">
             <div className="absolute inset-0 bg-gradient-to-br from-blue-500/20 via-purple-500/10 to-pink-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
             <h3 className="text-4xl font-bold mb-2 text-white tracking-tight font-mono">ClawLink</h3>
             <p className="text-3xl font-extrabold mb-6 text-green-400">&lt;30 Seconds</p>
-            <p className="text-base text-center text-gray-300 font-medium leading-relaxed">Pick a model, connect Telegram, deploy — done under 1 minute. Servers, SSH, and the entire OpenClaw environment are pre-configured and waiting for you.</p>
+            <p className="text-base text-center text-gray-300 font-medium leading-relaxed">Pick a model, connect Telegram, deploy — done under 30 seconds. Servers, SSH, and the entire environment are pre-configured and waiting for you.</p>
           </div>
         </div>
       </div>
 
-      {/* Footer */}
       <footer className="w-full max-w-5xl mt-32 flex flex-col items-start px-6 border-t border-white/10 pt-16 pb-10">
         <h2 className="text-4xl font-bold mb-6 tracking-tight text-white">Deploy. Automate. Relax.</h2>
         <p className="text-gray-400 max-w-lg mb-8 text-base font-medium leading-relaxed">

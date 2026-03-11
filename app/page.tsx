@@ -5,16 +5,16 @@ import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import LandingUI from "../components/LandingUI";
 
-const MODEL_PRICING: Record<string, { price: number; name: string }> = {
-  gemini: { price: 29, name: "Gemini 3 Flash" },
-  "gpt-5.2": { price: 49, name: "GPT-5.2" },
-  claude: { price: 69, name: "Opus 4.6" }
+const MODEL_DETAILS: Record<string, { name: string; starter: number; pro: number }> = {
+  gemini: { name: "Gemini 3 Flash", starter: 15, pro: 29 },
+  "gpt-5.2": { name: "GPT-5.2", starter: 25, pro: 49 },
+  claude: { name: "Opus 4.6", starter: 35, pro: 69 }
 };
+const MAX_PLAN_PRICE = 99; 
 
 export default function Home() {
   const { data: session, status } = useSession();
   
-  // Modals & States
   const [isTelegramModalOpen, setIsTelegramModalOpen] = useState(false);
   const [telegramToken, setTelegramToken] = useState("");
   const [isTokenSaved, setIsTokenSaved] = useState(false);
@@ -23,9 +23,9 @@ export default function Home() {
   const [isDeploying, setIsDeploying] = useState(false);
   const [botLink, setBotLink] = useState("");
   
-  // Track choices for payment
   const [activeModel, setActiveModel] = useState("gpt-5.2");
   const [activeChannel, setActiveChannel] = useState("telegram");
+  const [selectedTier, setSelectedTier] = useState<"starter" | "pro" | "max">("pro"); 
 
   useEffect(() => {
     const script = document.createElement("script");
@@ -46,14 +46,20 @@ export default function Home() {
     setShowPricingPopup(true);
   };
 
+  const getCurrentPrice = () => {
+    if (selectedTier === "max") return MAX_PLAN_PRICE;
+    return MODEL_DETAILS[activeModel]?.[selectedTier] || 49;
+  };
+
   const triggerRazorpayPayment = async () => {
     setIsDeploying(true);
-    const price = MODEL_PRICING[activeModel]?.price || 49;
+    const finalPrice = getCurrentPrice();
+    
     try {
       const response = await fetch("/api/razorpay", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ amount: price * 100, currency: "USD" }), 
+        body: JSON.stringify({ amount: finalPrice * 100, currency: "USD" }), 
       });
       const order = await response.json();
 
@@ -62,14 +68,14 @@ export default function Home() {
         amount: order.amount,
         currency: order.currency,
         name: "ClawLink Premium",
-        description: `Deploying ${MODEL_PRICING[activeModel]?.name}`,
+        description: `Plan: ${selectedTier.toUpperCase()} | Model: ${selectedTier === 'max' ? 'ALL' : MODEL_DETAILS[activeModel]?.name}`,
         order_id: order.id,
         handler: async function (response: any) {
           setShowPricingPopup(false);
           const configRes = await fetch("/api/config", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ email: session?.user?.email, selectedModel: activeModel, selectedChannel: activeChannel, telegramToken })
+            body: JSON.stringify({ email: session?.user?.email, selectedModel: activeModel, selectedChannel: activeChannel, telegramToken, plan: selectedTier })
           });
           const configData = await configRes.json();
           if (configData.success && configData.botLink) setBotLink(configData.botLink);
@@ -87,12 +93,12 @@ export default function Home() {
     }
   };
 
-  // 🚀 YAHAN SE BUTTONS BANKAR LANDING UI ME JAYENGE (Design safe rahega)
   const renderDynamicButtons = (selectedModel: string, selectedChannel: string) => {
     if (botLink) {
       return (
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-md bg-green-500/10 border border-green-500/30 p-6 rounded-2xl text-center backdrop-blur-md">
           <h3 className="text-xl font-bold text-white mb-2">ClawLink is Live! 🚀</h3>
+          <p className="text-sm text-gray-400 mb-6">Your webhook is fully connected and processing data.</p>
           <a href={botLink} target="_blank" className="bg-white text-black font-black px-8 py-3 rounded-xl inline-block hover:bg-gray-200">Open Telegram Bot</a>
         </motion.div>
       );
@@ -112,7 +118,6 @@ export default function Home() {
 
     return (
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-md space-y-4">
-        {/* Logged in Profile Bar */}
         <div className="bg-[#111] border border-white/10 p-4 rounded-xl flex items-center justify-between shadow-lg">
           <div className="flex items-center gap-3">
              <img src={session?.user?.image || ""} className="w-10 h-10 rounded-full border border-white/20" alt="Avatar"/>
@@ -124,14 +129,19 @@ export default function Home() {
           <button onClick={() => signOut()} className="text-xs text-gray-500 hover:text-white font-bold uppercase tracking-widest">Logout</button>
         </div>
 
-        {/* Dynamic Action Button */}
         {!isTokenSaved ? (
           <button onClick={() => handleOpenTelegram(selectedModel, selectedChannel)} className="w-full bg-[#1A1A1A] border border-white/20 text-white py-4 rounded-xl font-bold tracking-wide hover:bg-white hover:text-black transition-all">
             CONNECT TELEGRAM TO CONTINUE
           </button>
         ) : (
-          <button onClick={() => handleOpenPricing(selectedModel, selectedChannel)} className="w-full bg-white text-black py-4 rounded-xl font-bold tracking-wide shadow-[0_0_30px_rgba(255,255,255,0.2)] hover:scale-[1.02] transition-all">
-            Deploy OpenClaw
+          <button onClick={() => handleOpenPricing(selectedModel, selectedChannel)} className="w-full bg-white text-black py-4 rounded-xl font-bold tracking-wide shadow-[0_0_30px_rgba(255,255,255,0.2)] hover:scale-[1.02] transition-all flex justify-center items-center gap-3">
+            {/* 🚀 NAYA CLAWLINK LOGO SVG (Premium Spark/Link Mix) */}
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-black">
+              <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+              <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+              <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41"></path>
+            </svg>
+            Deploy ClawLink
           </button>
         )}
       </motion.div>
@@ -141,10 +151,10 @@ export default function Home() {
   return (
     <div className="bg-[#0A0A0B] min-h-screen relative text-white">
       
-      {/* 🌟 1. PASSING THE LOGIC INTO YOUR LOCKED UI */}
-      <LandingUI renderActionArea={renderDynamicButtons} />
+      {/* 🚀 PASSING THE LOCK STATE TO UI */}
+      <LandingUI renderActionArea={renderDynamicButtons} isLocked={isTokenSaved} />
 
-      {/* 🌟 2. TELEGRAM VIDEO MODAL (Rendered strictly above UI) */}
+      {/* 🌟 TELEGRAM VIDEO MODAL */}
       <AnimatePresence>
         {isTelegramModalOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-sm p-4">
@@ -165,7 +175,15 @@ export default function Home() {
                 <div className="bg-black/50 p-6 rounded-2xl border border-white/5">
                   <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">HTTP API Token</label>
                   <input type="password" value={telegramToken} onChange={(e) => setTelegramToken(e.target.value)} placeholder="1234567890:ABCdefGhI..." className="w-full bg-black border border-white/10 rounded-xl px-4 py-4 text-sm focus:outline-none focus:border-white transition-all mb-4 font-mono text-white" />
-                  <button onClick={() => { if(telegramToken.length > 20) { setIsTokenSaved(true); setIsTelegramModalOpen(false); } else alert("Invalid token"); }} className="w-full bg-white text-black font-black py-4 rounded-xl text-sm hover:bg-gray-200 transition-all uppercase tracking-widest">
+                  <button 
+                    onClick={() => { 
+                      const match = telegramToken.match(/\d{8,10}:[a-zA-Z0-9_-]{35}/);
+                      if (match) { 
+                        setTelegramToken(match[0]); setIsTokenSaved(true); setIsTelegramModalOpen(false); 
+                      } else alert("Invalid token format! Please copy the exact API token from BotFather."); 
+                    }} 
+                    className="w-full bg-white text-black font-black py-4 rounded-xl text-sm hover:bg-gray-200 transition-all uppercase tracking-widest shadow-[0_0_15px_rgba(255,255,255,0.2)]"
+                  >
                     Save & Proceed ✓
                   </button>
                 </div>
@@ -187,9 +205,7 @@ export default function Home() {
                        <div className="bg-blue-600 text-white p-2.5 rounded-xl rounded-tr-sm w-fit ml-auto shadow-sm">ClawLink AI</div>
                        <div className="bg-[#111] border border-white/5 text-gray-300 p-2.5 rounded-xl rounded-tl-sm w-[85%] shadow-sm">Good. Now let's choose a username.</div>
                        <div className="bg-blue-600 text-white p-2.5 rounded-xl rounded-tr-sm w-fit ml-auto shadow-sm">ClawLink_bot</div>
-                       <div className="bg-[#111] text-gray-300 p-3 rounded-xl rounded-tl-sm w-[90%] shadow-sm border border-blue-500/20">
-                         Done! Congratulations.<br/><br/>Use this token:<br/><span className="text-blue-400 break-all select-all animate-pulse">1234567890:AAH8...kL9pP_Q</span>
-                       </div>
+                       <div className="bg-[#111] text-gray-300 p-3 rounded-xl rounded-tl-sm w-[90%] shadow-sm border border-white/10">Done! Congratulations.<br/><br/>Use this token:<br/><span className="text-blue-400 break-all select-all animate-pulse">1234567890:AAH8...kL9pP_Q</span></div>
                     </div>
                     <div className="absolute bottom-2 inset-x-0 h-1 bg-[#333] rounded-full w-24 mx-auto z-20"></div>
                  </div>
@@ -199,24 +215,58 @@ export default function Home() {
         )}
       </AnimatePresence>
 
-      {/* 🌟 3. PRICING POPUP MODAL */}
+      {/* 🌟 3. 3-TIER PRICING POPUP MODAL */}
       <AnimatePresence>
         {showPricingPopup && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-md p-4">
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 20 }} className="bg-[#111] border border-white/10 p-10 rounded-3xl w-full max-w-md shadow-2xl relative text-center">
-              <button onClick={() => setShowPricingPopup(false)} className="absolute top-4 right-6 text-gray-500 hover:text-white text-lg">✕</button>
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-md p-4 overflow-y-auto">
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 20 }} className="bg-[#0A0A0B] border border-white/10 p-8 md:p-10 rounded-[2rem] w-full max-w-4xl shadow-2xl relative text-center my-8">
+              <button onClick={() => setShowPricingPopup(false)} className="absolute top-6 right-8 text-gray-500 hover:text-white text-2xl">✕</button>
               
-              <div className="w-16 h-16 bg-[#222] border border-white/10 rounded-2xl mx-auto flex items-center justify-center text-3xl mb-6 shadow-inner">✨</div>
-              <h2 className="text-xl font-bold mb-2 text-white">Subscribe to ClawLink</h2>
-              <div className="text-[2.5rem] font-black mb-2 text-white">
-                US${MODEL_PRICING[activeModel]?.price}.00 <span className="text-sm text-gray-500 font-normal">per month</span>
-              </div>
-              <p className="text-gray-400 text-[13px] mb-8 leading-relaxed font-medium">
-                Avoid all technical complexity and one-click deploy your own 24/7 active <span className="text-white font-bold">{MODEL_PRICING[activeModel]?.name}</span> instance under 1 minute.
+              <div className="w-14 h-14 bg-[#111] border border-white/10 rounded-2xl mx-auto flex items-center justify-center text-2xl mb-4 shadow-inner">✨</div>
+              <h2 className="text-2xl md:text-3xl font-bold mb-2 text-white tracking-tight">Choose your ClawLink Plan</h2>
+              <p className="text-gray-400 text-sm md:text-base mb-10 leading-relaxed max-w-2xl mx-auto font-medium">
+                Avoid all technical complexity and one-click deploy your own 24/7 active instance under <span className="text-white font-bold">30 seconds.</span>
               </p>
 
-              <button onClick={triggerRazorpayPayment} disabled={isDeploying} className="w-full bg-white text-black hover:bg-gray-200 font-black py-4 rounded-xl transition-all uppercase tracking-widest text-sm shadow-[0_0_20px_rgba(255,255,255,0.2)] flex justify-center items-center gap-2">
-                {isDeploying ? <span className="animate-spin text-xl">⚙️</span> : "Pay Securely & Deploy"}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10 text-left">
+                <div onClick={() => setSelectedTier("starter")} className={`relative p-6 rounded-2xl border transition-all cursor-pointer ${selectedTier === "starter" ? "bg-[#111] border-white shadow-[0_0_20px_rgba(255,255,255,0.1)] scale-105 z-10" : "bg-black border-white/10 hover:border-white/30"}`}>
+                  <h3 className="text-gray-400 font-bold uppercase tracking-widest text-xs mb-2">Starter</h3>
+                  <div className="text-3xl font-black text-white mb-4">
+                    ${MODEL_DETAILS[activeModel]?.starter}<span className="text-sm font-normal text-gray-500">/mo</span>
+                  </div>
+                  <p className="text-sm text-gray-300 font-medium mb-6">Limited tokens specifically for {MODEL_DETAILS[activeModel]?.name}. Best for personal use.</p>
+                  <div className="w-4 h-4 rounded-full border-2 border-gray-500 flex items-center justify-center ml-auto">
+                    {selectedTier === "starter" && <div className="w-2 h-2 bg-white rounded-full"></div>}
+                  </div>
+                </div>
+
+                <div onClick={() => setSelectedTier("pro")} className={`relative p-6 rounded-2xl border transition-all cursor-pointer ${selectedTier === "pro" ? "bg-[#111] border-blue-500 shadow-[0_0_30px_rgba(59,130,246,0.2)] scale-105 z-10" : "bg-black border-white/10 hover:border-white/30"}`}>
+                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-blue-500 text-white text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-full">Most Popular</div>
+                  <h3 className="text-blue-400 font-bold uppercase tracking-widest text-xs mb-2">Pro</h3>
+                  <div className="text-3xl font-black text-white mb-4">
+                    ${MODEL_DETAILS[activeModel]?.pro}<span className="text-sm font-normal text-gray-500">/mo</span>
+                  </div>
+                  <p className="text-sm text-gray-300 font-medium mb-6">Unlimited credits and priority routing for {MODEL_DETAILS[activeModel]?.name}.</p>
+                  <div className="w-4 h-4 rounded-full border-2 border-blue-500 flex items-center justify-center ml-auto">
+                    {selectedTier === "pro" && <div className="w-2 h-2 bg-blue-500 rounded-full"></div>}
+                  </div>
+                </div>
+
+                <div onClick={() => setSelectedTier("max")} className={`relative p-6 rounded-2xl border transition-all cursor-pointer ${selectedTier === "max" ? "bg-gradient-to-b from-[#221508] to-black border-orange-500 shadow-[0_0_30px_rgba(249,115,22,0.15)] scale-105 z-10" : "bg-black border-white/10 hover:border-white/30"}`}>
+                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-gradient-to-r from-orange-500 to-pink-500 text-white text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-full">Ultimate</div>
+                  <h3 className="text-orange-400 font-bold uppercase tracking-widest text-xs mb-2">Omni Max</h3>
+                  <div className="text-3xl font-black text-white mb-4">
+                    ${MAX_PLAN_PRICE}<span className="text-sm font-normal text-gray-500">/mo</span>
+                  </div>
+                  <p className="text-sm text-gray-300 font-medium mb-6">Multi-AI access. Use GPT, Claude, and Gemini simultaneously without limits.</p>
+                  <div className="w-4 h-4 rounded-full border-2 border-orange-500 flex items-center justify-center ml-auto">
+                    {selectedTier === "max" && <div className="w-2 h-2 bg-orange-500 rounded-full"></div>}
+                  </div>
+                </div>
+              </div>
+
+              <button onClick={triggerRazorpayPayment} disabled={isDeploying} className="w-full max-w-sm mx-auto bg-white text-black hover:bg-gray-200 font-black py-4 rounded-xl transition-all uppercase tracking-widest text-sm shadow-[0_0_20px_rgba(255,255,255,0.2)] flex justify-center items-center gap-2">
+                {isDeploying ? <span className="animate-spin text-xl">⚙️</span> : `Pay Securely $${getCurrentPrice()}`}
               </button>
               <p className="mt-4 text-[10px] text-gray-500 uppercase tracking-widest font-bold">Secured by Razorpay</p>
             </motion.div>
