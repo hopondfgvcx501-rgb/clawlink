@@ -53,7 +53,7 @@ export default function Home() {
     document.body.appendChild(script);
   }, []);
 
-  const handleOpenTelegram = (model: string, channel: string) => {
+  const handleOpenIntegration = (model: string, channel: string) => {
     setActiveModel(model);
     setActiveChannel(channel);
     setIsTelegramModalOpen(true);
@@ -99,19 +99,14 @@ export default function Home() {
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ email: session?.user?.email, selectedModel: activeModel, selectedChannel: activeChannel, telegramToken, plan: selectedTier })
             });
-            console.log("/api/config response status:", configRes.status);
             const configData = await configRes.json();
-            console.log("/api/config data:", configData);
 
             if (configData.success && configData.botLink) {
               setBotLink(configData.botLink);
-              console.log("Deployment successful. Bot link set.");
             } else {
-              console.error("Deployment failed. Error:", configData.error);
               alert("Deployment failed: " + configData.error);
             }
           } catch (error) {
-            console.error("Error during deployment:", error);
             alert("An error occurred during deployment. Please check console.");
           } finally {
             setIsDeploying(false);
@@ -122,12 +117,10 @@ export default function Home() {
       };
       const rzp = new (window as any).Razorpay(options);
       rzp.on('payment.failed', function (response: any) {
-        console.error("Payment failed:", response.error);
         setIsDeploying(false); 
       });
       rzp.open();
     } catch (error) {
-      console.error("Payment gateway error:", error);
       alert("Payment gateway error.");
       setIsDeploying(false);
     }
@@ -137,9 +130,33 @@ export default function Home() {
     if (botLink) {
       return (
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-md bg-green-500/10 border border-green-500/30 p-6 rounded-2xl text-center backdrop-blur-md">
-          <h3 className="text-xl font-bold text-white mb-2">ClawLink is Live! 🚀</h3>
-          <p className="text-sm text-gray-400 mb-6">Your webhook is fully connected and processing data.</p>
-          <a href={botLink} target="_blank" className="bg-white text-black font-black px-8 py-3 rounded-xl inline-block hover:bg-gray-200">Open Telegram Bot</a>
+          <h3 className="text-xl font-bold text-white mb-2">Your Bot is Live! 🚀</h3>
+          <p className="text-sm text-gray-400 mb-6">
+            {selectedChannel === "whatsapp" 
+              ? "Your WhatsApp AI agent is now connected to the Meta Cloud." 
+              : "Your Telegram webhook is fully connected and processing data."}
+          </p>
+          
+          <a href={botLink} target="_blank" rel="noopener noreferrer" className="bg-white text-black font-black px-8 py-3 rounded-xl inline-block hover:bg-gray-200 transition-colors mb-6">
+            {selectedChannel === "whatsapp" ? "Open WhatsApp Bot" : "Open Telegram Bot"}
+          </a>
+
+          {/* 🚀 UNLOCKED CAPABILITIES SHOWCASE */}
+          <div className="text-left bg-black/50 p-4 rounded-xl border border-white/5 max-h-48 overflow-y-auto custom-scrollbar">
+            <p className="text-[10px] font-bold text-green-400 mb-3 uppercase tracking-widest flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span> System Capabilities Unlocked
+            </p>
+            <ul className="text-xs text-gray-400 space-y-2.5 font-medium">
+              <li className="flex items-start gap-2">✓ <span><strong className="text-gray-300">Phase 1: Support</strong> - Auto-replies, Ticket creation, Multi-language.</span></li>
+              <li className="flex items-start gap-2">✓ <span><strong className="text-gray-300">Phase 2: Billing</strong> - Invoice generation, Payment reminders.</span></li>
+              <li className="flex items-start gap-2">✓ <span><strong className="text-gray-300">Phase 3: Service</strong> - Order tracking, Appointment scheduling.</span></li>
+              <li className="flex items-start gap-2">✓ <span><strong className="text-gray-300">Phase 4: Marketing</strong> - Broadcast campaigns, Feedback collection.</span></li>
+              <li className="flex items-start gap-2">✓ <span><strong className="text-gray-300">Phase 5: Automation</strong> - ERP/CRM API workflows, Task scheduling.</span></li>
+              <li className="flex items-start gap-2">✓ <span><strong className="text-gray-300">Phase 6: Memory</strong> - Customer-specific DB, Analytics reporting.</span></li>
+              <li className="flex items-start gap-2">✓ <span><strong className="text-gray-300">Phase 7: Omnichannel</strong> - Cross-platform sync integration.</span></li>
+              <li className="flex items-start gap-2">✓ <span><strong className="text-gray-300">Phase 8: Advanced AI</strong> - Predictive alerts, Sentiment analysis.</span></li>
+            </ul>
+          </div>
         </motion.div>
       );
     }
@@ -169,14 +186,13 @@ export default function Home() {
           <button onClick={() => signOut()} className="text-xs text-gray-500 hover:text-white font-bold uppercase tracking-widest">Logout</button>
         </div>
 
-        {/* 🚀 DASHBOARD BUTTON ADDED HERE */}
         <button onClick={() => router.push('/dashboard')} className="w-full bg-[#1A1A1A] border border-white/10 text-white py-3 rounded-xl text-sm font-bold tracking-widest hover:bg-[#222] transition-all flex justify-center items-center gap-2">
           <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
           ACCESS DASHBOARD
         </button>
 
         {!isTokenSaved ? (
-          <button onClick={() => handleOpenTelegram(selectedModel, selectedChannel)} className="w-full bg-[#1A1A1A] border border-white/20 text-white py-4 rounded-xl font-bold tracking-wide hover:bg-white hover:text-black transition-all">
+          <button onClick={() => handleOpenIntegration(selectedModel, selectedChannel)} className="w-full bg-[#1A1A1A] border border-white/20 text-white py-4 rounded-xl font-bold tracking-wide hover:bg-white hover:text-black transition-all mt-2">
             CONNECT {selectedChannel.toUpperCase()} TO CONTINUE
           </button>
         ) : (
@@ -239,7 +255,8 @@ export default function Home() {
                       <h2 className="text-2xl font-bold text-white tracking-tight">Connect WhatsApp Cloud</h2>
                     </div>
                     <ol className="space-y-5 text-sm text-gray-300 list-decimal pl-5 mb-10 font-medium leading-relaxed">
-                      <li>Navigate to the <strong className="text-white">Meta for Developers</strong> console.</li>
+                      {/* 🚀 DIRECT CLICKABLE META LINK ADDED HERE */}
+                      <li>Navigate to the <a href="https://developers.facebook.com/apps/" target="_blank" rel="noopener noreferrer" className="text-green-400 hover:text-green-300 underline font-bold transition-colors">Meta for Developers</a> console.</li>
                       <li>Create an App and add the <strong className="text-white">WhatsApp Product</strong>.</li>
                       <li>Generate a <strong className="text-white">Permanent Access Token</strong>.</li>
                       <li>Securely paste the token below to authenticate.</li>
