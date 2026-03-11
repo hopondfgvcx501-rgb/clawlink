@@ -5,15 +5,6 @@ import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import LandingUI from "../components/LandingUI";
 
-// 🌍 Helper function to read cookies on the client side
-const getCookie = (name: string) => {
-  if (typeof document === 'undefined') return null;
-  const value = `; ${document.cookie}`;
-  const parts = value.split(`; ${name}=`);
-  if (parts.length === 2) return parts.pop()?.split(';').shift();
-  return null;
-};
-
 const MODEL_DETAILS: Record<string, { name: string; starter: number; pro: number }> = {
   gemini: { name: "Gemini 3 Flash", starter: 9, pro: 19 },
   "gpt-5.2": { name: "GPT-5.2", starter: 19, pro: 39 }, 
@@ -41,18 +32,18 @@ export default function Home() {
   const EXCHANGE_RATE = 83; 
 
   useEffect(() => {
-    // 🚀 ULTRA-FAST EDGE DETECTION (Reads cookie set by middleware)
-    // This is unblockable and instantaneous.
-    const countryCode = getCookie('user-country');
-    console.log("Detected Country:", countryCode); // Debugging ke liye
-
-    if (countryCode === 'IN') {
-      setCurrency("INR");
-      setCurrencySymbol("₹");
-    } else {
-      // Default is already USD, no action needed for rest of world
-      setCurrency("USD");
-      setCurrencySymbol("$");
+    // 🚀 BULLETPROOF FIX: Check local device timezone directly. NO API. NO CACHE.
+    try {
+      const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      if (tz === "Asia/Calcutta" || tz === "Asia/Kolkata") {
+        setCurrency("INR");
+        setCurrencySymbol("₹");
+      } else {
+        setCurrency("USD");
+        setCurrencySymbol("$");
+      }
+    } catch (e) {
+      console.log("Timezone error");
     }
 
     const script = document.createElement("script");
@@ -86,6 +77,7 @@ export default function Home() {
       const response = await fetch("/api/razorpay", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        // 🚀 Frontend jo bheja wahi backend accept karega (INR ya USD)
         body: JSON.stringify({ amount: finalPrice * 100, currency: currency }), 
       });
       const order = await response.json();
@@ -94,7 +86,6 @@ export default function Home() {
         key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID, 
         amount: order.amount,
         currency: order.currency, 
-        // ✏️ UPDATED TITLE HERE AS REQUESTED
         name: "Pay & Link & Finish",
         description: `Plan: ${selectedTier.toUpperCase()} | Model: ${selectedTier === 'max' ? 'ALL' : MODEL_DETAILS[activeModel]?.name}`,
         order_id: order.id,
