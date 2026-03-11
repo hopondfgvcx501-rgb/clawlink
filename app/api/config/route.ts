@@ -11,68 +11,55 @@ export async function POST(req: Request) {
     const { email, selectedModel, selectedChannel, telegramToken, plan } = body;
 
     if (!email) {
-      return NextResponse.json({ success: false, error: "User email is missing from session data." }, { status: 400 });
+      return NextResponse.json({ success: false, error: "Email is required for deployment." });
     }
 
-    // 1. Quota Allocation
-    let allocatedTokens = 50000; 
+    // 🚀 CALCULATE 30 DAYS VALIDITY
+    const expiryDate = new Date();
+    expiryDate.setDate(expiryDate.getDate() + 30);
+
+    // 🚀 SET TOKENS BASED ON PLAN
+    let allocatedTokens = 10000;
     let isUnlimited = false;
 
-    if (plan === "pro") allocatedTokens = 500000; 
-    if (plan === "max") {
-      allocatedTokens = 999999999; 
-      isUnlimited = true;
-    }
+    if (plan === "starter") allocatedTokens = 50000;
+    else if (plan === "pro") allocatedTokens = 500000; 
+    else if (plan === "max") { isUnlimited = true; allocatedTokens = 9999999; }
 
-    // 2. Database Upsert
-    const dbData = {
-      email: email,
-      ai_provider: selectedModel.includes("gpt") ? "openai" : selectedModel.includes("claude") ? "anthropic" : "gemini",
-      ai_model: selectedModel,
-      available_tokens: allocatedTokens,
-      is_unlimited: isUnlimited,
-      whatsapp_token: selectedChannel === "whatsapp" ? telegramToken : null,
-      telegram_token: selectedChannel === "telegram" ? telegramToken : null
-    };
-
-    const { error: dbError } = await supabase
+    const { data, error } = await supabase
       .from("user_configs")
-      .upsert(dbData, { onConflict: "email" }); 
+      .upsert({
+        email: email,
+        ai_model: selectedModel,
+        ai_provider: selectedModel === "gpt-5.2" ? "openai" : selectedModel === "gemini" ? "google" : "anthropic",
+        telegram_token: selectedChannel === "telegram" ? telegramToken : null,
+        whatsapp_token: selectedChannel === "whatsapp" ? telegramToken : null,
+        available_tokens: allocatedTokens,
+        is_unlimited: isUnlimited,
+        plan_status: 'Active',
+        expires_at: expiryDate.toISOString() // 🔒 Locked expiration date
+      }, { onConflict: "email" })
+      .select();
 
-    if (dbError) {
-      throw new Error(`Database Error: ${dbError.message}`);
-    }
+    if (error) throw error;
 
-    // 3. Webhook Deployment
-    if (selectedChannel === "telegram") {
-      const baseUrl = process.env.NEXTAUTH_URL || "https://clawlink-six.vercel.app"; 
-      const WEBHOOK_URL = `${baseUrl}/api/webhook/telegram?token=${telegramToken}`;
-      
-      const telegramRes = await fetch(`https://api.telegram.org/bot${telegramToken}/setWebhook?url=${WEBHOOK_URL}`);
-      const telegramData = await telegramRes.json();
-
-      if (!telegramData.ok) {
-         throw new Error(`Telegram Webhook Configuration Failed: ${telegramData.description}`);
+    // 🚀 GENERATE LIVE BOT LINK
+    let botLink = "";
+    if (selectedChannel === "telegram" && telegramToken) {
+      try {
+        const tRes = await fetch(`https://api.telegram.org/bot${telegramToken}/getMe`);
+        const tData = await tRes.json();
+        if (tData.ok) botLink = `https://t.me/${tData.result.username}`;
+      } catch (err) {
+        console.error("Telegram link fetch failed.");
       }
-
-      const meRes = await fetch(`https://api.telegram.org/bot${telegramToken}/getMe`);
-      const meData = await meRes.json();
-      const botUsername = meData.ok ? meData.result.username : "your_bot";
-
-      return NextResponse.json({ success: true, botLink: `https://t.me/${botUsername}` });
-    } 
-    
-    else if (selectedChannel === "whatsapp") {
-      return NextResponse.json({ success: true, botLink: `https://business.facebook.com/wa/manage/` }); 
+    } else if (selectedChannel === "whatsapp") {
+      botLink = "https://business.facebook.com/wa/manage/";
     }
 
-    return NextResponse.json({ success: false, error: "Invalid Channel Selected." });
-
+    return NextResponse.json({ success: true, botLink });
   } catch (error: any) {
-    console.error("Configuration API Error:", error);
-    return NextResponse.json(
-      { success: false, error: error.message || "Internal server error during deployment." }, 
-      { status: 500 }
-    );
+    console.error("Config Deployment Error:", error.message);
+    return NextResponse.json({ success: false, error: error.message });
   }
 }
