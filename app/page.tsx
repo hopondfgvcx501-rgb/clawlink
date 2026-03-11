@@ -141,21 +141,35 @@ export default function Home() {
             {selectedChannel === "whatsapp" ? "Open WhatsApp Bot" : "Open Telegram Bot"}
           </a>
 
-          {/* 🚀 UNLOCKED CAPABILITIES SHOWCASE */}
+          {/* 🚀 DYNAMIC CAPABILITIES SHOWCASE BASED ON CHANNEL */}
           <div className="text-left bg-black/50 p-4 rounded-xl border border-white/5 max-h-48 overflow-y-auto custom-scrollbar">
             <p className="text-[10px] font-bold text-green-400 mb-3 uppercase tracking-widest flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span> System Capabilities Unlocked
             </p>
-            <ul className="text-xs text-gray-400 space-y-2.5 font-medium">
-              <li className="flex items-start gap-2">✓ <span><strong className="text-gray-300">Phase 1: Support</strong> - Auto-replies, Ticket creation, Multi-language.</span></li>
-              <li className="flex items-start gap-2">✓ <span><strong className="text-gray-300">Phase 2: Billing</strong> - Invoice generation, Payment reminders.</span></li>
-              <li className="flex items-start gap-2">✓ <span><strong className="text-gray-300">Phase 3: Service</strong> - Order tracking, Appointment scheduling.</span></li>
-              <li className="flex items-start gap-2">✓ <span><strong className="text-gray-300">Phase 4: Marketing</strong> - Broadcast campaigns, Feedback collection.</span></li>
-              <li className="flex items-start gap-2">✓ <span><strong className="text-gray-300">Phase 5: Automation</strong> - ERP/CRM API workflows, Task scheduling.</span></li>
-              <li className="flex items-start gap-2">✓ <span><strong className="text-gray-300">Phase 6: Memory</strong> - Customer-specific DB, Analytics reporting.</span></li>
-              <li className="flex items-start gap-2">✓ <span><strong className="text-gray-300">Phase 7: Omnichannel</strong> - Cross-platform sync integration.</span></li>
-              <li className="flex items-start gap-2">✓ <span><strong className="text-gray-300">Phase 8: Advanced AI</strong> - Predictive alerts, Sentiment analysis.</span></li>
-            </ul>
+            
+            {selectedChannel === "whatsapp" ? (
+              <ul className="text-xs text-gray-400 space-y-2.5 font-medium">
+                <li className="flex items-start gap-2">✓ <span><strong className="text-gray-300">Phase 1: Support</strong> - Auto-replies, Ticket creation, Multi-language.</span></li>
+                <li className="flex items-start gap-2">✓ <span><strong className="text-gray-300">Phase 2: Billing</strong> - Invoice generation, Payment reminders.</span></li>
+                <li className="flex items-start gap-2">✓ <span><strong className="text-gray-300">Phase 3: Service</strong> - Order tracking, Appointment scheduling.</span></li>
+                <li className="flex items-start gap-2">✓ <span><strong className="text-gray-300">Phase 4: Marketing</strong> - Broadcast campaigns, Feedback collection.</span></li>
+                <li className="flex items-start gap-2">✓ <span><strong className="text-gray-300">Phase 5: Automation</strong> - ERP/CRM API workflows, Task scheduling.</span></li>
+                <li className="flex items-start gap-2">✓ <span><strong className="text-gray-300">Phase 6: Memory</strong> - Customer-specific DB, Analytics reporting.</span></li>
+                <li className="flex items-start gap-2">✓ <span><strong className="text-gray-300">Phase 7: Omnichannel</strong> - Cross-platform sync integration.</span></li>
+                <li className="flex items-start gap-2">✓ <span><strong className="text-gray-300">Phase 8: Advanced AI</strong> - Predictive alerts, Sentiment analysis.</span></li>
+              </ul>
+            ) : (
+              <ul className="text-xs text-gray-400 space-y-2.5 font-medium">
+                <li className="flex items-start gap-2">✓ <span><strong className="text-gray-300">Phase 1: AI Chat</strong> - 24/7 intelligent automated query resolution.</span></li>
+                <li className="flex items-start gap-2">✓ <span><strong className="text-gray-300">Phase 2: Moderation</strong> - Automated group and channel anti-spam tools.</span></li>
+                <li className="flex items-start gap-2">✓ <span><strong className="text-gray-300">Phase 3: Media Sync</strong> - Advanced document and image processing.</span></li>
+                <li className="flex items-start gap-2">✓ <span><strong className="text-gray-300">Phase 4: Commands</strong> - Slash-command navigation and interactive menus.</span></li>
+                <li className="flex items-start gap-2">✓ <span><strong className="text-gray-300">Phase 5: Inline Mode</strong> - Global data fetching directly from any chat context.</span></li>
+                <li className="flex items-start gap-2">✓ <span><strong className="text-gray-300">Phase 6: Broadcasts</strong> - Mass notification delivery to all bot subscribers.</span></li>
+                <li className="flex items-start gap-2">✓ <span><strong className="text-gray-300">Phase 7: Web Apps</strong> - Integration with Telegram Mini Apps interface.</span></li>
+                <li className="flex items-start gap-2">✓ <span><strong className="text-gray-300">Phase 8: Payments</strong> - Seamless native Telegram invoice generation.</span></li>
+              </ul>
+            )}
           </div>
         </motion.div>
       );
@@ -255,7 +269,6 @@ export default function Home() {
                       <h2 className="text-2xl font-bold text-white tracking-tight">Connect WhatsApp Cloud</h2>
                     </div>
                     <ol className="space-y-5 text-sm text-gray-300 list-decimal pl-5 mb-10 font-medium leading-relaxed">
-                      {/* 🚀 DIRECT CLICKABLE META LINK ADDED HERE */}
                       <li>Navigate to the <a href="https://developers.facebook.com/apps/" target="_blank" rel="noopener noreferrer" className="text-green-400 hover:text-green-300 underline font-bold transition-colors">Meta for Developers</a> console.</li>
                       <li>Create an App and add the <strong className="text-white">WhatsApp Product</strong>.</li>
                       <li>Generate a <strong className="text-white">Permanent Access Token</strong>.</li>
