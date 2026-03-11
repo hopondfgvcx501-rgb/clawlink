@@ -4,6 +4,7 @@ import { signIn, signOut, useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import LandingUI from "../components/LandingUI";
+import { useRouter } from "next/navigation";
 
 const MODEL_DETAILS: Record<string, { name: string; starter: number; pro: number }> = {
   gemini: { name: "Gemini 3 Flash", starter: 9, pro: 19 },
@@ -14,6 +15,7 @@ const MAX_PLAN_PRICE = 89;
 
 export default function Home() {
   const { data: session, status } = useSession();
+  const router = useRouter(); 
   
   const [isTelegramModalOpen, setIsTelegramModalOpen] = useState(false);
   const [telegramToken, setTelegramToken] = useState("");
@@ -32,7 +34,6 @@ export default function Home() {
   const EXCHANGE_RATE = 83; 
 
   useEffect(() => {
-    // 🚀 BULLETPROOF FIX: Check local device timezone directly. NO API. NO CACHE.
     try {
       const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
       if (tz === "Asia/Calcutta" || tz === "Asia/Kolkata") {
@@ -88,7 +89,6 @@ export default function Home() {
         name: "ClawLink Premium",
         description: `Plan: ${selectedTier.toUpperCase()} | Model: ${selectedTier === 'max' ? 'ALL' : MODEL_DETAILS[activeModel]?.name}`,
         order_id: order.id,
-        // 🚀 DEBUGGING ADDED HERE
         handler: async function (response: any) {
           console.log("Payment successful. Response:", response);
           setShowPricingPopup(false);
@@ -169,6 +169,12 @@ export default function Home() {
           <button onClick={() => signOut()} className="text-xs text-gray-500 hover:text-white font-bold uppercase tracking-widest">Logout</button>
         </div>
 
+        {/* 🚀 DASHBOARD BUTTON ADDED HERE */}
+        <button onClick={() => router.push('/dashboard')} className="w-full bg-[#1A1A1A] border border-white/10 text-white py-3 rounded-xl text-sm font-bold tracking-widest hover:bg-[#222] transition-all flex justify-center items-center gap-2">
+          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+          ACCESS DASHBOARD
+        </button>
+
         {!isTokenSaved ? (
           <button onClick={() => handleOpenTelegram(selectedModel, selectedChannel)} className="w-full bg-[#1A1A1A] border border-white/20 text-white py-4 rounded-xl font-bold tracking-wide hover:bg-white hover:text-black transition-all">
             CONNECT {selectedChannel.toUpperCase()} TO CONTINUE
@@ -187,7 +193,6 @@ export default function Home() {
     );
   };
 
-  // 🚀 Added dynamic theme colors for the pro modal
   const themeColor = activeChannel === "telegram" ? "rgba(42, 171, 238, 0.15)" : "rgba(37, 211, 102, 0.15)";
   const borderColor = activeChannel === "telegram" ? "border-blue-500/30" : "border-green-500/30";
 
@@ -196,7 +201,6 @@ export default function Home() {
       
       <LandingUI renderActionArea={renderDynamicButtons} isLocked={isTokenSaved} />
 
-      {/* 🌟 ENHANCED ENTERPRISE INTEGRATION MODAL */}
       <AnimatePresence>
         {isTelegramModalOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4">
@@ -209,7 +213,6 @@ export default function Home() {
             >
               <button onClick={() => setIsTelegramModalOpen(false)} className="absolute top-6 right-6 z-20 text-gray-500 hover:text-white bg-white/5 hover:bg-white/10 p-2 rounded-full transition-all">✕</button>
 
-              {/* LEFT PANEL - INSTRUCTIONS & INPUT */}
               <div className="w-full md:w-1/2 p-10 flex flex-col justify-center relative z-10">
                 
                 {activeChannel === "telegram" ? (
@@ -275,21 +278,14 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* RIGHT PANEL - PREMIUM PHONE MOCKUP */}
               <div className="hidden md:flex md:w-1/2 bg-black/40 items-center justify-center p-10 border-l border-white/5 relative">
-                 
-                 {/* Decorative background blur */}
                  <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 rounded-full blur-[100px] pointer-events-none ${activeChannel === "telegram" ? "bg-blue-500/20" : "bg-green-500/20"}`}></div>
 
-                 {/* Phone Mockup Frame */}
                  <div className="w-[300px] h-[600px] border-[8px] border-[#1A1A1A] rounded-[3rem] bg-[#0A0A0B] relative overflow-hidden shadow-2xl z-10 flex flex-col">
-                    
-                    {/* iPhone Notch */}
                     <div className="absolute top-0 inset-x-0 h-7 bg-[#1A1A1A] rounded-b-3xl w-40 mx-auto z-20 flex justify-center items-end pb-1">
                       <div className="w-12 h-1.5 bg-black/50 rounded-full"></div>
                     </div>
 
-                    {/* App Header */}
                     <div className="bg-[#111]/80 backdrop-blur-md p-4 pt-10 flex items-center gap-3 border-b border-white/5 z-10">
                       <div className={`w-10 h-10 rounded-full flex items-center justify-center text-xl shadow-lg ${activeChannel === "telegram" ? "bg-[#2AABEE]" : "bg-[#25D366]"}`}>
                         {activeChannel === "telegram" ? "🤖" : "🏢"}
@@ -303,7 +299,6 @@ export default function Home() {
                       </div>
                     </div>
                     
-                    {/* Chat Area */}
                     <div className="p-4 space-y-5 flex-1 overflow-hidden text-[12px] font-mono bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-90 flex flex-col justify-end pb-8">
                        {activeChannel === "telegram" ? (
                          <>
@@ -329,8 +324,6 @@ export default function Home() {
                          </>
                        )}
                     </div>
-
-                    {/* iPhone Home Indicator */}
                     <div className="absolute bottom-2 inset-x-0 h-1.5 bg-[#333] rounded-full w-32 mx-auto z-20"></div>
                  </div>
               </div>
