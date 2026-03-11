@@ -1,52 +1,88 @@
 import { NextResponse } from "next/server";
+import { createClient } from "@supabase/supabase-js";
+
+// 🚀 Initialize Supabase (Strictly using process.env, no hardcoding)
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
+// Using Service Role Key is best for backend, fallback to Anon key
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
+const supabase = createClient(supabaseUrl, supabaseKey);
 
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { email, selectedModel, selectedChannel, telegramToken } = body;
+    const { email, selectedModel, selectedChannel, telegramToken, plan } = body;
 
-    if (!telegramToken) {
-      return NextResponse.json({ success: false, error: "Telegram token is missing" }, { status: 400 });
+    if (!email) {
+      return NextResponse.json({ success: false, error: "User email is missing from session!" }, { status: 400 });
     }
 
-    // 🚀 STEP 1: Telegram Webhook Set Karna
-    // (Yeh Telegram ko batayega ki jab bhi koi message aaye, toh hamare Vercel URL par bhejo)
-    
-    // Note: Localhost pe webhook set nahi hota, Vercel ka live URL chahiye. 
-    // Isliye hum hardcode nahi kar rahe, environment variable use kar rahe hain.
-    const baseUrl = process.env.NEXTAUTH_URL || "https://clawlink-six.vercel.app"; 
-    const WEBHOOK_URL = `${baseUrl}/api/webhook/telegram`;
-    
-    const telegramRes = await fetch(`https://api.telegram.org/bot${telegramToken}/setWebhook?url=${WEBHOOK_URL}`);
-    const telegramData = await telegramRes.json();
+    // 🧠 1. QUOTA LOGIC: Plan ke hisaab se token allocate karo
+    let allocatedTokens = 50000; // Starter (Garib Plan)
+    let isUnlimited = false;
 
-    if (!telegramData.ok) {
-      // Exact error bhej rahe hain bina hide kiye
-      return NextResponse.json({ 
-        success: false, 
-        error: `Telegram Webhook Failed: ${telegramData.description}` 
-      }, { status: 500 });
+    if (plan === "pro") allocatedTokens = 500000; // Pro (Amir Plan)
+    if (plan === "max") {
+      allocatedTokens = 999999999; // Omni Max Plan
+      isUnlimited = true;
     }
 
-    // 🚀 STEP 2: Supabase mein Save Karna (Yeh hum agle step mein setup karenge)
-    // console.log("Saving to database...", email, selectedModel);
+    // 💾 2. SAVE TO SUPABASE: Payment ke turant baad user ka record save karo
+    // Note: frontend se hum 'telegramToken' variable bhej rahe hain dono ke liye
+    const dbData = {
+      email: email,
+      ai_provider: selectedModel.includes("gpt") ? "openai" : selectedModel.includes("claude") ? "anthropic" : "gemini",
+      ai_model: selectedModel,
+      available_tokens: allocatedTokens,
+      is_unlimited: isUnlimited,
+      // Agar channel WhatsApp hai toh token whatsapp_token column mein jayega
+      whatsapp_token: selectedChannel === "whatsapp" ? telegramToken : null,
+      telegram_token: selectedChannel === "telegram" ? telegramToken : null
+    };
 
-    // 🚀 STEP 3: Bot ka Username nikalna taaki Success Button ban sake
-    const meRes = await fetch(`https://api.telegram.org/bot${telegramToken}/getMe`);
-    const meData = await meRes.json();
-    const botUsername = meData.ok ? meData.result.username : "your_bot";
+    // 'upsert' ka matlab: Agar email pehle se hai toh update karo, warna naya dalo
+    const { error: dbError } = await supabase
+      .from("user_configs")
+      .upsert(dbData, { onConflict: "email" }); 
 
-    // ✅ SUCCESS: Frontend ko bot ka link bhej do
-    return NextResponse.json({ 
-      success: true, 
-      botLink: `https://t.me/${botUsername}` 
-    });
+    if (dbError) {
+      throw new Error(`Supabase Database Error: ${dbError.message}`);
+    }
+
+    // ✈️ 3. CHANNEL DEPLOYMENT LOGIC
+    if (selectedChannel === "telegram") {
+      // TELEGRAM WEBHOOK SETUP
+      const baseUrl = process.env.NEXTAUTH_URL || "https://clawlink-six.vercel.app"; 
+      const WEBHOOK_URL = `${baseUrl}/api/webhook/telegram`;
+      
+      const telegramRes = await fetch(`https://api.telegram.org/bot${telegramToken}/setWebhook?url=${WEBHOOK_URL}`);
+      const telegramData = await telegramRes.json();
+
+      if (!telegramData.ok) {
+         throw new Error(`Telegram Webhook Failed: ${telegramData.description}`);
+      }
+
+      // Success screen ke liye bot ka username nikalo
+      const meRes = await fetch(`https://api.telegram.org/bot${telegramToken}/getMe`);
+      const meData = await meRes.json();
+      const botUsername = meData.ok ? meData.result.username : "your_bot";
+
+      return NextResponse.json({ success: true, botLink: `https://t.me/${botUsername}` });
+    } 
+    
+    else if (selectedChannel === "whatsapp") {
+      // WHATSAPP SETUP
+      // WhatsApp webhook Meta Dashboard se manually lagta hai, code se nahi. 
+      // Toh hum yahan bas Success bhej denge taaki UI aage badh jaye.
+      return NextResponse.json({ success: true, botLink: `https://business.facebook.com/wa/manage/` }); 
+    }
+
+    return NextResponse.json({ success: false, error: "Invalid Channel Selected" });
 
   } catch (error: any) {
-    console.error("🚨 Config API Error:", error);
-    // Exact system error wapas frontend par bhej rahe hain debugging ke liye
+    console.error("🚨 Master Config API Error:", error);
+    // Strict requirement: Error chupana nahi hai
     return NextResponse.json(
-      { success: false, error: error.message || "Unknown Server Error" }, 
+      { success: false, error: error.message || "Unknown Server Error during Deployment" }, 
       { status: 500 }
     );
   }
