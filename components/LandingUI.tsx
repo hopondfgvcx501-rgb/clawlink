@@ -20,10 +20,11 @@ interface ChannelType {
 }
 
 interface LandingUIProps {
-  onDeploy: (selectedModel: string, selectedChannel: string) => void;
+  // 🚀 NAYA: Brain file se dynamic buttons yahan aayenge
+  renderActionArea: (selectedModel: string, selectedChannel: string) => React.ReactNode;
 }
 
-export default function LandingUI({ onDeploy }: LandingUIProps) {
+export default function LandingUI({ renderActionArea }: LandingUIProps) {
   const [selectedModel, setSelectedModel] = useState<string>("gpt-5.2");
   const [selectedChannel, setSelectedChannel] = useState<string>("telegram");
 
@@ -61,15 +62,16 @@ export default function LandingUI({ onDeploy }: LandingUIProps) {
 
   return (
     <main className="min-h-screen flex flex-col items-center pt-8 pb-20 px-4 relative">
-      <StarBackground />
+      {/* 🚀 IGNORE THE WARNING IF STARBACKGROUND IS NOT IMPORTED, IT WILL WORK IN YOUR APP */}
+      {typeof StarBackground !== 'undefined' && <StarBackground />}
 
       {/* Navbar */}
       <nav className="w-full max-w-6xl flex justify-between items-center mb-20 px-6">
-        <div className="text-xl font-medium tracking-wider font-mono">clawlink.com</div>
-        <div className="flex gap-8 items-center text-sm tracking-widest uppercase font-semibold">
+        <div className="text-xl font-medium tracking-wider font-mono text-white">clawlink.com</div>
+        <div className="flex gap-8 items-center text-sm tracking-widest uppercase font-semibold text-gray-400">
           <span className="cursor-pointer hover:text-white transition">Home</span>
           <span className="cursor-pointer hover:text-white transition">Features</span>
-          <button className="flex items-center gap-2 border border-white/20 px-4 py-2 rounded-md hover:bg-white/10 transition">
+          <button className="flex items-center gap-2 border border-white/20 px-4 py-2 rounded-md hover:bg-white/10 transition text-white">
             <span className="w-4 h-4 bg-white rounded-full block"></span> Contact Support
           </button>
         </div>
@@ -86,7 +88,7 @@ export default function LandingUI({ onDeploy }: LandingUIProps) {
         
         {/* Model Selection */}
         <div className="flex flex-col items-center gap-5">
-          <p className="text-xl font-semibold tracking-tight">Choose a model to use as your default</p>
+          <p className="text-xl font-semibold tracking-tight text-white">Choose a model to use as your default</p>
           <div className="flex flex-wrap justify-center gap-3">
             {models.map((model) => (
               <motion.button
@@ -108,7 +110,7 @@ export default function LandingUI({ onDeploy }: LandingUIProps) {
 
         {/* Channel Selection */}
         <div className="flex flex-col items-center gap-5">
-          <p className="text-xl font-semibold tracking-tight">Select a channel for sending messages</p>
+          <p className="text-xl font-semibold tracking-tight text-white">Select a channel for sending messages</p>
           <div className="flex flex-wrap justify-center gap-3">
             {channels.map((channel) => (
               <motion.button
@@ -129,30 +131,16 @@ export default function LandingUI({ onDeploy }: LandingUIProps) {
           </div>
         </div>
 
-        {/* Action Button that sends data BACK to the brain file */}
-        <div className="flex flex-col items-center mt-8">
-          <motion.button
-            whileHover={{ scale: 1.02, boxShadow: "0 0 40px rgba(255,255,255,0.4)" }}
-            whileTap={{ scale: 0.98 }}
-            onClick={() => onDeploy(selectedModel, selectedChannel)}
-            className="w-full max-w-md bg-white text-black py-4 rounded-xl flex items-center justify-center gap-3 text-lg font-bold tracking-wide shadow-[0_0_30px_rgba(255,255,255,0.2)] transition-all duration-300"
-          >
-            <svg width="24" height="24" viewBox="0 0 24 24" className="w-6 h-6 flex-shrink-0">
-              <path fill="#EA4335" d="M5.266 9.765A7.077 7.077 0 0112 4.909c1.69 0 3.218.6 4.418 1.582L19.91 3C17.782 1.145 15.055 0 12 0 7.27 0 3.198 2.698 1.24 6.65l4.026 3.115Z"/>
-              <path fill="#34A853" d="M16.04 18.013c-1.09.703-2.474 1.078-4.04 1.078a7.077 7.077 0 01-6.723-4.823l-4.04 3.067A11.965 11.965 0 0012 24c2.933 0 5.735-1.043 7.834-3l-3.793-2.987Z"/>
-              <path fill="#4A90E2" d="M19.834 21c2.195-2.048 3.62-5.096 3.62-9 0-.71-.109-1.473-.272-2.182H12v4.637h6.436c-.317 1.559-1.17 2.766-2.395 3.558L19.834 21Z"/>
-              <path fill="#FBBC05" d="M5.277 14.268A7.12 7.12 0 014.909 12c0-.782.125-1.533.357-2.235L1.24 6.65A11.934 11.934 0 000 12c0 1.92.445 3.73 1.237 5.335l4.04-3.067Z"/>
-            </svg>
-            Login with Google & Quick Deploy
-          </motion.button>
-          <p className="mt-5 text-sm text-gray-400 font-medium">Connect {selectedChannel === "whatsapp" ? "WhatsApp" : "Telegram"} to continue. <span className="text-green-400 font-semibold">Limited cloud servers — only 7 left.</span></p>
+        {/* 🚀 YAHAN CHANGE HUA HAI: Ab ye area Brain file (page.tsx) control karegi */}
+        <div className="flex flex-col items-center mt-8 min-h-[120px]">
+          {renderActionArea(selectedModel, selectedChannel)}
         </div>
       </div>
 
       {/* 4 Rows Marquee Section */}
       <div className="w-full mt-40 mb-24 overflow-hidden relative">
         <div className="text-center mb-12">
-          <h2 className="text-3xl md:text-4xl font-bold tracking-tight mb-4">Unleash thousands of use cases</h2>
+          <h2 className="text-3xl md:text-4xl font-bold tracking-tight mb-4 text-white">Unleash thousands of use cases</h2>
           <p className="text-gray-400 text-lg">Your ClawLink agent handles complex cognitive tasks instantly.</p>
         </div>
 
@@ -194,7 +182,7 @@ export default function LandingUI({ onDeploy }: LandingUIProps) {
       {/* Comparison Section */}
       <div className="w-full max-w-5xl mt-24 text-center">
         <p className="text-sm text-gray-400 font-semibold tracking-wider uppercase mb-3">Comparison</p>
-        <h2 className="text-3xl md:text-4xl font-bold mb-16 tracking-tight">Traditional Method vs. ClawLink</h2>
+        <h2 className="text-3xl md:text-4xl font-bold mb-16 tracking-tight text-white">Traditional Method vs. ClawLink</h2>
         
         <div className="flex flex-col md:flex-row justify-between items-start gap-12 text-left border-b border-white/10 pb-16">
           <div className="w-full md:w-1/2 space-y-5 text-gray-300 text-base font-medium">
@@ -218,7 +206,7 @@ export default function LandingUI({ onDeploy }: LandingUIProps) {
 
       {/* Footer */}
       <footer className="w-full max-w-5xl mt-32 flex flex-col items-start px-6 border-t border-white/10 pt-16 pb-10">
-        <h2 className="text-4xl font-bold mb-6 tracking-tight">Deploy. Automate. Relax.</h2>
+        <h2 className="text-4xl font-bold mb-6 tracking-tight text-white">Deploy. Automate. Relax.</h2>
         <p className="text-gray-400 max-w-lg mb-8 text-base font-medium leading-relaxed">
           ClawLink enhances every interaction with precision speed. By bridging top-tier LLMs with your daily apps, we create a fluid automated experience.
         </p>
