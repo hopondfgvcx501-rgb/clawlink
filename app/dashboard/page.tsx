@@ -2,8 +2,8 @@
 
 import { useSession, signOut } from "next-auth/react";
 import { useEffect, useState } from "react";
-import { motion } from "framer-motion";
-import { Activity, Database, LogOut, ArrowUpRight, Zap, Save, Users, Receipt, Download } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Activity, Database, LogOut, ArrowUpRight, Zap, Save, Users, Receipt, Download, ExternalLink, Smartphone } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 export default function Dashboard() {
@@ -13,6 +13,7 @@ export default function Dashboard() {
   const [userData, setUserData] = useState<any>(null);
   const [billingHistory, setBillingHistory] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [showAppBanner, setShowAppBanner] = useState(true);
   
   const [systemPrompt, setSystemPrompt] = useState("");
   const [isSavingPrompt, setIsSavingPrompt] = useState(false);
@@ -23,7 +24,6 @@ export default function Dashboard() {
     }
 
     if (session?.user?.email) {
-      // Fetch User Quota & Config
       fetch(`/api/user?email=${session.user.email}`)
         .then((res) => res.json())
         .then((data) => {
@@ -34,7 +34,6 @@ export default function Dashboard() {
         })
         .catch(console.error);
 
-      // Fetch Billing History
       fetch(`/api/billing?email=${session.user.email}`)
         .then((res) => res.json())
         .then((data) => {
@@ -83,13 +82,12 @@ Date          : ${new Date(invoice.created_at).toLocaleString()}
 Customer      : ${invoice.email}
 
 -----------------------------------------
-Plan Subscribed: ${invoice.plan_name.toUpperCase()}
-Total Amount   : ${invoice.amount} ${invoice.currency.toUpperCase()}
-Payment Status : ${invoice.status.toUpperCase()}
+Plan Subscribed: ${invoice.plan_name?.toUpperCase() || 'UNKNOWN'}
+Total Amount   : ${invoice.amount} ${invoice.currency?.toUpperCase() || 'USD'}
+Payment Status : ${invoice.status?.toUpperCase() || 'PAID'}
 -----------------------------------------
 
 Thank you for choosing ClawLink Enterprise AI.
-For support, please share this Invoice ID with our team.
 =========================================
     `;
 
@@ -118,12 +116,26 @@ For support, please share this Invoice ID with our team.
 
   return (
     <div className="min-h-screen bg-[#0A0A0B] text-white p-6 md:p-12 font-sans selection:bg-blue-500/30">
-      <nav className="max-w-6xl mx-auto flex justify-between items-center mb-16 border-b border-white/10 pb-6">
+      
+      {/* 🚀 WEB APP INSTALLATION BANNER */}
+      <AnimatePresence>
+        {showAppBanner && (
+          <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="max-w-6xl mx-auto mb-6 bg-gradient-to-r from-blue-600/20 to-purple-600/20 border border-blue-500/30 rounded-xl p-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-3 text-blue-200 text-sm font-medium">
+              <Smartphone className="w-5 h-5 text-blue-400 flex-shrink-0" />
+              <p>For the best experience, click <strong className="text-white">"Add to Home Screen"</strong> in your browser menu to install the ClawLink Web App.</p>
+            </div>
+            <button onClick={() => setShowAppBanner(false)} className="text-gray-400 hover:text-white flex-shrink-0">✕</button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <nav className="max-w-6xl mx-auto flex justify-between items-center mb-12 border-b border-white/10 pb-6">
         <div className="text-2xl font-bold tracking-wider font-mono">clawlink<span className="text-blue-500">.</span>dashboard</div>
         <div className="flex items-center gap-6">
           <div className="flex items-center gap-3">
             <img src={session?.user?.image || ""} alt="Profile" className="w-10 h-10 rounded-full border border-white/20" />
-            <div className="hidden md:block">
+            <div className="hidden md:block text-left">
               <p className="text-sm font-bold">{session?.user?.name}</p>
               <p className="text-xs text-gray-500">{session?.user?.email}</p>
             </div>
@@ -139,8 +151,6 @@ For support, please share this Invoice ID with our team.
           
           {/* LEFT COLUMN: Plan & Persona */}
           <div className="md:col-span-2 space-y-8">
-            
-            {/* Plan Overview Card */}
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="bg-[#111] border border-white/10 rounded-3xl p-8 relative overflow-hidden shadow-2xl">
               <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/10 blur-[100px] rounded-full pointer-events-none"></div>
               
@@ -162,8 +172,8 @@ For support, please share this Invoice ID with our team.
                   <div>
                     <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">API Usage</p>
                     <p className="text-2xl font-bold text-white">
-                      {userData?.isUnlimited ? "Unlimited" : userData?.tokensUsed.toLocaleString() || 0} 
-                      <span className="text-sm text-gray-500 font-normal"> / {userData?.isUnlimited ? "∞" : userData?.tokensAllocated.toLocaleString()} words</span>
+                      {userData?.isUnlimited ? "Unlimited" : userData?.tokensUsed?.toLocaleString() || 0} 
+                      <span className="text-sm text-gray-500 font-normal"> / {userData?.isUnlimited ? "∞" : userData?.tokensAllocated?.toLocaleString()} words</span>
                     </p>
                   </div>
                   <p className="text-sm font-mono text-blue-400">{userData?.isUnlimited ? "∞" : `${usagePercentage.toFixed(1)}%`}</p>
@@ -182,7 +192,6 @@ For support, please share this Invoice ID with our team.
               </div>
             </motion.div>
 
-            {/* AI Persona Editor */}
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="bg-[#111] border border-white/10 rounded-3xl p-8 shadow-2xl relative">
               <h3 className="text-lg font-bold text-white mb-2 tracking-wide flex items-center gap-2">
                 🧠 AI Persona Configuration
@@ -207,7 +216,6 @@ For support, please share this Invoice ID with our team.
                 </button>
               </div>
             </motion.div>
-
           </div>
 
           {/* RIGHT COLUMN: Instances & CRM */}
@@ -219,38 +227,42 @@ For support, please share this Invoice ID with our team.
 
             <div className="space-y-4 mb-8">
               {userData?.telegramActive ? (
-                <div className="bg-blue-500/10 border border-blue-500/30 p-4 rounded-xl flex items-center justify-between group cursor-pointer hover:bg-blue-500/20 transition-all">
-                  <div className="flex items-center gap-3">
+                <div className="bg-blue-500/10 border border-blue-500/30 p-5 rounded-xl transition-all">
+                  <div className="flex items-center gap-3 mb-4">
                     <span className="text-2xl">✈️</span>
                     <div>
                       <p className="text-sm font-bold text-white">Telegram Bot</p>
-                      <p className="text-xs text-blue-400">Online & Routing</p>
+                      <p className="text-xs text-blue-400">Online & Processing</p>
                     </div>
                   </div>
-                  <ArrowUpRight className="w-4 h-4 text-gray-400 group-hover:text-white" />
+                  {userData?.liveBotLink && (
+                    <a href={userData.liveBotLink} target="_blank" rel="noopener noreferrer" className="w-full bg-blue-500 hover:bg-blue-600 text-white text-sm font-bold py-2 rounded-lg flex items-center justify-center gap-2 transition-colors">
+                      Open Telegram Bot <ExternalLink className="w-4 h-4"/>
+                    </a>
+                  )}
                 </div>
-              ) : (
-                <div className="bg-black/50 border border-white/5 p-4 rounded-xl flex items-center gap-3 opacity-50">
-                  <span className="text-2xl grayscale">✈️</span>
-                  <p className="text-sm font-medium text-gray-500">Telegram Not Configured</p>
-                </div>
-              )}
+              ) : null}
 
               {userData?.whatsappActive ? (
-                <div className="bg-green-500/10 border border-green-500/30 p-4 rounded-xl flex items-center justify-between group cursor-pointer hover:bg-green-500/20 transition-all">
-                  <div className="flex items-center gap-3">
+                <div className="bg-green-500/10 border border-green-500/30 p-5 rounded-xl transition-all">
+                  <div className="flex items-center gap-3 mb-4">
                     <span className="text-2xl">💬</span>
                     <div>
                       <p className="text-sm font-bold text-white">WhatsApp Cloud</p>
-                      <p className="text-xs text-green-400">Online & Routing</p>
+                      <p className="text-xs text-green-400">Online & Processing</p>
                     </div>
                   </div>
-                  <ArrowUpRight className="w-4 h-4 text-gray-400 group-hover:text-white" />
+                  {userData?.liveBotLink && (
+                    <a href={userData.liveBotLink} target="_blank" rel="noopener noreferrer" className="w-full bg-green-500 hover:bg-green-600 text-white text-sm font-bold py-2 rounded-lg flex items-center justify-center gap-2 transition-colors">
+                      Manage Meta App <ExternalLink className="w-4 h-4"/>
+                    </a>
+                  )}
                 </div>
-              ) : (
+              ) : null}
+
+              {!userData?.telegramActive && !userData?.whatsappActive && (
                 <div className="bg-black/50 border border-white/5 p-4 rounded-xl flex items-center gap-3 opacity-50">
-                  <span className="text-2xl grayscale">💬</span>
-                  <p className="text-sm font-medium text-gray-500">WhatsApp Not Configured</p>
+                  <p className="text-sm font-medium text-gray-500">No active instances found.</p>
                 </div>
               )}
             </div>
@@ -278,7 +290,7 @@ For support, please share this Invoice ID with our team.
           </motion.div>
         </div>
 
-        {/* 🚀 NEW SECTION: BILLING & INVOICES */}
+        {/* BILLING & INVOICES */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="bg-[#111] border border-white/10 rounded-3xl p-8 shadow-2xl">
           <div className="flex items-center gap-3 mb-6">
             <Receipt className="w-5 h-5 text-blue-400" />

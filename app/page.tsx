@@ -137,8 +137,7 @@ export default function Home() {
               : "Your Telegram webhook is fully connected and processing data."}
           </p>
           
-          {/* 🚀 MOVED DASHBOARD BUTTON HERE TO THE SUCCESS SCREEN */}
-          <div className="flex flex-col sm:flex-row gap-3 justify-center mb-6">
+          <div className="flex flex-col sm:flex-row gap-3 justify-center mb-4">
             <a href={botLink} target="_blank" rel="noopener noreferrer" className="w-full sm:w-auto bg-white text-black font-black px-6 py-3 rounded-xl hover:bg-gray-200 transition-colors text-sm flex items-center justify-center">
               {selectedChannel === "whatsapp" ? "Open WhatsApp Bot" : "Open Telegram Bot"}
             </a>
@@ -146,6 +145,13 @@ export default function Home() {
               <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
               Access Dashboard
             </button>
+          </div>
+
+          {/* 🚀 WEB APP TIP ADDED HERE */}
+          <div className="bg-blue-500/10 border border-blue-500/30 p-3 rounded-xl mb-6 text-left">
+            <p className="text-xs font-medium text-blue-200 leading-relaxed">
+              💡 <strong className="text-blue-400">Pro Tip:</strong> Install the ClawLink Web App from your browser menu (Add to Home Screen) to access your bot's CRM and billing easily.
+            </p>
           </div>
 
           <div className="text-left bg-black/50 p-4 rounded-xl border border-white/5 max-h-48 overflow-y-auto custom-scrollbar">
@@ -207,7 +213,7 @@ export default function Home() {
         </div>
 
         {!isTokenSaved ? (
-          <button onClick={() => handleOpenIntegration(selectedModel, selectedChannel)} className="w-full bg-[#1A1A1A] border border-white/20 text-white py-4 rounded-xl font-bold tracking-wide hover:bg-white hover:text-black transition-all">
+          <button onClick={() => handleOpenIntegration(selectedModel, selectedChannel)} className="w-full bg-[#1A1A1A] border border-white/20 text-white py-4 rounded-xl font-bold tracking-wide hover:bg-white hover:text-black transition-all mt-2">
             CONNECT {selectedChannel.toUpperCase()} TO CONTINUE
           </button>
         ) : (
