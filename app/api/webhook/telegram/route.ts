@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { sendEmail } from "../../../lib/email"; // 🚀 PATH STRICTLY LOCKED
+import { sendEmail } from "../../../lib/email";
 
 export const dynamic = "force-dynamic";
 
@@ -17,7 +17,39 @@ const AI_CHAINS: Record<string, string[]> = {
     "google": ["gemini-1.5-pro-latest", "gemini-1.5-flash-latest", "gemini-pro"]
 };
 
-// 🚀 GENERATE EMBEDDING FOR RAG SEARCH
+// 🚀 VOICE NOTE ENGINE (OpenAI Whisper)
+async function transcribeTelegramVoice(fileId: string, botToken: string, openaiKey: string) {
+    try {
+        // 1. Get File Path from Telegram
+        const fileRes = await fetch(`https://api.telegram.org/bot${botToken}/getFile?file_id=${fileId}`);
+        const fileData = await fileRes.json();
+        if (!fileData.ok) return null;
+        const filePath = fileData.result.file_path;
+
+        // 2. Download Audio Blob
+        const audioRes = await fetch(`https://api.telegram.org/file/bot${botToken}/${filePath}`);
+        const audioBlob = await audioRes.blob();
+
+        // 3. Send to OpenAI Whisper for Transcription
+        const formData = new FormData();
+        formData.append("file", audioBlob, "voice.oga");
+        formData.append("model", "whisper-1");
+
+        const whisperRes = await fetch("https://api.openai.com/v1/audio/transcriptions", {
+            method: "POST",
+            headers: { "Authorization": `Bearer ${openaiKey}` },
+            body: formData as any
+        });
+
+        const whisperData = await whisperRes.json();
+        return whisperData.text || null;
+    } catch (e) {
+        console.error("Whisper Transcription Error:", e);
+        return null;
+    }
+}
+
+// 🚀 GENERATE EMBEDDING FOR RAG
 async function generateEmbedding(text: string) {
     const embedUrl = `https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent?key=${process.env.GEMINI_API_KEY}`;
     const res = await fetch(embedUrl, {
@@ -65,16 +97,18 @@ export async function POST(req: Request) {
     try {
         const body = await req.json();
 
-        if (!body.message || !body.message.text) return NextResponse.json({ success: true });
+        // Must have message object
+        if (!body.message) return NextResponse.json({ success: true });
 
         const chatId = body.message.chat.id.toString();
-        const userText = body.message.text;
 
+        // DDoS Shield
         const now = Date.now();
         const lastMessageTime = rateLimitMap.get(chatId) || 0;
         if (now - lastMessageTime < COOLDOWN_MS) return NextResponse.json({ success: true });
         rateLimitMap.set(chatId, now);
 
+        // Fetch User Config Early (We need token for Audio download)
         const { data: config, error: configErr } = await supabase
             .from("user_configs")
             .select("*")
@@ -89,6 +123,38 @@ export async function POST(req: Request) {
         const userEmail = config.email;
         const provider = config.ai_provider || "google";
 
+        // 🚀 HANDLE TEXT OR VOICE
+        let userText = "";
+        
+        if (body.message.text) {
+            userText = body.message.text;
+        } else if (body.message.voice) {
+            // Send a "Listening..." indicator to user
+            await fetch(`https://api.telegram.org/bot${telegramToken}/sendChatAction`, {
+                method: "POST", headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ chat_id: chatId, action: "record_voice" }) // Gives a nice UI effect
+            });
+
+            const transcribedText = await transcribeTelegramVoice(
+                body.message.voice.file_id, 
+                telegramToken, 
+                process.env.OPENAI_API_KEY || ""
+            );
+            
+            if (!transcribedText) {
+                await fetch(`https://api.telegram.org/bot${telegramToken}/sendMessage`, {
+                    method: "POST", headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ chat_id: chatId, text: "Sorry, I couldn't clearly hear that. Could you please type it out?" })
+                });
+                return NextResponse.json({ success: true });
+            }
+            userText = transcribedText;
+        } else {
+            // Ignore Images, Videos, Stickers for now
+            return NextResponse.json({ success: true });
+        }
+
+        // THE STEALTH SHIELD
         if (config.plan_status === "Expired" || (!config.is_unlimited && config.available_tokens <= 0)) {
             await fetch(`https://api.telegram.org/bot${telegramToken}/sendMessage`, {
                 method: "POST", headers: { "Content-Type": "application/json" },
@@ -106,26 +172,21 @@ export async function POST(req: Request) {
             return NextResponse.json({ success: true });
         }
 
-        // 🚀 CUSTOM KNOWLEDGE BASE FETCH (RAG)
+        // 🚀 RAG KNOWLEDGE FETCH
         let customKnowledge = "";
         try {
             const queryVector = await generateEmbedding(userText);
             if (queryVector) {
                 const { data: matchedDocs } = await supabase.rpc("match_knowledge", {
-                    query_embedding: queryVector,
-                    match_threshold: 0.65,
-                    match_count: 3,
-                    p_user_email: userEmail
+                    query_embedding: queryVector, match_threshold: 0.65, match_count: 3, p_user_email: userEmail
                 });
-                
                 if (matchedDocs && matchedDocs.length > 0) {
                     customKnowledge = matchedDocs.map((doc: any) => doc.content).join("\n\n");
                 }
             }
-        } catch (e) {
-            console.error("RAG Fetch Error:", e);
-        }
+        } catch (e) { console.error("RAG Error:", e); }
 
+        // MEMORY FETCH
         const { data: pastChats } = await supabase
             .from("bot_conversations")
             .select("role, content")
@@ -141,19 +202,25 @@ export async function POST(req: Request) {
 
         const fullContext = `System Instructions: ${systemPrompt}
 
-Company Knowledge Base (Use this information to answer if relevant to the query):
-${customKnowledge ? customKnowledge : "No specific company data found for this query."}
+Company Knowledge Base:
+${customKnowledge ? customKnowledge : "No specific company data found."}
 
 Recent Conversation History:
 ${memoryHistory}
 
 User's New Message: ${userText}`;
         
-        await supabase.from("bot_conversations").insert({ bot_email: userEmail, chat_id: chatId, role: "user", content: userText });
+        // Indicate typing while AI generates
+        fetch(`https://api.telegram.org/bot${telegramToken}/sendChatAction`, {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ chat_id: chatId, action: "typing" })
+        }).catch(()=>{});
 
+        await supabase.from("bot_conversations").insert({ bot_email: userEmail, chat_id: chatId, role: "user", content: body.message.voice ? `🎤 Voice Note: "${userText}"` : userText });
+
+        // FALLBACK ENGINE
         let aiResponse = "I am currently processing high volumes of data. Please give me a moment and try again.";
         let wasSuccessful = false;
-        
         const chain = AI_CHAINS[provider] || AI_CHAINS["google"];
 
         for (const modelName of chain) {
@@ -165,7 +232,7 @@ User's New Message: ${userText}`;
                 wasSuccessful = true;
                 break;
             } catch (err: any) {
-                console.log(`[AI Engine Error] ${modelName} failed. Triggering next...`);
+                console.log(`[AI Error] ${modelName} failed. Next...`);
             }
         }
 
@@ -176,6 +243,7 @@ User's New Message: ${userText}`;
             await supabase.from("bot_conversations").insert({ bot_email: userEmail, chat_id: chatId, role: "ai", content: aiResponse });
         }
 
+        // Send Reply
         await fetch(`https://api.telegram.org/bot${telegramToken}/sendMessage`, {
             method: "POST", headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ chat_id: chatId, text: aiResponse })
