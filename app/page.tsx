@@ -17,14 +17,16 @@ export default function Home() {
   const { data: session, status } = useSession();
   const router = useRouter(); 
   
+  // 🚀 FIX: Prevent Hydration Black Screen Crash
+  const [isMounted, setIsMounted] = useState(false);
+  
   const [isTelegramModalOpen, setIsTelegramModalOpen] = useState(false);
   const [telegramToken, setTelegramToken] = useState("");
   const [isTokenSaved, setIsTokenSaved] = useState(false);
   
   const [showPricingPopup, setShowPricingPopup] = useState(false);
   const [isDeploying, setIsDeploying] = useState(false);
-  // 🚀 FIX: Safely storing time and text to prevent hydration crashes
-  const [deployLogs, setDeployLogs] = useState<{time: string, text: string}[]>([]);
+  const [deployLogs, setDeployLogs] = useState<string[]>([]);
   const [botLink, setBotLink] = useState("");
   
   const [activeModel, setActiveModel] = useState("gpt-5.2");
@@ -38,21 +40,16 @@ export default function Home() {
   const logsEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    logsEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [deployLogs]);
-
-  useEffect(() => {
+    setIsMounted(true); // 🚀 FIX: Let React know it's safe to render client-side UI
+    
     try {
       const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
       if (tz === "Asia/Calcutta" || tz === "Asia/Kolkata") {
         setCurrency("INR");
         setCurrencySymbol("₹");
-      } else {
-        setCurrency("USD");
-        setCurrencySymbol("$");
       }
     } catch (e) {
-      console.log("Timezone error");
+      console.log("Timezone error fallback");
     }
 
     const script = document.createElement("script");
@@ -60,6 +57,10 @@ export default function Home() {
     script.async = true;
     document.body.appendChild(script);
   }, []);
+
+  useEffect(() => {
+    logsEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [deployLogs]);
 
   const handleOpenIntegration = (model: string, channel: string) => {
     setActiveModel(model);
@@ -94,9 +95,7 @@ export default function Home() {
     let i = 0;
     const interval = setInterval(() => {
       if (i < logs.length) {
-        // 🚀 FIX: Safely format time without crashing React
-        const currentTime = new Date().toLocaleTimeString();
-        setDeployLogs(prev => [...prev, { time: currentTime, text: logs[i] }]);
+        setDeployLogs(prev => [...prev, logs[i]]);
         i++;
       } else {
         clearInterval(interval);
@@ -105,9 +104,8 @@ export default function Home() {
   };
 
   const triggerRazorpayPayment = async () => {
-    // 🚀 FIX: Prevent crash if Razorpay script is blocked by Adblocker
-    if (typeof (window as any).Razorpay === "undefined") {
-      alert("Payment gateway is loading. Please wait a second or disable your Adblocker.");
+    if (typeof window === "undefined" || !(window as any).Razorpay) {
+      alert("Payment gateway is loading. Please disable Adblocker if it doesn't open.");
       return;
     }
 
@@ -245,6 +243,9 @@ export default function Home() {
   const themeColor = activeChannel === "telegram" ? "rgba(42, 171, 238, 0.15)" : "rgba(37, 211, 102, 0.15)";
   const borderColor = activeChannel === "telegram" ? "border-blue-500/30" : "border-green-500/30";
 
+  // 🚀 FIX: Do not render UI until mounted to prevent hydration crash
+  if (!isMounted) return null;
+
   return (
     <div className="bg-[#0A0A0B] min-h-screen relative text-white">
       
@@ -275,9 +276,9 @@ export default function Home() {
                     animate={{ opacity: 1, x: 0 }}
                     className="flex gap-4 items-start"
                   >
-                    <span className="text-gray-600 shrink-0">[{log.time}]</span>
-                    <span className={log.text.includes("Online") ? "text-green-400 font-bold" : "text-gray-300"}>
-                      &gt; {log.text}
+                    <span className="text-gray-600 shrink-0">[SYS_LOG]</span>
+                    <span className={log.includes("Online") ? "text-green-400 font-bold" : "text-gray-300"}>
+                      &gt; {log}
                     </span>
                   </motion.div>
                 ))}
