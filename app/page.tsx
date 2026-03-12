@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import LandingUI from "../components/LandingUI";
 import { useRouter } from "next/navigation";
-import { Globe, Database, Mic, Shield, MessageSquare, Zap, Activity } from "lucide-react";
+import { Globe, Database, Mic, Shield, MessageSquare, Zap, Activity, XCircle, CheckCircle2 } from "lucide-react";
 
 const MODEL_DETAILS: Record<string, { name: string; starter: number; pro: number }> = {
   gemini: { name: "Gemini 3 Flash", starter: 9, pro: 19 },
@@ -136,7 +136,7 @@ export default function Home() {
     if (botLink) {
       return (
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-md bg-green-500/10 border border-green-500/30 p-6 rounded-2xl text-center backdrop-blur-md">
-          <h3 className="text-xl font-bold text-white mb-2">Your Bot is Live! 🚀</h3>
+          <h3 className="text-xl font-bold text-white mb-2">Your OpenClaw is Live! 🚀</h3>
           <p className="text-sm text-gray-400 mb-6">
             {selectedChannel === "whatsapp" 
               ? "Your WhatsApp AI agent is now connected to the Meta Cloud." 
@@ -151,12 +151,6 @@ export default function Home() {
               <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
               Access Dashboard
             </button>
-          </div>
-
-          <div className="bg-blue-500/10 border border-blue-500/30 p-3 rounded-xl mb-6 text-left">
-            <p className="text-xs font-medium text-blue-200 leading-relaxed">
-              💡 <strong className="text-blue-400">Pro Tip:</strong> Install the ClawLink Web App from your browser menu (Add to Home Screen) to access your bot's CRM and billing easily.
-            </p>
           </div>
         </motion.div>
       );
@@ -193,7 +187,7 @@ export default function Home() {
           </button>
         ) : (
           <button onClick={() => handleOpenPricing(selectedModel, selectedChannel)} className="w-full bg-white text-black py-4 rounded-xl text-sm font-black uppercase tracking-widest shadow-[0_0_30px_rgba(255,255,255,0.15)] hover:scale-[1.02] transition-all flex justify-center items-center gap-2">
-            <Zap className="w-4 h-4"/> Deploy ClawLink
+            <Zap className="w-4 h-4"/> Deploy OpenClaw
           </button>
         )}
       </motion.div>
@@ -213,7 +207,47 @@ export default function Home() {
         <LandingUI renderActionArea={renderDynamicButtons} isLocked={isTokenSaved || isDeploying} />
       </div>
 
-      {/* 🚀 2. The New Global Marketing Features (Below the Fold) */}
+      {/* 🚀 2. Traditional vs ClawLink Comparison Section */}
+      <section className="py-24 border-t border-white/5 bg-[#050505] relative z-0">
+        <div className="max-w-6xl mx-auto px-6">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-4xl font-black tracking-tight mb-4">Why choose ClawLink Engine?</h2>
+            <p className="text-gray-500 text-sm md:text-base max-w-2xl mx-auto">Stop wasting time with complex setups. Get your autonomous AI agent running instantly.</p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            {/* Traditional Method */}
+            <div className="bg-[#0A0A0B] border border-red-500/20 p-8 rounded-3xl relative">
+              <div className="absolute top-0 right-0 bg-red-500/10 text-red-500 text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-bl-xl rounded-tr-3xl">Traditional Method</div>
+              <h3 className="text-xl font-bold text-gray-300 mb-6 border-b border-white/5 pb-4">Manual Development</h3>
+              <ul className="space-y-4">
+                {["Requires deep coding knowledge.", "Manually managing server uptime.", "Complex API integrations & webhooks.", "No fallback (API fails = Bot dies).", "Costs $1000+ in developer fees."].map((text, i) => (
+                  <li key={i} className="flex items-start gap-3 text-sm text-gray-500">
+                    <XCircle className="w-5 h-5 text-red-500/50 shrink-0" />
+                    <span>{text}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* ClawLink Method */}
+            <div className="bg-gradient-to-b from-[#111] to-[#0A0A0B] border border-blue-500/30 p-8 rounded-3xl relative shadow-[0_0_40px_rgba(59,130,246,0.1)]">
+              <div className="absolute top-0 right-0 bg-blue-500 text-white text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-bl-xl rounded-tr-3xl">ClawLink Infrastructure</div>
+              <h3 className="text-xl font-bold text-white mb-6 border-b border-white/10 pb-4">OpenClaw Deployment</h3>
+              <ul className="space-y-4">
+                {["Zero code required. 30-second setup.", "100% managed global Edge network.", "1-Click integration to Telegram & WhatsApp.", "Immortal Fallback Engine (Never sleeps).", "Predictable, low monthly SaaS pricing."].map((text, i) => (
+                  <li key={i} className="flex items-start gap-3 text-sm text-gray-300 font-medium">
+                    <CheckCircle2 className="w-5 h-5 text-blue-500 shrink-0" />
+                    <span>{text}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* 🚀 3. Enterprise Features (The 6 God-Tier Capabilities) */}
       <section id="architecture" className="py-24 border-t border-white/5 bg-[#000000] relative z-0">
         <div className="max-w-6xl mx-auto px-6">
           <div className="mb-16 text-center md:text-left">
@@ -232,15 +266,27 @@ export default function Home() {
             </div>
 
             <div className="bg-[#0A0A0B] p-8 hover:bg-[#111] transition-colors group">
+              <Mic className="w-6 h-6 text-gray-500 mb-6 group-hover:text-purple-500 transition-colors" />
+              <h3 className="text-lg font-bold mb-2">Audio Intelligence</h3>
+              <p className="text-sm text-gray-500 leading-relaxed">Natively integrated with OpenAI Whisper. Your bot understands customer voice notes and responds contextually.</p>
+            </div>
+
+            <div className="bg-[#0A0A0B] p-8 hover:bg-[#111] transition-colors group">
               <Database className="w-6 h-6 text-gray-500 mb-6 group-hover:text-green-500 transition-colors" />
               <h3 className="text-lg font-bold mb-2">Enterprise RAG Database</h3>
               <p className="text-sm text-gray-500 leading-relaxed">Inject your business documents and FAQs. The AI searches this Vector DB to provide highly accurate answers.</p>
             </div>
 
             <div className="bg-[#0A0A0B] p-8 hover:bg-[#111] transition-colors group">
-              <Mic className="w-6 h-6 text-gray-500 mb-6 group-hover:text-purple-500 transition-colors" />
-              <h3 className="text-lg font-bold mb-2">Voice Note Intelligence</h3>
-              <p className="text-sm text-gray-500 leading-relaxed">Natively integrated with OpenAI Whisper. Your bot understands customer voice notes and responds contextually.</p>
+              <Zap className="w-6 h-6 text-gray-500 mb-6 group-hover:text-orange-500 transition-colors" />
+              <h3 className="text-lg font-bold mb-2">Actionable AI</h3>
+              <p className="text-sm text-gray-500 leading-relaxed">Enable function calling. The AI can dynamically execute backend actions like checking order statuses or booking appointments.</p>
+            </div>
+
+            <div className="bg-[#0A0A0B] p-8 hover:bg-[#111] transition-colors group">
+              <MessageSquare className="w-6 h-6 text-gray-500 mb-6 group-hover:text-yellow-500 transition-colors" />
+              <h3 className="text-lg font-bold mb-2">Live CRM & Broadcast Hub</h3>
+              <p className="text-sm text-gray-500 leading-relaxed">Monitor conversations, take over manually, and blast marketing campaigns to captured leads directly from the dashboard.</p>
             </div>
 
             <div className="bg-[#0A0A0B] p-8 hover:bg-[#111] transition-colors group">
@@ -249,23 +295,11 @@ export default function Home() {
               <p className="text-sm text-gray-500 leading-relaxed">Zero downtime. If GPT-5.4 fails, the system automatically routes to Claude or Gemini in milliseconds.</p>
             </div>
 
-            <div className="bg-[#0A0A0B] p-8 hover:bg-[#111] transition-colors group">
-              <MessageSquare className="w-6 h-6 text-gray-500 mb-6 group-hover:text-yellow-500 transition-colors" />
-              <h3 className="text-lg font-bold mb-2">Live CRM & Handoff</h3>
-              <p className="text-sm text-gray-500 leading-relaxed">Monitor all AI conversations from a unified dashboard. Take over manually whenever a human touch is required.</p>
-            </div>
-
-            <div className="bg-[#0A0A0B] p-8 hover:bg-[#111] transition-colors group">
-              <Zap className="w-6 h-6 text-gray-500 mb-6 group-hover:text-white transition-colors" />
-              <h3 className="text-lg font-bold mb-2">Action Interceptor</h3>
-              <p className="text-sm text-gray-500 leading-relaxed">Enable function calling. The AI can execute backend actions like checking order statuses or booking appointments.</p>
-            </div>
-
           </div>
         </div>
       </section>
 
-      {/* 🚀 3. Simple Clean Footer */}
+      {/* 🚀 4. Simple Clean Footer */}
       <footer className="border-t border-white/5 bg-[#000] py-12 relative z-0">
         <div className="max-w-6xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-4">
           <div className="text-xl font-bold tracking-widest font-mono flex items-center gap-2 opacity-50">
@@ -408,9 +442,9 @@ export default function Home() {
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 20 }} className="bg-[#0A0A0B] border border-white/10 p-8 md:p-10 rounded-3xl w-full max-w-4xl shadow-2xl relative text-center my-8">
               {!isDeploying && <button onClick={() => setShowPricingPopup(false)} className="absolute top-6 right-8 text-gray-500 hover:text-white text-xl">✕</button>}
               
-              <h2 className="text-2xl md:text-3xl font-bold mb-2 text-white tracking-tight">Choose your ClawLink Plan</h2>
+              <h2 className="text-2xl md:text-3xl font-black mb-2 text-white tracking-tight uppercase">Deploy OpenClaw under 30 SECONDS.</h2>
               <p className="text-gray-400 text-sm mb-10 max-w-xl mx-auto">
-                Avoid technical complexity. Deploy your 24/7 active AI instance in <span className="text-white font-bold">seconds.</span>
+                Avoid technical complexity. Get your 24/7 active AI instance running immediately.
               </p>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10 text-left">
@@ -464,7 +498,7 @@ export default function Home() {
                     Deploying...
                   </>
                 ) : (
-                  `Deploy ClawLink ${currencySymbol}${getCurrentPrice()}`
+                  `Deploy OpenClaw ${currencySymbol}${getCurrentPrice()}`
                 )}
               </button>
               <p className="mt-4 text-[10px] text-gray-500 uppercase tracking-widest font-bold">Secured by Razorpay API</p>
