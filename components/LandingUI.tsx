@@ -97,6 +97,7 @@ export default function LandingUI({ renderActionArea, isLocked = false }: Landin
         </div>
       </nav>
 
+      {/* 🚀 SUPPORT MODAL */}
       <AnimatePresence>
         {isSupportOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-sm p-4">
@@ -267,12 +268,18 @@ export default function LandingUI({ renderActionArea, isLocked = false }: Landin
 
       <footer className="w-full max-w-5xl mt-32 flex flex-col items-start px-6 border-t border-white/10 pt-16 pb-10">
         <h2 className="text-4xl font-bold mb-6 text-white">Deploy. Automate. Relax.</h2>
-        <button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="bg-[#FFA07A] text-black px-8 py-3 rounded-lg font-bold flex items-center gap-2 hover:bg-[#FF8C61] transition-colors">
+        <button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="bg-[#FFA07A] text-black px-8 py-3 rounded-lg font-bold flex items-center gap-2 hover:bg-[#FF8C61] transition-colors mb-16">
           Start Deploying <ChevronRight className="w-5 h-5" />
         </button>
-        <div className="w-full mt-20 pt-8 border-t border-white/10 flex justify-between items-center text-xs text-gray-500 uppercase tracking-wider">
-          <p>© 2026 CLAWLINK INC. GLOBAL AI SAAS INFRASTRUCTURE.</p>
-          <button onClick={() => setIsSupportOpen(true)} className="hover:text-white transition-colors">Help Desk</button>
+        
+        <div className="w-full flex flex-col md:flex-row justify-between items-center gap-6 border-t border-white/10 pt-8 text-xs text-gray-500 font-medium">
+          <p className="uppercase tracking-wider">© 2026 CLAWLINK INC. GLOBAL AI SAAS.</p>
+          <div className="flex gap-6">
+            <a href="/privacy" className="hover:text-white transition-colors">Privacy Policy</a>
+            <a href="/terms" className="hover:text-white transition-colors">Terms of Service</a>
+            <a href="/refund" className="hover:text-white transition-colors">Refund Policy</a>
+            <button onClick={() => setIsSupportOpen(true)} className="hover:text-white transition-colors font-bold text-blue-400">Help Desk</button>
+          </div>
         </div>
       </footer>
     </main>
