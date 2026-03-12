@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import "./globals.css";
+import Providers from "./providers"; 
 
 // 🚀 ENTERPRISE SEO & SOCIAL SHARE BANNER CONFIGURATION
 export const metadata: Metadata = {
@@ -12,7 +14,6 @@ export const metadata: Metadata = {
     siteName: "ClawLink",
     images: [
       {
-        // Ye ek futuristic AI server ki premium image hai jo WhatsApp/Twitter par dikhegi
         url: "https://images.unsplash.com/photo-1633356122544-f134324a6cee?q=80&w=1200&auto=format&fit=crop", 
         width: 1200,
         height: 630,
@@ -29,3 +30,20 @@ export const metadata: Metadata = {
     images: ["https://images.unsplash.com/photo-1633356122544-f134324a6cee?q=80&w=1200&auto=format&fit=crop"],
   },
 };
+
+// 🚀 DEFAULT EXPORT LOCKED
+export default function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
+  return (
+    <html lang="en">
+      <body className="bg-[#0A0A0B] text-white antialiased selection:bg-blue-500/30">
+        <Providers>
+          {children}
+        </Providers>
+      </body>
+    </html>
+  );
+}
