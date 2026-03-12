@@ -5,41 +5,40 @@ import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import LandingUI from "../components/LandingUI";
 import { useRouter } from "next/navigation";
+import { Globe, Database, Mic, Shield, MessageSquare, Zap, Activity, XCircle, CheckCircle2 } from "lucide-react";
 import Image from "next/image";
-import { Zap, Activity, Globe, Database, Mic, Shield, MessageSquare } from "lucide-react";
 
 const MODEL_DETAILS: Record<string, { name: string; starter: number; pro: number }> = {
   gemini: { name: "Gemini 3 Flash", starter: 9, pro: 19 },
-  "gpt-5.2": { name: "GPT-5.2", starter: 19, pro: 39 },
-  claude: { name: "Opus 4.6", starter: 29, pro: 59 }
+  "gpt-5.2": { name: "GPT-5.2", starter: 19, pro: 39 }, 
+  claude: { name: "Opus 4.6", starter: 29, pro: 59 } 
 };
-const MAX_PLAN_PRICE = 89;
+const MAX_PLAN_PRICE = 89; 
 
 export default function Home() {
   const { data: session, status } = useSession();
-  const router = useRouter();
-
+  const router = useRouter(); 
+  
   const [isMounted, setIsMounted] = useState(false);
   const [isTelegramModalOpen, setIsTelegramModalOpen] = useState(false);
   const [telegramToken, setTelegramToken] = useState("");
   const [isTokenSaved, setIsTokenSaved] = useState(false);
-
+  
   const [showPricingPopup, setShowPricingPopup] = useState(false);
   const [isDeploying, setIsDeploying] = useState(false);
   const [botLink, setBotLink] = useState("");
-
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  
   const [activeModel, setActiveModel] = useState("gpt-5.2");
   const [activeChannel, setActiveChannel] = useState("telegram");
-  const [selectedTier, setSelectedTier] = useState<"starter" | "pro" | "max">("pro");
-
+  const [selectedTier, setSelectedTier] = useState<"starter" | "pro" | "max">("pro"); 
+  
   const [currency, setCurrency] = useState<"USD" | "INR">("USD");
   const [currencySymbol, setCurrencySymbol] = useState("$");
-  const EXCHANGE_RATE = 83;
+  const EXCHANGE_RATE = 83; 
 
   useEffect(() => {
-    setIsMounted(true);
-
+    setIsMounted(true); 
+    
     try {
       const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
       if (tz === "Asia/Calcutta" || tz === "Asia/Kolkata") {
@@ -56,20 +55,18 @@ export default function Home() {
     document.body.appendChild(script);
   }, []);
 
-  const handleOpenIntegration = (model: string, channel: string) => {
-    setActiveModel(model);
+  const handleOpenIntegration = (channel: string) => {
     setActiveChannel(channel);
     setIsTelegramModalOpen(true);
   };
 
-  const handleOpenPricing = (model: string, channel: string) => {
-    setActiveModel(model);
+  const handleOpenPricing = (channel: string) => {
     setActiveChannel(channel);
     setShowPricingPopup(true);
   };
 
   const getCurrentPrice = (tier = selectedTier) => {
-    const basePrice = tier === "max" ? MAX_PLAN_PRICE : (MODEL_DETAILS[activeModel]?.[tier as "starter" | "pro"] || 39);
+    let basePrice = tier === "max" ? MAX_PLAN_PRICE : (MODEL_DETAILS[activeModel]?.[tier as "starter"|"pro"] || 39);
     return currency === "INR" ? basePrice * EXCHANGE_RATE : basePrice;
   };
 
@@ -81,26 +78,24 @@ export default function Home() {
 
     const finalPrice = getCurrentPrice();
     setIsDeploying(true);
-
+    
     try {
       const response = await fetch("/api/razorpay", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ amount: finalPrice * 100, currency: currency }),
+        body: JSON.stringify({ amount: finalPrice * 100, currency: currency }), 
       });
       const order = await response.json();
 
       const options = {
-        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID, 
         amount: order.amount,
-        currency: order.currency,
+        currency: order.currency, 
         name: "ClawLink Premium",
         description: `Plan: ${selectedTier.toUpperCase()} | Model: ${selectedTier === 'max' ? 'ALL' : MODEL_DETAILS[activeModel]?.name}`,
         order_id: order.id,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         handler: async function (response: any) {
           try {
-            console.log(response); // Keep Razorpay response log for debugging
             const configRes = await fetch("/api/config", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
@@ -110,7 +105,7 @@ export default function Home() {
 
             if (configData.success && configData.botLink) {
               setBotLink(configData.botLink);
-              setShowPricingPopup(false);
+              setShowPricingPopup(false); 
             } else {
               alert("Deployment failed: " + configData.error);
             }
@@ -123,12 +118,10 @@ export default function Home() {
         prefill: { email: session?.user?.email || "" },
         theme: { color: "#ffffff" },
       };
-
+      
       const rzp = new (window as any).Razorpay(options);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       rzp.on('payment.failed', function (response: any) {
-        console.error(response.error);
-        setIsDeploying(false);
+        setIsDeploying(false); 
         alert("Payment failed or cancelled.");
       });
       rzp.open();
@@ -138,25 +131,24 @@ export default function Home() {
     }
   };
 
-  // --- RENDER ACTION AREA (Passed to LandingUI) ---
-  const renderDynamicButtons = (selectedModel: string, selectedChannel: string) => {
+  // 🚀 ACTION AREA WITH INJECTED MODEL SELECTOR
+  const renderDynamicButtons = () => {
     if (botLink) {
       return (
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25 }} className="w-full max-w-md bg-green-500/10 border border-green-500/30 p-6 rounded-2xl text-center backdrop-blur-md">
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-md bg-green-500/10 border border-green-500/30 p-6 rounded-2xl text-center backdrop-blur-md">
           <h3 className="text-xl font-bold text-white mb-2">Your OpenClaw is Live! 🚀</h3>
           <p className="text-sm text-gray-400 mb-6">
-            {selectedChannel === "whatsapp"
-              ? "Your WhatsApp AI agent is now connected to the Meta Cloud."
+            {activeChannel === "whatsapp" 
+              ? "Your WhatsApp AI agent is now connected to the Meta Cloud." 
               : "Your Telegram webhook is fully connected and processing data."}
           </p>
-
+          
           <div className="flex flex-col sm:flex-row gap-3 justify-center mb-4">
             <a href={botLink} target="_blank" rel="noopener noreferrer" className="w-full sm:w-auto bg-white text-black font-black px-6 py-3 rounded-xl hover:bg-gray-200 transition-colors text-sm flex items-center justify-center">
-              {selectedChannel === "whatsapp" ? "Open WhatsApp Bot" : "Open Telegram Bot"}
+              {activeChannel === "whatsapp" ? "Open WhatsApp Bot" : "Open Telegram Bot"}
             </a>
             <button onClick={() => router.push('/dashboard')} className="w-full sm:w-auto bg-[#1A1A1A] border border-white/20 text-white font-bold px-6 py-3 rounded-xl hover:bg-white/10 transition-colors flex items-center justify-center gap-2 text-sm">
-              <Activity className="w-4 h-4" />
-              Access Dashboard
+              <Activity className="w-4 h-4"/> Access Dashboard
             </button>
           </div>
         </motion.div>
@@ -165,38 +157,88 @@ export default function Home() {
 
     if (status === "unauthenticated") {
       return (
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.25 }} className="w-full flex flex-col items-center">
-          <motion.button whileHover={{ scale: 1.02, boxShadow: "0 0 30px rgba(255,255,255,0.15)" }} whileTap={{ scale: 0.98 }} onClick={() => signIn("google")} className="w-full max-w-md bg-white text-black py-4 rounded-xl flex items-center justify-center gap-3 text-sm font-bold tracking-wide shadow-[0_0_20px_rgba(255,255,255,0.1)] transition-all uppercase">
-            <svg width="24" height="24" viewBox="0 0 24 24" className="w-5 h-5 flex-shrink-0"><path fill="#EA4335" d="M5.266 9.765A7.077 7.077 0 0112 4.909c1.69 0 3.218.6 4.418 1.582L19.91 3C17.782 1.145 15.055 0 12 0 7.27 0 3.198 2.698 1.24 6.65l4.026 3.115Z" /><path fill="#34A853" d="M16.04 18.013c-1.09.703-2.474 1.078-4.04 1.078a7.077 7.077 0 01-6.723-4.823l-4.04 3.067A11.965 11.965 0 0012 24c2.933 0 5.735-1.043 7.834-3l-3.793-2.987Z" /><path fill="#4A90E2" d="M19.834 21c2.195-2.048 3.62-5.096 3.62-9 0-.71-.109-1.473-.272-2.182H12v4.637h6.436c-.317 1.559-1.17 2.766-2.395 3.558L19.834 21Z" /><path fill="#FBBC05" d="M5.277 14.268A7.12 7.12 0 014.909 12c0-.782.125-1.533.357-2.235L1.24 6.65A11.934 11.934 0 000 12c0 1.92.445 3.73 1.237 5.335l4.04-3.067Z" /></svg>
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="w-full flex flex-col items-center mt-6">
+          <motion.button whileHover={{ scale: 1.02, boxShadow: "0 0 40px rgba(255,255,255,0.2)" }} whileTap={{ scale: 0.98 }} onClick={() => signIn("google")} className="w-full max-w-md bg-white text-black py-4 rounded-xl flex items-center justify-center gap-3 text-sm font-bold tracking-wide shadow-[0_0_30px_rgba(255,255,255,0.1)] transition-all uppercase">
+            <svg width="24" height="24" viewBox="0 0 24 24" className="w-5 h-5 flex-shrink-0"><path fill="#EA4335" d="M5.266 9.765A7.077 7.077 0 0112 4.909c1.69 0 3.218.6 4.418 1.582L19.91 3C17.782 1.145 15.055 0 12 0 7.27 0 3.198 2.698 1.24 6.65l4.026 3.115Z"/><path fill="#34A853" d="M16.04 18.013c-1.09.703-2.474 1.078-4.04 1.078a7.077 7.077 0 01-6.723-4.823l-4.04 3.067A11.965 11.965 0 0012 24c2.933 0 5.735-1.043 7.834-3l-3.793-2.987Z"/><path fill="#4A90E2" d="M19.834 21c2.195-2.048 3.62-5.096 3.62-9 0-.71-.109-1.473-.272-2.182H12v4.637h6.436c-.317 1.559-1.17 2.766-2.395 3.558L19.834 21Z"/><path fill="#FBBC05" d="M5.277 14.268A7.12 7.12 0 014.909 12c0-.782.125-1.533.357-2.235L1.24 6.65A11.934 11.934 0 000 12c0 1.92.445 3.73 1.237 5.335l4.04-3.067Z"/></svg>
             Login with Google to Deploy
           </motion.button>
-          <p className="mt-5 text-xs text-gray-500 font-mono">Connect {selectedChannel} to continue. <span className="text-green-500 font-bold">Servers Online.</span></p>
+          <p className="mt-5 text-xs text-gray-500 font-mono">Connect your channel to continue. <span className="text-green-500 font-bold">Servers Online.</span></p>
         </motion.div>
       );
     }
 
     return (
-      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25 }} className="w-full max-w-md space-y-4">
-        <div className="bg-[#111] border border-white/10 p-4 rounded-xl flex items-center justify-between shadow-lg">
+      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-2xl mx-auto space-y-6 mt-4">
+        
+        {/* USER PROFILE */}
+        <div className="bg-[#111] border border-white/10 p-4 rounded-xl flex items-center justify-between shadow-lg max-w-md mx-auto">
           <div className="flex items-center gap-3">
-            <img src={session?.user?.image || ""} className="w-10 h-10 rounded-full border border-white/20" alt="Avatar" />
-            <div className="text-left">
-              <p className="text-sm font-bold text-white">{session?.user?.name}</p>
-              <p className="text-xs text-gray-500">{session?.user?.email}</p>
-            </div>
+             <img src={session?.user?.image || ""} className="w-10 h-10 rounded-full border border-white/20" alt="Avatar"/>
+             <div className="text-left">
+               <p className="text-sm font-bold text-white">{session?.user?.name}</p>
+               <p className="text-xs text-gray-500">{session?.user?.email}</p>
+             </div>
           </div>
           <button onClick={() => signOut()} className="text-xs text-gray-500 hover:text-white font-bold uppercase tracking-widest transition-colors">Logout</button>
         </div>
 
-        {!isTokenSaved ? (
-          <button onClick={() => handleOpenIntegration(selectedModel, selectedChannel)} className="w-full bg-[#1A1A1A] border border-white/10 hover:border-white/30 text-white py-4 rounded-xl text-sm font-bold tracking-widest hover:bg-white/5 transition-all mt-2 uppercase">
-            Connect {selectedChannel}
-          </button>
-        ) : (
-          <button onClick={() => handleOpenPricing(selectedModel, selectedChannel)} className="w-full bg-white text-black py-4 rounded-xl text-sm font-black uppercase tracking-widest shadow-[0_0_30px_rgba(255,255,255,0.15)] hover:scale-[1.02] transition-all flex justify-center items-center gap-2">
-            <Zap className="w-4 h-4" /> Deploy OpenClaw
-          </button>
-        )}
+        {/* 🚀 THE MODEL SELECTOR (Exactly matching Screenshot) */}
+        <div className="text-center pt-4 pb-2">
+          <h3 className="text-white text-xl md:text-2xl tracking-tight mb-6" style={{ fontFamily: "Georgia, serif" }}>
+            Choose a model to use as your default !
+          </h3>
+          <div className="flex flex-wrap justify-center gap-4 items-center">
+            
+            {/* GPT Pill */}
+            <button 
+              onClick={() => setActiveModel("gpt-5.2")} 
+              className={`bg-white rounded-full px-5 py-2.5 flex items-center gap-3 shadow-lg transition-all ${activeModel === 'gpt-5.2' ? 'ring-4 ring-blue-500 scale-105' : 'hover:scale-105'}`}
+            >
+              <Image src="/gpt-logo.jpg" alt="GPT" width={24} height={24} className="w-6 h-6 rounded-full" />
+              <span className="text-[#10A37F] font-bold text-lg">gpt-5.2</span>
+            </button>
+
+            {/* Claude Pill */}
+            <button 
+              onClick={() => setActiveModel("claude")} 
+              className={`bg-white rounded-full px-5 py-2 flex items-center gap-3 shadow-lg transition-all ${activeModel === 'claude' ? 'ring-4 ring-blue-500 scale-105' : 'hover:scale-105'}`}
+            >
+              <Image src="/claude-logo.jpg" alt="Claude" width={24} height={24} className="w-6 h-6 rounded-full" />
+              <div className="text-left leading-tight">
+                <span className="text-[#D97757] font-bold text-lg block">Claude</span>
+                <span className="text-[#D97757] text-[10px] font-bold absolute ml-16 -mt-2">Opus<br/>4.6</span>
+              </div>
+            </button>
+
+            {/* Gemini Pill */}
+            <button 
+              onClick={() => setActiveModel("gemini")} 
+              className={`bg-white rounded-full px-5 py-2.5 flex items-center gap-3 shadow-lg transition-all ${activeModel === 'gemini' ? 'ring-4 ring-blue-500 scale-105' : 'hover:scale-105'}`}
+            >
+              <Image src="/gemini-logo.jpg" alt="Gemini" width={24} height={24} className="w-6 h-6 rounded-full" />
+              <span className="text-[#4E7CFF] font-bold text-lg">Gemini 3 flash</span>
+            </button>
+
+            {/* Soon Pill */}
+            <div className="bg-white rounded-full px-6 py-2.5 flex items-center shadow-lg opacity-80 cursor-not-allowed">
+              <span className="font-black text-xl text-transparent bg-clip-text bg-gradient-to-r from-blue-500 via-yellow-500 to-pink-500">soon</span>
+            </div>
+            
+          </div>
+        </div>
+
+        {/* CONNECTION & DEPLOY BUTTONS */}
+        <div className="max-w-md mx-auto pt-4">
+          {!isTokenSaved ? (
+            <button onClick={() => handleOpenIntegration(activeChannel)} className="w-full bg-[#1A1A1A] border border-white/10 hover:border-white/30 text-white py-4 rounded-xl text-sm font-bold tracking-widest hover:bg-white/5 transition-all uppercase shadow-lg">
+              Connect {activeChannel}
+            </button>
+          ) : (
+            <button onClick={() => handleOpenPricing(activeChannel)} className="w-full bg-white text-black py-4 rounded-xl text-sm font-black uppercase tracking-widest shadow-[0_0_30px_rgba(255,255,255,0.15)] hover:scale-[1.02] transition-all flex justify-center items-center gap-2">
+              <Zap className="w-4 h-4"/> Deploy OpenClaw
+            </button>
+          )}
+        </div>
       </motion.div>
     );
   };
@@ -207,106 +249,70 @@ export default function Home() {
   if (!isMounted) return null;
 
   return (
-    <div className="bg-[#0A0A0B] min-h-screen relative text-[#EDEDED] font-sans selection:bg-blue-500/30 flex flex-col overflow-x-hidden">
-
-      {/* 🚀 1. The Functional Hero Area (LandingUI) */}
-      <div className="flex-1 relative z-10">
+    <div className="bg-[#0A0A0B] text-[#EDEDED] font-sans selection:bg-blue-500/30">
+      
+      {/* 🚀 1. The Functional Hero Area */}
+      <div className="relative z-10 w-full">
+        {/* We pass the activeChannel to LandingUI if it needs it, otherwise renderActionArea handles it internally */}
         <LandingUI renderActionArea={renderDynamicButtons} isLocked={isTokenSaved || isDeploying} />
       </div>
 
-      {/* 🚀 2. Choose Model Section (NEW - from image_5.png) */}
-      <section className="py-16 bg-[#0A0A0B] relative z-10 border-t border-white/5">
-        <div className="max-w-4xl mx-auto px-6 text-center">
-          <h2 className="text-2xl md:text-3xl font-medium text-white mb-10 tracking-tight">
-            Choose a model to use as your default !
-          </h2>
-          <div className="flex flex-wrap justify-center gap-4 items-center">
-            {/* GPT-5.2 Pill */}
-            <motion.div whileHover={{ scale: 1.05 }} className="bg-white rounded-full px-6 py-3 flex items-center gap-3 shadow-lg cursor-pointer">
-              <Image src="/image_6.png" alt="OpenAI" width={24} height={24} className="w-6 h-6" />
-              <span className="text-[#10A37F] font-semibold text-lg">gpt-5.2</span>
-            </motion.div>
-
-            {/* Claude Pill */}
-            <motion.div whileHover={{ scale: 1.05 }} className="bg-white rounded-full px-6 py-3 flex items-center gap-3 shadow-lg cursor-pointer">
-              <Image src="/image_7.png" alt="Claude" width={24} height={24} className="w-6 h-6" />
-              <div className="text-left leading-tight">
-                <span className="text-[#D97757] font-semibold text-lg block">Claude</span>
-                <span className="text-[#D97757] text-xs font-medium">Opus 4.6</span>
-              </div>
-            </motion.div>
-
-            {/* Gemini Pill */}
-            <motion.div whileHover={{ scale: 1.05 }} className="bg-white rounded-full px-6 py-3 flex items-center gap-3 shadow-lg cursor-pointer">
-              <Image src="/image_8.png" alt="Gemini" width={24} height={24} className="w-6 h-6" />
-              <span className="text-[#4E7CFF] font-semibold text-lg">Gemini 3 flash</span>
-            </motion.div>
-
-            {/* Soon Pill */}
-            <motion.div className="bg-white rounded-full px-8 py-4 flex items-center gap-2 shadow-lg opacity-80 cursor-not-allowed">
-              <span className="font-bold text-xl text-transparent bg-clip-text bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500">soon</span>
-            </motion.div>
-          </div>
-        </div>
-      </section>
-
-
-      {/* 🚀 3. Traditional vs ClawLink Comparison Section (NEW - from image_4.png) */}
-      <section className="py-24 bg-[#1A1A1A] relative z-0 border-y border-white/5 font-mono">
-        <div className="max-w-5xl mx-auto px-8">
+      {/* 🚀 2. Traditional vs ClawLink Comparison Section */}
+      <section className="py-24 border-t border-white/5 bg-[#141414] relative z-0">
+        <div className="max-w-5xl mx-auto px-6">
           <div className="text-center mb-16">
-            <h3 className="text-gray-400 text-sm uppercase tracking-widest mb-2">Comparison</h3>
-            <h2 className="text-3xl md:text-4xl font-medium text-white tracking-tight">Traditional Method vs clawlink</h2>
+            <h3 className="text-white font-bold text-sm tracking-widest mb-4 font-serif">Comparison</h3>
+            <h2 className="text-3xl md:text-5xl text-white mb-4 font-serif">Traditional Method vs clawlink</h2>
           </div>
 
-          <div className="flex flex-col md:flex-row justify-between items-start gap-12">
+          <div className="flex flex-col md:flex-row justify-between items-center gap-12 font-serif">
             {/* Left Side: Traditional Method List */}
-            <div className="w-full md:w-2/3">
-              <ul className="space-y-6 text-gray-300 text-sm md:text-base">
+            <div className="w-full md:w-1/2">
+              <ul className="space-y-5 text-gray-300 text-lg">
                 <li className="flex justify-between items-center">
-                  <div className="flex items-center gap-3"><div className="w-1.5 h-1.5 bg-gray-500 rounded-full"></div>Purchasing local virtual machine</div>
-                  <span className="font-bold">15 min</span>
+                  <div className="flex items-center gap-4"><div className="w-1.5 h-1.5 bg-gray-500 rounded-full"></div>Purchasing local virtual machine</div>
+                  <span>15 min</span>
                 </li>
                 <li className="flex justify-between items-center">
-                  <div className="flex items-center gap-3"><div className="w-1.5 h-1.5 bg-gray-500 rounded-full"></div>Creating SSH keys and storing securely</div>
-                  <span className="font-bold">10 min</span>
+                  <div className="flex items-center gap-4"><div className="w-1.5 h-1.5 bg-gray-500 rounded-full"></div>Creating SSH keys and storing securely</div>
+                  <span>10 min</span>
                 </li>
                 <li className="flex justify-between items-center">
-                  <div className="flex items-center gap-3"><div className="w-1.5 h-1.5 bg-gray-500 rounded-full"></div>Connecting to the server via SSH</div>
-                  <span className="font-bold">5 min</span>
+                  <div className="flex items-center gap-4"><div className="w-1.5 h-1.5 bg-gray-500 rounded-full"></div>Connecting to the server via SSH</div>
+                  <span>5 min</span>
                 </li>
                 <li className="flex justify-between items-center">
-                  <div className="flex items-center gap-3"><div className="w-1.5 h-1.5 bg-gray-500 rounded-full"></div>Installing Node.js and NPM</div>
-                  <span className="font-bold">5 min</span>
+                  <div className="flex items-center gap-4"><div className="w-1.5 h-1.5 bg-gray-500 rounded-full"></div>Installing Node.js and NPM</div>
+                  <span>5 min</span>
                 </li>
                 <li className="flex justify-between items-center">
-                  <div className="flex items-center gap-3"><div className="w-1.5 h-1.5 bg-gray-500 rounded-full"></div>Installing OpenClaw</div>
-                  <span className="font-bold">7 min</span>
+                  <div className="flex items-center gap-4"><div className="w-1.5 h-1.5 bg-gray-500 rounded-full"></div>Installing OpenClaw</div>
+                  <span>7 min</span>
                 </li>
                 <li className="flex justify-between items-center">
-                  <div className="flex items-center gap-3"><div className="w-1.5 h-1.5 bg-gray-500 rounded-full"></div>Setting up OpenClaw</div>
-                  <span className="font-bold">10 min</span>
+                  <div className="flex items-center gap-4"><div className="w-1.5 h-1.5 bg-gray-500 rounded-full"></div>Setting up OpenClaw</div>
+                  <span>10 min</span>
                 </li>
                 <li className="flex justify-between items-center">
-                  <div className="flex items-center gap-3"><div className="w-1.5 h-1.5 bg-gray-500 rounded-full"></div>Connecting to AI provider</div>
-                  <span className="font-bold">4 min</span>
+                  <div className="flex items-center gap-4"><div className="w-1.5 h-1.5 bg-gray-500 rounded-full"></div>Connecting to AI provider</div>
+                  <span>4 min</span>
                 </li>
                 <li className="flex justify-between items-center">
-                  <div className="flex items-center gap-3"><div className="w-1.5 h-1.5 bg-gray-500 rounded-full"></div>Pairing with Telegram</div>
-                  <span className="font-bold">4 min</span>
+                  <div className="flex items-center gap-4"><div className="w-1.5 h-1.5 bg-gray-500 rounded-full"></div>Pairing with Telegram</div>
+                  <span>4 min</span>
                 </li>
               </ul>
-              <div className="mt-8 pt-6 border-t border-white/10 flex justify-between items-center text-lg text-white">
-                <span className="font-bold text-gray-400">total</span>
-                <span className="font-bold">60 MINUTES</span>
+              <div className="mt-6 pt-4 border-t-2 border-gray-600 flex justify-between items-center text-xl text-white font-bold">
+                <span>total</span>
+                <span>60 MINUTES</span>
               </div>
             </div>
 
             {/* Right Side: Clawlink Highlight */}
-            <div className="w-full md:w-1/3 flex flex-col justify-center items-center text-center md:py-20">
-              <h3 className="text-4xl font-bold text-white mb-2 tracking-tight">clawlink</h3>
-              <div className="text-5xl font-black text-white mb-6 tracking-tighter">&lt;30 sec</div>
-              <p className="text-xs text-gray-400 leading-relaxed max-w-[250px]">
+            <div className="w-full md:w-1/2 flex flex-col justify-center items-center text-center px-4">
+              <h3 className="text-5xl font-bold text-white mb-2 font-serif">clawlink</h3>
+              <div className="text-4xl font-bold text-white mb-4">&lt;30 sec</div>
+              <p className="text-xs text-gray-300 leading-relaxed max-w-[300px] mx-auto font-sans font-medium">
                 Pick a model, connect Telegram, deploy — done under 1 minute. Servers, SSH and OpenClaw Environment are already set up, waiting to get assigned. Simple, secure and fast connection to your bot.
               </p>
             </div>
@@ -314,108 +320,96 @@ export default function Home() {
         </div>
       </section>
 
-      {/* 🚀 4. Enterprise Capabilities Section (Existing) */}
-      <section id="architecture" className="py-24 border-t border-white/5 bg-[#000000] relative z-0">
+      {/* 🚀 3. Enterprise Capabilities Section */}
+      <section className="py-24 border-t border-white/5 bg-[#0A0A0B] relative z-0">
         <div className="max-w-6xl mx-auto px-6">
           <div className="mb-16 text-center md:text-left">
             <h2 className="text-2xl font-bold tracking-tight mb-2 flex items-center justify-center md:justify-start gap-2">
-              <Activity className="w-5 h-5 text-blue-500" /> Enterprise Capabilities
+              <Activity className="w-5 h-5 text-blue-500"/> Enterprise Capabilities
             </h2>
             <p className="text-gray-500 text-sm">Everything you need to automate your business globally.</p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-px bg-white/5 border border-white/5 rounded-2xl overflow-hidden shadow-2xl">
-
             <div className="bg-[#0A0A0B] p-8 hover:bg-[#111] transition-colors group">
               <Globe className="w-6 h-6 text-gray-500 mb-6 group-hover:text-blue-500 transition-colors" />
               <h3 className="text-lg font-bold mb-2">Omnichannel Routing</h3>
               <p className="text-sm text-gray-500 leading-relaxed">Connect your bot to Telegram, WhatsApp Cloud API, or embed our Chat Widget on any website instantly.</p>
             </div>
-
             <div className="bg-[#0A0A0B] p-8 hover:bg-[#111] transition-colors group">
               <Mic className="w-6 h-6 text-gray-500 mb-6 group-hover:text-purple-500 transition-colors" />
               <h3 className="text-lg font-bold mb-2">Audio Intelligence</h3>
               <p className="text-sm text-gray-500 leading-relaxed">Natively integrated with OpenAI Whisper. Your bot understands customer voice notes and responds contextually.</p>
             </div>
-
             <div className="bg-[#0A0A0B] p-8 hover:bg-[#111] transition-colors group">
               <Database className="w-6 h-6 text-gray-500 mb-6 group-hover:text-green-500 transition-colors" />
               <h3 className="text-lg font-bold mb-2">Enterprise RAG Database</h3>
               <p className="text-sm text-gray-500 leading-relaxed">Inject your business documents and FAQs. The AI searches this Vector DB to provide highly accurate answers.</p>
             </div>
-
             <div className="bg-[#0A0A0B] p-8 hover:bg-[#111] transition-colors group">
               <Zap className="w-6 h-6 text-gray-500 mb-6 group-hover:text-orange-500 transition-colors" />
               <h3 className="text-lg font-bold mb-2">Actionable AI</h3>
               <p className="text-sm text-gray-500 leading-relaxed">Enable function calling. The AI can dynamically execute backend actions like checking order statuses or booking appointments.</p>
             </div>
-
             <div className="bg-[#0A0A0B] p-8 hover:bg-[#111] transition-colors group">
               <MessageSquare className="w-6 h-6 text-gray-500 mb-6 group-hover:text-yellow-500 transition-colors" />
               <h3 className="text-lg font-bold mb-2">Live CRM & Broadcast Hub</h3>
               <p className="text-sm text-gray-500 leading-relaxed">Monitor conversations, take over manually, and blast marketing campaigns to captured leads directly from the dashboard.</p>
             </div>
-
             <div className="bg-[#0A0A0B] p-8 hover:bg-[#111] transition-colors group">
               <Shield className="w-6 h-6 text-gray-500 mb-6 group-hover:text-red-500 transition-colors" />
               <h3 className="text-lg font-bold mb-2">Immortal Fallback Engine</h3>
               <p className="text-sm text-gray-500 leading-relaxed">Zero downtime. If GPT-5.4 fails, the system automatically routes to Claude or Gemini in milliseconds.</p>
             </div>
-
           </div>
         </div>
       </section>
 
-      {/* 🚀 5. Footer with New Features */}
+      {/* 🚀 4. Footer with 4 Final Features */}
       <footer className="border-t border-white/5 bg-[#000] pt-16 pb-12 relative z-0">
         <div className="max-w-6xl mx-auto px-6">
-
-          {/* NEW: 4 God-Tier Features List */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12 border-b border-white/10 pb-12">
             <div className="flex items-start gap-3">
               <span className="text-xl">👉</span>
               <div>
-                <h4 className="text-white font-bold mb-1">RAG Knowledge Base</h4>
+                <h4 className="text-white font-bold mb-1 text-sm">RAG Knowledge Base</h4>
                 <p className="text-gray-500 text-xs leading-relaxed">Custom company data injection for accurate AI responses.</p>
               </div>
             </div>
             <div className="flex items-start gap-3">
               <span className="text-xl">👉</span>
               <div>
-                <h4 className="text-white font-bold mb-1">CRM & Human Handoff</h4>
+                <h4 className="text-white font-bold mb-1 text-sm">CRM & Human Handoff</h4>
                 <p className="text-gray-500 text-xs leading-relaxed">Real-time live chat control and conversation monitoring.</p>
               </div>
             </div>
             <div className="flex items-start gap-3">
               <span className="text-xl">👉</span>
               <div>
-                <h4 className="text-white font-bold mb-1">Marketing Broadcast</h4>
+                <h4 className="text-white font-bold mb-1 text-sm">Marketing Broadcast</h4>
                 <p className="text-gray-500 text-xs leading-relaxed">WhatsApp/Telegram mass messaging campaigns.</p>
               </div>
             </div>
             <div className="flex items-start gap-3">
               <span className="text-xl">👉</span>
               <div>
-                <h4 className="text-white font-bold mb-1">Viral Growth Engine</h4>
+                <h4 className="text-white font-bold mb-1 text-sm">Viral Growth Engine</h4>
                 <p className="text-gray-500 text-xs leading-relaxed">Built-in affiliate marketing and referral tracking.</p>
               </div>
             </div>
           </div>
 
-          {/* Bottom Footer Links */}
           <div className="flex flex-col md:flex-row justify-between items-center gap-6 text-sm">
             <div className="flex items-center gap-2 opacity-50">
               <Zap className="w-4 h-4 text-blue-500" />
               <span className="font-bold tracking-widest font-mono text-white">CLAWLINK<span className="text-blue-500">.</span></span>
             </div>
-
-            <div className="flex flex-wrap justify-center gap-6 text-gray-400 font-medium">
+            <div className="flex flex-wrap justify-center gap-6 text-gray-500 font-medium text-xs">
               <a href="#" className="hover:text-white transition-colors">Privacy Policy</a>
               <a href="#" className="hover:text-white transition-colors">Terms of Service</a>
               <a href="#" className="hover:text-white transition-colors">Refund Policy</a>
               <a href="#" className="hover:text-white transition-colors">Help Desk</a>
             </div>
-
             <p className="text-xs text-gray-600 font-mono opacity-70">
               © 2026 CLAWLINK INC. GLOBAL AI SAAS.
             </p>
@@ -423,15 +417,14 @@ export default function Home() {
         </div>
       </footer>
 
-      {/* 🚀 MODALS (Intact Logic, Polished Look, Snappier Animations) */}
+      {/* 🚀 MODALS */}
       <AnimatePresence>
         {isTelegramModalOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              transition={{ duration: 0.25, ease: "easeOut" }}
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95, y: 20 }} 
+              animate={{ opacity: 1, scale: 1, y: 0 }} 
+              exit={{ opacity: 0, scale: 0.95, y: 20 }} 
               className={`bg-[#0A0A0B] border ${borderColor} rounded-3xl w-full max-w-[950px] flex flex-col md:flex-row overflow-hidden relative shadow-2xl`}
             >
               <button onClick={() => setIsTelegramModalOpen(false)} className="absolute top-6 right-6 z-20 text-gray-500 hover:text-white bg-white/5 hover:bg-white/10 p-2 rounded-full transition-all">✕</button>
@@ -441,7 +434,7 @@ export default function Home() {
                   <>
                     <div className="flex items-center gap-4 mb-8">
                       <div className="w-12 h-12 rounded-2xl bg-[#2AABEE]/10 flex items-center justify-center text-[#2AABEE] border border-[#2AABEE]/20">
-                        <svg className="w-6 h-6" viewBox="0 0 24 24" fill="currentColor"><path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.892-.661 3.495-1.524 5.83-2.529 7.005-3.02 3.333-1.392 4.025-1.636 4.476-1.636z" /></svg>
+                        <svg className="w-6 h-6" viewBox="0 0 24 24" fill="currentColor"><path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.892-.661 3.495-1.524 5.83-2.529 7.005-3.02 3.333-1.392 4.025-1.636 4.476-1.636z"/></svg>
                       </div>
                       <h2 className="text-2xl font-bold text-white tracking-tight">Connect Telegram</h2>
                     </div>
@@ -456,7 +449,7 @@ export default function Home() {
                   <>
                     <div className="flex items-center gap-4 mb-8">
                       <div className="w-12 h-12 rounded-2xl bg-[#25D366]/10 flex items-center justify-center text-[#25D366] border border-[#25D366]/20">
-                        <svg className="w-6 h-6" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51a5.8 5.8 0 0 0-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413Z" /></svg>
+                        <svg className="w-6 h-6" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51a5.8 5.8 0 0 0-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413Z"/></svg>
                       </div>
                       <h2 className="text-2xl font-bold text-white tracking-tight">Connect WhatsApp</h2>
                     </div>
@@ -473,26 +466,26 @@ export default function Home() {
                   <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">
                     {activeChannel === "telegram" ? "HTTP API Token" : "Meta Access Token"}
                   </label>
-                  <input
-                    type="password"
-                    value={telegramToken}
-                    onChange={(e) => setTelegramToken(e.target.value)}
-                    placeholder={activeChannel === "telegram" ? "1234567890:ABCdefGhI..." : "EAABwzL..."}
-                    className={`w-full bg-black border border-white/10 rounded-xl px-4 py-3.5 text-sm focus:outline-none transition-all mb-4 font-mono text-white ${activeChannel === "telegram" ? "focus:border-blue-500" : "focus:border-green-500"}`}
+                  <input 
+                    type="password" 
+                    value={telegramToken} 
+                    onChange={(e) => setTelegramToken(e.target.value)} 
+                    placeholder={activeChannel === "telegram" ? "1234567890:ABCdefGhI..." : "EAABwzL..."} 
+                    className={`w-full bg-black border border-white/10 rounded-xl px-4 py-3.5 text-sm focus:outline-none transition-all mb-4 font-mono text-white ${activeChannel === "telegram" ? "focus:border-blue-500" : "focus:border-green-500"}`} 
                   />
-                  <button
-                    onClick={() => {
+                  <button 
+                    onClick={() => { 
                       if (activeChannel === "telegram") {
                         const match = telegramToken.match(/\d{8,10}:[a-zA-Z0-9_-]{35}/);
-                        if (match) {
-                          setTelegramToken(match[0]); setIsTokenSaved(true); setIsTelegramModalOpen(false);
-                        } else alert("Invalid token structure. Please verify the BotFather token.");
+                        if (match) { 
+                          setTelegramToken(match[0]); setIsTokenSaved(true); setIsTelegramModalOpen(false); 
+                        } else alert("Invalid token structure. Please verify the BotFather token."); 
                       } else {
                         if (telegramToken.startsWith("EAA") && telegramToken.length > 20) {
                           setTelegramToken(telegramToken); setIsTokenSaved(true); setIsTelegramModalOpen(false);
                         } else alert("Invalid Meta Token structure. WhatsApp tokens typically begin with 'EAA'.");
                       }
-                    }}
+                    }} 
                     className="w-full bg-white text-black font-bold py-3.5 rounded-xl text-sm hover:bg-gray-200 transition-all uppercase tracking-widest"
                   >
                     Authenticate
@@ -501,48 +494,48 @@ export default function Home() {
               </div>
 
               <div className="hidden md:flex md:w-1/2 bg-[#050505] items-center justify-center p-10 border-l border-white/5 relative">
-                <div className="w-[300px] h-[600px] border-[8px] border-[#1A1A1A] rounded-[3rem] bg-[#0A0A0B] relative overflow-hidden shadow-2xl flex flex-col">
-                  <div className="absolute top-0 inset-x-0 h-7 bg-[#1A1A1A] rounded-b-3xl w-40 mx-auto z-20 flex justify-center items-end pb-1">
-                    <div className="w-12 h-1.5 bg-black/50 rounded-full"></div>
-                  </div>
-
-                  <div className="bg-[#111] p-4 pt-10 flex items-center gap-3 border-b border-white/5 z-10">
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center text-xl shadow-lg ${activeChannel === "telegram" ? "bg-[#2AABEE]" : "bg-[#25D366]"}`}>
-                      {activeChannel === "telegram" ? "🤖" : "🏢"}
+                 <div className="w-[300px] h-[600px] border-[8px] border-[#1A1A1A] rounded-[3rem] bg-[#0A0A0B] relative overflow-hidden shadow-2xl flex flex-col">
+                    <div className="absolute top-0 inset-x-0 h-7 bg-[#1A1A1A] rounded-b-3xl w-40 mx-auto z-20 flex justify-center items-end pb-1">
+                      <div className="w-12 h-1.5 bg-black/50 rounded-full"></div>
                     </div>
-                    <div>
-                      <p className="text-white text-sm font-bold flex items-center gap-1">
-                        {activeChannel === "telegram" ? "BotFather" : "Meta Cloud"}
-                      </p>
-                      <p className="text-gray-500 text-[10px] font-mono tracking-wider">{activeChannel === "telegram" ? "verified bot" : "system user"}</p>
-                    </div>
-                  </div>
 
-                  <div className="p-4 space-y-5 flex-1 overflow-hidden text-[12px] font-mono bg-black opacity-90 flex flex-col justify-end pb-8">
-                    {activeChannel === "telegram" ? (
-                      <>
-                        <div className="bg-[#2AABEE] text-white p-3 rounded-2xl rounded-tr-sm w-fit ml-auto">/newbot</div>
-                        <div className="bg-[#1A1A1A] border border-white/5 text-gray-200 p-3 rounded-2xl rounded-tl-sm w-[85%]">Please choose a name.</div>
-                        <div className="bg-[#2AABEE] text-white p-3 rounded-2xl rounded-tr-sm w-fit ml-auto">ClawLink AI</div>
-                        <div className="bg-[#1A1A1A] text-gray-300 p-4 rounded-2xl rounded-tl-sm w-[90%] border border-blue-500/20">
-                          Done! <br /><br />
-                          <span className="text-gray-500">HTTP API Token:</span><br />
-                          <span className="text-blue-400 break-all select-all mt-2 block bg-black p-2 rounded-lg border border-white/5">1234567890:AAH8...</span>
-                        </div>
-                      </>
-                    ) : (
-                      <>
-                        <div className="bg-[#1A1A1A] border border-white/5 text-gray-200 p-3 rounded-2xl rounded-tl-sm w-[90%]">Meta App Dashboard.</div>
-                        <div className="bg-[#25D366] text-black font-medium p-3 rounded-2xl rounded-tr-sm w-fit ml-auto">Generate Token</div>
-                        <div className="bg-[#1A1A1A] text-gray-300 p-4 rounded-2xl rounded-tl-sm w-[95%] border border-green-500/20">
-                          Success! <br /><br />
-                          <span className="text-gray-500">Permanent Token:</span><br />
-                          <span className="text-green-400 break-all select-all mt-2 block bg-black p-2 rounded-lg border border-white/5">EAABwzL8x...</span>
-                        </div>
-                      </>
-                    )}
-                  </div>
-                </div>
+                    <div className="bg-[#111] p-4 pt-10 flex items-center gap-3 border-b border-white/5 z-10">
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center text-xl shadow-lg ${activeChannel === "telegram" ? "bg-[#2AABEE]" : "bg-[#25D366]"}`}>
+                        {activeChannel === "telegram" ? "🤖" : "🏢"}
+                      </div>
+                      <div>
+                        <p className="text-white text-sm font-bold flex items-center gap-1">
+                          {activeChannel === "telegram" ? "BotFather" : "Meta Cloud"} 
+                        </p>
+                        <p className="text-gray-500 text-[10px] font-mono tracking-wider">{activeChannel === "telegram" ? "verified bot" : "system user"}</p>
+                      </div>
+                    </div>
+                    
+                    <div className="p-4 space-y-5 flex-1 overflow-hidden text-[12px] font-mono bg-black opacity-90 flex flex-col justify-end pb-8">
+                       {activeChannel === "telegram" ? (
+                         <>
+                           <div className="bg-[#2AABEE] text-white p-3 rounded-2xl rounded-tr-sm w-fit ml-auto">/newbot</div>
+                           <div className="bg-[#1A1A1A] border border-white/5 text-gray-200 p-3 rounded-2xl rounded-tl-sm w-[85%]">Please choose a name.</div>
+                           <div className="bg-[#2AABEE] text-white p-3 rounded-2xl rounded-tr-sm w-fit ml-auto">ClawLink AI</div>
+                           <div className="bg-[#1A1A1A] text-gray-300 p-4 rounded-2xl rounded-tl-sm w-[90%] border border-blue-500/20">
+                             Done! <br/><br/>
+                             <span className="text-gray-500">HTTP API Token:</span><br/>
+                             <span className="text-blue-400 break-all select-all mt-2 block bg-black p-2 rounded-lg border border-white/5">1234567890:AAH8...</span>
+                           </div>
+                         </>
+                       ) : (
+                         <>
+                           <div className="bg-[#1A1A1A] border border-white/5 text-gray-200 p-3 rounded-2xl rounded-tl-sm w-[90%]">Meta App Dashboard.</div>
+                           <div className="bg-[#25D366] text-black font-medium p-3 rounded-2xl rounded-tr-sm w-fit ml-auto">Generate Token</div>
+                           <div className="bg-[#1A1A1A] text-gray-300 p-4 rounded-2xl rounded-tl-sm w-[95%] border border-green-500/20">
+                             Success! <br/><br/>
+                             <span className="text-gray-500">Permanent Token:</span><br/>
+                             <span className="text-green-400 break-all select-all mt-2 block bg-black p-2 rounded-lg border border-white/5">EAABwzL8x...</span>
+                           </div>
+                         </>
+                       )}
+                    </div>
+                 </div>
               </div>
             </motion.div>
           </div>
@@ -552,9 +545,9 @@ export default function Home() {
       <AnimatePresence>
         {showPricingPopup && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-sm p-4 overflow-y-auto">
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 20 }} transition={{ duration: 0.25, ease: "easeOut" }} className="bg-[#0A0A0B] border border-white/10 p-8 md:p-10 rounded-3xl w-full max-w-4xl shadow-2xl relative text-center my-8">
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 20 }} className="bg-[#0A0A0B] border border-white/10 p-8 md:p-10 rounded-3xl w-full max-w-4xl shadow-2xl relative text-center my-8">
               {!isDeploying && <button onClick={() => setShowPricingPopup(false)} className="absolute top-6 right-8 text-gray-500 hover:text-white text-xl">✕</button>}
-
+              
               <h2 className="text-2xl md:text-3xl font-black mb-2 text-white tracking-tight uppercase">Deploy OpenClaw under 30 second.</h2>
               <p className="text-gray-400 text-sm mb-10 max-w-xl mx-auto">
                 Avoid technical complexity. Get your 24/7 active AI instance running immediately.
@@ -597,8 +590,8 @@ export default function Home() {
                 </div>
               </div>
 
-              <button
-                onClick={triggerRazorpayPayment}
+              <button 
+                onClick={triggerRazorpayPayment} 
                 disabled={isDeploying}
                 className="w-full max-w-sm mx-auto bg-white text-black hover:bg-gray-200 font-bold py-4 rounded-xl transition-all uppercase tracking-widest text-sm flex justify-center items-center gap-2 disabled:opacity-50 disabled:cursor-wait"
               >
