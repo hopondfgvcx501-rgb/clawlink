@@ -1,210 +1,228 @@
 "use client";
 
 import { useSession } from "next-auth/react";
-import { useEffect, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { useEffect, useState, useRef } from "react";
+import { motion } from "framer-motion";
+import { Send, User, Bot, ShieldAlert, ArrowLeft, RefreshCw } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Edit3, Save, X, Phone, DollarSign, Package, Ticket } from "lucide-react";
 
-interface CustomerMemory {
-  id: string;
-  customer_phone: string;
-  customer_name: string;
-  outstanding_balance: number;
-  last_order_status: string;
-  active_ticket_id: string;
-  past_behavior_notes: string;
-  last_interaction: string;
-}
-
-export default function CRMEditor() {
+export default function CRMDashboard() {
   const { data: session, status } = useSession();
   const router = useRouter();
-  
-  const [customers, setCustomers] = useState<CustomerMemory[]>([]);
+  const [messages, setMessages] = useState<any[]>([]);
+  const [groupedChats, setGroupedChats] = useState<Record<string, any[]>>({});
+  const [activeChatId, setActiveChatId] = useState<string | null>(null);
+  const [replyText, setReplyText] = useState("");
+  const [isSending, setIsSending] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [editForm, setEditForm] = useState<Partial<CustomerMemory>>({});
+  
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    if (status === "unauthenticated") router.push("/");
-    
-    if (session?.user?.email) {
-      fetchCRMData(session.user.email);
-    }
-  }, [session, status]);
-
-  const fetchCRMData = async (email: string) => {
+  const fetchCRMData = async () => {
+    if (!session?.user?.email) return;
     try {
-      const res = await fetch(`/api/crm?email=${email}`);
+      const res = await fetch(`/api/crm?email=${session.user.email}`);
       const data = await res.json();
-      if (data.success) setCustomers(data.data);
-    } catch (error) {
-      console.error("Failed to fetch CRM records", error);
+      if (data.success) {
+        setMessages(data.data);
+        
+        // Group messages by Customer ID (chat_id)
+        const grouped: Record<string, any[]> = {};
+        data.data.forEach((msg: any) => {
+          if (!grouped[msg.chat_id]) grouped[msg.chat_id] = [];
+          grouped[msg.chat_id].push(msg);
+        });
+        setGroupedChats(grouped);
+      }
+    } catch (e) {
+      console.error(e);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleEditClick = (customer: CustomerMemory) => {
-    setEditingId(customer.id);
-    setEditForm(customer);
-  };
+  useEffect(() => {
+    if (status === "unauthenticated") router.push("/");
+    if (status === "authenticated") {
+      fetchCRMData();
+      // Auto-refresh CRM every 10 seconds to feel "Live"
+      const interval = setInterval(fetchCRMData, 10000);
+      return () => clearInterval(interval);
+    }
+  }, [session, status, router]);
 
-  const handleSave = async () => {
-    if (!session?.user?.email || !editingId) return;
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [activeChatId, groupedChats]);
+
+  const handleSendManualReply = async () => {
+    if (!replyText.trim() || !activeChatId || !session?.user?.email) return;
+    setIsSending(true);
 
     try {
       const res = await fetch("/api/crm", {
-        method: "PUT",
+        method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: session.user.email,
-          ...editForm
-        })
+        body: JSON.stringify({ email: session.user.email, chatId: activeChatId, message: replyText })
       });
-      
       const data = await res.json();
+      
       if (data.success) {
-        setCustomers(customers.map(c => c.id === editingId ? { ...c, ...editForm } : c));
-        setEditingId(null);
+        setReplyText("");
+        await fetchCRMData(); // Immediately refresh to show sent message
       } else {
-        alert("Failed to sync data with the AI Engine.");
+        alert("Failed to send message: " + data.error);
       }
     } catch (error) {
-      alert("Network error during synchronization.");
+      alert("Network error.");
+    } finally {
+      setIsSending(false);
     }
   };
 
   if (isLoading || status === "loading") {
-    return <div className="min-h-screen bg-[#0A0A0B] flex items-center justify-center text-white"><span className="animate-spin text-4xl">⚙️</span></div>;
+    return <div className="min-h-screen bg-[#0A0A0B] flex items-center justify-center text-green-500 animate-pulse font-mono">LOADING CRM ENGINE...</div>;
   }
 
+  const activeMessages = activeChatId ? groupedChats[activeChatId] : [];
+
   return (
-    <div className="min-h-screen bg-[#0A0A0B] text-white p-6 md:p-12 font-sans selection:bg-blue-500/30">
+    <div className="min-h-screen bg-[#0A0A0B] text-white flex flex-col font-sans selection:bg-orange-500/30">
       
-      <nav className="max-w-6xl mx-auto flex justify-between items-center mb-12 border-b border-white/10 pb-6">
+      {/* Header */}
+      <header className="border-b border-white/10 bg-[#111] p-4 flex justify-between items-center z-10">
         <div className="flex items-center gap-4">
-          <button onClick={() => router.push('/dashboard')} className="p-2 bg-white/5 hover:bg-white/10 rounded-full transition-colors">
-            <ArrowLeft className="w-5 h-5 text-gray-400" />
-          </button>
-          <div className="text-2xl font-bold tracking-wider font-mono">workflow<span className="text-orange-500">.</span>editor</div>
-        </div>
-        <div className="text-xs font-mono text-green-400 border border-green-500/30 bg-green-500/10 px-3 py-1.5 rounded-full flex items-center gap-2">
-          <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span> LIVE DB SYNC
-        </div>
-      </nav>
-
-      <main className="max-w-6xl mx-auto">
-        <div className="mb-10">
-          <h1 className="text-3xl font-black tracking-tight mb-2">Customer Intelligence Matrix</h1>
-          <p className="text-gray-400 text-sm">Update billing, order tracking, and support status here. The AI Agent will instantly adapt its responses based on this context.</p>
-        </div>
-
-        {customers.length === 0 ? (
-          <div className="bg-[#111] border border-white/5 rounded-2xl p-12 text-center">
-            <div className="text-4xl mb-4">📭</div>
-            <h3 className="text-xl font-bold mb-2">No Active Customers Yet</h3>
-            <p className="text-gray-400 text-sm">When customers interact with your WhatsApp or Telegram bot, their profiles will automatically appear here.</p>
+          <button onClick={() => router.push('/dashboard')} className="p-2 bg-white/5 hover:bg-white/10 rounded-lg transition-colors"><ArrowLeft className="w-5 h-5"/></button>
+          <div>
+            <h1 className="text-lg font-bold tracking-wider flex items-center gap-2">
+              <ShieldAlert className="w-5 h-5 text-orange-500"/> ClawLink Live CRM
+            </h1>
+            <p className="text-[10px] text-gray-500 uppercase tracking-widest font-mono">Monitor & Intervene</p>
           </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-            <AnimatePresence>
-              {customers.map((customer) => (
-                <motion.div 
-                  key={customer.id}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="bg-[#111] border border-white/10 rounded-2xl p-6 relative shadow-xl hover:border-white/20 transition-all group"
-                >
-                  <div className="flex justify-between items-start mb-6 border-b border-white/5 pb-4">
-                    <div>
-                      <h3 className="font-bold text-lg text-white mb-1 flex items-center gap-2">
-                        {customer.customer_name}
-                      </h3>
-                      <p className="text-xs text-gray-500 font-mono flex items-center gap-1"><Phone className="w-3 h-3"/> {customer.customer_phone}</p>
-                    </div>
-                    <button onClick={() => handleEditClick(customer)} className="text-gray-500 hover:text-white p-2 bg-black/50 rounded-lg transition-colors">
-                      <Edit3 className="w-4 h-4" />
-                    </button>
-                  </div>
+        </div>
+        <button onClick={fetchCRMData} className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-gray-400 hover:text-white transition-colors">
+          <RefreshCw className="w-4 h-4"/> Sync
+        </button>
+      </header>
 
-                  <div className="space-y-4 text-sm">
-                    <div className="flex justify-between items-center bg-black/40 p-3 rounded-xl border border-white/5">
-                      <span className="text-gray-400 flex items-center gap-2"><DollarSign className="w-4 h-4 text-red-400"/> Balance</span>
-                      <span className={`font-mono font-bold ${customer.outstanding_balance > 0 ? 'text-red-400' : 'text-green-400'}`}>
-                        ${customer.outstanding_balance.toFixed(2)}
-                      </span>
-                    </div>
-
-                    <div className="flex justify-between items-center bg-black/40 p-3 rounded-xl border border-white/5">
-                      <span className="text-gray-400 flex items-center gap-2"><Package className="w-4 h-4 text-blue-400"/> Order</span>
-                      <span className="font-medium text-blue-300 truncate max-w-[120px]">{customer.last_order_status}</span>
-                    </div>
-
-                    <div className="flex justify-between items-center bg-black/40 p-3 rounded-xl border border-white/5">
-                      <span className="text-gray-400 flex items-center gap-2"><Ticket className="w-4 h-4 text-orange-400"/> Ticket</span>
-                      <span className="font-mono text-orange-300">{customer.active_ticket_id}</span>
-                    </div>
-                  </div>
-                </motion.div>
-              ))}
-            </AnimatePresence>
+      <div className="flex flex-1 overflow-hidden h-[calc(100vh-73px)]">
+        
+        {/* Sidebar: Customer List */}
+        <div className="w-full md:w-80 border-r border-white/10 bg-[#0d0d0f] overflow-y-auto custom-scrollbar flex flex-col">
+          <div className="p-4 border-b border-white/5 bg-black/50 sticky top-0 backdrop-blur-md">
+            <h2 className="text-xs font-bold text-gray-500 uppercase tracking-widest">Active Conversations ({Object.keys(groupedChats).length})</h2>
           </div>
-        )}
-      </main>
+          
+          <div className="flex-1 overflow-y-auto">
+            {Object.keys(groupedChats).length === 0 ? (
+              <p className="p-6 text-sm text-gray-600 text-center font-mono">No active conversations found.</p>
+            ) : (
+              Object.entries(groupedChats).map(([chatId, msgs]) => {
+                const lastMsg = msgs[msgs.length - 1];
+                const isUnread = lastMsg.role === "user";
+                return (
+                  <button 
+                    key={chatId}
+                    onClick={() => setActiveChatId(chatId)}
+                    className={`w-full text-left p-4 border-b border-white/5 transition-all hover:bg-white/5 ${activeChatId === chatId ? 'bg-orange-500/10 border-l-4 border-l-orange-500' : 'border-l-4 border-l-transparent'}`}
+                  >
+                    <div className="flex justify-between items-start mb-1">
+                      <p className="text-sm font-bold text-gray-200 truncate">Customer #{chatId.slice(-6)}</p>
+                      <span className="text-[10px] text-gray-500 font-mono">{new Date(lastMsg.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                    </div>
+                    <p className={`text-xs truncate ${isUnread ? 'text-white font-bold' : 'text-gray-500'}`}>
+                      {lastMsg.role === "user" ? "👤 " : lastMsg.role === "human" ? "🧑‍💻 " : "🤖 "}
+                      {lastMsg.content}
+                    </p>
+                  </button>
+                );
+              })
+            )}
+          </div>
+        </div>
 
-      {/* 🚀 EDIT MODAL */}
-      <AnimatePresence>
-        {editingId && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.95 }} 
-              animate={{ opacity: 1, scale: 1 }} 
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-[#0A0A0B] border border-white/20 rounded-3xl w-full max-w-lg p-8 shadow-[0_0_50px_rgba(0,0,0,0.5)]"
-            >
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="text-xl font-bold text-white">Edit Customer Context</h2>
-                <button onClick={() => setEditingId(null)} className="text-gray-500 hover:text-white"><X className="w-5 h-5"/></button>
-              </div>
-
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Customer Name</label>
-                  <input type="text" value={editForm.customer_name || ""} onChange={(e) => setEditForm({...editForm, customer_name: e.target.value})} className="w-full bg-[#111] border border-white/10 rounded-xl px-4 py-3 text-sm focus:border-orange-500 outline-none text-white transition-all"/>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Outstanding Bill ($)</label>
-                    <input type="number" value={editForm.outstanding_balance || 0} onChange={(e) => setEditForm({...editForm, outstanding_balance: parseFloat(e.target.value)})} className="w-full bg-[#111] border border-white/10 rounded-xl px-4 py-3 text-sm focus:border-red-500 outline-none font-mono text-white transition-all"/>
+        {/* Main Area: Chat Interface */}
+        <div className={`flex-1 flex flex-col bg-black/50 relative ${!activeChatId ? 'hidden md:flex' : 'flex'}`}>
+          {!activeChatId ? (
+            <div className="flex-1 flex flex-col items-center justify-center text-center p-8 opacity-50">
+              <Bot className="w-16 h-16 text-gray-600 mb-4" />
+              <h2 className="text-xl font-bold text-gray-400">Select a conversation</h2>
+              <p className="text-sm text-gray-600">Monitor AI chats or take over manually.</p>
+            </div>
+          ) : (
+            <>
+              {/* Chat Header */}
+              <div className="bg-[#111] border-b border-white/10 p-4 flex justify-between items-center shadow-md">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-orange-500/20 text-orange-500 flex items-center justify-center">
+                    <User className="w-5 h-5"/>
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Active Ticket ID</label>
-                    <input type="text" value={editForm.active_ticket_id || ""} onChange={(e) => setEditForm({...editForm, active_ticket_id: e.target.value})} className="w-full bg-[#111] border border-white/10 rounded-xl px-4 py-3 text-sm focus:border-orange-500 outline-none font-mono text-white transition-all"/>
+                    <h3 className="font-bold text-white text-sm">Customer ID: {activeChatId}</h3>
+                    <p className="text-[10px] text-green-400 flex items-center gap-1"><span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span> Monitored Session</p>
                   </div>
                 </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Order Tracking Status</label>
-                  <input type="text" value={editForm.last_order_status || ""} onChange={(e) => setEditForm({...editForm, last_order_status: e.target.value})} placeholder="e.g., Shipped - Arriving Today" className="w-full bg-[#111] border border-white/10 rounded-xl px-4 py-3 text-sm focus:border-blue-500 outline-none text-white transition-all"/>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">AI Behavioral Notes (Instructions for Bot)</label>
-                  <textarea rows={3} value={editForm.past_behavior_notes || ""} onChange={(e) => setEditForm({...editForm, past_behavior_notes: e.target.value})} placeholder="e.g., VIP Customer, offer 10% discount on next purchase." className="w-full bg-[#111] border border-white/10 rounded-xl px-4 py-3 text-sm focus:border-green-500 outline-none text-white transition-all resize-none"></textarea>
-                </div>
+                <button onClick={() => setActiveChatId(null)} className="md:hidden text-gray-500 hover:text-white">Close</button>
               </div>
 
-              <button onClick={handleSave} className="w-full mt-8 bg-white text-black font-black py-4 rounded-xl text-sm hover:bg-gray-200 transition-all uppercase tracking-widest flex justify-center items-center gap-2">
-                <Save className="w-4 h-4"/> Sync to AI Engine
-              </button>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+              {/* Chat Messages */}
+              <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar bg-[url('https://www.transparenttextures.com/patterns/stardust.png')]">
+                {activeMessages.map((msg: any, idx: number) => {
+                  const isUser = msg.role === "user";
+                  const isHumanAgent = msg.role === "human";
+                  return (
+                    <motion.div 
+                      initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+                      key={idx} 
+                      className={`flex ${isUser ? 'justify-start' : 'justify-end'}`}
+                    >
+                      <div className={`max-w-[75%] rounded-2xl p-4 shadow-lg text-sm ${
+                        isUser 
+                          ? 'bg-[#1A1A1A] border border-white/10 text-gray-200 rounded-tl-sm' 
+                          : isHumanAgent 
+                            ? 'bg-gradient-to-r from-orange-600 to-pink-600 text-white rounded-tr-sm border border-orange-500/50'
+                            : 'bg-blue-600/20 border border-blue-500/30 text-blue-100 rounded-tr-sm'
+                      }`}>
+                        <div className="flex items-center gap-2 mb-2 opacity-50 border-b border-white/10 pb-2">
+                          {isUser ? <User className="w-3 h-3"/> : isHumanAgent ? <ShieldAlert className="w-3 h-3"/> : <Bot className="w-3 h-3"/>}
+                          <span className="text-[10px] font-bold uppercase tracking-widest">
+                            {isUser ? "Customer" : isHumanAgent ? "You (Manual Overwrite)" : "ClawLink AI"}
+                          </span>
+                        </div>
+                        <p className="whitespace-pre-wrap leading-relaxed">{msg.content}</p>
+                        <p className="text-[9px] text-right opacity-40 mt-2 font-mono">{new Date(msg.created_at).toLocaleString()}</p>
+                      </div>
+                    </motion.div>
+                  );
+                })}
+                <div ref={messagesEndRef} />
+              </div>
 
+              {/* Input Area for Human Takeover */}
+              <div className="p-4 bg-[#111] border-t border-white/10">
+                <div className="max-w-4xl mx-auto relative flex items-end gap-2">
+                  <textarea 
+                    value={replyText}
+                    onChange={(e) => setReplyText(e.target.value)}
+                    onKeyDown={(e) => { if(e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendManualReply(); }}}
+                    placeholder="Type to take over from AI..."
+                    className="w-full bg-[#1A1A1A] border border-white/10 rounded-xl p-4 pr-16 text-sm focus:outline-none focus:border-orange-500 focus:shadow-[0_0_15px_rgba(249,115,22,0.2)] transition-all resize-none text-white"
+                    rows={1}
+                  />
+                  <button 
+                    onClick={handleSendManualReply}
+                    disabled={isSending || !replyText.trim()}
+                    className="absolute right-2 bottom-2 p-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 disabled:opacity-50 transition-colors"
+                  >
+                    {isSending ? <span className="animate-spin text-sm">⚙️</span> : <Send className="w-4 h-4"/>}
+                  </button>
+                </div>
+                <p className="text-center text-[10px] text-gray-500 mt-2 font-mono">Press Enter to send. Sending a message automatically pauses AI routing for this conversation.</p>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
