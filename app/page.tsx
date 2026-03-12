@@ -5,8 +5,9 @@ import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import LandingUI from "../components/LandingUI";
 import { useRouter } from "next/navigation";
-import Image from "next/image";
-import { Globe, Database, Mic, Shield, MessageSquare, Zap, Activity, CheckCircle2, XCircle } from "lucide-react";
+
+// Importing icons for the new features section
+import { Globe, Database, Mic, Shield, MessageSquare, Zap, Activity } from "lucide-react";
 
 const MODEL_DETAILS: Record<string, { name: string; starter: number; pro: number }> = {
   gemini: { name: "Gemini 3 Flash", starter: 9, pro: 19 },
@@ -55,12 +56,14 @@ export default function Home() {
     document.body.appendChild(script);
   }, []);
 
-  const handleOpenIntegration = (channel: string) => {
+  const handleOpenIntegration = (model: string, channel: string) => {
+    setActiveModel(model);
     setActiveChannel(channel);
     setIsTelegramModalOpen(true);
   };
 
-  const handleOpenPricing = (channel: string) => {
+  const handleOpenPricing = (model: string, channel: string) => {
+    setActiveModel(model);
     setActiveChannel(channel);
     setShowPricingPopup(true);
   };
@@ -77,7 +80,7 @@ export default function Home() {
     }
 
     const finalPrice = getCurrentPrice();
-    setIsDeploying(true);
+    setIsDeploying(true); // Lock the button immediately
     
     try {
       const response = await fetch("/api/razorpay", {
@@ -96,6 +99,7 @@ export default function Home() {
         order_id: order.id,
         handler: async function (response: any) {
           try {
+            // 🚀 Call deployment backend without UI animations
             const configRes = await fetch("/api/config", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
@@ -105,7 +109,7 @@ export default function Home() {
 
             if (configData.success && configData.botLink) {
               setBotLink(configData.botLink);
-              setShowPricingPopup(false); 
+              setShowPricingPopup(false); // Close modal only on success
             } else {
               alert("Deployment failed: " + configData.error);
             }
@@ -131,25 +135,31 @@ export default function Home() {
     }
   };
 
-  // 🚀 CORE ACTION AREA (Profile + Model Selector + Connect/Deploy Buttons)
-  const renderDynamicButtons = () => {
+  const renderDynamicButtons = (selectedModel: string, selectedChannel: string) => {
     if (botLink) {
       return (
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }} className="w-full max-w-md bg-green-500/10 border border-green-500/30 p-6 rounded-2xl text-center backdrop-blur-md">
-          <h3 className="text-xl font-bold text-white mb-2">Your OpenClaw is Live! 🚀</h3>
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-md bg-green-500/10 border border-green-500/30 p-6 rounded-2xl text-center backdrop-blur-md">
+          <h3 className="text-xl font-bold text-white mb-2">Your Bot is Live! 🚀</h3>
           <p className="text-sm text-gray-400 mb-6">
-            {activeChannel === "whatsapp" 
+            {selectedChannel === "whatsapp" 
               ? "Your WhatsApp AI agent is now connected to the Meta Cloud." 
               : "Your Telegram webhook is fully connected and processing data."}
           </p>
           
           <div className="flex flex-col sm:flex-row gap-3 justify-center mb-4">
             <a href={botLink} target="_blank" rel="noopener noreferrer" className="w-full sm:w-auto bg-white text-black font-black px-6 py-3 rounded-xl hover:bg-gray-200 transition-colors text-sm flex items-center justify-center">
-              {activeChannel === "whatsapp" ? "Open WhatsApp Bot" : "Open Telegram Bot"}
+              {selectedChannel === "whatsapp" ? "Open WhatsApp Bot" : "Open Telegram Bot"}
             </a>
             <button onClick={() => router.push('/dashboard')} className="w-full sm:w-auto bg-[#1A1A1A] border border-white/20 text-white font-bold px-6 py-3 rounded-xl hover:bg-white/10 transition-colors flex items-center justify-center gap-2 text-sm">
-              <Activity className="w-4 h-4"/> Access Dashboard
+              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+              Access Dashboard
             </button>
+          </div>
+
+          <div className="bg-blue-500/10 border border-blue-500/30 p-3 rounded-xl mb-6 text-left">
+            <p className="text-xs font-medium text-blue-200 leading-relaxed">
+              💡 <strong className="text-blue-400">Pro Tip:</strong> Install the ClawLink Web App from your browser menu (Add to Home Screen) to access your bot's CRM and billing easily.
+            </p>
           </div>
         </motion.div>
       );
@@ -157,21 +167,19 @@ export default function Home() {
 
     if (status === "unauthenticated") {
       return (
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.2 }} className="w-full flex flex-col items-center mt-4">
-          <motion.button whileHover={{ scale: 1.02, boxShadow: "0 0 40px rgba(255,255,255,0.2)" }} whileTap={{ scale: 0.98 }} onClick={() => signIn("google")} className="w-full max-w-md bg-white text-black py-4 rounded-xl flex items-center justify-center gap-3 text-lg font-bold tracking-wide shadow-[0_0_30px_rgba(255,255,255,0.15)] transition-all">
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="w-full flex flex-col items-center">
+          <motion.button whileHover={{ scale: 1.02, boxShadow: "0 0 40px rgba(255,255,255,0.4)" }} whileTap={{ scale: 0.98 }} onClick={() => signIn("google")} className="w-full max-w-md bg-white text-black py-4 rounded-xl flex items-center justify-center gap-3 text-lg font-bold tracking-wide shadow-[0_0_30px_rgba(255,255,255,0.2)] transition-all">
             <svg width="24" height="24" viewBox="0 0 24 24" className="w-6 h-6 flex-shrink-0"><path fill="#EA4335" d="M5.266 9.765A7.077 7.077 0 0112 4.909c1.69 0 3.218.6 4.418 1.582L19.91 3C17.782 1.145 15.055 0 12 0 7.27 0 3.198 2.698 1.24 6.65l4.026 3.115Z"/><path fill="#34A853" d="M16.04 18.013c-1.09.703-2.474 1.078-4.04 1.078a7.077 7.077 0 01-6.723-4.823l-4.04 3.067A11.965 11.965 0 0012 24c2.933 0 5.735-1.043 7.834-3l-3.793-2.987Z"/><path fill="#4A90E2" d="M19.834 21c2.195-2.048 3.62-5.096 3.62-9 0-.71-.109-1.473-.272-2.182H12v4.637h6.436c-.317 1.559-1.17 2.766-2.395 3.558L19.834 21Z"/><path fill="#FBBC05" d="M5.277 14.268A7.12 7.12 0 014.909 12c0-.782.125-1.533.357-2.235L1.24 6.65A11.934 11.934 0 000 12c0 1.92.445 3.73 1.237 5.335l4.04-3.067Z"/></svg>
-            Login with Google to Deploy
+            Login with Google & Quick Deploy
           </motion.button>
-          <p className="mt-5 text-sm text-gray-400 font-medium">Connect your channel to continue. <span className="text-green-400 font-semibold">Servers Online.</span></p>
+          <p className="mt-5 text-sm text-gray-400 font-medium">Connect {selectedChannel} to continue. <span className="text-green-400 font-semibold">Limited cloud servers — only 7 left.</span></p>
         </motion.div>
       );
     }
 
     return (
-      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }} className="w-full max-w-3xl mx-auto space-y-6 mt-2">
-        
-        {/* USER PROFILE */}
-        <div className="bg-[#111] border border-white/10 p-4 rounded-xl flex items-center justify-between shadow-lg max-w-md mx-auto">
+      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-md space-y-4">
+        <div className="bg-[#111] border border-white/10 p-4 rounded-xl flex items-center justify-between shadow-lg">
           <div className="flex items-center gap-3">
              <img src={session?.user?.image || ""} className="w-10 h-10 rounded-full border border-white/20" alt="Avatar"/>
              <div className="text-left">
@@ -179,66 +187,23 @@ export default function Home() {
                <p className="text-xs text-gray-500">{session?.user?.email}</p>
              </div>
           </div>
-          <button onClick={() => signOut()} className="text-xs text-gray-500 hover:text-white font-bold uppercase tracking-widest transition-colors">Logout</button>
+          <button onClick={() => signOut()} className="text-xs text-gray-500 hover:text-white font-bold uppercase tracking-widest">Logout</button>
         </div>
 
-        {/* 🚀 THE EXACT MODEL SELECTOR */}
-        <div className="text-center pt-8 pb-4">
-          <h3 className="text-white text-xl md:text-2xl font-serif tracking-tight mb-6">
-            Choose a model to use as your default !
-          </h3>
-          <div className="flex flex-wrap justify-center gap-4 items-center">
-            
-            {/* GPT-5.2 Pill */}
-            <button 
-              onClick={() => setActiveModel("gpt-5.2")} 
-              className={`bg-white rounded-full px-5 py-2.5 flex items-center gap-3 shadow-lg transition-all duration-200 ${activeModel === 'gpt-5.2' ? 'ring-4 ring-blue-500 scale-105' : 'hover:scale-105'}`}
-            >
-              <Image src="/gpt-logo.jpg" alt="GPT" width={24} height={24} className="w-6 h-6 rounded-full" />
-              <span className="text-[#10A37F] font-bold text-lg">gpt-5.2</span>
-            </button>
-
-            {/* Claude Pill */}
-            <button 
-              onClick={() => setActiveModel("claude")} 
-              className={`bg-white rounded-full px-5 py-2 flex items-center gap-3 shadow-lg transition-all duration-200 ${activeModel === 'claude' ? 'ring-4 ring-blue-500 scale-105' : 'hover:scale-105'}`}
-            >
-              <Image src="/claude-logo.jpg" alt="Claude" width={24} height={24} className="w-6 h-6 rounded-full" />
-              <div className="text-left leading-none flex items-center gap-1">
-                <span className="text-[#D97757] font-bold text-lg">Claude</span>
-                <span className="text-[#D97757] text-[10px] font-bold leading-tight pt-1">Opus<br/>4.6</span>
-              </div>
-            </button>
-
-            {/* Gemini Pill */}
-            <button 
-              onClick={() => setActiveModel("gemini")} 
-              className={`bg-white rounded-full px-5 py-2.5 flex items-center gap-3 shadow-lg transition-all duration-200 ${activeModel === 'gemini' ? 'ring-4 ring-blue-500 scale-105' : 'hover:scale-105'}`}
-            >
-              <Image src="/gemini-logo.jpg" alt="Gemini" width={24} height={24} className="w-6 h-6 rounded-full" />
-              <span className="text-[#4E7CFF] font-bold text-lg">Gemini 3 flash</span>
-            </button>
-
-            {/* Soon Pill */}
-            <div className="bg-white rounded-full px-6 py-2.5 flex items-center shadow-lg opacity-80 cursor-not-allowed">
-              <span className="font-black text-xl text-transparent bg-clip-text bg-gradient-to-r from-blue-500 via-yellow-500 to-pink-500">soon</span>
-            </div>
-            
-          </div>
-        </div>
-
-        {/* CONNECTION BUTTON */}
-        <div className="max-w-md mx-auto pt-2">
-          {!isTokenSaved ? (
-            <button onClick={() => handleOpenIntegration(activeChannel)} className="w-full bg-[#1A1A1A] border border-white/20 text-white py-4 rounded-xl font-bold tracking-widest hover:bg-white hover:text-black transition-all mt-2 uppercase shadow-lg">
-              CONNECT {activeChannel} TO CONTINUE
-            </button>
-          ) : (
-            <button onClick={() => handleOpenPricing(activeChannel)} className="w-full bg-white text-black py-4 rounded-xl font-black tracking-widest shadow-[0_0_30px_rgba(255,255,255,0.2)] hover:scale-[1.02] transition-all flex justify-center items-center gap-3 uppercase">
-              <Zap className="w-5 h-5"/> Deploy OpenClaw
-            </button>
-          )}
-        </div>
+        {!isTokenSaved ? (
+          <button onClick={() => handleOpenIntegration(selectedModel, selectedChannel)} className="w-full bg-[#1A1A1A] border border-white/20 text-white py-4 rounded-xl font-bold tracking-wide hover:bg-white hover:text-black transition-all mt-2">
+            CONNECT {selectedChannel.toUpperCase()} TO CONTINUE
+          </button>
+        ) : (
+          <button onClick={() => handleOpenPricing(selectedModel, selectedChannel)} className="w-full bg-white text-black py-4 rounded-xl font-bold tracking-wide shadow-[0_0_30px_rgba(255,255,255,0.2)] hover:scale-[1.02] transition-all flex justify-center items-center gap-3">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-black">
+              <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+              <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+              <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41"></path>
+            </svg>
+            Deploy OpenClaw
+          </button>
+        )}
       </motion.div>
     );
   };
@@ -249,181 +214,72 @@ export default function Home() {
   if (!isMounted) return null;
 
   return (
-    <div className="bg-[#0A0A0B] min-h-screen relative text-white font-sans selection:bg-blue-500/30 overflow-x-hidden">
+    <div className="bg-[#0A0A0B] min-h-screen relative text-white selection:bg-blue-500/30">
       
-      {/* 🚀 1. HERO AREA (LandingUI with Model Selector Injected) */}
+      {/* 🚀 Top Area: Hero & Deployment Engine */}
       <div className="relative z-10 w-full">
         <LandingUI renderActionArea={renderDynamicButtons} isLocked={isTokenSaved || isDeploying} />
       </div>
 
-      {/* 🚀 2. COMPARISON SECTION (Traditional vs ClawLink) */}
-      <section className="py-24 bg-[#141414] relative z-0 border-y border-white/5">
-        <div className="max-w-5xl mx-auto px-6">
-          <div className="text-center mb-16">
-            <h3 className="text-gray-400 text-sm font-bold tracking-widest uppercase mb-4">Comparison</h3>
-            <h2 className="text-3xl md:text-5xl text-white tracking-tight font-serif">Traditional Method vs clawlink</h2>
-          </div>
-
-          <div className="flex flex-col md:flex-row justify-between items-center gap-12 font-serif">
-            {/* Left Side: Traditional */}
-            <div className="w-full md:w-1/2">
-              <ul className="space-y-5 text-gray-300 text-lg">
-                <li className="flex justify-between items-center">
-                  <div className="flex items-center gap-4"><div className="w-1.5 h-1.5 bg-gray-500 rounded-full"></div>Purchasing local virtual machine</div>
-                  <span>15 min</span>
-                </li>
-                <li className="flex justify-between items-center">
-                  <div className="flex items-center gap-4"><div className="w-1.5 h-1.5 bg-gray-500 rounded-full"></div>Creating SSH keys and storing securely</div>
-                  <span>10 min</span>
-                </li>
-                <li className="flex justify-between items-center">
-                  <div className="flex items-center gap-4"><div className="w-1.5 h-1.5 bg-gray-500 rounded-full"></div>Connecting to the server via SSH</div>
-                  <span>5 min</span>
-                </li>
-                <li className="flex justify-between items-center">
-                  <div className="flex items-center gap-4"><div className="w-1.5 h-1.5 bg-gray-500 rounded-full"></div>Installing Node.js and NPM</div>
-                  <span>5 min</span>
-                </li>
-                <li className="flex justify-between items-center">
-                  <div className="flex items-center gap-4"><div className="w-1.5 h-1.5 bg-gray-500 rounded-full"></div>Installing OpenClaw</div>
-                  <span>7 min</span>
-                </li>
-                <li className="flex justify-between items-center">
-                  <div className="flex items-center gap-4"><div className="w-1.5 h-1.5 bg-gray-500 rounded-full"></div>Setting up OpenClaw</div>
-                  <span>10 min</span>
-                </li>
-                <li className="flex justify-between items-center">
-                  <div className="flex items-center gap-4"><div className="w-1.5 h-1.5 bg-gray-500 rounded-full"></div>Connecting to AI provider</div>
-                  <span>4 min</span>
-                </li>
-                <li className="flex justify-between items-center">
-                  <div className="flex items-center gap-4"><div className="w-1.5 h-1.5 bg-gray-500 rounded-full"></div>Pairing with Telegram</div>
-                  <span>4 min</span>
-                </li>
-              </ul>
-              <div className="mt-6 pt-4 border-t border-gray-600 flex justify-between items-center text-xl text-white font-bold">
-                <span>total</span>
-                <span>60 MINUTES</span>
-              </div>
-            </div>
-
-            {/* Right Side: Clawlink */}
-            <div className="w-full md:w-1/2 flex flex-col justify-center items-center text-center px-4">
-              <h3 className="text-5xl font-bold text-white mb-2 font-serif tracking-tight">clawlink</h3>
-              <div className="text-4xl font-bold text-white mb-4">&lt;30 sec</div>
-              <p className="text-xs text-gray-400 leading-relaxed max-w-[320px] mx-auto font-sans font-medium">
-                Pick a model, connect Telegram, deploy — done under 1 minute. Servers, SSH and OpenClaw Environment are already set up, waiting to get assigned. Simple, secure and fast connection to your bot.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* 🚀 3. ENTERPRISE CAPABILITIES (5 Core Features) */}
-      <section className="py-24 border-t border-white/5 bg-[#0A0A0B] relative z-0">
+      {/* 🚀 NEW AREA: Enterprise Features (Highlighting what ClawLink actually does) */}
+      <section className="py-24 border-t border-white/5 bg-[#000000] relative z-0">
         <div className="max-w-6xl mx-auto px-6">
-          <div className="mb-16 text-center">
-            <h2 className="text-3xl md:text-4xl font-black tracking-tight mb-4 flex items-center justify-center gap-3 text-white">
-              <Activity className="w-8 h-8 text-blue-500"/> Enterprise Capabilities
+          <div className="mb-16 text-center md:text-left">
+            <h2 className="text-2xl font-bold tracking-tight mb-2 flex items-center justify-center md:justify-start gap-2">
+              <Activity className="w-5 h-5 text-blue-500"/> Enterprise Capabilities
             </h2>
-            <p className="text-gray-400 text-base max-w-2xl mx-auto">Everything you need to automate your business operations globally.</p>
+            <p className="text-gray-500 text-sm">Everything you need to automate your business globally.</p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <div className="bg-[#111] border border-white/10 p-8 rounded-3xl hover:border-white/30 transition-all group shadow-xl">
-              <Globe className="w-8 h-8 text-blue-500 mb-6 group-hover:scale-110 transition-transform" />
-              <h3 className="text-xl font-bold mb-3 text-white">Omnichannel Presence</h3>
-              <p className="text-sm text-gray-400 leading-relaxed">Deploy your AI agent natively across Telegram, WhatsApp Cloud API, and embed our smart Web Widget directly onto your website.</p>
-            </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-px bg-white/5 border border-white/5 rounded-2xl overflow-hidden shadow-2xl">
             
-            <div className="bg-[#111] border border-white/10 p-8 rounded-3xl hover:border-white/30 transition-all group shadow-xl">
-              <Mic className="w-8 h-8 text-purple-500 mb-6 group-hover:scale-110 transition-transform" />
-              <h3 className="text-xl font-bold mb-3 text-white">Audio Intelligence</h3>
-              <p className="text-sm text-gray-400 leading-relaxed">Natively integrated with OpenAI Whisper. Your bot listens to customer voice notes, transcribes them, and responds contextually.</p>
+            {/* Feature 1: Omnichannel */}
+            <div className="bg-[#0A0A0B] p-8 hover:bg-[#111] transition-colors group">
+              <Globe className="w-6 h-6 text-gray-500 mb-6 group-hover:text-blue-500 transition-colors" />
+              <h3 className="text-lg font-bold mb-2">Omnichannel Presence</h3>
+              <p className="text-sm text-gray-500 leading-relaxed">Deploy your AI agent across Telegram, WhatsApp Cloud, and embed our Web Widget instantly.</p>
             </div>
 
-            <div className="bg-[#111] border border-white/10 p-8 rounded-3xl hover:border-white/30 transition-all group shadow-xl">
-              <Database className="w-8 h-8 text-green-500 mb-6 group-hover:scale-110 transition-transform" />
-              <h3 className="text-xl font-bold mb-3 text-white">Enterprise RAG</h3>
-              <p className="text-sm text-gray-400 leading-relaxed">Business Knowledge Injector. Inject your company FAQs and documents. The AI searches this Vector DB to provide highly accurate answers.</p>
+            {/* Feature 2: Audio Intelligence */}
+            <div className="bg-[#0A0A0B] p-8 hover:bg-[#111] transition-colors group">
+              <Mic className="w-6 h-6 text-gray-500 mb-6 group-hover:text-purple-500 transition-colors" />
+              <h3 className="text-lg font-bold mb-2">Audio Intelligence</h3>
+              <p className="text-sm text-gray-500 leading-relaxed">Integrated with Whisper AI. Your bot listens to customer voice notes and responds contextually.</p>
             </div>
 
-            <div className="bg-[#111] border border-white/10 p-8 rounded-3xl hover:border-white/30 transition-all group shadow-xl lg:col-span-1 md:col-span-2">
-              <Zap className="w-8 h-8 text-orange-500 mb-6 group-hover:scale-110 transition-transform" />
-              <h3 className="text-xl font-bold mb-3 text-white">Actionable AI</h3>
-              <p className="text-sm text-gray-400 leading-relaxed">Function Calling & API Triggers. The AI doesn't just talk; it executes backend actions like checking real-time order statuses or booking specific appointments.</p>
+            {/* Feature 3: Enterprise RAG */}
+            <div className="bg-[#0A0A0B] p-8 hover:bg-[#111] transition-colors group">
+              <Database className="w-6 h-6 text-gray-500 mb-6 group-hover:text-green-500 transition-colors" />
+              <h3 className="text-lg font-bold mb-2">Enterprise RAG</h3>
+              <p className="text-sm text-gray-500 leading-relaxed">Business Knowledge Injector. Inject company FAQs into the Vector DB for highly accurate AI answers.</p>
             </div>
 
-            <div className="bg-[#111] border border-white/10 p-8 rounded-3xl hover:border-white/30 transition-all group shadow-xl lg:col-span-2 md:col-span-2">
-              <MessageSquare className="w-8 h-8 text-yellow-500 mb-6 group-hover:scale-110 transition-transform" />
-              <h3 className="text-xl font-bold mb-3 text-white">Live CRM & Broadcast Hub</h3>
-              <p className="text-sm text-gray-400 leading-relaxed">A complete command center. Monitor all AI conversations in real-time, take over manually when needed, and blast marketing campaigns to thousands of captured leads instantly.</p>
+            {/* Feature 4: Actionable AI */}
+            <div className="bg-[#0A0A0B] p-8 hover:bg-[#111] transition-colors group">
+              <Zap className="w-6 h-6 text-gray-500 mb-6 group-hover:text-orange-500 transition-colors" />
+              <h3 className="text-lg font-bold mb-2">Actionable AI</h3>
+              <p className="text-sm text-gray-500 leading-relaxed">Function Calling & API Triggers. The AI executes backend actions like checking orders or booking meetings.</p>
             </div>
+
+            {/* Feature 5: CRM & Broadcast */}
+            <div className="bg-[#0A0A0B] p-8 hover:bg-[#111] transition-colors group">
+              <MessageSquare className="w-6 h-6 text-gray-500 mb-6 group-hover:text-yellow-500 transition-colors" />
+              <h3 className="text-lg font-bold mb-2">Live CRM & Broadcast Hub</h3>
+              <p className="text-sm text-gray-500 leading-relaxed">Monitor conversations in real-time, take manual control, and blast mass marketing campaigns.</p>
+            </div>
+
+            {/* Feature 6: Fallback Engine */}
+            <div className="bg-[#0A0A0B] p-8 hover:bg-[#111] transition-colors group">
+              <Shield className="w-6 h-6 text-gray-500 mb-6 group-hover:text-red-500 transition-colors" />
+              <h3 className="text-lg font-bold mb-2">Immortal Fallback</h3>
+              <p className="text-sm text-gray-500 leading-relaxed">Zero downtime. If GPT fails, the system automatically routes to Claude or Gemini in milliseconds.</p>
+            </div>
+
           </div>
         </div>
       </section>
 
-      {/* 🚀 4. FOOTER WITH 4 GOD-TIER ENGINES */}
-      <footer className="border-t border-white/10 bg-[#000] pt-20 pb-12 relative z-0">
-        <div className="max-w-6xl mx-auto px-6">
-          
-          {/* The 4 Added Footer Features */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-16 border-b border-white/10 pb-16">
-            <div className="flex items-start gap-3">
-              <span className="text-xl mt-1">👉</span>
-              <div>
-                <h4 className="text-white font-bold mb-2">RAG Knowledge Base</h4>
-                <p className="text-gray-500 text-sm leading-relaxed">Custom company data injection.</p>
-              </div>
-            </div>
-            <div className="flex items-start gap-3">
-              <span className="text-xl mt-1">👉</span>
-              <div>
-                <h4 className="text-white font-bold mb-2">CRM & Human Handoff</h4>
-                <p className="text-gray-500 text-sm leading-relaxed">Live chat control & monitoring.</p>
-              </div>
-            </div>
-            <div className="flex items-start gap-3">
-              <span className="text-xl mt-1">👉</span>
-              <div>
-                <h4 className="text-white font-bold mb-2">Marketing Broadcast</h4>
-                <p className="text-gray-500 text-sm leading-relaxed">WhatsApp/Telegram mass messaging.</p>
-              </div>
-            </div>
-            <div className="flex items-start gap-3">
-              <span className="text-xl mt-1">👉</span>
-              <div>
-                <h4 className="text-white font-bold mb-2">Viral Growth Engine</h4>
-                <p className="text-gray-500 text-sm leading-relaxed">Affiliate marketing & automated rewards.</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="text-center mb-8">
-            <h3 className="text-gray-300 font-bold tracking-widest uppercase text-sm md:text-base">
-              Deploy. Automate. Relax.
-            </h3>
-          </div>
-
-          <div className="flex flex-col md:flex-row justify-between items-center gap-6 text-sm">
-            <div className="flex items-center gap-2 opacity-70">
-              <Zap className="w-5 h-5 text-blue-500" />
-              <span className="font-black tracking-widest font-mono text-white text-lg">CLAWLINK<span className="text-blue-500">.</span></span>
-            </div>
-            <div className="flex flex-wrap justify-center gap-8 text-gray-500 font-medium">
-              <a href="#" className="hover:text-white transition-colors">Privacy Policy</a>
-              <a href="#" className="hover:text-white transition-colors">Terms of Service</a>
-              <a href="#" className="hover:text-white transition-colors">Refund Policy</a>
-              <a href="#" className="hover:text-white transition-colors">Help Desk</a>
-            </div>
-            <p className="text-xs text-gray-600 font-mono font-bold tracking-widest">
-              © 2026 CLAWLINK INC. GLOBAL AI SAAS.
-            </p>
-          </div>
-        </div>
-      </footer>
-
-      {/* 🚀 MODALS (API Authentication) */}
+      {/* 🚀 Modals */}
       <AnimatePresence>
         {isTelegramModalOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4">
@@ -431,12 +287,13 @@ export default function Home() {
               initial={{ opacity: 0, scale: 0.95, y: 20 }} 
               animate={{ opacity: 1, scale: 1, y: 0 }} 
               exit={{ opacity: 0, scale: 0.95, y: 20 }} 
-              transition={{ duration: 0.2 }}
-              className={`bg-[#0A0A0B]/95 backdrop-blur-2xl border ${borderColor} rounded-3xl w-full max-w-[950px] flex flex-col md:flex-row overflow-hidden relative shadow-2xl`}
+              className={`bg-[#0A0A0B]/90 backdrop-blur-2xl border ${borderColor} rounded-3xl w-full max-w-[950px] flex flex-col md:flex-row overflow-hidden relative`}
+              style={{ boxShadow: `0 0 100px ${themeColor}` }}
             >
               <button onClick={() => setIsTelegramModalOpen(false)} className="absolute top-6 right-6 z-20 text-gray-500 hover:text-white bg-white/5 hover:bg-white/10 p-2 rounded-full transition-all">✕</button>
 
               <div className="w-full md:w-1/2 p-10 flex flex-col justify-center relative z-10">
+                
                 {activeChannel === "telegram" ? (
                   <>
                     <div className="flex items-center gap-4 mb-8">
@@ -554,24 +411,20 @@ export default function Home() {
         )}
       </AnimatePresence>
 
-      {/* 🚀 MODALS (Pricing Checkout) */}
       <AnimatePresence>
         {showPricingPopup && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-md p-4 overflow-y-auto">
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 20 }} transition={{ duration: 0.2 }} className="bg-[#0A0A0B] border border-white/10 p-8 md:p-10 rounded-[2rem] w-full max-w-4xl shadow-2xl relative text-center my-8">
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 20 }} className="bg-[#0A0A0B] border border-white/10 p-8 md:p-10 rounded-[2rem] w-full max-w-4xl shadow-2xl relative text-center my-8">
               {!isDeploying && <button onClick={() => setShowPricingPopup(false)} className="absolute top-6 right-8 text-gray-500 hover:text-white text-2xl">✕</button>}
               
               <div className="w-14 h-14 bg-[#111] border border-white/10 rounded-2xl mx-auto flex items-center justify-center text-2xl mb-4 shadow-inner">✨</div>
-              
-              {/* 🚀 Changed "Choose your ClawLink Plan" to "Deploy OpenClaw under 30 seconds." */}
-              <h2 className="text-2xl md:text-3xl font-black mb-2 text-white tracking-tight uppercase">Deploy OpenClaw under 30 seconds.</h2>
-              
+              <h2 className="text-2xl md:text-3xl font-bold mb-2 text-white tracking-tight">Choose your ClawLink Plan</h2>
               <p className="text-gray-400 text-sm md:text-base mb-10 leading-relaxed max-w-2xl mx-auto font-medium">
-                Avoid all technical complexity and one-click deploy your own 24/7 active AI instance immediately.
+                Avoid all technical complexity and one-click deploy your own 24/7 active instance under <span className="text-white font-bold">30 seconds.</span>
               </p>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10 text-left">
-                <div onClick={() => !isDeploying && setSelectedTier("starter")} className={`relative p-6 rounded-2xl border transition-all duration-200 ${!isDeploying ? 'cursor-pointer' : ''} ${selectedTier === "starter" ? "bg-[#111] border-white shadow-[0_0_20px_rgba(255,255,255,0.1)] scale-105 z-10" : "bg-black border-white/10 hover:border-white/30"}`}>
+                <div onClick={() => !isDeploying && setSelectedTier("starter")} className={`relative p-6 rounded-2xl border transition-all ${!isDeploying ? 'cursor-pointer' : ''} ${selectedTier === "starter" ? "bg-[#111] border-white shadow-[0_0_20px_rgba(255,255,255,0.1)] scale-105 z-10" : "bg-black border-white/10 hover:border-white/30"}`}>
                   <h3 className="text-gray-400 font-bold uppercase tracking-widest text-xs mb-2">Starter</h3>
                   <div className="text-3xl font-black text-white mb-4">
                     {currencySymbol}{getCurrentPrice("starter")}<span className="text-sm font-normal text-gray-500">/mo</span>
@@ -582,7 +435,7 @@ export default function Home() {
                   </div>
                 </div>
 
-                <div onClick={() => !isDeploying && setSelectedTier("pro")} className={`relative p-6 rounded-2xl border transition-all duration-200 ${!isDeploying ? 'cursor-pointer' : ''} ${selectedTier === "pro" ? "bg-[#111] border-blue-500 shadow-[0_0_30px_rgba(59,130,246,0.2)] scale-105 z-10" : "bg-black border-white/10 hover:border-white/30"}`}>
+                <div onClick={() => !isDeploying && setSelectedTier("pro")} className={`relative p-6 rounded-2xl border transition-all ${!isDeploying ? 'cursor-pointer' : ''} ${selectedTier === "pro" ? "bg-[#111] border-blue-500 shadow-[0_0_30px_rgba(59,130,246,0.2)] scale-105 z-10" : "bg-black border-white/10 hover:border-white/30"}`}>
                   <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-blue-500 text-white text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-full">Most Popular</div>
                   <h3 className="text-blue-400 font-bold uppercase tracking-widest text-xs mb-2">Pro</h3>
                   <div className="text-3xl font-black text-white mb-4">
@@ -594,7 +447,7 @@ export default function Home() {
                   </div>
                 </div>
 
-                <div onClick={() => !isDeploying && setSelectedTier("max")} className={`relative p-6 rounded-2xl border transition-all duration-200 ${!isDeploying ? 'cursor-pointer' : ''} ${selectedTier === "max" ? "bg-gradient-to-b from-[#221508] to-black border-orange-500 shadow-[0_0_30px_rgba(249,115,22,0.15)] scale-105 z-10" : "bg-black border-white/10 hover:border-white/30"}`}>
+                <div onClick={() => !isDeploying && setSelectedTier("max")} className={`relative p-6 rounded-2xl border transition-all ${!isDeploying ? 'cursor-pointer' : ''} ${selectedTier === "max" ? "bg-gradient-to-b from-[#221508] to-black border-orange-500 shadow-[0_0_30px_rgba(249,115,22,0.15)] scale-105 z-10" : "bg-black border-white/10 hover:border-white/30"}`}>
                   <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-gradient-to-r from-orange-500 to-pink-500 text-white text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-full">Ultimate</div>
                   <h3 className="text-orange-400 font-bold uppercase tracking-widest text-xs mb-2">Omni Max</h3>
                   <div className="text-3xl font-black text-white mb-4">
@@ -624,7 +477,7 @@ export default function Home() {
                   `Deploy OpenClaw ${currencySymbol}${getCurrentPrice()}`
                 )}
               </button>
-              <p className="mt-4 text-[10px] text-gray-500 uppercase tracking-widest font-bold">Secured by Razorpay API</p>
+              <p className="mt-4 text-[10px] text-gray-500 uppercase tracking-widest font-bold">Secured by Razorpay</p>
             </motion.div>
           </div>
         )}
