@@ -1,7 +1,7 @@
 "use client";
 
 import { signIn, signOut, useSession } from "next-auth/react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import LandingUI from "../components/LandingUI";
 import { useRouter } from "next/navigation";
@@ -23,6 +23,7 @@ export default function Home() {
   
   const [showPricingPopup, setShowPricingPopup] = useState(false);
   const [isDeploying, setIsDeploying] = useState(false);
+  const [deployLogs, setDeployLogs] = useState<string[]>([]);
   const [botLink, setBotLink] = useState("");
   
   const [activeModel, setActiveModel] = useState("gpt-5.2");
@@ -32,6 +33,13 @@ export default function Home() {
   const [currency, setCurrency] = useState<"USD" | "INR">("USD");
   const [currencySymbol, setCurrencySymbol] = useState("$");
   const EXCHANGE_RATE = 83; 
+
+  const logsEndRef = useRef<HTMLDivElement>(null);
+
+  // Auto-scroll terminal to bottom
+  useEffect(() => {
+    logsEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [deployLogs]);
 
   useEffect(() => {
     try {
@@ -70,8 +78,31 @@ export default function Home() {
     return currency === "INR" ? basePrice * EXCHANGE_RATE : basePrice;
   };
 
+  const simulateDeploymentLogs = () => {
+    const logs = [
+      "Authenticating global credentials...",
+      "Allocating dedicated cloud instances...",
+      `Injecting ${MODEL_DETAILS[activeModel]?.name || 'AI'} neural pathways...`,
+      `Establishing secure tunnels to ${activeChannel.toUpperCase()} API...`,
+      "Provisioning enterprise CRM database...",
+      "Encrypting API endpoints (AES-256)...",
+      "Deploying final configurations...",
+      "System Online. All green."
+    ];
+    
+    setDeployLogs([]);
+    let i = 0;
+    const interval = setInterval(() => {
+      if (i < logs.length) {
+        setDeployLogs(prev => [...prev, logs[i]]);
+        i++;
+      } else {
+        clearInterval(interval);
+      }
+    }, 400); // Super fast 400ms interval
+  };
+
   const triggerRazorpayPayment = async () => {
-    setIsDeploying(true);
     const finalPrice = getCurrentPrice();
     
     try {
@@ -90,10 +121,11 @@ export default function Home() {
         description: `Plan: ${selectedTier.toUpperCase()} | Model: ${selectedTier === 'max' ? 'ALL' : MODEL_DETAILS[activeModel]?.name}`,
         order_id: order.id,
         handler: async function (response: any) {
-          console.log("Payment successful. Response:", response);
           setShowPricingPopup(false);
+          setIsDeploying(true);
+          simulateDeploymentLogs(); // 🚀 Start the cool terminal animation
+
           try {
-            console.log("Calling /api/config to deploy...");
             const configRes = await fetch("/api/config", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
@@ -101,14 +133,18 @@ export default function Home() {
             });
             const configData = await configRes.json();
 
-            if (configData.success && configData.botLink) {
-              setBotLink(configData.botLink);
-            } else {
-              alert("Deployment failed: " + configData.error);
-            }
+            // Wait a minimum of 3.5 seconds to finish the cool animation before showing success
+            setTimeout(() => {
+              if (configData.success && configData.botLink) {
+                setBotLink(configData.botLink);
+              } else {
+                alert("Deployment failed: " + configData.error);
+              }
+              setIsDeploying(false);
+            }, 3500); 
+
           } catch (error) {
             alert("An error occurred during deployment. Please check console.");
-          } finally {
             setIsDeploying(false);
           }
         },
@@ -147,41 +183,10 @@ export default function Home() {
             </button>
           </div>
 
-          {/* 🚀 WEB APP TIP ADDED HERE */}
           <div className="bg-blue-500/10 border border-blue-500/30 p-3 rounded-xl mb-6 text-left">
             <p className="text-xs font-medium text-blue-200 leading-relaxed">
               💡 <strong className="text-blue-400">Pro Tip:</strong> Install the ClawLink Web App from your browser menu (Add to Home Screen) to access your bot's CRM and billing easily.
             </p>
-          </div>
-
-          <div className="text-left bg-black/50 p-4 rounded-xl border border-white/5 max-h-48 overflow-y-auto custom-scrollbar">
-            <p className="text-[10px] font-bold text-green-400 mb-3 uppercase tracking-widest flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span> System Capabilities Unlocked
-            </p>
-            
-            {selectedChannel === "whatsapp" ? (
-              <ul className="text-xs text-gray-400 space-y-2.5 font-medium">
-                <li className="flex items-start gap-2">✓ <span><strong className="text-gray-300">Phase 1: Support</strong> - Auto-replies, Ticket creation, Multi-language.</span></li>
-                <li className="flex items-start gap-2">✓ <span><strong className="text-gray-300">Phase 2: Billing</strong> - Invoice generation, Payment reminders.</span></li>
-                <li className="flex items-start gap-2">✓ <span><strong className="text-gray-300">Phase 3: Service</strong> - Order tracking, Appointment scheduling.</span></li>
-                <li className="flex items-start gap-2">✓ <span><strong className="text-gray-300">Phase 4: Marketing</strong> - Broadcast campaigns, Feedback collection.</span></li>
-                <li className="flex items-start gap-2">✓ <span><strong className="text-gray-300">Phase 5: Automation</strong> - ERP/CRM API workflows, Task scheduling.</span></li>
-                <li className="flex items-start gap-2">✓ <span><strong className="text-gray-300">Phase 6: Memory</strong> - Customer-specific DB, Analytics reporting.</span></li>
-                <li className="flex items-start gap-2">✓ <span><strong className="text-gray-300">Phase 7: Omnichannel</strong> - Cross-platform sync integration.</span></li>
-                <li className="flex items-start gap-2">✓ <span><strong className="text-gray-300">Phase 8: Advanced AI</strong> - Predictive alerts, Sentiment analysis.</span></li>
-              </ul>
-            ) : (
-              <ul className="text-xs text-gray-400 space-y-2.5 font-medium">
-                <li className="flex items-start gap-2">✓ <span><strong className="text-gray-300">Phase 1: AI Chat</strong> - 24/7 intelligent automated query resolution.</span></li>
-                <li className="flex items-start gap-2">✓ <span><strong className="text-gray-300">Phase 2: Moderation</strong> - Automated group and channel anti-spam tools.</span></li>
-                <li className="flex items-start gap-2">✓ <span><strong className="text-gray-300">Phase 3: Media Sync</strong> - Advanced document and image processing.</span></li>
-                <li className="flex items-start gap-2">✓ <span><strong className="text-gray-300">Phase 4: Commands</strong> - Slash-command navigation and interactive menus.</span></li>
-                <li className="flex items-start gap-2">✓ <span><strong className="text-gray-300">Phase 5: Inline Mode</strong> - Global data fetching directly from any chat context.</span></li>
-                <li className="flex items-start gap-2">✓ <span><strong className="text-gray-300">Phase 6: Broadcasts</strong> - Mass notification delivery to all bot subscribers.</span></li>
-                <li className="flex items-start gap-2">✓ <span><strong className="text-gray-300">Phase 7: Web Apps</strong> - Integration with Telegram Mini Apps interface.</span></li>
-                <li className="flex items-start gap-2">✓ <span><strong className="text-gray-300">Phase 8: Payments</strong> - Seamless native Telegram invoice generation.</span></li>
-              </ul>
-            )}
           </div>
         </motion.div>
       );
@@ -236,7 +241,66 @@ export default function Home() {
   return (
     <div className="bg-[#0A0A0B] min-h-screen relative text-white">
       
-      <LandingUI renderActionArea={renderDynamicButtons} isLocked={isTokenSaved} />
+      <LandingUI renderActionArea={renderDynamicButtons} isLocked={isTokenSaved || isDeploying} />
+
+      {/* 🚀 NEW: HYPER-FAST DEPLOYMENT TERMINAL OVERLAY */}
+      <AnimatePresence>
+        {isDeploying && (
+          <motion.div 
+            initial={{ opacity: 0 }} 
+            animate={{ opacity: 1 }} 
+            exit={{ opacity: 0 }} 
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/95 backdrop-blur-xl p-4"
+          >
+            <div className="w-full max-w-2xl bg-[#0A0A0B] border border-green-500/30 rounded-2xl overflow-hidden shadow-[0_0_100px_rgba(34,197,94,0.15)] font-mono">
+              <div className="bg-[#111] border-b border-green-500/20 p-3 flex items-center gap-3">
+                <div className="flex gap-2">
+                  <div className="w-3 h-3 rounded-full bg-red-500/50"></div>
+                  <div className="w-3 h-3 rounded-full bg-yellow-500/50"></div>
+                  <div className="w-3 h-3 rounded-full bg-green-500 animate-pulse shadow-[0_0_10px_rgba(34,197,94,0.8)]"></div>
+                </div>
+                <p className="text-xs text-green-500/70 uppercase tracking-widest font-bold ml-2">ClawLink Engine • Initializing</p>
+              </div>
+              <div className="p-6 h-[300px] overflow-y-auto text-sm space-y-3 custom-scrollbar flex flex-col">
+                {deployLogs.map((log, index) => (
+                  <motion.div 
+                    key={index}
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    className="flex gap-4 items-start"
+                  >
+                    <span className="text-gray-600 shrink-0">[{new Date().toISOString().split('T')[1].split('.')[0]}]</span>
+                    <span className={log.includes("Online") ? "text-green-400 font-bold" : "text-gray-300"}>
+                      &gt; {log}
+                    </span>
+                  </motion.div>
+                ))}
+                {deployLogs.length > 0 && deployLogs.length < 8 && (
+                  <motion.div 
+                    animate={{ opacity: [1, 0, 1] }} 
+                    transition={{ repeat: Infinity, duration: 0.8 }} 
+                    className="flex gap-4 items-start text-green-500"
+                  >
+                    <span className="text-gray-600">[{new Date().toISOString().split('T')[1].split('.')[0]}]</span>
+                    <span>&gt; _</span>
+                  </motion.div>
+                )}
+                <div ref={logsEndRef} />
+              </div>
+              <div className="bg-[#111] border-t border-green-500/20 p-3 px-6">
+                <div className="w-full bg-black rounded-full h-1.5 overflow-hidden">
+                  <motion.div 
+                    className="bg-green-500 h-full"
+                    initial={{ width: "0%" }}
+                    animate={{ width: `${(deployLogs.length / 8) * 100}%` }}
+                    transition={{ ease: "linear" }}
+                  />
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <AnimatePresence>
         {isTelegramModalOpen && (
@@ -418,8 +482,8 @@ export default function Home() {
                 </div>
               </div>
 
-              <button onClick={triggerRazorpayPayment} disabled={isDeploying} className="w-full max-w-sm mx-auto bg-white text-black hover:bg-gray-200 font-black py-4 rounded-xl transition-all uppercase tracking-widest text-sm shadow-[0_0_20px_rgba(255,255,255,0.2)] flex justify-center items-center gap-2">
-                {isDeploying ? <span className="animate-spin text-xl">⚙️</span> : `Deploy OpenClaw ${currencySymbol}${getCurrentPrice()}`}
+              <button onClick={triggerRazorpayPayment} className="w-full max-w-sm mx-auto bg-white text-black hover:bg-gray-200 font-black py-4 rounded-xl transition-all uppercase tracking-widest text-sm shadow-[0_0_20px_rgba(255,255,255,0.2)] flex justify-center items-center gap-2">
+                Deploy OpenClaw {currencySymbol}{getCurrentPrice()}
               </button>
               <p className="mt-4 text-[10px] text-gray-500 uppercase tracking-widest font-bold">Secured by Razorpay</p>
             </motion.div>
