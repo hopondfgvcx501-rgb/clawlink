@@ -120,7 +120,13 @@ Thank you for choosing ClawLink Enterprise AI.
       {/* 🚀 WEB APP INSTALLATION BANNER */}
       <AnimatePresence>
         {showAppBanner && (
-          <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="max-w-6xl mx-auto mb-6 bg-gradient-to-r from-blue-600/20 to-purple-600/20 border border-blue-500/30 rounded-xl p-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <motion.div 
+            key="app-banner" 
+            initial={{ opacity: 0, y: -20 }} 
+            animate={{ opacity: 1, y: 0 }} 
+            exit={{ opacity: 0, y: -20 }} 
+            className="max-w-6xl mx-auto mb-6 bg-gradient-to-r from-blue-600/20 to-purple-600/20 border border-blue-500/30 rounded-xl p-4 flex flex-col sm:flex-row items-center justify-between gap-4"
+          >
             <div className="flex items-center gap-3 text-blue-200 text-sm font-medium">
               <Smartphone className="w-5 h-5 text-blue-400 flex-shrink-0" />
               <p>For the best experience, click <strong className="text-white">"Add to Home Screen"</strong> in your browser menu to install the ClawLink Web App.</p>
@@ -149,7 +155,6 @@ Thank you for choosing ClawLink Enterprise AI.
       <main className="max-w-6xl mx-auto">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
           
-          {/* LEFT COLUMN: Plan & Persona */}
           <div className="md:col-span-2 space-y-8">
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="bg-[#111] border border-white/10 rounded-3xl p-8 relative overflow-hidden shadow-2xl">
               <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/10 blur-[100px] rounded-full pointer-events-none"></div>
@@ -218,7 +223,6 @@ Thank you for choosing ClawLink Enterprise AI.
             </motion.div>
           </div>
 
-          {/* RIGHT COLUMN: Instances & CRM */}
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="bg-[#111] border border-white/10 rounded-3xl p-8 shadow-2xl h-fit">
             <div className="flex items-center gap-3 mb-8">
               <Activity className="w-5 h-5 text-green-400" />
