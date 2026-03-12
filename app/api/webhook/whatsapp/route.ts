@@ -1,168 +1,189 @@
-import { NextRequest, NextResponse } from "next/server";
-import { supabase } from "@/app/lib/supabase";
-import { generateAIReply } from "@/app/lib/ai-router";
+import { NextResponse } from "next/server";
+import { createClient } from "@supabase/supabase-js";
+import { sendEmail } from "../../../lib/email"; // Fixed path
 
-// 1. META PLATFORM VERIFICATION ENDPOINT
-export async function GET(req: NextRequest) {
-  const { searchParams } = new URL(req.url);
-  const mode = searchParams.get("hub.mode");
-  const token = searchParams.get("hub.verify_token");
-  const challenge = searchParams.get("hub.challenge");
+export const dynamic = "force-dynamic";
 
-  const VERIFY_TOKEN = process.env.WHATSAPP_VERIFY_TOKEN || "ClawLink123";
+const rateLimitMap = new Map<string, number>();
+const COOLDOWN_MS = 2000; 
 
-  if (mode && token === VERIFY_TOKEN) {
-    return new NextResponse(challenge, { status: 200 });
-  }
-  return new NextResponse("Forbidden Verification", { status: 403 });
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
+const supabase = createClient(supabaseUrl, supabaseKey);
+
+// 🚀 PURE PLAN-BASED FALLBACK CHAINS
+const AI_CHAINS: Record<string, string[]> = {
+    "openai": ["gpt-5.4-turbo", "gpt-4-turbo", "gpt-3.5-turbo"],
+    "anthropic": ["claude-3-opus-20240229", "claude-3-sonnet-20240229", "claude-3-haiku-20240307"],
+    "google": ["gemini-1.5-pro-latest", "gemini-1.5-flash-latest", "gemini-pro"]
+};
+
+// 🚀 META WEBHOOK VERIFICATION (Required by WhatsApp Cloud API)
+export async function GET(req: Request) {
+    const url = new URL(req.url);
+    const mode = url.searchParams.get("hub.mode");
+    const token = url.searchParams.get("hub.verify_token");
+    const challenge = url.searchParams.get("hub.challenge");
+
+    // You can set a WHATSAPP_VERIFY_TOKEN in Vercel, or default to this fallback
+    const VERIFY_TOKEN = process.env.WHATSAPP_VERIFY_TOKEN || "clawlink_secure";
+
+    if (mode === "subscribe" && token === VERIFY_TOKEN) {
+        return new NextResponse(challenge, { status: 200 });
+    }
+    return new NextResponse("Forbidden", { status: 403 });
 }
 
-// 2. ADVANCED CRM MESSAGE INGESTION ENDPOINT
-export async function POST(req: NextRequest) {
-  const { searchParams } = new URL(req.url);
-  const urlToken = searchParams.get("token");
-
-  try {
-    const body = await req.json();
-
-    const entry = body.entry?.[0];
-    const changes = entry?.changes?.[0]?.value;
-    const message = changes?.messages?.[0];
-
-    if (!message || !message.text) {
-      return NextResponse.json({ ok: true });
-    }
-
-    const userPhone = message.from;
-    const userText = message.text.body;
-    const phoneId = changes.metadata.phone_number_id;
-
-    if (!urlToken) {
-      throw new Error("Critical: Missing routing token in WhatsApp webhook payload.");
-    }
-
-    // 1. Authenticate Bot Owner Configuration
-    const { data: config, error: configErr } = await supabase
-      .from("user_configs")
-      .select("*")
-      .eq("whatsapp_token", urlToken)
-      .single();
-
-    if (configErr || !config) {
-      throw new Error("Authentication Failed: WhatsApp configuration not found.");
-    }
-
-    // 2. Validate Usage Quota (Paywall Enforcement)
-    const tokenLimit = config.available_tokens || 50000;
-    const { data: usageData } = await supabase
-      .from("usage_logs")
-      .select("estimated_tokens")
-      .eq("email", config.email);
-
-    const tokensUsed = usageData?.reduce((sum: number, record: any) => sum + (record.estimated_tokens || 0), 0) || 0;
-
-    if (tokensUsed >= tokenLimit && !config.is_unlimited) {
-      const upgradeMsg = `System Alert:\nYour AI processing quota (${tokenLimit.toLocaleString()} tokens) has been exhausted.\nPlease navigate to the ClawLink Dashboard to upgrade your service tier.`;
-      
-      await fetch(`https://graph.facebook.com/v18.0/${phoneId}/messages`, {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${config.whatsapp_token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          messaging_product: "whatsapp",
-          to: userPhone,
-          text: { body: upgradeMsg },
-        }),
-      });
-      return NextResponse.json({ ok: true });
-    }
-
-    // 3. FETCH CUSTOMER MEMORY & CRM DATA
-    let customerData = {
-      customer_name: "Valued Customer",
-      outstanding_balance: 0.00,
-      last_order_status: "No active orders",
-      active_ticket_id: "None",
-      past_behavior_notes: "First time interaction"
-    };
-
-    const { data: memoryRecord, error: memoryErr } = await supabase
-      .from("customer_memory")
-      .select("*")
-      .eq("bot_owner_email", config.email)
-      .eq("customer_phone", userPhone)
-      .single();
-
-    if (memoryRecord) {
-      customerData = memoryRecord;
-      // Update last interaction timestamp
-      await supabase.from("customer_memory").update({ last_interaction: new Date() }).eq("id", memoryRecord.id);
-    } else {
-      // Create new customer profile on first interaction
-      await supabase.from("customer_memory").insert({
-        bot_owner_email: config.email,
-        customer_phone: userPhone
-      });
-    }
-
-    // 4. DYNAMIC CONTEXT INJECTION (The Secret Sauce)
-    const baseSystemPrompt = config.system_prompt || "You are an advanced enterprise AI assistant.";
-    const dynamicPrompt = `
-      ${baseSystemPrompt}
-      
-      CUSTOMER CONTEXT (CRITICAL):
-      - Phone Number: ${userPhone}
-      - Name: ${customerData.customer_name}
-      - Outstanding Billing Balance: $${customerData.outstanding_balance}
-      - Last Order Status: ${customerData.last_order_status}
-      - Active Support Ticket: ${customerData.active_ticket_id}
-      - Behavioral Notes: ${customerData.past_behavior_notes}
-
-      INSTRUCTIONS:
-      If the user asks about their bill, orders, or support, use the exact data provided above. 
-      Maintain a highly professional, polite, and helpful tone.
-    `;
-
-    // 5. Route to AI Engine
-    const provider = config.ai_provider || "openai";
-    const modelName = config.ai_model || "gpt-5.2";
-
-    const aiReply = await generateAIReply(
-      provider,
-      modelName,
-      dynamicPrompt,
-      [],
-      userText
-    );
-
-    // 6. Dispatch Response via Meta Graph API
-    await fetch(`https://graph.facebook.com/v18.0/${phoneId}/messages`, {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${config.whatsapp_token}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        messaging_product: "whatsapp",
-        to: userPhone,
-        text: { body: aiReply },
-      }),
+// 🚀 API CALL WRAPPERS
+async function callGemini(model: string, prompt: string) {
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${process.env.GEMINI_API_KEY}`, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: prompt }] }] })
     });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error?.message || "Gemini Error");
+    return data.candidates[0].content.parts[0].text;
+}
 
-    // 7. Log Consumption
-    await supabase.from("usage_logs").insert({
-      email: config.email,
-      channel: "whatsapp",
-      model_used: modelName,
-      estimated_tokens: userText.split(" ").length + aiReply.split(" ").length
+async function callOpenAI(model: string, prompt: string) {
+    const res = await fetch("https://api.openai.com/v1/chat/completions", {
+        method: "POST", headers: { "Content-Type": "application/json", "Authorization": `Bearer ${process.env.OPENAI_API_KEY}` },
+        body: JSON.stringify({ model: model, messages: [{ role: "user", content: prompt }] })
     });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error?.message || "OpenAI Error");
+    return data.choices[0].message.content;
+}
 
-    return NextResponse.json({ ok: true });
+async function callClaude(model: string, prompt: string) {
+    const res = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST", headers: { "Content-Type": "application/json", "x-api-key": process.env.ANTHROPIC_API_KEY || "", "anthropic-version": "2023-06-01" },
+        body: JSON.stringify({ model: model, max_tokens: 1024, messages: [{ role: "user", content: prompt }] })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error?.message || "Claude Error");
+    return data.content[0].text;
+}
 
-  } catch (error: any) {
-    console.error("Critical WhatsApp Webhook Processing Error:", error.message);
-    return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
-  }
+export async function POST(req: Request) {
+    let whatsappToken = "";
+    let phoneNumberId = "";
+    let chatId = ""; // Customer's phone number
+
+    try {
+        const body = await req.json();
+
+        // Validate WhatsApp Payload Structure
+        if (!body.entry || !body.entry[0].changes || !body.entry[0].changes[0].value.messages) {
+            return NextResponse.json({ success: true, message: "Not a valid message payload" });
+        }
+
+        const value = body.entry[0].changes[0].value;
+        const message = value.messages[0];
+
+        if (message.type !== "text") {
+            return NextResponse.json({ success: true, message: "Ignored non-text message" });
+        }
+
+        chatId = message.from; 
+        const userText = message.text.body;
+        phoneNumberId = value.metadata.phone_number_id;
+
+        // DDoS Shield
+        const now = Date.now();
+        const lastMessageTime = rateLimitMap.get(chatId) || 0;
+        if (now - lastMessageTime < COOLDOWN_MS) return NextResponse.json({ success: true });
+        rateLimitMap.set(chatId, now);
+
+        // Fetch User Config
+        const { data: config, error: configErr } = await supabase
+            .from("user_configs")
+            .select("*")
+            .not("whatsapp_token", "is", null)
+            .limit(1)
+            .single();
+
+        if (configErr || !config || !config.whatsapp_token) return NextResponse.json({ success: true });
+
+        whatsappToken = config.whatsapp_token;
+        const systemPrompt = config.systemPrompt || "You are a helpful AI assistant on WhatsApp.";
+        const userEmail = config.email;
+        const provider = config.ai_provider || "google";
+
+        // THE STEALTH SHIELD
+        if (config.plan_status === "Expired" || (!config.is_unlimited && config.available_tokens <= 0)) {
+            // Polite reply to WhatsApp Customer
+            await fetch(`https://graph.facebook.com/v18.0/${phoneNumberId}/messages`, {
+                method: "POST", headers: { "Content-Type": "application/json", "Authorization": `Bearer ${whatsappToken}` },
+                body: JSON.stringify({ messaging_product: "whatsapp", to: chatId, text: { body: "I am currently undergoing routine maintenance and upgrades. Please leave your message and we will respond shortly." } })
+            });
+
+            // Secret Alert
+            const alertHtml = `
+              <div style="font-family: monospace; background: #0A0A0B; color: #fff; padding: 30px; border-radius: 10px; border: 1px solid #ef4444;">
+                <h2 style="color: #ef4444;">⚠️ ACTION REQUIRED: WHATSAPP BOT PAUSED</h2>
+                <p>Your ClawLink AI Agent on WhatsApp Cloud has reached its resource limit.</p>
+                <p><strong>Reason:</strong> Plan Expired / Monthly Message Limit Reached.</p>
+                <br/><a href="https://clawlink.com/dashboard" style="background: #ef4444; color: #fff; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold;">Recharge & Resume Bot</a>
+              </div>
+            `;
+            await sendEmail(userEmail, "URGENT: Your WhatsApp Bot is Paused", alertHtml);
+            return NextResponse.json({ success: true });
+        }
+
+        // MEMORY FETCH
+        const { data: pastChats } = await supabase
+            .from("bot_conversations")
+            .select("role, content")
+            .eq("bot_email", userEmail)
+            .eq("chat_id", chatId) // Phone number
+            .order("created_at", { ascending: false })
+            .limit(4);
+
+        let memoryHistory = "";
+        if (pastChats && pastChats.length > 0) {
+            memoryHistory = pastChats.reverse().map(chat => `${chat.role.toUpperCase()}: ${chat.content}`).join("\n");
+        }
+
+        const fullContext = `System Instructions: ${systemPrompt}\n\nRecent Conversation History:\n${memoryHistory}\n\nUser's New Message: ${userText}`;
+        await supabase.from("bot_conversations").insert({ bot_email: userEmail, chat_id: chatId, role: "user", content: userText });
+
+        // FALLBACK ENGINE
+        let aiResponse = "I am currently processing high volumes of data. Please give me a moment and try again.";
+        let wasSuccessful = false;
+        const chain = AI_CHAINS[provider] || AI_CHAINS["google"];
+
+        for (const modelName of chain) {
+            try {
+                if (provider === "openai") aiResponse = await callOpenAI(modelName, fullContext);
+                else if (provider === "anthropic") aiResponse = await callClaude(modelName, fullContext);
+                else aiResponse = await callGemini(modelName, fullContext);
+                
+                wasSuccessful = true;
+                break;
+            } catch (err: any) {
+                console.log(`[WhatsApp AI Error] ${modelName} failed: ${err.message}. Trying next...`);
+            }
+        }
+
+        // PLAN DEDUCTION & MEMORY SAVE
+        if (wasSuccessful) {
+            if (!config.is_unlimited) {
+                await supabase.from("user_configs").update({ available_tokens: config.available_tokens - 1 }).eq("email", userEmail);
+            }
+            await supabase.from("bot_conversations").insert({ bot_email: userEmail, chat_id: chatId, role: "ai", content: aiResponse });
+        }
+
+        // Send Reply via Meta Graph API
+        await fetch(`https://graph.facebook.com/v18.0/${phoneNumberId}/messages`, {
+            method: "POST", headers: { "Content-Type": "application/json", "Authorization": `Bearer ${whatsappToken}` },
+            body: JSON.stringify({ messaging_product: "whatsapp", to: chatId, text: { body: aiResponse } })
+        });
+
+        return NextResponse.json({ success: true });
+
+    } catch (error: any) {
+        console.error("WhatsApp Critical Error:", error.message);
+        return NextResponse.json({ success: true }); // Always 200 so Meta doesn't block the webhook
+    }
 }
