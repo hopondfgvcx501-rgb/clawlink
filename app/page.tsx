@@ -213,7 +213,6 @@ export default function Home() {
   return (
     <div className="bg-[#0A0A0B] min-h-screen relative text-white">
       
-      {/* Landing UI Area */}
       <LandingUI renderActionArea={renderDynamicButtons} isLocked={isTokenSaved || isDeploying} />
 
       {/* 🚀 FEATURE HIGHLIGHTS (Added above the footer area) */}
@@ -263,7 +262,6 @@ export default function Home() {
         </p>
       </footer>
 
-      {/* 🚀 MODALS (Intact) */}
       <AnimatePresence>
         {isTelegramModalOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4">
