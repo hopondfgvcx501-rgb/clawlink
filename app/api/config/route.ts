@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { sendEmail } from "../../lib/email";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
@@ -14,11 +15,9 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: false, error: "Email is required for deployment." });
     }
 
-    // 🚀 CALCULATE 30 DAYS VALIDITY
     const expiryDate = new Date();
     expiryDate.setDate(expiryDate.getDate() + 30);
 
-    // 🚀 SET TOKENS BASED ON PLAN
     let allocatedTokens = 10000;
     let isUnlimited = false;
 
@@ -37,13 +36,12 @@ export async function POST(req: Request) {
         available_tokens: allocatedTokens,
         is_unlimited: isUnlimited,
         plan_status: 'Active',
-        expires_at: expiryDate.toISOString() // 🔒 Locked expiration date
+        expires_at: expiryDate.toISOString()
       }, { onConflict: "email" })
       .select();
 
     if (error) throw error;
 
-    // 🚀 GENERATE LIVE BOT LINK
     let botLink = "";
     if (selectedChannel === "telegram" && telegramToken) {
       try {
@@ -56,6 +54,31 @@ export async function POST(req: Request) {
     } else if (selectedChannel === "whatsapp") {
       botLink = "https://business.facebook.com/wa/manage/";
     }
+
+    const emailHtml = `
+      <div style="font-family: monospace; max-w: 600px; margin: 0 auto; background: #0A0A0B; color: #ffffff; padding: 40px; border-radius: 15px; border: 1px solid #333;">
+        <h2 style="color: #22c55e; letter-spacing: 2px;">DEPLOYMENT SUCCESSFUL 🚀</h2>
+        <p style="color: #cccccc; font-size: 16px;">Hello,</p>
+        <p style="color: #cccccc; font-size: 16px; line-height: 1.6;">Welcome to ClawLink! Your Enterprise AI agent is now live and fully connected to the Global Edge Network.</p>
+        
+        <div style="background: #111; padding: 20px; border-radius: 10px; border: 1px solid #222; margin: 20px 0;">
+          <p style="margin: 5px 0; color: #aaa;"><strong>Plan:</strong> <span style="color: #fff; text-transform: uppercase;">${plan}</span></p>
+          <p style="margin: 5px 0; color: #aaa;"><strong>AI Engine:</strong> <span style="color: #fff; text-transform: uppercase;">${selectedModel}</span></p>
+          <p style="margin: 5px 0; color: #aaa;"><strong>Channel:</strong> <span style="color: #fff; text-transform: capitalize;">${selectedChannel}</span></p>
+          <p style="margin: 5px 0; color: #aaa;"><strong>Validity:</strong> <span style="color: #fff;">30 Days</span></p>
+        </div>
+
+        <p style="color: #cccccc; font-size: 16px; line-height: 1.6;">You can manage your bot's CRM, view billing history, and update the AI Persona directly from your dashboard.</p>
+        <br/>
+        ${botLink ? `<a href="${botLink}" style="background: #22c55e; color: #000000; padding: 12px 24px; text-decoration: none; font-weight: bold; border-radius: 8px; margin-right: 10px; display: inline-block;">Open Live Bot</a>` : ''}
+        <a href="https://clawlink.com/dashboard" style="background: #ffffff; color: #000000; padding: 12px 24px; text-decoration: none; font-weight: bold; border-radius: 8px; display: inline-block; margin-top: 10px;">Access Dashboard</a>
+        
+        <hr style="border: 0; border-top: 1px solid #333; margin: 40px 0 20px 0;" />
+        <p style="color: #666666; font-size: 12px; letter-spacing: 1px;">© 2026 CLAWLINK INC. GLOBAL AI SAAS INFRASTRUCTURE.</p>
+      </div>
+    `;
+    
+    sendEmail(email, "Welcome to ClawLink - Your Bot is Live! 🚀", emailHtml).catch(console.error);
 
     return NextResponse.json({ success: true, botLink });
   } catch (error: any) {
