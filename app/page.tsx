@@ -23,7 +23,8 @@ export default function Home() {
   
   const [showPricingPopup, setShowPricingPopup] = useState(false);
   const [isDeploying, setIsDeploying] = useState(false);
-  const [deployLogs, setDeployLogs] = useState<string[]>([]);
+  // 🚀 FIX: Safely storing time and text to prevent hydration crashes
+  const [deployLogs, setDeployLogs] = useState<{time: string, text: string}[]>([]);
   const [botLink, setBotLink] = useState("");
   
   const [activeModel, setActiveModel] = useState("gpt-5.2");
@@ -36,7 +37,6 @@ export default function Home() {
 
   const logsEndRef = useRef<HTMLDivElement>(null);
 
-  // Auto-scroll terminal to bottom
   useEffect(() => {
     logsEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [deployLogs]);
@@ -94,15 +94,23 @@ export default function Home() {
     let i = 0;
     const interval = setInterval(() => {
       if (i < logs.length) {
-        setDeployLogs(prev => [...prev, logs[i]]);
+        // 🚀 FIX: Safely format time without crashing React
+        const currentTime = new Date().toLocaleTimeString();
+        setDeployLogs(prev => [...prev, { time: currentTime, text: logs[i] }]);
         i++;
       } else {
         clearInterval(interval);
       }
-    }, 400); // Super fast 400ms interval
+    }, 400); 
   };
 
   const triggerRazorpayPayment = async () => {
+    // 🚀 FIX: Prevent crash if Razorpay script is blocked by Adblocker
+    if (typeof (window as any).Razorpay === "undefined") {
+      alert("Payment gateway is loading. Please wait a second or disable your Adblocker.");
+      return;
+    }
+
     const finalPrice = getCurrentPrice();
     
     try {
@@ -123,7 +131,7 @@ export default function Home() {
         handler: async function (response: any) {
           setShowPricingPopup(false);
           setIsDeploying(true);
-          simulateDeploymentLogs(); // 🚀 Start the cool terminal animation
+          simulateDeploymentLogs(); 
 
           try {
             const configRes = await fetch("/api/config", {
@@ -133,7 +141,6 @@ export default function Home() {
             });
             const configData = await configRes.json();
 
-            // Wait a minimum of 3.5 seconds to finish the cool animation before showing success
             setTimeout(() => {
               if (configData.success && configData.botLink) {
                 setBotLink(configData.botLink);
@@ -243,7 +250,6 @@ export default function Home() {
       
       <LandingUI renderActionArea={renderDynamicButtons} isLocked={isTokenSaved || isDeploying} />
 
-      {/* 🚀 NEW: HYPER-FAST DEPLOYMENT TERMINAL OVERLAY */}
       <AnimatePresence>
         {isDeploying && (
           <motion.div 
@@ -269,9 +275,9 @@ export default function Home() {
                     animate={{ opacity: 1, x: 0 }}
                     className="flex gap-4 items-start"
                   >
-                    <span className="text-gray-600 shrink-0">[{new Date().toISOString().split('T')[1].split('.')[0]}]</span>
-                    <span className={log.includes("Online") ? "text-green-400 font-bold" : "text-gray-300"}>
-                      &gt; {log}
+                    <span className="text-gray-600 shrink-0">[{log.time}]</span>
+                    <span className={log.text.includes("Online") ? "text-green-400 font-bold" : "text-gray-300"}>
+                      &gt; {log.text}
                     </span>
                   </motion.div>
                 ))}
@@ -281,7 +287,7 @@ export default function Home() {
                     transition={{ repeat: Infinity, duration: 0.8 }} 
                     className="flex gap-4 items-start text-green-500"
                   >
-                    <span className="text-gray-600">[{new Date().toISOString().split('T')[1].split('.')[0]}]</span>
+                    <span className="text-gray-600">[SYS_LOG]</span>
                     <span>&gt; _</span>
                   </motion.div>
                 )}
