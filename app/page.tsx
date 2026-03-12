@@ -1,7 +1,7 @@
 "use client";
 
 import { signIn, signOut, useSession } from "next-auth/react";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import LandingUI from "../components/LandingUI";
 import { useRouter } from "next/navigation";
@@ -17,16 +17,13 @@ export default function Home() {
   const { data: session, status } = useSession();
   const router = useRouter(); 
   
-  // 🚀 FIX: Prevent Hydration Black Screen Crash
   const [isMounted, setIsMounted] = useState(false);
-  
   const [isTelegramModalOpen, setIsTelegramModalOpen] = useState(false);
   const [telegramToken, setTelegramToken] = useState("");
   const [isTokenSaved, setIsTokenSaved] = useState(false);
   
   const [showPricingPopup, setShowPricingPopup] = useState(false);
   const [isDeploying, setIsDeploying] = useState(false);
-  const [deployLogs, setDeployLogs] = useState<string[]>([]);
   const [botLink, setBotLink] = useState("");
   
   const [activeModel, setActiveModel] = useState("gpt-5.2");
@@ -37,10 +34,8 @@ export default function Home() {
   const [currencySymbol, setCurrencySymbol] = useState("$");
   const EXCHANGE_RATE = 83; 
 
-  const logsEndRef = useRef<HTMLDivElement>(null);
-
   useEffect(() => {
-    setIsMounted(true); // 🚀 FIX: Let React know it's safe to render client-side UI
+    setIsMounted(true); 
     
     try {
       const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -57,10 +52,6 @@ export default function Home() {
     script.async = true;
     document.body.appendChild(script);
   }, []);
-
-  useEffect(() => {
-    logsEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [deployLogs]);
 
   const handleOpenIntegration = (model: string, channel: string) => {
     setActiveModel(model);
@@ -79,30 +70,6 @@ export default function Home() {
     return currency === "INR" ? basePrice * EXCHANGE_RATE : basePrice;
   };
 
-  const simulateDeploymentLogs = () => {
-    const logs = [
-      "Authenticating global credentials...",
-      "Allocating dedicated cloud instances...",
-      `Injecting ${MODEL_DETAILS[activeModel]?.name || 'AI'} neural pathways...`,
-      `Establishing secure tunnels to ${activeChannel.toUpperCase()} API...`,
-      "Provisioning enterprise CRM database...",
-      "Encrypting API endpoints (AES-256)...",
-      "Deploying final configurations...",
-      "System Online. All green."
-    ];
-    
-    setDeployLogs([]);
-    let i = 0;
-    const interval = setInterval(() => {
-      if (i < logs.length) {
-        setDeployLogs(prev => [...prev, logs[i]]);
-        i++;
-      } else {
-        clearInterval(interval);
-      }
-    }, 400); 
-  };
-
   const triggerRazorpayPayment = async () => {
     if (typeof window === "undefined" || !(window as any).Razorpay) {
       alert("Payment gateway is loading. Please disable Adblocker if it doesn't open.");
@@ -110,6 +77,7 @@ export default function Home() {
     }
 
     const finalPrice = getCurrentPrice();
+    setIsDeploying(true); // Lock the button immediately
     
     try {
       const response = await fetch("/api/razorpay", {
@@ -127,11 +95,8 @@ export default function Home() {
         description: `Plan: ${selectedTier.toUpperCase()} | Model: ${selectedTier === 'max' ? 'ALL' : MODEL_DETAILS[activeModel]?.name}`,
         order_id: order.id,
         handler: async function (response: any) {
-          setShowPricingPopup(false);
-          setIsDeploying(true);
-          simulateDeploymentLogs(); 
-
           try {
+            // 🚀 Call deployment backend without UI animations
             const configRes = await fetch("/api/config", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
@@ -139,26 +104,26 @@ export default function Home() {
             });
             const configData = await configRes.json();
 
-            setTimeout(() => {
-              if (configData.success && configData.botLink) {
-                setBotLink(configData.botLink);
-              } else {
-                alert("Deployment failed: " + configData.error);
-              }
-              setIsDeploying(false);
-            }, 3500); 
-
+            if (configData.success && configData.botLink) {
+              setBotLink(configData.botLink);
+              setShowPricingPopup(false); // Close modal only on success
+            } else {
+              alert("Deployment failed: " + configData.error);
+            }
           } catch (error) {
             alert("An error occurred during deployment. Please check console.");
+          } finally {
             setIsDeploying(false);
           }
         },
         prefill: { email: session?.user?.email || "" },
         theme: { color: "#ffffff" },
       };
+      
       const rzp = new (window as any).Razorpay(options);
       rzp.on('payment.failed', function (response: any) {
         setIsDeploying(false); 
+        alert("Payment failed or cancelled.");
       });
       rzp.open();
     } catch (error) {
@@ -243,71 +208,12 @@ export default function Home() {
   const themeColor = activeChannel === "telegram" ? "rgba(42, 171, 238, 0.15)" : "rgba(37, 211, 102, 0.15)";
   const borderColor = activeChannel === "telegram" ? "border-blue-500/30" : "border-green-500/30";
 
-  // 🚀 FIX: Do not render UI until mounted to prevent hydration crash
   if (!isMounted) return null;
 
   return (
     <div className="bg-[#0A0A0B] min-h-screen relative text-white">
       
       <LandingUI renderActionArea={renderDynamicButtons} isLocked={isTokenSaved || isDeploying} />
-
-      <AnimatePresence>
-        {isDeploying && (
-          <motion.div 
-            initial={{ opacity: 0 }} 
-            animate={{ opacity: 1 }} 
-            exit={{ opacity: 0 }} 
-            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/95 backdrop-blur-xl p-4"
-          >
-            <div className="w-full max-w-2xl bg-[#0A0A0B] border border-green-500/30 rounded-2xl overflow-hidden shadow-[0_0_100px_rgba(34,197,94,0.15)] font-mono">
-              <div className="bg-[#111] border-b border-green-500/20 p-3 flex items-center gap-3">
-                <div className="flex gap-2">
-                  <div className="w-3 h-3 rounded-full bg-red-500/50"></div>
-                  <div className="w-3 h-3 rounded-full bg-yellow-500/50"></div>
-                  <div className="w-3 h-3 rounded-full bg-green-500 animate-pulse shadow-[0_0_10px_rgba(34,197,94,0.8)]"></div>
-                </div>
-                <p className="text-xs text-green-500/70 uppercase tracking-widest font-bold ml-2">ClawLink Engine • Initializing</p>
-              </div>
-              <div className="p-6 h-[300px] overflow-y-auto text-sm space-y-3 custom-scrollbar flex flex-col">
-                {deployLogs.map((log, index) => (
-                  <motion.div 
-                    key={index}
-                    initial={{ opacity: 0, x: -10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    className="flex gap-4 items-start"
-                  >
-                    <span className="text-gray-600 shrink-0">[SYS_LOG]</span>
-                    <span className={log.includes("Online") ? "text-green-400 font-bold" : "text-gray-300"}>
-                      &gt; {log}
-                    </span>
-                  </motion.div>
-                ))}
-                {deployLogs.length > 0 && deployLogs.length < 8 && (
-                  <motion.div 
-                    animate={{ opacity: [1, 0, 1] }} 
-                    transition={{ repeat: Infinity, duration: 0.8 }} 
-                    className="flex gap-4 items-start text-green-500"
-                  >
-                    <span className="text-gray-600">[SYS_LOG]</span>
-                    <span>&gt; _</span>
-                  </motion.div>
-                )}
-                <div ref={logsEndRef} />
-              </div>
-              <div className="bg-[#111] border-t border-green-500/20 p-3 px-6">
-                <div className="w-full bg-black rounded-full h-1.5 overflow-hidden">
-                  <motion.div 
-                    className="bg-green-500 h-full"
-                    initial={{ width: "0%" }}
-                    animate={{ width: `${(deployLogs.length / 8) * 100}%` }}
-                    transition={{ ease: "linear" }}
-                  />
-                </div>
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
 
       <AnimatePresence>
         {isTelegramModalOpen && (
@@ -444,7 +350,7 @@ export default function Home() {
         {showPricingPopup && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-md p-4 overflow-y-auto">
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 20 }} className="bg-[#0A0A0B] border border-white/10 p-8 md:p-10 rounded-[2rem] w-full max-w-4xl shadow-2xl relative text-center my-8">
-              <button onClick={() => setShowPricingPopup(false)} className="absolute top-6 right-8 text-gray-500 hover:text-white text-2xl">✕</button>
+              {!isDeploying && <button onClick={() => setShowPricingPopup(false)} className="absolute top-6 right-8 text-gray-500 hover:text-white text-2xl">✕</button>}
               
               <div className="w-14 h-14 bg-[#111] border border-white/10 rounded-2xl mx-auto flex items-center justify-center text-2xl mb-4 shadow-inner">✨</div>
               <h2 className="text-2xl md:text-3xl font-bold mb-2 text-white tracking-tight">Choose your ClawLink Plan</h2>
@@ -453,7 +359,7 @@ export default function Home() {
               </p>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10 text-left">
-                <div onClick={() => setSelectedTier("starter")} className={`relative p-6 rounded-2xl border transition-all cursor-pointer ${selectedTier === "starter" ? "bg-[#111] border-white shadow-[0_0_20px_rgba(255,255,255,0.1)] scale-105 z-10" : "bg-black border-white/10 hover:border-white/30"}`}>
+                <div onClick={() => !isDeploying && setSelectedTier("starter")} className={`relative p-6 rounded-2xl border transition-all ${!isDeploying ? 'cursor-pointer' : ''} ${selectedTier === "starter" ? "bg-[#111] border-white shadow-[0_0_20px_rgba(255,255,255,0.1)] scale-105 z-10" : "bg-black border-white/10 hover:border-white/30"}`}>
                   <h3 className="text-gray-400 font-bold uppercase tracking-widest text-xs mb-2">Starter</h3>
                   <div className="text-3xl font-black text-white mb-4">
                     {currencySymbol}{getCurrentPrice("starter")}<span className="text-sm font-normal text-gray-500">/mo</span>
@@ -464,7 +370,7 @@ export default function Home() {
                   </div>
                 </div>
 
-                <div onClick={() => setSelectedTier("pro")} className={`relative p-6 rounded-2xl border transition-all cursor-pointer ${selectedTier === "pro" ? "bg-[#111] border-blue-500 shadow-[0_0_30px_rgba(59,130,246,0.2)] scale-105 z-10" : "bg-black border-white/10 hover:border-white/30"}`}>
+                <div onClick={() => !isDeploying && setSelectedTier("pro")} className={`relative p-6 rounded-2xl border transition-all ${!isDeploying ? 'cursor-pointer' : ''} ${selectedTier === "pro" ? "bg-[#111] border-blue-500 shadow-[0_0_30px_rgba(59,130,246,0.2)] scale-105 z-10" : "bg-black border-white/10 hover:border-white/30"}`}>
                   <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-blue-500 text-white text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-full">Most Popular</div>
                   <h3 className="text-blue-400 font-bold uppercase tracking-widest text-xs mb-2">Pro</h3>
                   <div className="text-3xl font-black text-white mb-4">
@@ -476,7 +382,7 @@ export default function Home() {
                   </div>
                 </div>
 
-                <div onClick={() => setSelectedTier("max")} className={`relative p-6 rounded-2xl border transition-all cursor-pointer ${selectedTier === "max" ? "bg-gradient-to-b from-[#221508] to-black border-orange-500 shadow-[0_0_30px_rgba(249,115,22,0.15)] scale-105 z-10" : "bg-black border-white/10 hover:border-white/30"}`}>
+                <div onClick={() => !isDeploying && setSelectedTier("max")} className={`relative p-6 rounded-2xl border transition-all ${!isDeploying ? 'cursor-pointer' : ''} ${selectedTier === "max" ? "bg-gradient-to-b from-[#221508] to-black border-orange-500 shadow-[0_0_30px_rgba(249,115,22,0.15)] scale-105 z-10" : "bg-black border-white/10 hover:border-white/30"}`}>
                   <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-gradient-to-r from-orange-500 to-pink-500 text-white text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-full">Ultimate</div>
                   <h3 className="text-orange-400 font-bold uppercase tracking-widest text-xs mb-2">Omni Max</h3>
                   <div className="text-3xl font-black text-white mb-4">
@@ -489,8 +395,22 @@ export default function Home() {
                 </div>
               </div>
 
-              <button onClick={triggerRazorpayPayment} className="w-full max-w-sm mx-auto bg-white text-black hover:bg-gray-200 font-black py-4 rounded-xl transition-all uppercase tracking-widest text-sm shadow-[0_0_20px_rgba(255,255,255,0.2)] flex justify-center items-center gap-2">
-                Deploy OpenClaw {currencySymbol}{getCurrentPrice()}
+              <button 
+                onClick={triggerRazorpayPayment} 
+                disabled={isDeploying}
+                className="w-full max-w-sm mx-auto bg-white text-black hover:bg-gray-200 font-black py-4 rounded-xl transition-all uppercase tracking-widest text-sm shadow-[0_0_20px_rgba(255,255,255,0.2)] flex justify-center items-center gap-2 disabled:opacity-50 disabled:cursor-wait"
+              >
+                {isDeploying ? (
+                  <>
+                    <svg className="animate-spin h-5 w-5 text-black" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Deploying... Please wait
+                  </>
+                ) : (
+                  `Deploy OpenClaw ${currencySymbol}${getCurrentPrice()}`
+                )}
               </button>
               <p className="mt-4 text-[10px] text-gray-500 uppercase tracking-widest font-bold">Secured by Razorpay</p>
             </motion.div>
