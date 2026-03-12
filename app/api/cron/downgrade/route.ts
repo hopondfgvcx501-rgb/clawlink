@@ -1,14 +1,23 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
-// Mandatory: Must use Service Role Key to bypass RLS policies during background jobs
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
-const supabase = createClient(supabaseUrl, supabaseKey);
+// 🚀 FIX 1: Ye Next.js ko batayega ki is file ko Build time pe test-run NAHI karna hai
+export const dynamic = "force-dynamic";
 
 export async function GET(req: Request) {
   try {
-    // 🔒 SECURITY LOCK: Only Vercel can run this using a secret token
+    // 🚀 FIX 2: Supabase connection code ko function ke ANDAR move kar diya
+    // Ab ye tabhi chalega jab sach mein cron job hit hogi, build time pe nahi.
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
+    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
+    
+    if (!supabaseUrl || !supabaseKey) {
+      return NextResponse.json({ success: false, error: "Missing Supabase Keys" }, { status: 500 });
+    }
+
+    const supabase = createClient(supabaseUrl, supabaseKey);
+
+    // 🔒 SECURITY LOCK
     const authHeader = req.headers.get('authorization');
     if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
       return new NextResponse('Unauthorized access', { status: 401 });
@@ -16,7 +25,7 @@ export async function GET(req: Request) {
 
     const now = new Date().toISOString();
 
-    // 1. Find all users whose expiry date has passed
+    // 1. Find expired users
     const { data: expiredUsers, error: fetchError } = await supabase
       .from("user_configs")
       .select("email")
@@ -29,13 +38,13 @@ export async function GET(req: Request) {
       return NextResponse.json({ success: true, message: "No expired plans found today." });
     }
 
-    // 2. Downgrade all expired accounts
+    // 2. Downgrade accounts
     for (const user of expiredUsers) {
       await supabase
         .from("user_configs")
         .update({
           plan_status: "Expired",
-          available_tokens: 0, // Cuts off AI generation in webhooks
+          available_tokens: 0,
           is_unlimited: false
         })
         .eq("email", user.email);
