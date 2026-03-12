@@ -3,7 +3,7 @@
 import { useSession, signOut } from "next-auth/react";
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Activity, Database, LogOut, ArrowUpRight, Zap, Save, Users, Receipt, Download, ExternalLink, Smartphone } from "lucide-react";
+import { Activity, Database, LogOut, ArrowUpRight, Zap, Save, Users, Receipt, Download, ExternalLink, Smartphone, BrainCircuit } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 export default function Dashboard() {
@@ -18,22 +18,29 @@ export default function Dashboard() {
   const [systemPrompt, setSystemPrompt] = useState("");
   const [isSavingPrompt, setIsSavingPrompt] = useState(false);
 
+  // 🚀 RAG KNOWLEDGE BASE STATES
+  const [knowledgeText, setKnowledgeText] = useState("");
+  const [isInjecting, setIsInjecting] = useState(false);
+  const [knowledgeItems, setKnowledgeItems] = useState<any[]>([]);
+
   useEffect(() => {
     if (status === "unauthenticated") {
       router.push("/");
     }
 
     if (session?.user?.email) {
+      // Fetch User Config
       fetch(`/api/user?email=${session.user.email}`)
         .then((res) => res.json())
         .then((data) => {
           if (data.success) {
             setUserData(data.data);
-            setSystemPrompt(data.data.systemPrompt);
+            setSystemPrompt(data.data.systemPrompt || "");
           }
         })
         .catch(console.error);
 
+      // Fetch Billing
       fetch(`/api/billing?email=${session.user.email}`)
         .then((res) => res.json())
         .then((data) => {
@@ -42,12 +49,23 @@ export default function Dashboard() {
           }
           setIsLoading(false);
         })
-        .catch((err) => {
-          console.error("Failed to fetch billing data:", err);
-          setIsLoading(false);
-        });
+        .catch(() => setIsLoading(false));
+
+      // 🚀 Fetch Existing Knowledge Base
+      fetchKnowledge();
     }
   }, [session, status, router]);
+
+  const fetchKnowledge = async () => {
+    if (!session?.user?.email) return;
+    try {
+      const res = await fetch(`/api/knowledge?email=${session.user.email}`);
+      const data = await res.json();
+      if (data.success) setKnowledgeItems(data.data);
+    } catch (e) {
+      console.error("Failed to fetch knowledge");
+    }
+  };
 
   const handleSavePrompt = async () => {
     if (!session?.user?.email) return;
@@ -69,6 +87,33 @@ export default function Dashboard() {
       alert("Network error while saving persona.");
     } finally {
       setIsSavingPrompt(false);
+    }
+  };
+
+  // 🚀 INJECT KNOWLEDGE FUNCTION
+  const handleInjectKnowledge = async () => {
+    if (!knowledgeText.trim() || !session?.user?.email) return;
+    setIsInjecting(true);
+
+    try {
+      const res = await fetch("/api/knowledge", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: session.user.email, text: knowledgeText })
+      });
+      const data = await res.json();
+      
+      if (data.success) {
+        alert("Knowledge successfully embedded into AI Brain!");
+        setKnowledgeText("");
+        fetchKnowledge(); // Refresh the list
+      } else {
+        alert("Failed to inject knowledge: " + data.error);
+      }
+    } catch (error) {
+      alert("Network error. Please try again.");
+    } finally {
+      setIsInjecting(false);
     }
   };
 
@@ -117,7 +162,6 @@ Thank you for choosing ClawLink Enterprise AI.
   return (
     <div className="min-h-screen bg-[#0A0A0B] text-white p-6 md:p-12 font-sans selection:bg-blue-500/30">
       
-      {/* 🚀 WEB APP INSTALLATION BANNER */}
       <AnimatePresence>
         {showAppBanner && (
           <motion.div 
@@ -178,7 +222,7 @@ Thank you for choosing ClawLink Enterprise AI.
                     <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">API Usage</p>
                     <p className="text-2xl font-bold text-white">
                       {userData?.isUnlimited ? "Unlimited" : userData?.tokensUsed?.toLocaleString() || 0} 
-                      <span className="text-sm text-gray-500 font-normal"> / {userData?.isUnlimited ? "∞" : userData?.tokensAllocated?.toLocaleString()} words</span>
+                      <span className="text-sm text-gray-500 font-normal"> / {userData?.isUnlimited ? "∞" : userData?.tokensAllocated?.toLocaleString()} messages</span>
                     </p>
                   </div>
                   <p className="text-sm font-mono text-blue-400">{userData?.isUnlimited ? "∞" : `${usagePercentage.toFixed(1)}%`}</p>
@@ -197,9 +241,10 @@ Thank you for choosing ClawLink Enterprise AI.
               </div>
             </motion.div>
 
+            {/* 🚀 AI PERSONA */}
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="bg-[#111] border border-white/10 rounded-3xl p-8 shadow-2xl relative">
               <h3 className="text-lg font-bold text-white mb-2 tracking-wide flex items-center gap-2">
-                🧠 AI Persona Configuration
+                🤖 AI Persona Configuration
               </h3>
               <p className="text-sm text-gray-400 mb-6">Define exactly how your AI agent should behave, speak, and respond to users.</p>
               
@@ -220,6 +265,51 @@ Thank you for choosing ClawLink Enterprise AI.
                   {isSavingPrompt ? "Saving..." : <><Save className="w-4 h-4"/> Save Persona</>}
                 </button>
               </div>
+            </motion.div>
+
+            {/* 🚀 ENTERPRISE KNOWLEDGE BASE (RAG) */}
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }} className="bg-[#111] border border-green-500/20 rounded-3xl p-8 shadow-[0_0_30px_rgba(34,197,94,0.05)] relative overflow-hidden">
+              <div className="absolute top-0 right-0 p-6 opacity-10 pointer-events-none">
+                <BrainCircuit className="w-32 h-32 text-green-500" />
+              </div>
+              <h3 className="text-lg font-bold text-green-400 mb-2 tracking-wide flex items-center gap-2">
+                🧠 Custom Knowledge Base (RAG)
+              </h3>
+              <p className="text-sm text-gray-400 mb-6 max-w-xl">Train your AI with your specific business data. Paste product details, FAQs, or policies below. The AI will convert this into vectors and use it to answer customer queries accurately.</p>
+              
+              <textarea 
+                rows={5}
+                value={knowledgeText}
+                onChange={(e) => setKnowledgeText(e.target.value)}
+                placeholder="Paste your business information here... e.g., 'Our standard delivery time is 3-5 business days. We offer a 10% discount on orders above $100...'"
+                className="w-full bg-black/50 border border-green-500/30 rounded-xl p-4 text-sm text-green-100 focus:border-green-400 focus:shadow-[0_0_15px_rgba(34,197,94,0.2)] focus:outline-none transition-all resize-none mb-4 font-mono placeholder:text-green-900/50"
+              />
+              
+              <div className="flex justify-between items-center mb-8">
+                <p className="text-xs text-gray-500 font-mono">Data is encrypted and stored in PostgreSQL Vector DB.</p>
+                <button 
+                  onClick={handleInjectKnowledge}
+                  disabled={isInjecting || !knowledgeText.trim()}
+                  className="bg-green-500 text-black px-6 py-3 rounded-xl text-sm font-black uppercase tracking-widest flex items-center gap-2 hover:bg-green-400 transition-all shadow-[0_0_15px_rgba(34,197,94,0.3)] disabled:opacity-50"
+                >
+                  {isInjecting ? "Injecting to Brain..." : <><Database className="w-4 h-4"/> Inject Knowledge</>}
+                </button>
+              </div>
+
+              {/* Display Injected Knowledge */}
+              {knowledgeItems.length > 0 && (
+                <div className="mt-8 border-t border-white/10 pt-6">
+                  <h4 className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-4">Active Memory Blocks</h4>
+                  <div className="space-y-3 max-h-[250px] overflow-y-auto custom-scrollbar pr-2">
+                    {knowledgeItems.map((item, idx) => (
+                      <div key={item.id} className="bg-black/40 border border-white/5 p-4 rounded-lg flex items-start gap-3">
+                        <span className="text-green-500 text-sm mt-0.5">[{idx + 1}]</span>
+                        <p className="text-sm text-gray-300 font-mono line-clamp-3">{item.content}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </motion.div>
           </div>
 
