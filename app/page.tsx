@@ -4,7 +4,8 @@ import { signIn, signOut, useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
-import { Globe, Database, Mic, Zap, MessageSquare, Activity, LogOut, Shield } from "lucide-react";
+import LandingUI from "../components/LandingUI";
+import { MessageSquare, Zap, Activity, LogOut, CheckCircle2, ExternalLink } from "lucide-react";
 
 // --- CORE SYSTEM DATA ---
 const MODEL_DETAILS: Record<string, { name: string; starter: number; pro: number }> = {
@@ -60,14 +61,14 @@ export default function Home() {
     document.body.appendChild(script);
   }, []);
 
-  // 🚀 FIXED: Added (channel: string) to resolve the TS error from the screenshot
+  // 🚀 FIXED: Parameter explicitly declared as string
   const handleOpenIntegration = (channel: string) => {
     if(channel === 'discord' || channel === 'instagram') return;
     setActiveChannel(channel);
     setIsTelegramModalOpen(true);
   };
 
-  // 🚀 FIXED: Added (channel: string) to resolve the TS error from the screenshot
+  // 🚀 FIXED: Parameter explicitly declared as string
   const handleOpenPricing = (channel: string) => {
     setActiveChannel(channel);
     setShowPricingPopup(true);
@@ -80,7 +81,7 @@ export default function Home() {
 
   const triggerRazorpayPayment = async () => {
     if (typeof window === "undefined" || !(window as any).Razorpay) {
-      alert("Payment gateway is loading. Please disable your Adblocker.");
+      alert("Payment gateway is loading. Please disable Adblocker.");
       return;
     }
     const finalPrice = getCurrentPrice();
@@ -167,6 +168,142 @@ export default function Home() {
     </div>
   );
 
+  // Helper for animated chat bubbles in Telegram Modal
+  const ChatBubble = ({ text, delay, isUser }: { text: string, delay: number, isUser?: boolean }) => (
+    <motion.div 
+      initial={{ opacity: 0, y: 10 }} 
+      animate={{ opacity: 1, y: 0 }} 
+      transition={{ delay, duration: 0.4 }}
+      className={`p-3 rounded-2xl max-w-[85%] text-[11px] shadow-md leading-relaxed ${isUser ? 'bg-[#2AABEE] text-white self-end rounded-tr-sm' : 'bg-[#1A1A1A] border border-white/5 text-gray-200 self-start rounded-tl-sm'}`}
+    >
+      {text}
+    </motion.div>
+  );
+
+  // 🚀 THE MAGIC ACTION AREA INJECTED INTO LANDING UI
+  const renderDynamicButtons = () => {
+    return (
+      <div className="w-full flex flex-col items-center mt-6">
+        
+        {/* Model Selector (White pills, SVG Logos, with Blur logic) */}
+        <h3 className="text-white text-xl md:text-2xl mb-6 font-serif tracking-tight">Choose a model to use as your default !</h3>
+        <div className="flex flex-wrap justify-center gap-4 mb-12 w-full max-w-xl">
+          <button 
+            onClick={() => !isTokenSaved && setActiveModel("gpt-5.2")} 
+            className={`bg-white rounded-[2rem] px-6 py-3 flex items-center gap-3 shadow-xl transition-all duration-300 ${activeModel === 'gpt-5.2' ? 'ring-4 ring-blue-500 scale-105' : 'hover:scale-105'} ${isTokenSaved && activeModel !== 'gpt-5.2' ? 'opacity-30 blur-[2px] grayscale scale-95 pointer-events-none' : ''}`}
+          >
+            <OpenAI_Icon />
+            <span className="text-[#10A37F] font-bold text-[16px]">gpt-5.2</span>
+          </button>
+
+          <button 
+            onClick={() => !isTokenSaved && setActiveModel("claude")} 
+            className={`bg-white rounded-[2rem] px-6 py-2.5 flex items-center gap-3 shadow-xl transition-all duration-300 ${activeModel === 'claude' ? 'ring-4 ring-blue-500 scale-105' : 'hover:scale-105'} ${isTokenSaved && activeModel !== 'claude' ? 'opacity-30 blur-[2px] grayscale scale-95 pointer-events-none' : ''}`}
+          >
+            <Claude_Icon />
+            <div className="text-left leading-none flex flex-col justify-center">
+              <span className="text-[#D97757] font-bold text-[16px]">Claude</span>
+              <span className="text-[#D97757] text-[9px] font-bold">Opus 4.6</span>
+            </div>
+          </button>
+
+          <button 
+            onClick={() => !isTokenSaved && setActiveModel("gemini")} 
+            className={`bg-white rounded-[2rem] px-6 py-3 flex items-center gap-3 shadow-xl transition-all duration-300 ${activeModel === 'gemini' ? 'ring-4 ring-blue-500 scale-105' : 'hover:scale-105'} ${isTokenSaved && activeModel !== 'gemini' ? 'opacity-30 blur-[2px] grayscale scale-95 pointer-events-none' : ''}`}
+          >
+            <Gemini_Icon />
+            <span className="text-[#4E7CFF] font-bold text-[16px]">Gemini 3 flash</span>
+          </button>
+
+          <div className={`bg-white rounded-[2rem] px-8 py-3 flex items-center shadow-xl cursor-not-allowed transition-all duration-300 ${isTokenSaved ? 'opacity-20 blur-[2px] grayscale scale-95' : 'opacity-80'}`}>
+            <span className="font-black text-[16px] text-transparent bg-clip-text bg-gradient-to-r from-blue-500 via-orange-500 to-pink-500">soon</span>
+          </div>
+        </div>
+
+        {/* Channel Selector (White rectangles, SVG Logos, with Blur logic) */}
+        <h3 className="text-white text-xl md:text-2xl mb-6 font-serif tracking-tight">Select a channel for sending messages !</h3>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-12 w-full max-w-2xl">
+          <button 
+            onClick={() => !isTokenSaved && setActiveChannel("telegram")} 
+            className={`bg-white text-black py-3 px-4 rounded-xl flex items-center justify-center gap-2 shadow-md transition-all duration-300 ${activeChannel === 'telegram' ? 'ring-4 ring-blue-500 scale-105' : 'hover:scale-105'} ${isTokenSaved && activeChannel !== 'telegram' ? 'opacity-30 blur-[2px] grayscale scale-95 pointer-events-none' : ''}`}
+          >
+            <Telegram_Icon />
+            <span className="text-[14px] font-bold text-gray-800">Telegram</span>
+          </button>
+          <button 
+            onClick={() => !isTokenSaved && setActiveChannel("whatsapp")} 
+            className={`bg-white text-black py-3 px-4 rounded-xl flex items-center justify-center gap-2 shadow-md transition-all duration-300 ${activeChannel === 'whatsapp' ? 'ring-4 ring-green-500 scale-105' : 'hover:scale-105'} ${isTokenSaved && activeChannel !== 'whatsapp' ? 'opacity-30 blur-[2px] grayscale scale-95 pointer-events-none' : ''}`}
+          >
+            <WhatsApp_Icon />
+            <span className="text-[14px] font-bold text-gray-800">WhatsApp</span>
+          </button>
+          <button className={`bg-white text-black py-2 px-4 rounded-xl flex flex-col items-center justify-center shadow-md cursor-not-allowed transition-all duration-300 ${isTokenSaved ? 'opacity-20 blur-[2px] grayscale scale-95' : 'opacity-70'}`}>
+            <span className="text-[14px] font-bold text-gray-800 flex items-center gap-1"><Discord_Icon/> Discord</span>
+            <span className="text-[10px] text-gray-500">coming soon</span>
+          </button>
+          <button className={`bg-white text-black py-2 px-4 rounded-xl flex flex-col items-center justify-center shadow-md cursor-not-allowed transition-all duration-300 ${isTokenSaved ? 'opacity-20 blur-[2px] grayscale scale-95' : 'opacity-70'}`}>
+            <span className="text-[14px] font-bold text-gray-800 flex items-center gap-1"><Instagram_Icon/> Instagram</span>
+            <span className="text-[10px] text-gray-500">coming soon</span>
+          </button>
+        </div>
+
+        {/* 🚀 LOGIN IN-PLACE REPLACEMENT LOGIC */}
+        <div className="w-full max-w-xl min-h-[140px] flex flex-col justify-center items-center">
+          <AnimatePresence mode="wait">
+            {botLink ? (
+              <motion.div key="success" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="w-full bg-green-500/10 border border-green-500/30 p-6 rounded-2xl text-center backdrop-blur-md">
+                <h3 className="text-xl font-bold text-white mb-4">OpenClaw is Live! 🚀</h3>
+                <div className="flex flex-col sm:flex-row justify-center gap-4">
+                  <a href={botLink} target="_blank" rel="noopener noreferrer" className="bg-white text-black font-bold px-8 py-3 rounded-xl text-sm transition-transform hover:scale-105 w-full sm:w-auto text-center">
+                    Open Live Bot
+                  </a>
+                  <button onClick={() => router.push('/dashboard')} className="bg-[#1A1A1A] border border-white/20 text-white font-bold px-8 py-3 rounded-xl text-sm transition-colors hover:bg-white/10 w-full sm:w-auto flex items-center justify-center gap-2">
+                    <Activity className="w-4 h-4"/> Dashboard
+                  </button>
+                </div>
+              </motion.div>
+            ) : status === "unauthenticated" ? (
+              <motion.div key="login" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="w-full flex flex-col items-center">
+                <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={() => signIn("google")} className="w-full bg-white text-[#4A5568] py-4 rounded-2xl flex items-center justify-center gap-3 text-[18px] font-bold shadow-xl">
+                  <Google_Icon /> Login with Google & Quick Deploy
+                </motion.button>
+                <p className="mt-4 text-sm font-serif text-gray-400">
+                  Connect {activeChannel === 'telegram' ? 'Telegram' : 'WhatsApp'} to continue. <span className="text-green-500 italic">Limited cloud servers — only 7 left.</span>
+                </p>
+              </motion.div>
+            ) : (
+              <motion.div key="action" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="w-full flex flex-col items-center gap-4">
+                {/* 🚀 FIXED: User Profile renders exactly where Login button was */}
+                <div className="w-full flex items-center justify-between bg-[#111] border border-white/10 p-3 px-4 rounded-2xl shadow-lg">
+                  <div className="flex items-center gap-3">
+                    <img src={session?.user?.image || ""} className="w-10 h-10 rounded-full border border-white/20" alt="Avatar"/>
+                    <div className="text-left">
+                      <p className="text-sm font-bold text-white">{session?.user?.name}</p>
+                      <p className="text-[10px] text-gray-500 font-mono">{session?.user?.email}</p>
+                    </div>
+                  </div>
+                  <button onClick={() => signOut()} className="text-xs font-bold text-gray-500 hover:text-red-400 transition-colors uppercase tracking-widest flex items-center gap-1">
+                    <LogOut className="w-4 h-4"/> Logout
+                  </button>
+                </div>
+
+                {!isTokenSaved ? (
+                  <button onClick={() => handleOpenIntegration(activeChannel)} className="w-full bg-white text-black font-bold py-4 rounded-2xl text-[18px] shadow-xl uppercase tracking-widest transition-transform hover:scale-[1.02]">
+                    CONNECT {activeChannel} TO CONTINUE
+                  </button>
+                ) : (
+                  <button onClick={() => handleOpenPricing(activeChannel)} className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 rounded-2xl text-[18px] shadow-[0_0_30px_rgba(37,99,235,0.4)] uppercase tracking-widest transition-transform hover:scale-[1.02] flex justify-center items-center gap-3">
+                    <Zap className="w-5 h-5"/> Deploy OpenClaw
+                  </button>
+                )}
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      </div>
+    );
+  };
+
   if (!isMounted) return null;
 
   return (
@@ -186,172 +323,8 @@ export default function Home() {
         </div>
       </nav>
 
-      {/* 🚀 MAIN HERO SPLIT SECTION */}
-      <section className="relative z-10 max-w-[1600px] mx-auto px-6 pt-4 pb-24">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 xl:gap-20 items-start">
-          
-          {/* LEFT: Features Grid (Dark grey cards) */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-[#161618] p-6 md:p-8 rounded-[2rem] border border-white/5 shadow-2xl">
-            <div className="bg-[#1C1C1E] p-6 rounded-2xl border border-white/5 hover:border-white/10 transition-colors">
-              <div className="w-10 h-10 rounded-full bg-blue-500/10 flex items-center justify-center mb-4"><Globe className="w-5 h-5 text-blue-500" /></div>
-              <h3 className="text-white font-bold mb-2 text-sm">Omnichannel Deployment</h3>
-              <p className="text-[12px] text-gray-400 leading-relaxed">Deploy your AI agent across Telegram, WhatsApp Cloud, and your own website with a single click.</p>
-            </div>
-            <div className="bg-[#1C1C1E] p-6 rounded-2xl border border-white/5 hover:border-white/10 transition-colors">
-              <div className="w-10 h-10 rounded-full bg-green-500/10 flex items-center justify-center mb-4"><Database className="w-5 h-5 text-green-500" /></div>
-              <h3 className="text-white font-bold mb-2 text-sm">Enterprise RAG Memory</h3>
-              <p className="text-[12px] text-gray-400 leading-relaxed">Inject your business FAQs, return policies, and product details into the AI's Vector DB Brain.</p>
-            </div>
-            <div className="bg-[#1C1C1E] p-6 rounded-2xl border border-white/5 hover:border-white/10 transition-colors">
-              <div className="w-10 h-10 rounded-full bg-purple-500/10 flex items-center justify-center mb-4"><Mic className="w-5 h-5 text-purple-500" /></div>
-              <h3 className="text-white font-bold mb-2 text-sm">Voice Note Intelligence</h3>
-              <p className="text-[12px] text-gray-400 leading-relaxed">Native integration with OpenAI Whisper. Your bot listens to customer voice notes and replies contextually.</p>
-            </div>
-            <div className="bg-[#1C1C1E] p-6 rounded-2xl border border-white/5 hover:border-white/10 transition-colors">
-              <div className="w-10 h-10 rounded-full bg-orange-500/10 flex items-center justify-center mb-4"><Zap className="w-5 h-5 text-orange-500" /></div>
-              <h3 className="text-white font-bold mb-2 text-sm">Actionable AI Interceptor</h3>
-              <p className="text-[12px] text-gray-400 leading-relaxed">AI doesn't just talk; it acts. Automatically trigger APIs to check order status or book meetings.</p>
-            </div>
-            <div className="bg-[#1C1C1E] p-6 rounded-2xl border border-white/5 hover:border-white/10 transition-colors">
-              <div className="w-10 h-10 rounded-full bg-pink-500/10 flex items-center justify-center mb-4"><MessageSquare className="w-5 h-5 text-pink-500" /></div>
-              <h3 className="text-white font-bold mb-2 text-sm">Live CRM & Human Handoff</h3>
-              <p className="text-[12px] text-gray-400 leading-relaxed">Monitor AI conversations in real-time and instantly take over manually when a human touch is needed.</p>
-            </div>
-            <div className="bg-[#1C1C1E] p-6 rounded-2xl border border-white/5 hover:border-white/10 transition-colors">
-              <div className="w-10 h-10 rounded-full bg-yellow-500/10 flex items-center justify-center mb-4"><Activity className="w-5 h-5 text-yellow-500" /></div>
-              <h3 className="text-white font-bold mb-2 text-sm">Marketing Broadcast Engine</h3>
-              <p className="text-[12px] text-gray-400 leading-relaxed">Blast promotional offers and updates to thousands of captured leads with zero extra marketing cost.</p>
-            </div>
-          </div>
-
-          {/* RIGHT: Deployment Console */}
-          <div className="flex flex-col items-center text-center lg:pt-8 xl:pt-12 w-full">
-            <h1 className="text-4xl md:text-[3rem] text-white mb-4 font-serif tracking-tight leading-tight">
-              Deploy OpenClaw under 30 SECONDS
-            </h1>
-            <p className="text-gray-300 text-sm md:text-base mb-12 font-serif max-w-md mx-auto leading-relaxed">
-              Avoid all technical complexity and one-click deploy your own 24/7 active OpenClaw instance under 30 seconds.
-            </p>
-
-            {/* Model Selector */}
-            <h3 className="text-white text-xl md:text-2xl mb-6 font-serif tracking-tight">Choose a model to use as your default !</h3>
-            <div className="flex flex-wrap justify-center gap-4 mb-12 w-full max-w-xl">
-              <button 
-                onClick={() => setActiveModel("gpt-5.2")} 
-                className={`bg-white rounded-[2rem] px-6 py-3 flex items-center gap-3 shadow-xl transition-all duration-300 ${activeModel === 'gpt-5.2' ? 'ring-4 ring-blue-500 scale-105' : 'hover:scale-105'} ${isTokenSaved && activeModel !== 'gpt-5.2' ? 'opacity-30 blur-[2px] grayscale scale-95 pointer-events-none' : ''}`}
-              >
-                <OpenAI_Icon />
-                <span className="text-[#10A37F] font-bold text-[16px]">gpt-5.2</span>
-              </button>
-
-              <button 
-                onClick={() => setActiveModel("claude")} 
-                className={`bg-white rounded-[2rem] px-6 py-2.5 flex items-center gap-3 shadow-xl transition-all duration-300 ${activeModel === 'claude' ? 'ring-4 ring-blue-500 scale-105' : 'hover:scale-105'} ${isTokenSaved && activeModel !== 'claude' ? 'opacity-30 blur-[2px] grayscale scale-95 pointer-events-none' : ''}`}
-              >
-                <Claude_Icon />
-                <div className="text-left leading-none flex flex-col justify-center">
-                  <span className="text-[#D97757] font-bold text-[16px]">Claude</span>
-                  <span className="text-[#D97757] text-[9px] font-bold">Opus 4.6</span>
-                </div>
-              </button>
-
-              <button 
-                onClick={() => setActiveModel("gemini")} 
-                className={`bg-white rounded-[2rem] px-6 py-3 flex items-center gap-3 shadow-xl transition-all duration-300 ${activeModel === 'gemini' ? 'ring-4 ring-blue-500 scale-105' : 'hover:scale-105'} ${isTokenSaved && activeModel !== 'gemini' ? 'opacity-30 blur-[2px] grayscale scale-95 pointer-events-none' : ''}`}
-              >
-                <Gemini_Icon />
-                <span className="text-[#4E7CFF] font-bold text-[16px]">Gemini 3 flash</span>
-              </button>
-
-              <div className={`bg-white rounded-[2rem] px-8 py-3 flex items-center shadow-xl opacity-80 cursor-not-allowed transition-all duration-300 ${isTokenSaved ? 'opacity-20 blur-[2px] grayscale scale-95' : ''}`}>
-                <span className="font-black text-[16px] text-transparent bg-clip-text bg-gradient-to-r from-blue-500 via-orange-500 to-pink-500">soon</span>
-              </div>
-            </div>
-
-            {/* Channel Selector */}
-            <h3 className="text-white text-xl md:text-2xl mb-6 font-serif tracking-tight">Select a channel for sending messages !</h3>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8 w-full max-w-2xl">
-              <button 
-                onClick={() => setActiveChannel("telegram")} 
-                className={`bg-white text-black py-3 px-4 rounded-xl flex items-center justify-center gap-2 shadow-md transition-all duration-300 ${activeChannel === 'telegram' ? 'ring-4 ring-blue-500 scale-105' : 'hover:scale-105'} ${isTokenSaved && activeChannel !== 'telegram' ? 'opacity-30 blur-[2px] grayscale scale-95 pointer-events-none' : ''}`}
-              >
-                <Telegram_Icon />
-                <span className="text-[14px] font-bold text-gray-800">Telegram</span>
-              </button>
-              <button 
-                onClick={() => setActiveChannel("whatsapp")} 
-                className={`bg-white text-black py-3 px-4 rounded-xl flex items-center justify-center gap-2 shadow-md transition-all duration-300 ${activeChannel === 'whatsapp' ? 'ring-4 ring-green-500 scale-105' : 'hover:scale-105'} ${isTokenSaved && activeChannel !== 'whatsapp' ? 'opacity-30 blur-[2px] grayscale scale-95 pointer-events-none' : ''}`}
-              >
-                <WhatsApp_Icon />
-                <span className="text-[14px] font-bold text-gray-800">WhatsApp</span>
-              </button>
-              <button className={`bg-white text-black py-2 px-4 rounded-xl flex flex-col items-center justify-center shadow-md cursor-not-allowed transition-all duration-300 ${isTokenSaved ? 'opacity-20 blur-[2px] grayscale scale-95' : 'opacity-70'}`}>
-                <span className="text-[14px] font-bold text-gray-800 flex items-center gap-1"><Discord_Icon/> Discord</span>
-                <span className="text-[10px] text-gray-500">coming soon</span>
-              </button>
-              <button className={`bg-white text-black py-2 px-4 rounded-xl flex flex-col items-center justify-center shadow-md cursor-not-allowed transition-all duration-300 ${isTokenSaved ? 'opacity-20 blur-[2px] grayscale scale-95' : 'opacity-70'}`}>
-                <span className="text-[14px] font-bold text-gray-800 flex items-center gap-1"><Instagram_Icon/> Instagram</span>
-                <span className="text-[10px] text-gray-500">coming soon</span>
-              </button>
-            </div>
-
-            {/* 🚀 FIXED AUTH / DEPLOY ACTION AREA (Fixed height prevents jumping) */}
-            <div className="w-full max-w-xl min-h-[140px] flex flex-col justify-center items-center">
-              <AnimatePresence mode="wait">
-                {botLink ? (
-                  <motion.div key="success" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="w-full bg-green-500/10 border border-green-500/30 p-6 rounded-2xl text-center backdrop-blur-md">
-                    <h3 className="text-xl font-bold text-white mb-4">OpenClaw is Live! 🚀</h3>
-                    <div className="flex flex-col sm:flex-row justify-center gap-4">
-                      <a href={botLink} target="_blank" rel="noopener noreferrer" className="bg-white text-black font-bold px-8 py-3 rounded-xl text-sm transition-transform hover:scale-105 w-full sm:w-auto text-center">
-                        Open Live Bot
-                      </a>
-                      <button onClick={() => router.push('/dashboard')} className="bg-[#1A1A1A] border border-white/20 text-white font-bold px-8 py-3 rounded-xl text-sm transition-colors hover:bg-white/10 w-full sm:w-auto flex items-center justify-center gap-2">
-                        <Activity className="w-4 h-4"/> Dashboard
-                      </button>
-                    </div>
-                  </motion.div>
-                ) : status === "unauthenticated" ? (
-                  <motion.div key="login" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="w-full flex flex-col items-center">
-                    <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={() => signIn("google")} className="w-full bg-white text-[#4A5568] py-4 rounded-2xl flex items-center justify-center gap-3 text-[18px] font-bold shadow-xl">
-                      <Google_Icon /> Login with Google & Quick Deploy
-                    </motion.button>
-                    <p className="mt-4 text-sm font-serif text-gray-400">
-                      Connect {activeChannel === 'telegram' ? 'Telegram' : 'WhatsApp'} to continue. <span className="text-green-500 italic">Limited cloud servers — only 7 left.</span>
-                    </p>
-                  </motion.div>
-                ) : (
-                  <motion.div key="action" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="w-full flex flex-col items-center gap-4">
-                    {/* User Profile Replaces Login Space */}
-                    <div className="w-full flex items-center justify-between bg-[#111] border border-white/10 p-3 px-4 rounded-2xl shadow-lg">
-                      <div className="flex items-center gap-3">
-                        <img src={session?.user?.image || ""} className="w-10 h-10 rounded-full border border-white/20" alt="Avatar"/>
-                        <div className="text-left">
-                          <p className="text-sm font-bold text-white">{session?.user?.name}</p>
-                          <p className="text-[10px] text-gray-500 font-mono">{session?.user?.email}</p>
-                        </div>
-                      </div>
-                      <button onClick={() => signOut()} className="text-xs font-bold text-gray-500 hover:text-red-400 transition-colors uppercase tracking-widest flex items-center gap-1">
-                        <LogOut className="w-4 h-4"/> Logout
-                      </button>
-                    </div>
-
-                    {!isTokenSaved ? (
-                      <button onClick={() => handleOpenIntegration(activeChannel)} className="w-full bg-white text-black font-bold py-4 rounded-2xl text-[18px] shadow-xl uppercase tracking-widest transition-transform hover:scale-[1.02]">
-                        CONNECT {activeChannel} TO CONTINUE
-                      </button>
-                    ) : (
-                      <button onClick={() => handleOpenPricing(activeChannel)} className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 rounded-2xl text-[18px] shadow-[0_0_30px_rgba(37,99,235,0.4)] uppercase tracking-widest transition-transform hover:scale-[1.02] flex justify-center items-center gap-3">
-                        <Zap className="w-5 h-5"/> Deploy OpenClaw
-                      </button>
-                    )}
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-
-          </div>
-        </div>
-      </section>
+      {/* 🚀 MAIN WRAPPER (Replacing separate Hero for cohesive layout) */}
+      <LandingUI renderActionArea={renderDynamicButtons} isLocked={isTokenSaved || isDeploying} />
 
       {/* 🚀 COMPARISON SECTION */}
       <section className="py-24 relative z-10 border-t border-white/5 bg-[#161618]">
@@ -434,15 +407,16 @@ export default function Home() {
         </div>
       </footer>
 
-      {/* 🚀 MODALS */}
+      {/* 🚀 TELEGRAM / WHATSAPP INTEGRATION MODAL */}
       <AnimatePresence>
         {isTelegramModalOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-md p-4">
             <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }} className={`bg-[#111] border border-white/10 rounded-3xl w-full max-w-[950px] flex flex-col md:flex-row overflow-hidden relative shadow-2xl`}>
               <button onClick={() => setIsTelegramModalOpen(false)} className="absolute top-6 right-6 z-20 text-gray-500 hover:text-white bg-white/5 hover:bg-white/10 p-2 rounded-full transition-all">✕</button>
               
+              {/* LEFT SIDE: Instructions & Token Input */}
               <div className="w-full md:w-1/2 p-10 flex flex-col justify-center relative z-10">
-                <div className="flex items-center gap-4 mb-8">
+                <div className="flex items-center gap-4 mb-6">
                   <div className="w-12 h-12 rounded-2xl bg-[#2AABEE]/20 flex items-center justify-center shadow-lg">
                     {activeChannel === 'telegram' ? <Telegram_Icon /> : <WhatsApp_Icon />}
                   </div>
@@ -450,35 +424,68 @@ export default function Home() {
                 </div>
                 
                 {activeChannel === "telegram" ? (
-                  <ol className="space-y-4 text-sm text-gray-400 list-decimal pl-5 mb-10">
-                    <li>Search for <strong className="text-white">@BotFather</strong> in Telegram.</li>
-                    <li>Send the command <code className="bg-white/10 px-2 py-1 rounded text-white">/newbot</code>.</li>
-                    <li>Copy the HTTP API token provided by BotFather.</li>
-                  </ol>
+                  <>
+                    <ol className="space-y-4 text-sm text-gray-400 list-decimal pl-5 mb-6 leading-relaxed">
+                      <li>Open Telegram and search for <strong className="text-white">@BotFather</strong>.</li>
+                      <li>Send the command <code className="bg-white/10 px-2 py-1 rounded text-white font-mono text-xs">/newbot</code> to start.</li>
+                      <li>Enter a custom <strong className="text-white">Name</strong> and <strong className="text-white">Username</strong>.</li>
+                      <li>BotFather will generate an <strong className="text-white">HTTP API Access Token</strong>.</li>
+                      <li>Copy that exact token and paste it securely below.</li>
+                    </ol>
+                    <a href="https://t.me/BotFather" target="_blank" rel="noopener noreferrer" className="inline-flex items-center justify-center gap-2 mb-8 bg-[#2AABEE]/10 text-[#2AABEE] hover:bg-[#2AABEE]/20 px-4 py-2 rounded-lg text-xs font-bold transition-colors w-fit">
+                      <ExternalLink className="w-3 h-3" /> Open @BotFather Directly
+                    </a>
+                  </>
                 ) : (
-                  <ol className="space-y-4 text-sm text-gray-400 list-decimal pl-5 mb-10">
+                  <ol className="space-y-4 text-sm text-gray-400 list-decimal pl-5 mb-10 leading-relaxed">
                     <li>Go to the <strong className="text-white">Meta for Developers</strong> console.</li>
+                    <li>Create an App and add the <strong className="text-white">WhatsApp Product</strong>.</li>
                     <li>Generate a <strong className="text-white">Permanent Access Token</strong>.</li>
-                    <li>Paste the token below.</li>
+                    <li>Copy that exact token and paste it securely below.</li>
                   </ol>
                 )}
 
-                <div className="bg-[#1A1A1A] p-6 rounded-2xl border border-white/5">
+                <div className="bg-[#1A1A1A] p-6 rounded-2xl border border-white/5 shadow-inner">
                   <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">API Access Token</label>
                   <input type="password" value={telegramToken} onChange={(e) => setTelegramToken(e.target.value)} placeholder="Enter Token..." className="w-full bg-black border border-white/10 rounded-xl px-4 py-4 text-sm focus:outline-none mb-6 text-white font-mono" />
-                  <button onClick={() => { setIsTokenSaved(true); setIsTelegramModalOpen(false); }} className="w-full bg-white text-black font-bold py-4 rounded-xl text-sm hover:bg-gray-200 uppercase tracking-widest shadow-lg transition-transform hover:scale-[1.02]">Authenticate & Proceed</button>
+                  <button onClick={() => { setIsTokenSaved(true); setIsTelegramModalOpen(false); }} className="w-full bg-white text-black font-bold py-4 rounded-xl text-sm hover:bg-gray-200 uppercase tracking-widest shadow-lg transition-transform hover:scale-[1.02]">
+                    SAVE AND CONTINUE
+                  </button>
                 </div>
               </div>
 
+              {/* RIGHT SIDE: Animated iPhone Mockup */}
               <div className="hidden md:flex md:w-1/2 bg-black/40 items-center justify-center p-10 border-l border-white/5 relative">
-                 <div className="w-[300px] h-[500px] border-[8px] border-[#1A1A1A] rounded-[3rem] bg-[#0A0A0B] flex flex-col relative overflow-hidden shadow-2xl">
+                 <div className="w-[300px] h-[550px] border-[8px] border-[#1A1A1A] rounded-[3rem] bg-[#0A0A0B] flex flex-col relative overflow-hidden shadow-2xl">
+                    {/* iPhone Notch */}
                     <div className="absolute top-0 inset-x-0 h-7 bg-[#1A1A1A] rounded-b-3xl w-40 mx-auto z-20 flex justify-center items-end pb-1">
                       <div className="w-12 h-1.5 bg-black/50 rounded-full"></div>
                     </div>
-                    <div className="p-4 pt-10 flex-1 flex flex-col justify-end space-y-4 opacity-90 text-[12px] font-mono">
-                      <div className="bg-[#2AABEE] text-white p-3 rounded-2xl rounded-tr-sm w-fit ml-auto shadow-md">/newbot</div>
-                      <div className="bg-[#1A1A1A] border border-white/5 text-gray-200 p-3 rounded-2xl rounded-tl-sm w-[85%] shadow-md">System configured securely. Pending token validation...</div>
+                    {/* Chat Header */}
+                    <div className="bg-[#111]/90 backdrop-blur-md p-4 pt-10 flex items-center gap-3 border-b border-white/5 z-10">
+                      <div className="w-10 h-10 rounded-full bg-[#2AABEE] flex items-center justify-center shadow-lg"><Telegram_Icon /></div>
+                      <div>
+                        <p className="text-white text-sm font-bold flex items-center gap-1">BotFather <CheckCircle2 className="w-3 h-3 text-blue-400"/></p>
+                        <p className="text-gray-400 text-[10px] font-mono tracking-wider">verified bot</p>
+                      </div>
                     </div>
+                    
+                    {/* Animated Chat Flow */}
+                    <div className="p-4 pt-6 flex-1 flex flex-col justify-end space-y-3 opacity-95 text-[11px] font-mono bg-[url('https://www.transparenttextures.com/patterns/stardust.png')]">
+                      <ChatBubble isUser text="/newbot" delay={0.5} />
+                      <ChatBubble text="Alright, a new bot. How are we going to call it? Please choose a name." delay={1.5} />
+                      <ChatBubble isUser text="ClawLink Support" delay={2.5} />
+                      <ChatBubble text="Good. Now let's choose a username..." delay={3.5} />
+                      <ChatBubble isUser text="ClawSupport_bot" delay={4.5} />
+                      
+                      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 5.5, duration: 0.4 }} className="bg-[#1A1A1A] border border-[#2AABEE]/30 p-3 rounded-2xl rounded-tl-sm text-gray-200 self-start max-w-[90%] shadow-[0_0_15px_rgba(42,171,238,0.15)] leading-relaxed">
+                        Done! Congratulations on your new bot.<br/><br/>
+                        <span className="text-gray-400">Use this token to access the HTTP API:</span><br/>
+                        <span className="text-[#2AABEE] font-mono break-all mt-1 block font-bold">1234567890:AAH8ABCdefGhI...</span>
+                      </motion.div>
+                    </div>
+
+                    <div className="absolute bottom-2 inset-x-0 h-1.5 bg-[#333] rounded-full w-32 mx-auto z-20"></div>
                  </div>
               </div>
             </motion.div>
