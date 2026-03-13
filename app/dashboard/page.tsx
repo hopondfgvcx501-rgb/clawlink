@@ -11,31 +11,6 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 
-// 🚀 FIXED: Extremely strict parser that formats EXACTLY what the DB sends
-const formatAIProvider = (model: string) => {
-  const m = (model || "").toLowerCase().trim();
-  
-  // Default fallback if database is literally empty
-  if (!m) return { name: "Google", badge: "Gemini Flash" };
-
-  if (m.includes("gpt")) {
-    let exactVersion = "GPT-4 Turbo";
-    if (m === "gpt-5.2" || m.includes("5.2")) exactVersion = "GPT-5.2";
-    else if (m.includes("3.5")) exactVersion = "GPT-3.5";
-    return { name: "OpenAI", badge: exactVersion };
-  } 
-  else if (m.includes("claude") || m.includes("anthropic")) {
-    let exactVersion = "Claude 3 Opus";
-    if (m.includes("sonnet")) exactVersion = "Claude 3 Sonnet";
-    return { name: "Anthropic", badge: exactVersion };
-  } 
-  else {
-    let exactVersion = "Gemini Flash";
-    if (m.includes("pro")) exactVersion = "Gemini Pro";
-    return { name: "Google", badge: exactVersion };
-  }
-};
-
 export default function Dashboard() {
   const { data: session, status } = useSession();
   const router = useRouter();
@@ -61,11 +36,11 @@ export default function Dashboard() {
     }
 
     if (session?.user?.email) {
-      // 🚀 CACHE-KILLER: Force Next.js & Browser to NEVER cache this data!
+      // 🚀 CACHE-KILLER FETCH
       const cacheBusterUrl = `/api/user?email=${session.user.email}&t=${Date.now()}`;
       
       fetch(cacheBusterUrl, { 
-        cache: 'no-store', // Absolutely NO CACHING
+        cache: 'no-store',
         headers: {
           'Cache-Control': 'no-cache, no-store, must-revalidate',
           'Pragma': 'no-cache',
@@ -82,7 +57,6 @@ export default function Dashboard() {
         .catch(console.error)
         .finally(() => setIsLoading(false));
 
-      // Fetch Billing (Also Cache-Busted)
       fetch(`/api/billing?email=${session.user.email}&t=${Date.now()}`, { cache: 'no-store' })
         .then((res) => res.json())
         .then((data) => {
@@ -145,7 +119,7 @@ export default function Dashboard() {
       if (data.success) {
         alert("Knowledge successfully embedded into AI Brain!");
         setKnowledgeText("");
-        fetchKnowledge(); // Refresh the list
+        fetchKnowledge();
       } else {
         alert("Failed to inject knowledge: " + data.error);
       }
@@ -194,13 +168,10 @@ Thank you for choosing ClawLink Enterprise AI.
     );
   }
 
-  // 🚀 SMART UI LOGIC FOR TOKENS 
+  // 🚀 UI LOGIC
   const currentPlan = userData?.plan?.toLowerCase() || "starter";
   const showTokens = currentPlan === "starter"; 
   const usagePercentage = Math.min(((userData?.tokensUsed || 0) / (userData?.tokensAllocated || 1)) * 100, 100);
-
-  // 🚀 100% ACCURATE PROVIDER INFO (Strictly reads 'selected_model' from DB, handles gpt-5.2 perfectly)
-  const aiInfo = formatAIProvider(userData?.selected_model || userData?.model);
 
   return (
     <div className="w-full min-h-screen bg-[#111111] text-[#EDEDED] font-sans relative selection:bg-orange-500/30 overflow-y-auto custom-scrollbar flex flex-col">
@@ -209,7 +180,7 @@ Thank you for choosing ClawLink Enterprise AI.
       <div className="fixed top-[-10%] left-[20%] w-[600px] h-[500px] bg-orange-600/10 rounded-full blur-[150px] pointer-events-none z-0"></div>
       <div className="fixed bottom-[-10%] right-[10%] w-[500px] h-[500px] bg-indigo-600/10 rounded-full blur-[150px] pointer-events-none z-0"></div>
 
-      {/* HEADER WITH NEW 'OPEN LIVE BOT' BUTTON */}
+      {/* HEADER */}
       <header className="flex items-center justify-between p-6 md:p-8 border-b border-white/5 bg-[#111]/50 backdrop-blur-md sticky top-0 z-30">
         <div>
           <h1 className="text-2xl font-serif text-white tracking-tight">Welcome back, {session?.user?.name?.split(' ')[0] || 'Agent'}</h1>
@@ -217,7 +188,6 @@ Thank you for choosing ClawLink Enterprise AI.
         </div>
         <div className="flex items-center gap-4">
           
-          {/* 🚀 LIVE BOT BUTTON */}
           <button 
             onClick={() => router.push(`/widget?email=${session?.user?.email}`)}
             className="hidden sm:flex items-center gap-2 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white px-5 py-2.5 rounded-full font-bold text-xs uppercase tracking-widest shadow-[0_0_20px_rgba(59,130,246,0.3)] transition-all transform hover:scale-105"
@@ -239,7 +209,6 @@ Thank you for choosing ClawLink Enterprise AI.
       {/* DASHBOARD CONTENT */}
       <div className="p-6 md:p-8 space-y-8 max-w-7xl mx-auto w-full relative z-10 flex-1">
         
-        {/* MOBILE LIVE BOT BUTTON */}
         <div className="sm:hidden mb-4">
           <button 
             onClick={() => router.push(`/widget?email=${session?.user?.email}`)}
@@ -305,19 +274,18 @@ Thank you for choosing ClawLink Enterprise AI.
             )}
           </motion.div>
 
-          {/* CARD 3: AI PROVIDER */}
+          {/* 🚀 CARD 3 REPLACED: DEPLOYMENT CHANNELS */}
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="bg-[#1C1C1E] border border-white/5 p-6 rounded-[1.5rem] shadow-xl relative overflow-hidden group hover:border-white/10 transition-colors">
             <div className="absolute top-0 right-0 w-32 h-32 bg-green-500/5 rounded-full blur-3xl group-hover:bg-green-500/10 transition-colors"></div>
             <div className="flex justify-between items-start mb-4 relative z-10">
-              <div className="w-10 h-10 rounded-xl bg-green-500/10 flex items-center justify-center text-green-500 border border-green-500/20"><Activity className="w-5 h-5"/></div>
-              <span className="text-xs font-bold text-green-400 bg-green-400/10 px-2 py-1 rounded border border-green-400/20 flex items-center gap-1"><span className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse"></span> Live</span>
+              <div className="w-10 h-10 rounded-xl bg-green-500/10 flex items-center justify-center text-green-500 border border-green-500/20"><Smartphone className="w-5 h-5"/></div>
+              <span className="text-xs font-bold text-green-400 bg-green-400/10 px-2 py-1 rounded border border-green-400/20 flex items-center gap-1"><span className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse"></span> Online</span>
             </div>
-            <h3 className="text-gray-400 text-xs font-bold uppercase tracking-widest mb-1 relative z-10">AI Provider</h3>
-            <p className="text-2xl font-bold text-white capitalize flex items-center gap-2 mt-1 relative z-10">
-              {aiInfo.name} 
-              <span className="text-sm text-gray-500 font-medium font-sans truncate">
-                ({aiInfo.badge})
-              </span>
+            <h3 className="text-gray-400 text-xs font-bold uppercase tracking-widest mb-1 relative z-10">Active Channels</h3>
+            <p className="text-2xl font-bold text-white capitalize mt-1 relative z-10">
+              {userData?.telegramActive && userData?.whatsappActive ? "TG & WhatsApp" : 
+               userData?.whatsappActive ? "WhatsApp Live" : 
+               userData?.telegramActive ? "Telegram Live" : "Web Widget"}
             </p>
           </motion.div>
         </div>
