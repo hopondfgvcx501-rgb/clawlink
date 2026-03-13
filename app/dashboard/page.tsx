@@ -160,9 +160,9 @@ Thank you for choosing ClawLink Enterprise AI.
     );
   }
 
-  const usagePercentage = userData?.isUnlimited 
-    ? 0 
-    : Math.min(((userData?.tokensUsed || 0) / (userData?.tokensAllocated || 1)) * 100, 100);
+  // 🚀 SMART UI LOGIC FOR TOKENS
+  const isStarterPlan = userData?.plan?.toLowerCase() === "starter";
+  const usagePercentage = Math.min(((userData?.tokensUsed || 0) / (userData?.tokensAllocated || 1)) * 100, 100);
 
   return (
     <div className="min-h-screen bg-[#111111] text-[#EDEDED] font-sans flex relative selection:bg-orange-500/30 overflow-hidden">
@@ -250,6 +250,8 @@ Thank you for choosing ClawLink Enterprise AI.
 
           {/* 🚀 STATS GRID */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            
+            {/* CARD 1: PLAN */}
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="bg-[#1C1C1E] border border-white/5 p-6 rounded-[1.5rem] shadow-xl relative overflow-hidden group hover:border-white/10 transition-colors">
               <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 rounded-full blur-3xl group-hover:bg-blue-500/10 transition-colors"></div>
               <div className="flex justify-between items-start mb-4 relative z-10">
@@ -257,29 +259,39 @@ Thank you for choosing ClawLink Enterprise AI.
                 <span className="text-xs font-bold text-green-400 bg-green-400/10 px-2 py-1 rounded border border-green-400/20">Active</span>
               </div>
               <h3 className="text-gray-400 text-xs font-bold uppercase tracking-widest mb-1 relative z-10">Instance Plan</h3>
-              <p className="text-3xl font-black text-white font-serif relative z-10">{userData?.plan || "Starter"}</p>
+              <p className="text-3xl font-black text-white font-serif relative z-10 uppercase tracking-wide">{userData?.plan || "Starter"}</p>
             </motion.div>
 
+            {/* CARD 2: API USAGE (Hides limit for Pro/Max users) */}
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="bg-[#1C1C1E] border border-white/5 p-6 rounded-[1.5rem] shadow-xl relative overflow-hidden group hover:border-white/10 transition-colors">
               <div className="absolute top-0 right-0 w-32 h-32 bg-orange-500/5 rounded-full blur-3xl group-hover:bg-orange-500/10 transition-colors"></div>
               <div className="flex justify-between items-start mb-4 relative z-10">
                 <div className="w-10 h-10 rounded-xl bg-orange-500/10 flex items-center justify-center text-orange-500 border border-orange-500/20"><Zap className="w-5 h-5"/></div>
                 <span className="text-xs font-bold text-orange-400 bg-orange-400/10 px-2 py-1 rounded border border-orange-400/20 font-mono">
-                  {userData?.isUnlimited ? "∞" : `${usagePercentage.toFixed(1)}% Used`}
+                  {isStarterPlan ? `${usagePercentage.toFixed(1)}% Used` : "Premium"}
                 </span>
               </div>
               <h3 className="text-gray-400 text-xs font-bold uppercase tracking-widest mb-1 relative z-10">API Usage</h3>
               <p className="text-3xl font-black text-white font-serif relative z-10">
-                {userData?.isUnlimited ? "Unlimited" : userData?.tokensUsed?.toLocaleString() || 0}
-                <span className="text-sm text-gray-500 font-sans font-medium"> / {userData?.isUnlimited ? "∞" : userData?.tokensAllocated?.toLocaleString()} msg</span>
+                {isStarterPlan ? (
+                  <>
+                    {userData?.tokensUsed?.toLocaleString() || 0}
+                    <span className="text-sm text-gray-500 font-sans font-medium"> / {userData?.tokensAllocated?.toLocaleString()} msg</span>
+                  </>
+                ) : (
+                  <span className="bg-clip-text text-transparent bg-gradient-to-r from-orange-400 to-pink-500">Unlimited</span>
+                )}
               </p>
-              {!userData?.isUnlimited && (
+              
+              {/* Only show progress bar to Starter plan users */}
+              {isStarterPlan && (
                 <div className="w-full h-1.5 bg-gray-800 rounded-full overflow-hidden mt-4 relative z-10">
                   <motion.div initial={{ width: 0 }} animate={{ width: `${usagePercentage}%` }} transition={{ duration: 1, ease: "easeOut" }} className={`h-full ${usagePercentage > 90 ? 'bg-red-500' : 'bg-orange-500'}`}/>
                 </div>
               )}
             </motion.div>
 
+            {/* CARD 3: PROVIDER */}
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="bg-[#1C1C1E] border border-white/5 p-6 rounded-[1.5rem] shadow-xl relative overflow-hidden group hover:border-white/10 transition-colors">
               <div className="absolute top-0 right-0 w-32 h-32 bg-green-500/5 rounded-full blur-3xl group-hover:bg-green-500/10 transition-colors"></div>
               <div className="flex justify-between items-start mb-4 relative z-10">
@@ -288,7 +300,7 @@ Thank you for choosing ClawLink Enterprise AI.
               </div>
               <h3 className="text-gray-400 text-xs font-bold uppercase tracking-widest mb-1 relative z-10">AI Provider</h3>
               <p className="text-2xl font-bold text-white capitalize flex items-center gap-2 mt-1 relative z-10">
-                {userData?.ai_provider || "Google"} <span className="text-sm text-gray-500 font-medium font-sans">({userData?.ai_model || "gemini-1.5-flash"})</span>
+                {userData?.ai_provider || "Google"} <span className="text-sm text-gray-500 font-medium font-sans truncate">({userData?.ai_model || "gemini-flash"})</span>
               </p>
             </motion.div>
           </div>
