@@ -4,7 +4,7 @@ import { signIn, signOut, useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
-import { Globe, Database, Mic, Zap, MessageSquare, Activity, LogOut, Shield, ExternalLink, CheckCircle2, Copy, MessageCircle, X, Send } from "lucide-react";
+import { Globe, Database, Mic, Zap, MessageSquare, Activity, LogOut, Shield, ExternalLink, CheckCircle2, Copy } from "lucide-react";
 
 // --- CORE SYSTEM DATA ---
 const MODEL_DETAILS: Record<string, { name: string; starter: number; pro: number }> = {
@@ -14,14 +14,14 @@ const MODEL_DETAILS: Record<string, { name: string; starter: number; pro: number
 };
 const MAX_PLAN_PRICE = 89; 
 
-// --- 🚀 ORIGINAL PREMIUM BRAND SVGS ---
+// --- 🚀 ORIGINAL PREMIUM BRAND SVGS (Requirement 1 & 2 FIXED) ---
 const OpenAI_Icon = () => <svg viewBox="0 0 24 24" width="20" height="20" fill="#10A37F"><path d="M22.28 9.68a2.18 2.18 0 0 0 .06-.52 6.09 6.09 0 0 0-4.63-6 6.09 6.09 0 0 0-7.25 1.54A6.1 6.1 0 0 0 3 8.35a2.2 2.2 0 0 0-.05.5 6.1 6.1 0 0 0 4.63 6 6.1 6.1 0 0 0 7.25-1.54 6.1 6.1 0 0 0 7.45-3.63zm-4.7-3.9a4.8 4.8 0 0 1 3.2 4 4.7 4.7 0 0 1-1.34 3.7l-4.52-2.6v-5.2h.02A4.7 4.7 0 0 1 17.58 5.78zm-9.35-.9a4.8 4.8 0 0 1 5.3-.23l-2.26 3.9h-5.2l2.25-3.9a4.8 4.8 0 0 1-.09.23zm-3.23 6a4.8 4.8 0 0 1 .45-4.14l4.5 2.6v5.2l-4.5-2.6a4.8 4.8 0 0 1-.45-1.06zm1.75 6.1a4.8 4.8 0 0 1-3.2-4 4.7 4.7 0 0 1 1.34-3.7l4.52 2.6v5.2l-2.66-1.54-.01 1.44zm9.35.9a4.8 4.8 0 0 1-5.3.23l2.26-3.9h5.2l-2.25 3.9a4.8 4.8 0 0 1 .09-.23zm3.23-6a4.8 4.8 0 0 1-.45 4.14l-4.5-2.6v-5.2l4.5 2.6a4.8 4.8 0 0 1 .45 1.06zM12 15.6l-3.1-1.8v-3.6L12 8.4l3.1 1.8v3.6L12 15.6z"/></svg>;
 const Claude_Icon = () => <svg viewBox="0 0 24 24" width="20" height="20" fill="#D97757"><path d="M12 2L13 9L20 7L15 12L22 15L15 16L18 22L12 18L6 22L9 16L2 15L9 12L4 7L11 9L12 2Z"/></svg>;
-const Gemini_Icon = () => <svg viewBox="0 0 24 24" width="20" height="20"><defs><linearGradient id="geminiGrad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#1b72e8"/><stop offset="100%" stopColor="#1b72e8" stopOpacity="0.6"/></linearGradient></defs><path fill="url(#geminiGrad)" d="M12 2l2.5 7.5L22 12l-7.5 2.5L12 22l-2.5-7.5L2 12l7.5-2.5L12 2z"/></svg>;
-const Telegram_Icon = () => <svg viewBox="0 0 24 24" width="20" height="20" fill="#2AABEE"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69.01-.03.01-.14-.07-.18-.08-.04-.19-.02-.27 0-.11.03-1.93 1.23-5.46 3.62-.51.35-.98.53-1.39.52-.46-.01-1.33-.26-1.98-.48-.8-.27-1.43-.42-1.37-.89.03-.25.38-.51 1.03-.78 4.04-1.76 6.74-2.92 8.09-3.48 3.85-1.6 4.64-1.88 5.17-1.89.11 0 .37.03.54.17.14.12.2.27.22.42.02.13.02.26 0 .38z"/></svg>;
-const WhatsApp_Icon = () => <svg viewBox="0 0 24 24" width="20" height="20" fill="#25D366"><path d="M17.47 14.38c-.3-.15-1.76-.87-2.03-.97-.27-.1-.47-.15-.67.15-.2.3-.77.97-.94 1.16-.17.2-.35.22-.64.08-.3-.15-1.26-.46-2.39-1.48-.88-.79-1.48-1.76-1.65-2.06-.17-.3-.02-.46.13-.61.13-.13.3-.35.45-.52.15-.17.2-.3.3-.5.1-.2.05-.37-.03-.52-.07-.15-.67-1.61-.92-2.21-.24-.58-.49-.5-.67-.51h-.57c-.2 0-.52.07-.79.37-.27.3-1.04 1.02-1.04 2.48 0 1.46 1.07 2.88 1.21 3.07.15.2 2.1 3.2 5.08 4.49.71.3 1.26.49 1.69.62.71.23 1.36.2 1.87.12.57-.08 1.76-.72 2.01-1.41.25-.69.25-1.29.17-1.41-.07-.12-.27-.2-.57-.35m-5.42 7.4h-.01a9.87 9.87 0 0 1-5.03-1.38l-.36-.21-3.74.98 1-3.65-.24-.37a9.86 9.86 0 0 1-1.51-5.26c0-5.45 4.44-9.88 9.89-9.88 2.64 0 5.12 1.03 6.99 2.9a9.82 9.82 0 0 1 2.89 6.99c0 5.45-4.44 9.88-9.88 9.88m8.41-18.3A11.81 11.81 0 0 0 12.05 0C5.5 0 .16 5.34.16 11.89c0 2.1.55 4.14 1.59 5.95L.06 24l6.3-1.65a11.88 11.88 0 0 0 5.68 1.45h.01c6.55 0 11.89-5.34 11.89-11.89a11.82 11.82 0 0 0-3.48-8.41z"/></svg>;
+const Gemini_Icon = () => <svg viewBox="0 0 24 24" width="20" height="20"><path fill="#4E7CFF" d="M12 2l2.5 7.5L22 12l-7.5 2.5L12 22l-2.5-7.5L2 12l7.5-2.5L12 2z"/></svg>;
 const Discord_Icon = () => <svg viewBox="0 0 24 24" width="16" height="16" fill="#5865F2"><path d="M20.3 5.4c-1.6-.7-3.4-1.2-5.2-1.5-.2.4-.4.9-.6 1.3-1.9-.3-3.8-.3-5.7 0-.2-.4-.4-.9-.6-1.3-1.8.3-3.6.8-5.2 1.5-3.3 4.9-4.2 9.7-3.3 14.4 2.2 1.6 4.3 2.6 6.4 3.2.5-.7 1-1.5 1.4-2.3-1.2-.5-2.4-1.1-3.5-1.8.3-.2.6-.4.9-.7 4.6 2.1 9.7 2.1 14.3 0 .3.2.6.5.9.7-1.1.7-2.3 1.3-3.5 1.8.4.8.9 1.6 1.4 2.3 2.1-.6 4.2-1.6 6.4-3.2 1-5.1.1-10-3.2-14.4zm-11.7 11c-1.3 0-2.4-1.2-2.4-2.6s1.1-2.6 2.4-2.6 2.4 1.2 2.4 2.6-1.1 2.6-2.4 2.6zm6.8 0c-1.3 0-2.4-1.2-2.4-2.6s1.1-2.6 2.4-2.6 2.4 1.2 2.4 2.6-1.1 2.6-2.4 2.6z"/></svg>;
 const Instagram_Icon = () => <div className="w-[16px] h-[16px] rounded-md bg-gradient-to-tr from-[#f09433] via-[#e6683c] to-[#bc1888] flex items-center justify-center"><div className="w-[12px] h-[12px] border-[1.5px] border-white rounded-[4px] flex items-center justify-center"><div className="w-[4px] h-[4px] bg-white rounded-full"></div></div></div>;
+const Telegram_Icon = () => <svg viewBox="0 0 24 24" width="20" height="20" fill="#2AABEE"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69.01-.03.01-.14-.07-.18-.08-.04-.19-.02-.27 0-.11.03-1.93 1.23-5.46 3.62-.51.35-.98.53-1.39.52-.46-.01-1.33-.26-1.98-.48-.8-.27-1.43-.42-1.37-.89.03-.25.38-.51 1.03-.78 4.04-1.76 6.74-2.92 8.09-3.48 3.85-1.6 4.64-1.88 5.17-1.89.11 0 .37.03.54.17.14.12.2.27.22.42.02.13.02.26 0 .38z"/></svg>;
+const WhatsApp_Icon = () => <svg viewBox="0 0 24 24" width="20" height="20" fill="#25D366"><path d="M17.47 14.38c-.3-.15-1.76-.87-2.03-.97-.27-.1-.47-.15-.67.15-.2.3-.77.97-.94 1.16-.17.2-.35.22-.64.08-.3-.15-1.26-.46-2.39-1.48-.88-.79-1.48-1.76-1.65-2.06-.17-.3-.02-.46.13-.61.13-.13.3-.35.45-.52.15-.17.2-.3.3-.5.1-.2.05-.37-.03-.52-.07-.15-.67-1.61-.92-2.21-.24-.58-.49-.5-.67-.51h-.57c-.2 0-.52.07-.79.37-.27.3-1.04 1.02-1.04 2.48 0 1.46 1.07 2.88 1.21 3.07.15.2 2.1 3.2 5.08 4.49.71.3 1.26.49 1.69.62.71.23 1.36.2 1.87.12.57-.08 1.76-.72 2.01-1.41.25-.69.25-1.29.17-1.41-.07-.12-.27-.2-.57-.35m-5.42 7.4h-.01a9.87 9.87 0 0 1-5.03-1.38l-.36-.21-3.74.98 1-3.65-.24-.37a9.86 9.86 0 0 1-1.51-5.26c0-5.45 4.44-9.88 9.89-9.88 2.64 0 5.12 1.03 6.99 2.9a9.82 9.82 0 0 1 2.89 6.99c0 5.45-4.44 9.88-9.88 9.88m8.41-18.3A11.81 11.81 0 0 0 12.05 0C5.5 0 .16 5.34.16 11.89c0 2.1.55 4.14 1.59 5.95L.06 24l6.3-1.65a11.88 11.88 0 0 0 5.68 1.45h.01c6.55 0 11.89-5.34 11.89-11.89a11.82 11.82 0 0 0-3.48-8.41z"/></svg>;
 const Google_Icon = () => <svg viewBox="0 0 24 24" width="24" height="24"><path fill="#EA4335" d="M5.266 9.765A7.077 7.077 0 0112 4.909c1.69 0 3.218.6 4.418 1.582L19.91 3C17.782 1.145 15.055 0 12 0 7.27 0 3.198 2.698 1.24 6.65l4.026 3.115Z"/><path fill="#34A853" d="M16.04 18.013c-1.09.703-2.474 1.078-4.04 1.078a7.077 7.077 0 01-6.723-4.823l-4.04 3.067A11.965 11.965 0 0012 24c2.933 0 5.735-1.043 7.834-3l-3.793-2.987Z"/><path fill="#4A90E2" d="M19.834 21c2.195-2.048 3.62-5.096 3.62-9 0-.71-.109-1.473-.272-2.182H12v4.637h6.436c-.317 1.559-1.17 2.766-2.395 3.558L19.834 21Z"/><path fill="#FBBC05" d="M5.277 14.268A7.12 7.12 0 014.909 12c0-.782.125-1.533.357-2.235L1.24 6.65A11.934 11.934 0 000 12c0 1.92.445 3.73 1.237 5.335l4.04-3.067Z"/></svg>;
 
 export default function Home() {
@@ -39,17 +39,11 @@ export default function Home() {
   const [activeModel, setActiveModel] = useState("gpt-5.2");
   const [activeChannel, setActiveChannel] = useState("telegram");
   
-  // 🚀 FIXED: No default plan selected. User MUST choose to proceed.
+  // 🚀 PLAN SELECTION LOCK STATE (REQUIRED)
   const [selectedTier, setSelectedTier] = useState<"starter" | "pro" | "max" | null>(null); 
   const [currency, setCurrency] = useState<"USD" | "INR">("USD");
   const [currencySymbol, setCurrencySymbol] = useState("$");
   const EXCHANGE_RATE = 83; 
-
-  // 🚀 HELP WIDGET STATES
-  const [isHelpOpen, setIsHelpOpen] = useState(false);
-  const [helpEmail, setHelpEmail] = useState("");
-  const [helpMessage, setHelpMessage] = useState("");
-  const [helpStatus, setHelpStatus] = useState<"idle" | "sending" | "sent">("idle");
 
   useEffect(() => {
     setIsMounted(true); 
@@ -79,7 +73,7 @@ export default function Home() {
     setShowPricingPopup(true);
   };
 
-  // 🚀 TOKEN VALIDATION LOCK
+  // 🚀 TOKEN VALIDATION LOCK (Requirement FIXED)
   const handleSaveToken = () => {
     if (!telegramToken || telegramToken.trim() === "") {
       alert("Please enter a valid API Token/Webhook URL to continue.");
@@ -89,32 +83,14 @@ export default function Home() {
     setIsTelegramModalOpen(false);
   };
 
-  // 🚀 HELP WIDGET SUBMIT LOGIC
-  const handleSendHelpRequest = () => {
-    if (!helpEmail.trim() || !helpMessage.trim()) {
-      alert("Please fill in your email and message.");
-      return;
-    }
-    setHelpStatus("sending");
-    // Simulate API call for help request
-    setTimeout(() => {
-      setHelpStatus("sent");
-      setTimeout(() => {
-        setIsHelpOpen(false);
-        setHelpStatus("idle");
-        setHelpMessage("");
-      }, 3000);
-    }, 1500);
-  };
-
   const getCurrentPrice = (tier = selectedTier) => {
-    if (!tier) return 0; 
+    if (!tier) return 0; // Return 0 if no tier is selected
     let basePrice = tier === "max" ? MAX_PLAN_PRICE : (MODEL_DETAILS[activeModel]?.[tier as "starter"|"pro"] || 39);
     return currency === "INR" ? basePrice * EXCHANGE_RATE : basePrice;
   };
 
   const triggerRazorpayPayment = async () => {
-    // 🚀 PLAN VALIDATION LOCK
+    // 🚀 PLAN VALIDATION LOCK (Requirement FIXED)
     if (!selectedTier) {
       alert("Please select a plan (Starter, Pro, or Max) to proceed with payment.");
       return;
@@ -243,7 +219,7 @@ export default function Home() {
                <button onClick={() => signOut()} className="text-xs font-bold text-gray-400 hover:text-white uppercase tracking-widest flex items-center gap-1 transition-colors"><LogOut className="w-3 h-3"/> Logout</button>
              </div>
           )}
-          {/* 🚀 LINKED CONTACT SUPPORT BUTTON */}
+          {/* 🚀 FIXED LINK TO SUPPORT SECTION */}
           <button onClick={() => router.push('/dashboard/support')} className="flex items-center gap-2 text-xs font-bold text-gray-300 hover:text-white transition-colors uppercase tracking-widest">
             <MessageSquare className="w-4 h-4"/> CONTACT SUPPORT
           </button>
@@ -297,12 +273,12 @@ export default function Home() {
               Avoid all technical complexity and one-click deploy your own 24/7 active OpenClaw instance under 30 seconds.
             </p>
 
-            {/* Model Selector */}
+            {/* 🚀 Model Selector (Requirement FIXED: Original pills, Soon in line) */}
             <h3 className="text-white text-xl md:text-2xl mb-6 font-serif tracking-tight">Choose a model to use as your default !</h3>
-            <div className="flex flex-wrap justify-center gap-4 mb-12 w-full max-w-xl">
+            <div className="flex flex-wrap justify-center gap-4 mb-12 w-full max-w-2xl px-4">
               <button 
                 onClick={() => !isTokenSaved && setActiveModel("gpt-5.2")} 
-                className={`bg-white rounded-[2rem] px-6 py-3 flex items-center gap-3 shadow-xl transition-all duration-300 ${activeModel === 'gpt-5.2' ? 'ring-4 ring-blue-500 scale-105' : 'hover:scale-105'} ${isTokenSaved && activeModel !== 'gpt-5.2' ? 'opacity-30 blur-[2px] grayscale scale-95 pointer-events-none' : ''}`}
+                className={`bg-white rounded-[2rem] px-6 py-3 flex items-center gap-3 shadow-xl transition-all duration-300 hover:scale-105 ${activeModel === 'gpt-5.2' ? 'ring-4 ring-blue-500 scale-105' : ''} ${isTokenSaved && activeModel !== 'gpt-5.2' ? 'opacity-30 blur-[2px] grayscale scale-95 pointer-events-none' : ''}`}
               >
                 <OpenAI_Icon />
                 <span className="text-[#10A37F] font-bold text-[16px]">gpt-5.2</span>
@@ -310,7 +286,7 @@ export default function Home() {
 
               <button 
                 onClick={() => !isTokenSaved && setActiveModel("claude")} 
-                className={`bg-white rounded-[2rem] px-6 py-2.5 flex items-center gap-3 shadow-xl transition-all duration-300 ${activeModel === 'claude' ? 'ring-4 ring-blue-500 scale-105' : 'hover:scale-105'} ${isTokenSaved && activeModel !== 'claude' ? 'opacity-30 blur-[2px] grayscale scale-95 pointer-events-none' : ''}`}
+                className={`bg-white rounded-[2rem] px-6 py-3 flex items-center gap-3 shadow-xl transition-all duration-300 hover:scale-105 ${activeModel === 'claude' ? 'ring-4 ring-blue-500 scale-105' : ''} ${isTokenSaved && activeModel !== 'claude' ? 'opacity-30 blur-[2px] grayscale scale-95 pointer-events-none' : ''}`}
               >
                 <Claude_Icon />
                 <div className="text-left leading-none flex flex-col justify-center">
@@ -321,41 +297,48 @@ export default function Home() {
 
               <button 
                 onClick={() => !isTokenSaved && setActiveModel("gemini")} 
-                className={`bg-white rounded-[2rem] px-6 py-3 flex items-center gap-3 shadow-xl transition-all duration-300 ${activeModel === 'gemini' ? 'ring-4 ring-blue-500 scale-105' : 'hover:scale-105'} ${isTokenSaved && activeModel !== 'gemini' ? 'opacity-30 blur-[2px] grayscale scale-95 pointer-events-none' : ''}`}
+                className={`bg-white rounded-[2rem] px-6 py-3 flex items-center gap-3 shadow-xl transition-all duration-300 hover:scale-105 ${activeModel === 'gemini' ? 'ring-4 ring-blue-500 scale-105' : ''} ${isTokenSaved && activeModel !== 'gemini' ? 'opacity-30 blur-[2px] grayscale scale-95 pointer-events-none' : ''}`}
               >
                 <Gemini_Icon />
                 <span className="text-[#4E7CFF] font-bold text-[16px]">Gemini 3 flash</span>
               </button>
 
-              <div className={`bg-white rounded-[2rem] px-8 py-3 flex items-center shadow-xl cursor-not-allowed transition-all duration-300 ${isTokenSaved ? 'opacity-20 blur-[2px] grayscale scale-95' : 'opacity-80'}`}>
+              {/* 🚀 Soon Pill ( Requirement FIXED: IN LINE) */}
+              <div className={`bg-white rounded-[2rem] px-8 py-3 flex items-center shadow-xl cursor-not-allowed opacity-80 ${isTokenSaved ? 'opacity-20 blur-[2px] grayscale scale-95' : ''}`}>
                 <span className="font-black text-[16px] text-transparent bg-clip-text bg-gradient-to-r from-blue-500 via-orange-500 to-pink-500">soon</span>
               </div>
             </div>
 
-            {/* Channel Selector */}
+            {/* 🚀 Channel Selector (Requirement FIXED: Original pills) */}
             <h3 className="text-white text-xl md:text-2xl mb-6 font-serif tracking-tight">Select a channel for sending messages !</h3>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-12 w-full max-w-2xl">
+            <div className="flex flex-wrap justify-center gap-4 mb-12 w-full max-w-2xl px-4">
               <button 
                 onClick={() => !isTokenSaved && setActiveChannel("telegram")} 
-                className={`bg-white text-black py-3 px-4 rounded-xl flex items-center justify-center gap-2 shadow-md transition-all duration-300 ${activeChannel === 'telegram' ? 'ring-4 ring-blue-500 scale-105' : 'hover:scale-105'} ${isTokenSaved && activeChannel !== 'telegram' ? 'opacity-30 blur-[2px] grayscale scale-95 pointer-events-none' : ''}`}
+                className={`bg-white rounded-[2rem] px-6 py-3 flex items-center justify-center gap-2.5 shadow-md transition-all duration-300 hover:scale-105 ${activeChannel === 'telegram' ? 'ring-4 ring-blue-500 scale-105' : ''} ${isTokenSaved && activeChannel !== 'telegram' ? 'opacity-30 blur-[2px] grayscale scale-95 pointer-events-none' : ''}`}
               >
                 <Telegram_Icon />
-                <span className="text-[14px] font-bold text-gray-800">Telegram</span>
+                <span className="text-[16px] font-bold text-gray-800">Telegram</span>
               </button>
               <button 
                 onClick={() => !isTokenSaved && setActiveChannel("whatsapp")} 
-                className={`bg-white text-black py-3 px-4 rounded-xl flex items-center justify-center gap-2 shadow-md transition-all duration-300 ${activeChannel === 'whatsapp' ? 'ring-4 ring-green-500 scale-105' : 'hover:scale-105'} ${isTokenSaved && activeChannel !== 'whatsapp' ? 'opacity-30 blur-[2px] grayscale scale-95 pointer-events-none' : ''}`}
+                className={`bg-white rounded-[2rem] px-6 py-3 flex items-center justify-center gap-2.5 shadow-md transition-all duration-300 hover:scale-105 ${activeChannel === 'whatsapp' ? 'ring-4 ring-green-500 scale-105' : ''} ${isTokenSaved && activeChannel !== 'whatsapp' ? 'opacity-30 blur-[2px] grayscale scale-95 pointer-events-none' : ''}`}
               >
                 <WhatsApp_Icon />
-                <span className="text-[14px] font-bold text-gray-800">WhatsApp</span>
+                <span className="text-[16px] font-bold text-gray-800">WhatsApp</span>
               </button>
-              <button className={`bg-white text-black py-2 px-4 rounded-xl flex flex-col items-center justify-center shadow-md cursor-not-allowed transition-all duration-300 ${isTokenSaved ? 'opacity-20 blur-[2px] grayscale scale-95' : 'opacity-70'}`}>
-                <span className="text-[14px] font-bold text-gray-800 flex items-center gap-1"><Discord_Icon/> Discord</span>
-                <span className="text-[10px] text-gray-500">coming soon</span>
+              <button className={`bg-white rounded-[2rem] px-6 py-3 flex items-center justify-center gap-2.5 shadow-md cursor-not-allowed opacity-70 ${isTokenSaved ? 'opacity-20 blur-[2px] grayscale scale-95' : ''}`}>
+                <Discord_Icon/>
+                <div className="text-left flex flex-col leading-none">
+                  <span className="text-[16px] font-bold text-gray-800">Discord</span>
+                  <span className="text-[9px] text-gray-500 font-bold">soon</span>
+                </div>
               </button>
-              <button className={`bg-white text-black py-2 px-4 rounded-xl flex flex-col items-center justify-center shadow-md cursor-not-allowed transition-all duration-300 ${isTokenSaved ? 'opacity-20 blur-[2px] grayscale scale-95' : 'opacity-70'}`}>
-                <span className="text-[14px] font-bold text-gray-800 flex items-center gap-1"><Instagram_Icon/> Instagram</span>
-                <span className="text-[10px] text-gray-500">coming soon</span>
+              <button className={`bg-white rounded-[2rem] px-6 py-3 flex items-center justify-center gap-2.5 shadow-md cursor-not-allowed opacity-70 ${isTokenSaved ? 'opacity-20 blur-[2px] grayscale scale-95' : ''}`}>
+                <Instagram_Icon/>
+                 <div className="text-left flex flex-col leading-none">
+                   <span className="text-[16px] font-bold text-gray-800">Instagram</span>
+                   <span className="text-[9px] text-gray-500 font-bold">soon</span>
+                 </div>
               </button>
             </div>
 
@@ -417,42 +400,47 @@ export default function Home() {
         </div>
       </section>
 
-      {/* 🚀 COMPARISON SECTION */}
+      {/* 🚀 COMPARISON SECTION (Requirement FIXED: LAYOUT SWAP) */}
       <section id="features" className="py-24 relative z-10 border-t border-white/5 bg-[#161618]">
-        <div className="max-w-5xl mx-auto px-6">
+        <div className="max-w-5xl mx-auto px-6 relative">
           <div className="text-center mb-16">
+            {/* Tab Label (Match Screenshot) */}
             <div className="inline-block relative">
-              <h3 className="text-white text-sm font-bold tracking-widest font-serif mb-2 uppercase">Comparison</h3>
-              <div className="h-[2px] w-full bg-gradient-to-r from-transparent via-orange-500 to-transparent"></div>
+              <h3 className="text-white text-sm font-bold tracking-widest font-serif mb-2 uppercase bg-white/5 px-3 py-1 rounded-full border border-white/10 shadow-lg">Comparison</h3>
             </div>
-            <h2 className="text-3xl md:text-5xl text-white mt-4 tracking-tight font-serif">Traditional Method vs clawlink</h2>
+            <h2 className="text-3xl md:text-5xl text-white mt-4 tracking-tight font-serif leading-tight">Traditional Method vs clawlink</h2>
           </div>
 
-          <div className="flex flex-col md:flex-row justify-between items-center gap-12 font-serif border-b border-white/20 pb-8">
-            <div className="w-full md:w-[60%]">
+          <div className="flex flex-col md:flex-row justify-between items-center gap-12 font-serif border-b border-white/20 pb-8 relative">
+            
+            {/* 🚀 Traditional Method List ( Requirement FIXED: NOW ON LEFT) */}
+            <div className="w-full md:w-[60%] order-2 md:order-1">
               <ul className="space-y-5 text-gray-300 text-base md:text-lg">
-                <li className="flex justify-between items-center"><div className="flex items-center gap-3"><div className="w-1.5 h-1.5 bg-gray-500 rounded-full"></div>Purchasing local virtual machine</div><span>15 min</span></li>
-                <li className="flex justify-between items-center"><div className="flex items-center gap-3"><div className="w-1.5 h-1.5 bg-gray-500 rounded-full"></div>Creating SSH keys and storing securely</div><span>10 min</span></li>
-                <li className="flex justify-between items-center"><div className="flex items-center gap-3"><div className="w-1.5 h-1.5 bg-gray-500 rounded-full"></div>Connecting to the server via SSH</div><span>5 min</span></li>
-                <li className="flex justify-between items-center"><div className="flex items-center gap-3"><div className="w-1.5 h-1.5 bg-gray-500 rounded-full"></div>Installing Node.js and NPM</div><span>5 min</span></li>
-                <li className="flex justify-between items-center"><div className="flex items-center gap-3"><div className="w-1.5 h-1.5 bg-gray-500 rounded-full"></div>Installing OpenClaw</div><span>7 min</span></li>
-                <li className="flex justify-between items-center"><div className="flex items-center gap-3"><div className="w-1.5 h-1.5 bg-gray-500 rounded-full"></div>Setting up OpenClaw</div><span>10 min</span></li>
-                <li className="flex justify-between items-center"><div className="flex items-center gap-3"><div className="w-1.5 h-1.5 bg-gray-500 rounded-full"></div>Connecting to AI provider</div><span>4 min</span></li>
-                <li className="flex justify-between items-center"><div className="flex items-center gap-3"><div className="w-1.5 h-1.5 bg-gray-500 rounded-full"></div>Pairing with Telegram</div><span>4 min</span></li>
+                <li className="flex justify-between items-center gap-4"><div className="flex items-center gap-3"><div className="w-1.5 h-1.5 bg-gray-500 rounded-full shrink-0"></div>Purchasing local virtual machine</div><span className="shrink-0 text-white font-mono">15 min</span></li>
+                <li className="flex justify-between items-center gap-4"><div className="flex items-center gap-3"><div className="w-1.5 h-1.5 bg-gray-500 rounded-full shrink-0"></div>Creating SSH keys and storing securely</div><span className="shrink-0 text-white font-mono">10 min</span></li>
+                <li className="flex justify-between items-center gap-4"><div className="flex items-center gap-3"><div className="w-1.5 h-1.5 bg-gray-500 rounded-full shrink-0"></div>Connecting to the server via SSH</div><span className="shrink-0 text-white font-mono">5 min</span></li>
+                <li className="flex justify-between items-center gap-4"><div className="flex items-center gap-3"><div className="w-1.5 h-1.5 bg-gray-500 rounded-full shrink-0"></div>Installing Node.js and NPM</div><span className="shrink-0 text-white font-mono">5 min</span></li>
+                <li className="flex justify-between items-center gap-4"><div className="flex items-center gap-3"><div className="w-1.5 h-1.5 bg-gray-500 rounded-full shrink-0"></div>Installing OpenClaw</div><span className="shrink-0 text-white font-mono">7 min</span></li>
+                <li className="flex justify-between items-center gap-4"><div className="flex items-center gap-3"><div className="w-1.5 h-1.5 bg-gray-500 rounded-full shrink-0"></div>Setting up OpenClaw</div><span className="shrink-0 text-white font-mono">10 min</span></li>
+                <li className="flex justify-between items-center gap-4"><div className="flex items-center gap-3"><div className="w-1.5 h-1.5 bg-gray-500 rounded-full shrink-0"></div>Connecting to AI provider</div><span className="shrink-0 text-white font-mono">4 min</span></li>
+                <li className="flex justify-between items-center gap-4"><div className="flex items-center gap-3"><div className="w-1.5 h-1.5 bg-gray-500 rounded-full shrink-0"></div>Pairing with Telegram</div><span className="shrink-0 text-white font-mono">4 min</span></li>
               </ul>
             </div>
 
-            <div className="w-full md:w-[40%] flex flex-col justify-center items-center text-center">
-              <h3 className="text-5xl md:text-6xl font-bold text-white mb-4 font-serif tracking-tight">clawlink</h3>
-              <div className="text-4xl font-bold text-white mb-6">&lt;30 sec</div>
-              <p className="text-xs text-gray-400 leading-relaxed max-w-[280px] mx-auto font-sans">
+            {/* 🚀 ClawLink Box ( Requirement FIXED: NOW ON RIGHT) */}
+            <div className="w-full md:w-[40%] flex flex-col justify-center items-center text-center order-1 md:order-2 bg-[#0A0A0B] p-8 md:p-10 rounded-[2.5rem] border border-white/5 shadow-[0_0_60px_rgba(255,168,122,0.05)]">
+              <h3 className="text-5xl md:text-6xl font-bold text-white mb-4 font-serif tracking-tight leading-none">clawlink</h3>
+              <div className="text-4xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-pink-500 mb-6 font-mono leading-none tracking-tighter">&lt;30 sec</div>
+              <p className="text-[13px] md:text-sm text-gray-400 leading-relaxed font-serif italic">
                 Pick a model, connect Telegram, deploy — done under 1 minute. Servers, SSH and OpenClaw Environment are already set up, waiting to get assigned. Simple, secure and fast connection to your bot.
               </p>
             </div>
           </div>
-          <div className="flex justify-between items-center text-xl text-white font-serif mt-6">
-            <span className="font-bold uppercase tracking-widest">total</span>
-            <span className="font-bold tracking-widest">60 MINUTES</span>
+          
+          {/* Total Time (Match Screenshot placement) */}
+          <div className="flex justify-between items-center text-xl md:text-2xl text-white font-serif mt-6 px-1.5">
+            <span className="font-bold uppercase tracking-widest text-white/50">total</span>
+            <span className="font-bold tracking-widest text-white">60 MINUTES</span>
           </div>
         </div>
       </section>
@@ -486,7 +474,7 @@ export default function Home() {
           </button>
         </div>
 
-        <div className="border-t border-white/10 px-10 pt-8 flex flex-col md:flex-row justify-between items-center text-xs text-gray-500 font-serif">
+        <div className="border-t border-white/10 px-10 pt-8 flex flex-col md:flex-row justify-between items-center text-xs text-gray-500 font-serif relative z-10">
           <p>© 2026 ClawLink Inc. All rights reserved.</p>
           <div className="hidden md:block absolute left-1/2 -translate-x-1/2 uppercase tracking-widest text-[10px] text-gray-400 font-sans">
             © 2026 CLAWLINK INC. GLOBAL AI SAAS INFRASTRUCTURE.
@@ -507,7 +495,7 @@ export default function Home() {
               <button onClick={() => setIsTelegramModalOpen(false)} className="absolute top-6 right-6 z-20 text-gray-500 hover:text-white bg-white/5 hover:bg-white/10 p-2 rounded-full transition-all">✕</button>
               
               {/* LEFT SIDE: Instructions & Token Input */}
-              <div className="w-full md:w-1/2 p-8 md:p-12 flex flex-col justify-center relative z-10 overflow-y-auto max-h-[85vh] md:max-h-none">
+              <div className="w-full md:w-1/2 p-8 md:p-12 flex flex-col justify-center relative z-10 overflow-y-auto max-h-[85vh] md:max-h-none custom-scrollbar">
                 <div className="flex items-center gap-4 mb-6">
                   <div className="w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center shadow-lg border border-white/10">
                     {activeChannel === 'telegram' ? <Telegram_Icon /> : <WhatsApp_Icon />}
@@ -556,7 +544,7 @@ export default function Home() {
                           <span className="block text-[10px] font-bold text-gray-500 uppercase tracking-widest">Webhook Callback URL</span>
                           <button onClick={() => copyToClipboard("https://clawlink-six.vercel.app/api/webhook/whatsapp")} className="text-gray-500 hover:text-white"><Copy className="w-3 h-3"/></button>
                         </div>
-                        <code className="block bg-black text-[#25D366] text-[10px] sm:text-xs p-2 rounded border border-white/5 select-all">https://clawlink-six.vercel.app/api/webhook/whatsapp</code>
+                        <code className="block bg-black text-[#25D366] text-[10px] sm:text-xs p-2 rounded border border-white/5 select-all truncate">https://clawlink-six.vercel.app/api/webhook/whatsapp</code>
                       </div>
                       <div>
                         <div className="flex justify-between items-center mb-1">
@@ -609,7 +597,7 @@ export default function Home() {
                     </div>
                     
                     {/* Animated Flow */}
-                    <div className="p-4 pt-6 flex-1 flex flex-col justify-end space-y-3 opacity-95 text-[11px] font-mono bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] overflow-y-auto">
+                    <div className="p-4 pt-6 flex-1 flex flex-col justify-end space-y-3 opacity-95 text-[11px] font-mono bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] overflow-y-auto custom-scrollbar pr-1">
                       {activeChannel === 'telegram' ? (
                         <>
                           <ChatBubble isUser text="/newbot" delay={0.5} />
@@ -631,7 +619,7 @@ export default function Home() {
                            <GuideStep delay={3.5} step="4" title="Link Webhook" desc="Paste Webhook URL & Verify Token." />
                            <GuideStep delay={4.5} step="5" title="Subscribe" desc="Subscribe to the 'messages' webhook field." />
                            
-                           <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 5.5 }} className="mt-4 bg-[#25D366]/10 border border-[#25D366]/30 p-3 rounded-xl text-center shadow-[0_0_15px_rgba(37,211,102,0.1)]">
+                           <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 5.5 }} className="mt-4 bg-[#25D366]/10 border border-[#25D366]/30 p-3 rounded-xl text-center shadow-[0_0_15px_rgba(37,211,102,0.1)] mx-auto w-[90%]">
                              <span className="text-[#25D366] font-bold text-xs flex items-center justify-center gap-2"><Zap className="w-3 h-3"/> Dashboard Connected</span>
                            </motion.div>
                         </div>
@@ -651,7 +639,7 @@ export default function Home() {
         {showPricingPopup && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 backdrop-blur-md p-4">
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 20 }} className="bg-[#111] border border-white/10 p-8 md:p-12 rounded-[2rem] w-full max-w-4xl text-center shadow-2xl relative">
-              {!isDeploying && <button onClick={() => setShowPricingPopup(false)} className="absolute top-6 right-8 text-gray-500 hover:text-white">✕</button>}
+              {!isDeploying && <button onClick={() => setShowPricingPopup(false)} className="absolute top-6 right-8 text-gray-500 hover:text-white bg-white/5 hover:bg-white/10 p-1.5 rounded-full">✕</button>}
               
               {/* 🚀 TEXT CHANGED AS ORDERED */}
               <h2 className="text-3xl font-black mb-4 text-white uppercase tracking-tight">CHOOSE PLAN AND LINK AI AGENT</h2>
@@ -680,7 +668,7 @@ export default function Home() {
               <button 
                 onClick={triggerRazorpayPayment} 
                 disabled={isDeploying || !selectedTier} 
-                className={`w-full max-w-sm mx-auto font-black py-4 rounded-xl uppercase tracking-widest flex justify-center items-center gap-2 shadow-xl transition-all ${!selectedTier ? 'bg-gray-700 text-gray-400 cursor-not-allowed' : 'bg-white text-black hover:bg-gray-200'}`}
+                className={`w-full max-w-sm mx-auto font-black py-4 rounded-xl uppercase tracking-widest flex justify-center items-center gap-2 shadow-xl transition-all ${!selectedTier ? 'bg-gray-700 text-gray-400 cursor-not-allowed' : 'bg-white text-black hover:bg-gray-200 hover:scale-[1.02]'}`}
               >
                 {isDeploying ? "Deploying Database..." : !selectedTier ? "SELECT A PLAN" : `PROCESS PAY AND DEPLOY ${currencySymbol}${getCurrentPrice()}`}
               </button>
@@ -688,79 +676,6 @@ export default function Home() {
           </div>
         )}
       </AnimatePresence>
-
-      {/* 🚀 FLOATING HELP WIDGET (Requirement 3) */}
-      <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end">
-        <AnimatePresence>
-          {isHelpOpen && (
-            <motion.div 
-              initial={{ opacity: 0, y: 20, scale: 0.9 }} 
-              animate={{ opacity: 1, y: 0, scale: 1 }} 
-              exit={{ opacity: 0, y: 20, scale: 0.9 }} 
-              className="bg-[#111] border border-white/10 shadow-2xl rounded-2xl w-80 p-5 mb-4 overflow-hidden relative"
-            >
-              <button onClick={() => setIsHelpOpen(false)} className="absolute top-4 right-4 text-gray-500 hover:text-white transition-colors">
-                <X className="w-4 h-4" />
-              </button>
-              
-              {helpStatus === "sent" ? (
-                <div className="py-8 text-center flex flex-col items-center justify-center">
-                  <div className="w-12 h-12 bg-green-500/20 text-green-500 rounded-full flex items-center justify-center mb-3">
-                    <CheckCircle2 className="w-6 h-6" />
-                  </div>
-                  <h4 className="text-white font-bold text-lg mb-1">Message Sent!</h4>
-                  <p className="text-xs text-gray-400">Our support team will get back to you shortly.</p>
-                </div>
-              ) : (
-                <>
-                  <div className="flex items-center gap-3 mb-4 pb-4 border-b border-white/5">
-                    <div className="w-10 h-10 bg-blue-500/20 text-blue-400 rounded-full flex items-center justify-center">
-                      <MessageSquare className="w-5 h-5" />
-                    </div>
-                    <div>
-                      <h4 className="text-white font-bold text-sm">ClawLink Support</h4>
-                      <p className="text-[10px] text-gray-400">We typically reply in minutes.</p>
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-3">
-                    <input 
-                      type="email" 
-                      placeholder="Your Email Address" 
-                      value={helpEmail}
-                      onChange={(e) => setHelpEmail(e.target.value)}
-                      className="w-full bg-[#1A1A1A] border border-white/5 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-blue-500/50 transition-colors"
-                    />
-                    <textarea 
-                      placeholder="How can we help you?" 
-                      rows={3}
-                      value={helpMessage}
-                      onChange={(e) => setHelpMessage(e.target.value)}
-                      className="w-full bg-[#1A1A1A] border border-white/5 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-blue-500/50 transition-colors resize-none"
-                    ></textarea>
-                    <button 
-                      onClick={handleSendHelpRequest}
-                      disabled={helpStatus === "sending"}
-                      className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs py-2.5 rounded-lg flex items-center justify-center gap-2 transition-colors"
-                    >
-                      {helpStatus === "sending" ? "Sending..." : <><Send className="w-3 h-3" /> Send Message</>}
-                    </button>
-                  </div>
-                </>
-              )}
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        <motion.button 
-          whileHover={{ scale: 1.05 }} 
-          whileTap={{ scale: 0.95 }}
-          onClick={() => setIsHelpOpen(!isHelpOpen)}
-          className="w-14 h-14 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-full shadow-[0_0_20px_rgba(59,130,246,0.4)] flex items-center justify-center hover:shadow-[0_0_30px_rgba(59,130,246,0.6)] transition-shadow"
-        >
-          {isHelpOpen ? <X className="w-6 h-6" /> : <MessageCircle className="w-6 h-6" />}
-        </motion.button>
-      </div>
 
     </div>
   );
