@@ -10,6 +10,27 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 
+// 🚀 HELPER FUNCTION: AI Provider ka naam aur badge dynamically set karne ke liye
+const formatAIProvider = (provider: string, model: string) => {
+  if (!provider || !model) return { name: "Google", badge: "Gemini Flash" };
+  const p = provider.toLowerCase();
+  const m = model.toLowerCase();
+  
+  let pName = "Google";
+  if (p === "openai") pName = "OpenAI";
+  if (p === "anthropic") pName = "Anthropic";
+
+  let mName = model;
+  if (m.includes("gpt-4")) mName = "GPT-4 Turbo";
+  if (m.includes("gpt-3.5")) mName = "GPT-3.5";
+  if (m.includes("claude-3-opus")) mName = "Claude 3 Opus";
+  if (m.includes("claude-3-sonnet")) mName = "Claude 3 Sonnet";
+  if (m.includes("gemini-1.5-pro") || m.includes("gemini-pro")) mName = "Gemini Pro";
+  if (m.includes("gemini-1.5-flash") || m.includes("gemini-3-flash") || m.includes("flash")) mName = "Gemini Flash";
+
+  return { name: pName, badge: mName };
+};
+
 export default function Dashboard() {
   const { data: session, status } = useSession();
   const router = useRouter();
@@ -125,7 +146,7 @@ export default function Dashboard() {
   const handleDownloadInvoice = (invoice: any) => {
     const receiptContent = `
 =========================================
-      CLAWLINK INC. - OFFICIAL RECEIPT
+    CLAWLINK INC. - OFFICIAL RECEIPT
 =========================================
 Invoice ID    : ${invoice.razorpay_order_id || invoice.id}
 Date          : ${new Date(invoice.created_at).toLocaleString()}
@@ -160,8 +181,8 @@ Thank you for choosing ClawLink Enterprise AI.
     );
   }
 
-  // 🚀 SMART UI LOGIC FOR TOKENS
-  const isStarterPlan = userData?.plan?.toLowerCase() === "starter";
+  // 🚀 SMART UI LOGIC FOR TOKENS (DYNAMIC CHECK)
+  const isUnlimitedPlan = userData?.is_unlimited || userData?.plan?.toLowerCase() === "max";
   const usagePercentage = Math.min(((userData?.tokensUsed || 0) / (userData?.tokensAllocated || 1)) * 100, 100);
 
   return (
@@ -207,7 +228,7 @@ Thank you for choosing ClawLink Enterprise AI.
           )}
         </AnimatePresence>
 
-        {/* 🚀 STATS GRID */}
+        {/* 🚀 STATS GRID (DYNAMIC LOGIC ADDED HERE) */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           
           {/* CARD 1: PLAN */}
@@ -227,12 +248,12 @@ Thank you for choosing ClawLink Enterprise AI.
             <div className="flex justify-between items-start mb-4 relative z-10">
               <div className="w-10 h-10 rounded-xl bg-orange-500/10 flex items-center justify-center text-orange-500 border border-orange-500/20"><Zap className="w-5 h-5"/></div>
               <span className="text-xs font-bold text-orange-400 bg-orange-400/10 px-2 py-1 rounded border border-orange-400/20 font-mono">
-                {isStarterPlan ? `${usagePercentage.toFixed(1)}% Used` : "Premium"}
+                {!isUnlimitedPlan ? `${usagePercentage.toFixed(1)}% Used` : "Premium"}
               </span>
             </div>
             <h3 className="text-gray-400 text-xs font-bold uppercase tracking-widest mb-1 relative z-10">API Usage</h3>
             <p className="text-3xl font-black text-white font-serif relative z-10">
-              {isStarterPlan ? (
+              {!isUnlimitedPlan ? (
                 <>
                   {userData?.tokensUsed?.toLocaleString() || 0}
                   <span className="text-sm text-gray-500 font-sans font-medium"> / {userData?.tokensAllocated?.toLocaleString()} msg</span>
@@ -241,14 +262,14 @@ Thank you for choosing ClawLink Enterprise AI.
                 <span className="bg-clip-text text-transparent bg-gradient-to-r from-orange-400 to-pink-500">Unlimited</span>
               )}
             </p>
-            {isStarterPlan && (
+            {!isUnlimitedPlan && (
               <div className="w-full h-1.5 bg-gray-800 rounded-full overflow-hidden mt-4 relative z-10">
                 <motion.div initial={{ width: 0 }} animate={{ width: `${usagePercentage}%` }} transition={{ duration: 1, ease: "easeOut" }} className={`h-full ${usagePercentage > 90 ? 'bg-red-500' : 'bg-orange-500'}`}/>
               </div>
             )}
           </motion.div>
 
-          {/* CARD 3: PROVIDER */}
+          {/* CARD 3: AI PROVIDER */}
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="bg-[#1C1C1E] border border-white/5 p-6 rounded-[1.5rem] shadow-xl relative overflow-hidden group hover:border-white/10 transition-colors">
             <div className="absolute top-0 right-0 w-32 h-32 bg-green-500/5 rounded-full blur-3xl group-hover:bg-green-500/10 transition-colors"></div>
             <div className="flex justify-between items-start mb-4 relative z-10">
@@ -257,7 +278,10 @@ Thank you for choosing ClawLink Enterprise AI.
             </div>
             <h3 className="text-gray-400 text-xs font-bold uppercase tracking-widest mb-1 relative z-10">AI Provider</h3>
             <p className="text-2xl font-bold text-white capitalize flex items-center gap-2 mt-1 relative z-10">
-              {userData?.ai_provider || "Google"} <span className="text-sm text-gray-500 font-medium font-sans truncate">({userData?.ai_model || "gemini-flash"})</span>
+              {formatAIProvider(userData?.ai_provider || "", userData?.ai_model || "").name} 
+              <span className="text-sm text-gray-500 font-medium font-sans truncate">
+                ({formatAIProvider(userData?.ai_provider || "", userData?.ai_model || "").badge})
+              </span>
             </p>
           </motion.div>
         </div>
