@@ -11,27 +11,32 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 
-// 🚀 FIXED: Just display exactly what the user selected in the database!
-const formatAIProvider = (provider: string, model: string) => {
-  // Agar user ne abhi tak koi configuration save hi nahi ki hai
-  if (!provider || !model) {
+// 🚀 FIXED: Accurately parse the database fields WITHOUT forcing plans.
+const formatAIProvider = (model: string) => {
+  // Check if model exists, if not provide a clean default
+  if (!model) {
     return { name: "Google", badge: "Gemini Flash" };
   }
 
-  const p = provider.toLowerCase();
   const m = model.toLowerCase();
-
   let pName = "Google";
-  if (p.includes("openai")) pName = "OpenAI";
-  if (p.includes("anthropic")) pName = "Anthropic";
+  let mName = model; // Use raw string as fallback
 
-  let mName = m;
-  if (m.includes("gpt-4")) mName = "GPT-4 Turbo";
-  if (m.includes("gpt-3.5")) mName = "GPT-3.5";
-  if (m.includes("claude-3-opus")) mName = "Claude 3 Opus";
-  if (m.includes("claude-3-sonnet")) mName = "Claude 3 Sonnet";
-  if (m.includes("gemini-1.5-pro") || m.includes("gemini-pro")) mName = "Gemini Pro";
-  if (m.includes("gemini-1.5-flash") || m.includes("gemini-3-flash") || m.includes("flash")) mName = "Gemini Flash";
+  // Dynamically assign Provider Name based on the Model string from DB
+  if (m.includes("gpt")) {
+    pName = "OpenAI";
+    // Beautify specific models if needed, else show raw string
+    if(m.includes("gpt-4")) mName = "GPT-4 Turbo";
+    if(m.includes("gpt-5")) mName = "GPT-5.2";
+  } else if (m.includes("claude") || m.includes("anthropic")) {
+    pName = "Anthropic";
+    if(m.includes("opus")) mName = "Claude 3 Opus";
+    if(m.includes("sonnet")) mName = "Claude 3 Sonnet";
+  } else if (m.includes("gemini")) {
+    pName = "Google";
+    if(m.includes("pro")) mName = "Gemini Pro";
+    if(m.includes("flash")) mName = "Gemini Flash";
+  }
 
   return { name: pName, badge: mName };
 };
@@ -188,12 +193,12 @@ Thank you for choosing ClawLink Enterprise AI.
 
   // 🚀 SMART UI LOGIC FOR TOKENS 
   const currentPlan = userData?.plan?.toLowerCase() || "starter";
-  // Tokens UI only for starter
   const showTokens = currentPlan === "starter"; 
   const usagePercentage = Math.min(((userData?.tokensUsed || 0) / (userData?.tokensAllocated || 1)) * 100, 100);
 
-  // Directly pass the exact provider and model from the database to format it nicely
-  const aiInfo = formatAIProvider(userData?.ai_provider, userData?.ai_model);
+  // 🚀 DYNAMIC AI PROVIDER FIX: Map exactly to what is in the DB
+  // According to your screenshot, the DB field is 'selected_model'
+  const aiInfo = formatAIProvider(userData?.selected_model);
 
   return (
     <div className="w-full min-h-screen bg-[#111111] text-[#EDEDED] font-sans relative selection:bg-orange-500/30 overflow-y-auto custom-scrollbar flex flex-col">
