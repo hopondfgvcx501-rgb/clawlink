@@ -1,70 +1,40 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { sendEmail } from "../../../lib/email";
-
-export const dynamic = "force-dynamic";
-
-const rateLimitMap = new Map<string, number>();
-const COOLDOWN_MS = 2000; 
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 const AI_CHAINS: Record<string, string[]> = {
-    "openai": ["gpt-5.4-turbo", "gpt-4-turbo", "gpt-3.5-turbo"],
-    "anthropic": ["claude-3-opus-20240229", "claude-3-sonnet-20240229", "claude-3-haiku-20240307"],
-    "google": ["gemini-1.5-pro-latest", "gemini-1.5-flash-latest", "gemini-pro"]
+    "openai": ["gpt-4-turbo", "gpt-3.5-turbo"],
+    "anthropic": ["claude-3-opus-20240229", "claude-3-sonnet-20240229"],
+    "google": ["gemini-1.5-pro-latest", "gemini-1.5-flash-latest"]
 };
 
-// 🚀 VOICE NOTE ENGINE (OpenAI Whisper)
-async function transcribeTelegramVoice(fileId: string, botToken: string, openaiKey: string) {
+// =========================================================================
+// 🚀 AI & RAG HELPER FUNCTIONS
+// =========================================================================
+async function generateEmbedding(text: string) {
     try {
-        const fileRes = await fetch(`https://api.telegram.org/bot${botToken}/getFile?file_id=${fileId}`);
-        const fileData = await fileRes.json();
-        if (!fileData.ok) return null;
-        const filePath = fileData.result.file_path;
-
-        const audioRes = await fetch(`https://api.telegram.org/file/bot${botToken}/${filePath}`);
-        const audioBlob = await audioRes.blob();
-
-        const formData = new FormData();
-        formData.append("file", audioBlob, "voice.oga");
-        formData.append("model", "whisper-1");
-
-        const whisperRes = await fetch("https://api.openai.com/v1/audio/transcriptions", {
-            method: "POST", headers: { "Authorization": `Bearer ${openaiKey}` },
-            body: formData as any
+        const embedUrl = `https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent?key=${process.env.GEMINI_API_KEY}`;
+        const res = await fetch(embedUrl, {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ model: "models/text-embedding-004", content: { parts: [{ text: text }] } })
         });
-
-        const whisperData = await whisperRes.json();
-        return whisperData.text || null;
+        const data = await res.json();
+        return res.ok ? data.embedding.values : null;
     } catch (e) {
-        console.error("Whisper Error:", e);
         return null;
     }
 }
 
-// 🚀 RAG EMBEDDING
-async function generateEmbedding(text: string) {
-    const embedUrl = `https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent?key=${process.env.GEMINI_API_KEY}`;
-    const res = await fetch(embedUrl, {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ model: "models/text-embedding-004", content: { parts: [{ text: text }] } })
-    });
-    const data = await res.json();
-    if (!res.ok) return null;
-    return data.embedding.values;
-}
-
-// 🚀 API CALL WRAPPERS
 async function callGemini(model: string, prompt: string) {
     const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${process.env.GEMINI_API_KEY}`, {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: prompt }] }] })
     });
     const data = await res.json();
-    if (!res.ok) throw new Error(data.error?.message || "Gemini API Error");
+    if (!res.ok) throw new Error("Gemini Error");
     return data.candidates[0].content.parts[0].text;
 }
 
@@ -74,7 +44,7 @@ async function callOpenAI(model: string, prompt: string) {
         body: JSON.stringify({ model: model, messages: [{ role: "user", content: prompt }] })
     });
     const data = await res.json();
-    if (!res.ok) throw new Error(data.error?.message || "OpenAI API Error");
+    if (!res.ok) throw new Error("OpenAI Error");
     return data.choices[0].message.content;
 }
 
@@ -84,29 +54,27 @@ async function callClaude(model: string, prompt: string) {
         body: JSON.stringify({ model: model, max_tokens: 1024, messages: [{ role: "user", content: prompt }] })
     });
     const data = await res.json();
-    if (!res.ok) throw new Error(data.error?.message || "Claude API Error");
+    if (!res.ok) throw new Error("Claude Error");
     return data.content[0].text;
 }
 
-// 🚀 CORE WEBHOOK HANDLER
+// =========================================================================
+// 🚀 MAIN TELEGRAM WEBHOOK PROCESSOR
+// =========================================================================
 export async function POST(req: Request) {
-    let telegramToken = "";
-    let chatId = "";
-
     try {
         const body = await req.json();
 
-        if (!body.message) return NextResponse.json({ success: true });
+        // 1. Verify Telegram Payload
+        if (!body.message || !body.message.text) {
+            return NextResponse.json({ success: true }); // Ignore non-text messages safely
+        }
 
-        chatId = body.message.chat.id.toString();
+        const chatId = body.message.chat.id.toString();
+        const userText = body.message.text;
 
-        // DDoS Shield
-        const now = Date.now();
-        const lastMessageTime = rateLimitMap.get(chatId) || 0;
-        if (now - lastMessageTime < COOLDOWN_MS) return NextResponse.json({ success: true });
-        rateLimitMap.set(chatId, now);
-
-        // Fetch User Config
+        // 2. Fetch Active Bot Config (For multi-tenant SaaS)
+        // Note: For advanced multi-tenant, we assume the active config is the one with telegram enabled.
         const { data: config, error: configErr } = await supabase
             .from("user_configs")
             .select("*")
@@ -114,63 +82,45 @@ export async function POST(req: Request) {
             .limit(1)
             .single();
 
-        if (configErr || !config || !config.telegram_token) return NextResponse.json({ success: true });
+        if (configErr || !config || !config.telegram_token) {
+            return NextResponse.json({ success: true });
+        }
 
-        telegramToken = config.telegram_token;
-        const systemPrompt = config.systemPrompt || "You are a helpful AI assistant.";
+        const telegramToken = config.telegram_token;
+        const systemPrompt = config.system_prompt || "You are a helpful AI assistant.";
         const userEmail = config.email;
         const provider = config.ai_provider || "google";
 
-        // VOICE OR TEXT
-        let userText = "";
-        if (body.message.text) {
-            userText = body.message.text;
-        } else if (body.message.voice) {
-            await fetch(`https://api.telegram.org/bot${telegramToken}/sendChatAction`, {
-                method: "POST", headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ chat_id: chatId, action: "record_voice" })
-            });
-
-            const transcribedText = await transcribeTelegramVoice(body.message.voice.file_id, telegramToken, process.env.OPENAI_API_KEY || "");
-            if (!transcribedText) {
-                await fetch(`https://api.telegram.org/bot${telegramToken}/sendMessage`, {
-                    method: "POST", headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ chat_id: chatId, text: "Sorry, I couldn't clearly hear that. Could you please type it out?" })
-                });
-                return NextResponse.json({ success: true });
-            }
-            userText = transcribedText;
-        } else {
-            return NextResponse.json({ success: true });
-        }
-
-        // STEALTH SHIELD
+        // 3. Token & Plan Verification
         if (config.plan_status === "Expired" || (!config.is_unlimited && config.available_tokens <= 0)) {
             await fetch(`https://api.telegram.org/bot${telegramToken}/sendMessage`, {
                 method: "POST", headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ chat_id: chatId, text: "I am currently undergoing routine maintenance and upgrades. Please leave your message and we will respond shortly." })
+                body: JSON.stringify({ chat_id: chatId, text: "This AI Agent is currently undergoing routine maintenance. We will be back online shortly." })
             });
-
-            const alertHtml = `<div style="font-family: monospace; background: #0A0A0B; color: #fff; padding: 30px; border-radius: 10px; border: 1px solid #ef4444;"><h2 style="color: #ef4444;">⚠️ ACTION REQUIRED: BOT PAUSED</h2><p>Your ClawLink AI Agent on Telegram has reached its resource limit.</p><a href="https://clawlink.com/dashboard" style="background: #ef4444; color: #fff; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Recharge & Resume Bot</a></div>`;
-            await sendEmail(userEmail, "URGENT: Your ClawLink Bot is Paused", alertHtml);
             return NextResponse.json({ success: true });
         }
 
-        // RAG KNOWLEDGE FETCH
+        // 4. RAG KNOWLEDGE FETCH (Vector DB)
         let customKnowledge = "";
         try {
             const queryVector = await generateEmbedding(userText);
             if (queryVector) {
                 const { data: matchedDocs } = await supabase.rpc("match_knowledge", {
-                    query_embedding: queryVector, match_threshold: 0.65, match_count: 3, p_user_email: userEmail
+                    query_embedding: queryVector,
+                    match_threshold: 0.65,
+                    match_count: 3,
+                    p_user_email: userEmail
                 });
+                
                 if (matchedDocs && matchedDocs.length > 0) {
                     customKnowledge = matchedDocs.map((doc: any) => doc.content).join("\n\n");
                 }
             }
-        } catch (e) { console.error("RAG Error:", e); }
+        } catch (e) {
+            console.error("RAG Fetch Error:", e);
+        }
 
-        // MEMORY FETCH
+        // 5. FETCH CONVERSATION HISTORY (Memory)
         const { data: pastChats } = await supabase
             .from("bot_conversations")
             .select("role, content")
@@ -184,79 +134,47 @@ export async function POST(req: Request) {
             memoryHistory = pastChats.reverse().map(chat => `${chat.role.toUpperCase()}: ${chat.content}`).join("\n");
         }
 
-        // 🚀 THE MAGIC ACTION PROMPT
-        const actionPrompt = `\n\n[CRITICAL TOOL INSTRUCTION]: 
-If the user asks to check an order status, YOU MUST NOT REPLY WITH TEXT. Instead, you MUST reply with EXACTLY this JSON format and nothing else:
-{"action": "check_order", "order_id": "<order_number_extracted_from_text>"}
-If the user is NOT asking about an order, ignore this instruction and reply normally.`;
+        // 6. ASSEMBLE FULL AI PROMPT
+        const fullContext = `System Instructions: ${systemPrompt}
 
-        let fullContext = `System Instructions: ${systemPrompt}\n\nCompany Knowledge Base:\n${customKnowledge ? customKnowledge : "None."}\n\nRecent Conversation:\n${memoryHistory}\n\nUser's Message: ${userText}` + actionPrompt;
+Company Knowledge Base:
+${customKnowledge ? customKnowledge : "No specific company data found for this query."}
 
-        fetch(`https://api.telegram.org/bot${telegramToken}/sendChatAction`, {
-            method: "POST", headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ chat_id: chatId, action: "typing" })
-        }).catch(()=>{});
+Recent Conversation History:
+${memoryHistory}
 
-        // 🚀 THE RUNNER FUNCTION FOR FALLBACK
-        const runAI = async (context: string) => {
-            const chain = AI_CHAINS[provider] || AI_CHAINS["google"];
-            for (const modelName of chain) {
-                try {
-                    if (provider === "openai") return await callOpenAI(modelName, context);
-                    if (provider === "anthropic") return await callClaude(modelName, context);
-                    return await callGemini(modelName, context);
-                } catch (err: any) { console.log(`[AI Error] ${modelName} failed.`); }
-            }
-            throw new Error("All models failed");
-        };
+User's New Message: ${userText}`;
+        
+        // Save User Message to Live CRM Database
+        await supabase.from("bot_conversations").insert({ bot_email: userEmail, chat_id: chatId, role: "user", content: userText });
 
-        // 1st Pass: Get Initial AI Response
-        let aiResponse = "";
+        // 7. THE AI WATERFALL SYSTEM
+        let aiResponse = "Processing... Please wait.";
         let wasSuccessful = false;
+        const chain = AI_CHAINS[provider] || AI_CHAINS["google"];
 
-        try {
-            aiResponse = await runAI(fullContext);
-            wasSuccessful = true;
-        } catch(e) {
-            aiResponse = "I am currently processing high volumes of data. Please try again.";
-        }
-
-        // 🚀 THE UNIVERSAL TOOL INTERCEPTOR (Action Execution)
-        if (aiResponse.includes('"action":') && aiResponse.includes('check_order')) {
+        for (const modelName of chain) {
             try {
-                // Find and parse the JSON block the AI created
-                const jsonMatch = aiResponse.match(/\{[\s\S]*?\}/);
-                if (jsonMatch) {
-                    const actionData = JSON.parse(jsonMatch[0]);
-                    
-                    if (actionData.action === "check_order" && actionData.order_id) {
-                        console.log(`[ACTION INTERCEPTED] Fetching status for order: ${actionData.order_id}`);
-                        
-                        // 🔥 DUMMY DATABASE LOOKUP (In future, connect to Shopify/WooCommerce API here)
-                        const toolResult = `SYSTEM RESULT: Order ${actionData.order_id} is currently 'OUT FOR DELIVERY' and will reach the customer by 5 PM today.`;
-                        
-                        // Send the result back to the AI for a final, friendly answer
-                        const followupContext = fullContext + `\n\nAI emitted: ${jsonMatch[0]}\n\n${toolResult}\nNow, write a friendly response to the user giving them this update.`;
-                        
-                        aiResponse = await runAI(followupContext);
-                    }
-                }
-            } catch (e) {
-                console.error("Action Parsing Error:", e);
-                aiResponse = "I tried to check your order, but my system encountered a temporary glitch. Please hold on.";
+                if (provider === "openai") aiResponse = await callOpenAI(modelName, fullContext);
+                else if (provider === "anthropic") aiResponse = await callClaude(modelName, fullContext);
+                else aiResponse = await callGemini(modelName, fullContext);
+                
+                wasSuccessful = true;
+                break; // Model success!
+            } catch (err: any) {
+                console.log(`[Telegram AI Error] ${modelName} failed. Trying next...`);
             }
         }
 
-        // SAVE AND SEND
+        // 8. CHARGE TOKENS & SAVE AI RESPONSE
         if (wasSuccessful) {
-            await supabase.from("bot_conversations").insert({ bot_email: userEmail, chat_id: chatId, role: "user", content: body.message.voice ? `🎤 Voice Note: "${userText}"` : userText });
-            await supabase.from("bot_conversations").insert({ bot_email: userEmail, chat_id: chatId, role: "ai", content: aiResponse });
-            
             if (!config.is_unlimited) {
                 await supabase.from("user_configs").update({ available_tokens: config.available_tokens - 1 }).eq("email", userEmail);
             }
+            await supabase.from("bot_conversations").insert({ bot_email: userEmail, chat_id: chatId, role: "ai", content: aiResponse });
         }
 
+        // 9. DISPATCH FINAL MESSAGE TO TELEGRAM
         await fetch(`https://api.telegram.org/bot${telegramToken}/sendMessage`, {
             method: "POST", headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ chat_id: chatId, text: aiResponse })
@@ -265,15 +183,8 @@ If the user is NOT asking about an order, ignore this instruction and reply norm
         return NextResponse.json({ success: true });
 
     } catch (error: any) {
-        console.error("Critical Webhook Error:", error.message);
-        
-        // Exact Error Reporting as requested by user originally
-        if (telegramToken && chatId) {
-            await fetch(`https://api.telegram.org/bot${telegramToken}/sendMessage`, {
-                method: "POST", headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ chat_id: chatId, text: `🚨 *SYSTEM ERROR:*\n\`${error.message}\``, parse_mode: "Markdown" })
-            });
-        }
-        return NextResponse.json({ success: true });
+        console.error("Telegram Webhook Error:", error.message);
+        // Always return 200 so Telegram doesn't retry infinitely
+        return NextResponse.json({ success: true }); 
     }
 }
