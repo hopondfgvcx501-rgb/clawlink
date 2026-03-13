@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { Globe, Database, Mic, Shield, MessageSquare, Zap, Activity } from "lucide-react";
 
+// ... (MODEL_DETAILS, constants same as before)
 const MODEL_DETAILS: Record<string, { name: string; starter: number; pro: number }> = {
   gemini: { name: "Gemini 3 Flash", starter: 9, pro: 19 },
   "gpt-5.2": { name: "GPT-5.2", starter: 19, pro: 39 }, 
@@ -15,6 +16,7 @@ const MODEL_DETAILS: Record<string, { name: string; starter: number; pro: number
 const MAX_PLAN_PRICE = 89; 
 
 export default function Home() {
+  // ... (All hooks and state same as before)
   const { data: session, status } = useSession();
   const router = useRouter(); 
   
@@ -70,6 +72,7 @@ export default function Home() {
   };
 
   const triggerRazorpayPayment = async () => {
+    // ... (Razorpay logic same as before)
     if (typeof window === "undefined" || !(window as any).Razorpay) {
       alert("Payment gateway is loading. Please disable Adblocker if it doesn't open.");
       return;
@@ -130,7 +133,7 @@ export default function Home() {
     }
   };
 
-  // Array for floating use cases
+  // ... (Use Cases array same as before)
   const useCases = [
     { text: "Productivity & Meetings", icon: "📅", top: "10%" },
     { text: "Write contracts & NDAs", icon: "📄", top: "20%" },
@@ -183,6 +186,7 @@ export default function Home() {
           
           {/* LEFT: The 6 Feature Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {/* ... (Features same as before) */}
             <div className="bg-[#111111]/80 backdrop-blur-sm border border-white/5 p-6 rounded-2xl hover:border-white/10 transition-colors">
               <Globe className="w-5 h-5 text-blue-500 mb-4" />
               <h3 className="text-white font-bold mb-2 text-sm">Omnichannel Deployment</h3>
@@ -224,38 +228,48 @@ export default function Home() {
               Avoid all technical complexity and one-click<br/>deploy your own 24/7 active OpenClaw instance under 30 second.
             </p>
 
-            {/* Model Selector */}
+            {/* 🛠️ FIXED MODEL SELECTOR (White Buttons, Original Colors) */}
             <h3 className="text-white text-xl md:text-2xl tracking-tight mb-6" style={{ fontFamily: "Georgia, serif" }}>
               Choose a model to use as your default !
             </h3>
             <div className="flex flex-wrap justify-center gap-3 items-center mb-12">
+              
+              {/* GPT: White button, Green text, Original logo */}
               <button onClick={() => setActiveModel("gpt-5.2")} className={`bg-white rounded-full px-5 py-2.5 flex items-center gap-2 shadow-lg transition-all duration-200 ${activeModel === 'gpt-5.2' ? 'ring-4 ring-blue-500 scale-105' : 'hover:scale-105'}`}>
-                <Image src="/gpt-logo.png" alt="GPT" width={20} height={20} className="w-5 h-5 rounded-full" />
+                {/* Ensure /gpt-logo.png is the GREEN version in /public */}
+                <Image src="/gpt-logo.png" alt="GPT" width={20} height={20} className="w-5 h-5 rounded-full" style={{ objectFit: 'contain' }} />
                 <span className="text-[#10A37F] font-bold text-sm">gpt-5.2</span>
               </button>
+
+              {/* Claude: White button, Orange text, Original logo */}
               <button onClick={() => setActiveModel("claude")} className={`bg-white rounded-full px-5 py-2 flex items-center gap-2 shadow-lg transition-all duration-200 ${activeModel === 'claude' ? 'ring-4 ring-blue-500 scale-105' : 'hover:scale-105'}`}>
-                <Image src="/claude-logo.png" alt="Claude" width={20} height={20} className="w-5 h-5 rounded-full" />
+                {/* Ensure /claude-logo.png is the ORANGE version in /public */}
+                <Image src="/claude-logo.png" alt="Claude" width={20} height={20} className="w-5 h-5 rounded-full" style={{ objectFit: 'contain' }}/>
                 <div className="text-left leading-none flex items-center gap-1">
                   <span className="text-[#D97757] font-bold text-sm">Claude</span>
                   <span className="text-[#D97757] text-[8px] font-bold leading-tight pt-1">Opus<br/>4.6</span>
                 </div>
               </button>
+
+              {/* Gemini: White button, Blue text, Original logo */}
               <button onClick={() => setActiveModel("gemini")} className={`bg-white rounded-full px-5 py-2.5 flex items-center gap-2 shadow-lg transition-all duration-200 ${activeModel === 'gemini' ? 'ring-4 ring-blue-500 scale-105' : 'hover:scale-105'}`}>
-                <Image src="/gemini-logo.png" alt="Gemini" width={20} height={20} className="w-5 h-5 rounded-full" />
+                 {/* Ensure /gemini-logo.png is the BLUE version in /public */}
+                <Image src="/gemini-logo.png" alt="Gemini" width={20} height={20} className="w-5 h-5 rounded-full" style={{ objectFit: 'contain' }}/>
                 <span className="text-[#4E7CFF] font-bold text-sm">Gemini 3 flash</span>
               </button>
+
               <div className="bg-white rounded-full px-6 py-2.5 flex items-center shadow-lg opacity-80 cursor-not-allowed">
                 <span className="font-black text-sm text-transparent bg-clip-text bg-gradient-to-r from-blue-500 via-yellow-500 to-pink-500">soon</span>
               </div>
             </div>
 
-            {/* Channel Selector */}
+            {/* Channel Selector (White Buttons, Colored Icons) */}
             <h3 className="text-white text-xl md:text-2xl tracking-tight mb-6" style={{ fontFamily: "Georgia, serif" }}>
               Select a channel for sending messages !
             </h3>
             <div className="flex flex-wrap justify-center gap-3 mb-10 w-full max-w-xl">
               <button onClick={() => setActiveChannel("telegram")} className={`flex-1 min-w-[120px] bg-white text-black py-3 px-4 flex items-center justify-center gap-2 transition-all ${activeChannel === 'telegram' ? 'ring-4 ring-blue-500 scale-105' : 'hover:scale-105'}`}>
-                <div className="w-6 h-6 rounded-full bg-blue-500 flex items-center justify-center"><svg className="w-3 h-3 text-white" viewBox="0 0 24 24" fill="currentColor"><path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.892-.661 3.495-1.524 5.83-2.529 7.005-3.02 3.333-1.392 4.025-1.636 4.476-1.636z"/></svg></div>
+                <div className="w-6 h-6 rounded-full bg-[#2AABEE] flex items-center justify-center"><svg className="w-3 h-3 text-white" viewBox="0 0 24 24" fill="currentColor"><path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.892-.661 3.495-1.524 5.83-2.529 7.005-3.02 3.333-1.392 4.025-1.636 4.476-1.636z"/></svg></div>
                 <span className="text-sm font-medium">Telegram</span>
               </button>
               <button onClick={() => setActiveChannel("whatsapp")} className={`flex-1 min-w-[120px] bg-white text-black py-3 px-4 flex items-center justify-center gap-2 transition-all ${activeChannel === 'whatsapp' ? 'ring-4 ring-green-500 scale-105' : 'hover:scale-105'}`}>
@@ -272,7 +286,7 @@ export default function Home() {
               </button>
             </div>
 
-            {/* Auth / Deploy Action */}
+            {/* Auth / Deploy Action (White Buttons) */}
             <div className="w-full max-w-xl">
               {botLink ? (
                 <div className="bg-green-500/10 border border-green-500/30 p-6 rounded-2xl text-center backdrop-blur-md">
@@ -295,7 +309,7 @@ export default function Home() {
                   <p className="mt-4 text-sm font-serif">connect {activeChannel} to continue . <span className="text-green-500">limited cloud servers--only 7left</span></p>
                 </>
               ) : !isTokenSaved ? (
-                <button onClick={() => handleOpenIntegration(activeChannel)} className="w-full bg-[#1A1A1A] border border-white/20 text-white py-4 rounded-2xl font-bold tracking-widest hover:bg-white hover:text-black transition-all uppercase shadow-lg">
+                <button onClick={() => handleOpenIntegration(activeChannel)} className="w-full bg-white text-black py-4 rounded-2xl font-bold tracking-widest hover:bg-gray-200 transition-all uppercase shadow-lg">
                   CONNECT {activeChannel} TO CONTINUE
                 </button>
               ) : (
@@ -305,46 +319,6 @@ export default function Home() {
               )}
             </div>
 
-          </div>
-        </div>
-      </section>
-
-      {/* 🚀 COMPARISON SECTION */}
-      <section className="py-20 relative z-10">
-        <div className="max-w-4xl mx-auto px-6">
-          <div className="text-center mb-12">
-            <h3 className="text-gray-400 text-sm font-bold tracking-widest uppercase relative inline-block">
-              Comparison
-              <div className="absolute -bottom-2 left-0 right-0 h-[2px] bg-orange-500/50"></div>
-            </h3>
-            <h2 className="text-3xl md:text-5xl text-white mt-6 tracking-tight" style={{ fontFamily: "Georgia, serif" }}>Traditional Method vs clawlink</h2>
-          </div>
-
-          <div className="flex flex-col md:flex-row justify-between items-center gap-12" style={{ fontFamily: "Georgia, serif" }}>
-            <div className="w-full md:w-[60%]">
-              <ul className="space-y-4 text-gray-300 text-base">
-                <li className="flex justify-between items-center"><div className="flex items-center gap-3"><div className="w-1 h-1 bg-white rounded-full"></div>Purchasing local virtual machine</div><span>15 min</span></li>
-                <li className="flex justify-between items-center"><div className="flex items-center gap-3"><div className="w-1 h-1 bg-white rounded-full"></div>Creating SSH keys and storing securely</div><span>10 min</span></li>
-                <li className="flex justify-between items-center"><div className="flex items-center gap-3"><div className="w-1 h-1 bg-white rounded-full"></div>Connecting to the server via SSH</div><span>5 min</span></li>
-                <li className="flex justify-between items-center"><div className="flex items-center gap-3"><div className="w-1 h-1 bg-white rounded-full"></div>Installing Node.js and NPM</div><span>5 min</span></li>
-                <li className="flex justify-between items-center"><div className="flex items-center gap-3"><div className="w-1 h-1 bg-white rounded-full"></div>Installing OpenClaw</div><span>7 min</span></li>
-                <li className="flex justify-between items-center"><div className="flex items-center gap-3"><div className="w-1 h-1 bg-white rounded-full"></div>Setting up OpenClaw</div><span>10 min</span></li>
-                <li className="flex justify-between items-center"><div className="flex items-center gap-3"><div className="w-1 h-1 bg-white rounded-full"></div>Connecting to AI provider</div><span>4 min</span></li>
-                <li className="flex justify-between items-center"><div className="flex items-center gap-3"><div className="w-1 h-1 bg-white rounded-full"></div>Pairing with Telegram</div><span>4 min</span></li>
-              </ul>
-              <div className="mt-4 pt-2 border-t border-white/50 flex justify-between items-center text-lg text-white font-bold">
-                <span>total</span>
-                <span className="uppercase tracking-widest">60 MINUTES</span>
-              </div>
-            </div>
-
-            <div className="w-full md:w-[40%] flex flex-col justify-center items-center text-center">
-              <h3 className="text-4xl md:text-5xl font-bold text-white mb-2" style={{ fontFamily: "Georgia, serif" }}>clawlink</h3>
-              <div className="text-3xl font-bold text-white mb-4">&lt;30 sec</div>
-              <p className="text-[10px] text-gray-400 leading-relaxed max-w-[250px] mx-auto font-sans font-medium">
-                Pick a model, connect Telegram, deploy — done under 1 minute. Servers, SSH and OpenClaw Environment are already set up, waiting to get assigned. Simple, secure and fast connection to your bot.
-              </p>
-            </div>
           </div>
         </div>
       </section>
@@ -395,14 +369,11 @@ export default function Home() {
         </div>
       </footer>
 
-      {/* 🚀 MODALS (Intact Logic) */}
+      {/* 🚀 MODALS (Same as before) */}
       <AnimatePresence>
         {isTelegramModalOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-md p-4">
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }} 
-              className={`bg-[#0A0A0B] border border-white/10 rounded-3xl w-full max-w-[950px] flex flex-col md:flex-row overflow-hidden relative shadow-2xl`}
-            >
+            <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }} className={`bg-[#0A0A0B] border border-white/10 rounded-3xl w-full max-w-[950px] flex flex-col md:flex-row overflow-hidden relative shadow-2xl`}>
               <button onClick={() => setIsTelegramModalOpen(false)} className="absolute top-6 right-6 z-20 text-gray-500 hover:text-white bg-white/5 hover:bg-white/10 p-2 rounded-full transition-all">✕</button>
               <div className="w-full md:w-1/2 p-10 flex flex-col justify-center relative z-10">
                 {activeChannel === "telegram" ? (
@@ -446,10 +417,21 @@ export default function Home() {
               {!isDeploying && <button onClick={() => setShowPricingPopup(false)} className="absolute top-6 right-8 text-gray-500 hover:text-white">✕</button>}
               <h2 className="text-2xl font-black mb-2 text-white uppercase">Deploy OpenClaw under 30 seconds.</h2>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 my-10 text-left">
-                <div onClick={() => !isDeploying && setSelectedTier("pro")} className="relative p-6 rounded-2xl border bg-[#111] border-blue-500 cursor-pointer scale-105">
+                <div onClick={() => !isDeploying && setSelectedTier("starter")} className="relative p-6 rounded-2xl border bg-[#111] border-white cursor-pointer hover:scale-105 transition-all">
+                  <h3 className="text-gray-400 font-bold uppercase text-xs mb-2">Starter</h3>
+                  <div className="text-3xl font-black text-white mb-4">{currencySymbol}{getCurrentPrice("starter")}</div>
+                  <p className="text-sm text-gray-300">Limited tokens.</p>
+                </div>
+                <div onClick={() => !isDeploying && setSelectedTier("pro")} className="relative p-6 rounded-2xl border bg-[#111] border-blue-500 cursor-pointer scale-105 transition-all">
+                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-blue-500 text-white text-[10px] font-bold uppercase px-3 py-1 rounded-full">Popular</div>
                   <h3 className="text-blue-400 font-bold uppercase text-xs mb-2">Pro</h3>
                   <div className="text-3xl font-black text-white mb-4">{currencySymbol}{getCurrentPrice("pro")}</div>
-                  <p className="text-sm text-gray-300">Unlimited credits and Priority Routing.</p>
+                  <p className="text-sm text-gray-300">Unlimited credits.</p>
+                </div>
+                <div onClick={() => !isDeploying && setSelectedTier("max")} className="relative p-6 rounded-2xl border bg-[#111] border-orange-500 cursor-pointer hover:scale-105 transition-all">
+                  <h3 className="text-orange-400 font-bold uppercase text-xs mb-2">Max</h3>
+                  <div className="text-3xl font-black text-white mb-4">{currencySymbol}{getCurrentPrice("max")}</div>
+                  <p className="text-sm text-gray-300">Multi-AI access.</p>
                 </div>
               </div>
               <button onClick={triggerRazorpayPayment} disabled={isDeploying} className="w-full max-w-sm mx-auto bg-white text-black font-bold py-4 rounded-xl uppercase flex justify-center items-center gap-2">
