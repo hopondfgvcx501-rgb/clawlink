@@ -30,11 +30,7 @@ export default function Home() {
   
   const [isMounted, setIsMounted] = useState(false);
   const [isTelegramModalOpen, setIsTelegramModalOpen] = useState(false);
-  
-  // Auth States
   const [telegramToken, setTelegramToken] = useState("");
-  const [waPhoneId, setWaPhoneId] = useState(""); // New state for WhatsApp Phone ID
-  
   const [isTokenSaved, setIsTokenSaved] = useState(false);
   const [showPricingPopup, setShowPricingPopup] = useState(false);
   const [isDeploying, setIsDeploying] = useState(false);
@@ -108,15 +104,7 @@ export default function Home() {
             const configRes = await fetch("/api/config", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              // Passing both token and phoneId (if applicable) to backend
-              body: JSON.stringify({ 
-                email: session?.user?.email, 
-                selectedModel: activeModel, 
-                selectedChannel: activeChannel, 
-                telegramToken, 
-                waPhoneId, 
-                plan: selectedTier 
-              })
+              body: JSON.stringify({ email: session?.user?.email, selectedModel: activeModel, selectedChannel: activeChannel, telegramToken, plan: selectedTier })
             });
             const configData = await configRes.json();
 
@@ -510,34 +498,31 @@ export default function Home() {
                     <ol className="space-y-3 text-[13px] text-gray-400 list-decimal pl-5 mb-6 leading-relaxed">
                       <li>Go to <strong className="text-white">Meta Developer Console</strong>.</li>
                       <li>Create a <strong className="text-white">Business App</strong> and add the <strong className="text-white">WhatsApp Product</strong>.</li>
-                      <li>In <strong className="text-white">API Setup</strong>, copy your <strong className="text-white">Phone Number ID</strong> (using test or real number).</li>
+                      <li>In <strong className="text-white">API Setup</strong>, add your real phone number and verify it.</li>
                       <li>Go to <strong className="text-white">System Users</strong>, generate a <strong className="text-white">Permanent Token</strong>.</li>
                       <li>Go to <strong className="text-white">Configuration</strong>, click Edit to set your Webhook.</li>
                       <li>Paste the exact <strong className="text-white">Callback URL</strong> and <strong className="text-white">Verify Token</strong> below.</li>
-                      <li>Subscribe to <strong className="text-white">messages</strong> webhook fields.</li>
+                      <li>Click Manage and Subscribe to the <strong className="text-white">messages</strong> webhook field.</li>
                     </ol>
 
                     <div className="bg-[#1A1A1A] p-4 rounded-xl border border-[#25D366]/20 mb-6 shadow-[0_0_15px_rgba(37,211,102,0.05)]">
                       <div className="mb-4">
                         <div className="flex justify-between items-center mb-1">
                           <span className="block text-[10px] font-bold text-gray-500 uppercase tracking-widest">Webhook Callback URL</span>
-                          <button onClick={() => copyToClipboard("https://clawlink.com/api/webhook/whatsapp")} className="text-gray-500 hover:text-white"><Copy className="w-3 h-3"/></button>
+                          <button onClick={() => copyToClipboard("https://clawlink-six.vercel.app/api/webhook/whatsapp")} className="text-gray-500 hover:text-white"><Copy className="w-3 h-3"/></button>
                         </div>
-                        <code className="block bg-black text-[#25D366] text-xs p-2 rounded border border-white/5 select-all">https://clawlink.com/api/webhook/whatsapp</code>
+                        <code className="block bg-black text-[#25D366] text-[10px] sm:text-xs p-2 rounded border border-white/5 select-all">https://clawlink-six.vercel.app/api/webhook/whatsapp</code>
                       </div>
                       <div>
                         <div className="flex justify-between items-center mb-1">
                           <span className="block text-[10px] font-bold text-gray-500 uppercase tracking-widest">Verify Token</span>
-                          <button onClick={() => copyToClipboard("clawlink_secure")} className="text-gray-500 hover:text-white"><Copy className="w-3 h-3"/></button>
+                          <button onClick={() => copyToClipboard("ClawLinkMeta2026")} className="text-gray-500 hover:text-white"><Copy className="w-3 h-3"/></button>
                         </div>
-                        <code className="block bg-black text-white text-xs p-2 rounded border border-white/5 select-all">clawlink_secure</code>
+                        <code className="block bg-black text-white text-xs p-2 rounded border border-white/5 select-all">ClawLinkMeta2026</code>
                       </div>
                     </div>
 
                     <div className="bg-[#1A1A1A] p-6 rounded-2xl border border-white/5 shadow-inner">
-                      <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">Phone Number ID</label>
-                      <input type="text" value={waPhoneId} onChange={(e) => setWaPhoneId(e.target.value)} placeholder="e.g. 1029384756" className="w-full bg-black border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#25D366] mb-4 text-white font-mono transition-colors" />
-                      
                       <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">Permanent API Token</label>
                       <input type="password" value={telegramToken} onChange={(e) => setTelegramToken(e.target.value)} placeholder="EAABwzL..." className="w-full bg-black border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#25D366] mb-6 text-white font-mono transition-colors" />
                       
@@ -595,10 +580,10 @@ export default function Home() {
                       ) : (
                         <div className="flex flex-col gap-3 font-sans h-full justify-start pb-4">
                            <GuideStep delay={0.5} step="1" title="Create App" desc="Select Business type in Meta Developer Console." />
-                           <GuideStep delay={1.5} step="2" title="API Setup" desc="Get your Phone Number ID from WhatsApp Product settings." />
-                           <GuideStep delay={2.5} step="3" title="System User" desc="Go to Business Settings and generate a Permanent Token." />
-                           <GuideStep delay={3.5} step="4" title="Configuration" desc="Paste the ClawLink Webhook URL & Verify Token." />
-                           <GuideStep delay={4.5} step="5" title="Subscribe" desc="Manage webhook fields and subscribe to messages." />
+                           <GuideStep delay={1.5} step="2" title="Add Number" desc="Add & verify your real phone number in API Setup." />
+                           <GuideStep delay={2.5} step="3" title="Generate Token" desc="Create a System User & get a Permanent Access Token." />
+                           <GuideStep delay={3.5} step="4" title="Link Webhook" desc="Paste Webhook URL & Verify Token." />
+                           <GuideStep delay={4.5} step="5" title="Subscribe" desc="Subscribe to the 'messages' webhook field." />
                            
                            <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 5.5 }} className="mt-4 bg-[#25D366]/10 border border-[#25D366]/30 p-3 rounded-xl text-center shadow-[0_0_15px_rgba(37,211,102,0.1)]">
                              <span className="text-[#25D366] font-bold text-xs flex items-center justify-center gap-2"><Zap className="w-3 h-3"/> Dashboard Connected</span>
