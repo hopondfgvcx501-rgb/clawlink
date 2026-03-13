@@ -60,13 +60,16 @@ export default function Home() {
     document.body.appendChild(script);
   }, []);
 
+  // 🚀 RED-SQUIGGLY ERROR FIXED HERE (Added 'channel: string')
   const handleOpenIntegration = (channel: string) => {
     if(channel === 'discord' || channel === 'instagram') return;
     setActiveChannel(channel);
     setIsTelegramModalOpen(true);
   };
 
-  const handleOpenPricing = () => {
+  // 🚀 RED-SQUIGGLY ERROR FIXED HERE (Added 'channel: string')
+  const handleOpenPricing = (channel: string) => {
+    setActiveChannel(channel);
     setShowPricingPopup(true);
   };
 
@@ -175,7 +178,7 @@ export default function Home() {
 
       {/* 🚀 TOP NAVBAR */}
       <nav className="relative z-50 flex items-center justify-between px-6 md:px-12 py-8 max-w-[1600px] mx-auto">
-        <div className="text-xl md:text-2xl font-black tracking-widest uppercase text-white">CLAWLINK.COM</div>
+        <div className="text-xl md:text-2xl font-black tracking-widest uppercase text-white font-serif">CLAWLINK.COM</div>
         <div className="flex items-center gap-6">
           {status === "authenticated" && (
              <div className="hidden md:flex items-center gap-3">
@@ -284,7 +287,7 @@ export default function Home() {
             </div>
 
             {/* Auth / Deploy Action Button */}
-            <div className="w-full max-w-xl">
+            <div className="w-full max-w-xl mt-4">
               {botLink ? (
                 <div className="bg-green-500/10 border border-green-500/30 p-6 rounded-2xl text-center backdrop-blur-md">
                   <h3 className="text-xl font-bold text-white mb-4">OpenClaw is Live! 🚀</h3>
@@ -400,7 +403,7 @@ export default function Home() {
         </div>
       </footer>
 
-      {/* 🚀 MODALS (Intact Logic) */}
+      {/* 🚀 MODALS */}
       <AnimatePresence>
         {isTelegramModalOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-md p-4">
