@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
+// 🚨 CRITICAL FIX: Tell Vercel NOT to cache this API. Always fetch fresh data from Supabase!
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 // Initialize Supabase
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
@@ -10,7 +14,8 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
-    const email = searchParams.get("email");
+    // Lowercase email to prevent case-mismatch issues in DB
+    const email = (searchParams.get("email") || "").toLowerCase();
 
     if (!email) {
       return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
@@ -22,29 +27,24 @@ export async function GET(req: Request) {
       .eq("email", email)
       .single();
 
-    if (error) {
-      // If user hasn't deployed a bot yet, return empty defaults gracefully
+    if (error || !data) {
       return NextResponse.json({ success: true, data: null });
     }
 
-    // 🚀 THE PERMANENT FIX: Read exactly from 'selected_model' column based on your DB schema
-    const dbModel = data.selected_model || data.ai_model || "gemini-1.5-flash";
-    let dbProvider = data.ai_provider;
+    // 🚀 READ EXACTLY FROM 'selected_model'
+    const dbModel = data.selected_model || "gemini-flash";
+    let dbProvider = "Google";
     
-    // Auto-detect provider if it's missing in DB but model exists
-    if (!dbProvider && dbModel) {
-        const m = dbModel.toLowerCase();
-        if (m.includes("gpt")) dbProvider = "openai";
-        else if (m.includes("claude") || m.includes("anthropic")) dbProvider = "anthropic";
-        else dbProvider = "google";
-    }
+    // Auto-detect provider based on the model string
+    if (dbModel.toLowerCase().includes("gpt")) dbProvider = "OpenAI";
+    else if (dbModel.toLowerCase().includes("claude") || dbModel.toLowerCase().includes("anthropic")) dbProvider = "Anthropic";
 
     // Format data specifically for the Dashboard Frontend
     const dashboardData = {
       plan: data.plan || "Starter",
       provider: dbProvider,
       model: dbModel,
-      selected_model: data.selected_model, // Explicitly sending this to frontend
+      selected_model: data.selected_model, 
       selected_channel: data.selected_channel,
       tokensAllocated: data.tokens_allocated || 0,
       tokensUsed: data.tokens_used || 0,
@@ -75,7 +75,7 @@ export async function PUT(req: Request) {
     const { error } = await supabase
       .from("user_configs")
       .update({ system_prompt: systemPrompt })
-      .eq("email", email);
+      .eq("email", email.toLowerCase());
 
     if (error) throw error;
 

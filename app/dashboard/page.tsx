@@ -11,32 +11,23 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 
-// 🚀 FIXED: Accurately parse the database fields WITHOUT forcing plans.
+// 🚀 FIXED: Directly output exactly what is in the DB without fallback overriding
 const formatAIProvider = (model: string) => {
-  // Check if model exists, if not provide a clean default
-  if (!model) {
-    return { name: "Google", badge: "Gemini Flash" };
-  }
+  const m = (model || "").toLowerCase();
+  
+  // If absolutely nothing is in DB yet
+  if (!m) return { name: "Google", badge: "Gemini Flash" };
 
-  const m = model.toLowerCase();
   let pName = "Google";
-  let mName = model; // Use raw string as fallback
+  if (m.includes("gpt")) pName = "OpenAI";
+  if (m.includes("claude") || m.includes("anthropic")) pName = "Anthropic";
 
-  // Dynamically assign Provider Name based on the Model string from DB
-  if (m.includes("gpt")) {
-    pName = "OpenAI";
-    // Beautify specific models if needed, else show raw string
-    if(m.includes("gpt-4")) mName = "GPT-4 Turbo";
-    if(m.includes("gpt-5")) mName = "GPT-5.2";
-  } else if (m.includes("claude") || m.includes("anthropic")) {
-    pName = "Anthropic";
-    if(m.includes("opus")) mName = "Claude 3 Opus";
-    if(m.includes("sonnet")) mName = "Claude 3 Sonnet";
-  } else if (m.includes("gemini")) {
-    pName = "Google";
-    if(m.includes("pro")) mName = "Gemini Pro";
-    if(m.includes("flash")) mName = "Gemini Flash";
-  }
+  let mName = model; // Use exact text from DB natively
+  
+  // Make it look pretty if it matches our standard models
+  if (m === "gpt-5.2") mName = "GPT-5.2";
+  if (m === "gpt-4-turbo") mName = "GPT-4 Turbo";
+  if (m === "claude-3-opus") mName = "Claude 3 Opus";
 
   return { name: pName, badge: mName };
 };
@@ -66,16 +57,17 @@ export default function Dashboard() {
     }
 
     if (session?.user?.email) {
-      // Fetch User Config
+      // Fetch User Config (Now guaranteed fresh due to API fix)
       fetch(`/api/user?email=${session.user.email}`)
         .then((res) => res.json())
         .then((data) => {
-          if (data.success) {
+          if (data.success && data.data) {
             setUserData(data.data);
             setSystemPrompt(data.data.systemPrompt || "");
           }
         })
-        .catch(console.error);
+        .catch(console.error)
+        .finally(() => setIsLoading(false)); // Ensure loading stops
 
       // Fetch Billing
       fetch(`/api/billing?email=${session.user.email}`)
@@ -84,9 +76,8 @@ export default function Dashboard() {
           if (data.success) {
             setBillingHistory(data.data);
           }
-          setIsLoading(false);
         })
-        .catch(() => setIsLoading(false));
+        .catch(console.error);
 
       // Fetch Existing Knowledge Base
       fetchKnowledge();
@@ -193,12 +184,12 @@ Thank you for choosing ClawLink Enterprise AI.
 
   // 🚀 SMART UI LOGIC FOR TOKENS 
   const currentPlan = userData?.plan?.toLowerCase() || "starter";
+  // Tokens UI only for starter
   const showTokens = currentPlan === "starter"; 
   const usagePercentage = Math.min(((userData?.tokensUsed || 0) / (userData?.tokensAllocated || 1)) * 100, 100);
 
-  // 🚀 DYNAMIC AI PROVIDER FIX: Map exactly to what is in the DB
-  // According to your screenshot, the DB field is 'selected_model'
-  const aiInfo = formatAIProvider(userData?.selected_model);
+  // 🚀 100% ACCURATE PROVIDER INFO (Picks strictly from userData.model which maps to selected_model)
+  const aiInfo = formatAIProvider(userData?.model || userData?.selected_model);
 
   return (
     <div className="w-full min-h-screen bg-[#111111] text-[#EDEDED] font-sans relative selection:bg-orange-500/30 overflow-y-auto custom-scrollbar flex flex-col">
