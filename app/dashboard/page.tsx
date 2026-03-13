@@ -10,17 +10,24 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 
-// 🚀 HELPER FUNCTION: AI Provider ka naam aur badge dynamically set karne ke liye
-const formatAIProvider = (provider: string, model: string) => {
-  if (!provider || !model) return { name: "Google", badge: "Gemini Flash" };
-  const p = provider.toLowerCase();
-  const m = model.toLowerCase();
+// 🚀 HELPER FUNCTION: AI Provider ka naam plan aur model ke hisaab se dynamically set karne ke liye
+const formatAIProvider = (provider: string, model: string, plan: string) => {
+  let p = (provider || "").toLowerCase();
+  let m = (model || "").toLowerCase();
+  const currentPlan = (plan || "starter").toLowerCase();
   
+  // Smart Fallback based on Plan Tier (Agar DB se data na aaye toh)
+  if (!p || !m) {
+    if (currentPlan === "max") { p = "openai"; m = "gpt-4-turbo"; }
+    else if (currentPlan === "pro") { p = "anthropic"; m = "claude-3-opus"; }
+    else { p = "google"; m = "gemini-1.5-flash"; }
+  }
+
   let pName = "Google";
   if (p === "openai") pName = "OpenAI";
   if (p === "anthropic") pName = "Anthropic";
 
-  let mName = model;
+  let mName = m;
   if (m.includes("gpt-4")) mName = "GPT-4 Turbo";
   if (m.includes("gpt-3.5")) mName = "GPT-3.5";
   if (m.includes("claude-3-opus")) mName = "Claude 3 Opus";
@@ -182,8 +189,13 @@ Thank you for choosing ClawLink Enterprise AI.
   }
 
   // 🚀 SMART UI LOGIC FOR TOKENS (DYNAMIC CHECK)
-  const isUnlimitedPlan = userData?.is_unlimited || userData?.plan?.toLowerCase() === "max";
+  const currentPlan = userData?.plan?.toLowerCase() || "starter";
+  // ✅ Sirf Starter plan mein tokens dikhenge (PRO aur MAX mein numbers gayab)
+  const showTokens = currentPlan === "starter"; 
   const usagePercentage = Math.min(((userData?.tokensUsed || 0) / (userData?.tokensAllocated || 1)) * 100, 100);
+
+  // AI Provider info generate using plan as fallback
+  const aiInfo = formatAIProvider(userData?.ai_provider, userData?.ai_model, userData?.plan);
 
   return (
     <div className="w-full min-h-screen bg-[#111111] text-[#EDEDED] font-sans relative selection:bg-orange-500/30 overflow-y-auto custom-scrollbar flex flex-col">
@@ -239,7 +251,7 @@ Thank you for choosing ClawLink Enterprise AI.
               <span className="text-xs font-bold text-green-400 bg-green-400/10 px-2 py-1 rounded border border-green-400/20">Active</span>
             </div>
             <h3 className="text-gray-400 text-xs font-bold uppercase tracking-widest mb-1 relative z-10">Instance Plan</h3>
-            <p className="text-3xl font-black text-white font-serif relative z-10 uppercase tracking-wide">{userData?.plan || "Starter"}</p>
+            <p className="text-3xl font-black text-white font-serif relative z-10 uppercase tracking-wide">{currentPlan}</p>
           </motion.div>
 
           {/* CARD 2: API USAGE */}
@@ -248,12 +260,12 @@ Thank you for choosing ClawLink Enterprise AI.
             <div className="flex justify-between items-start mb-4 relative z-10">
               <div className="w-10 h-10 rounded-xl bg-orange-500/10 flex items-center justify-center text-orange-500 border border-orange-500/20"><Zap className="w-5 h-5"/></div>
               <span className="text-xs font-bold text-orange-400 bg-orange-400/10 px-2 py-1 rounded border border-orange-400/20 font-mono">
-                {!isUnlimitedPlan ? `${usagePercentage.toFixed(1)}% Used` : "Premium"}
+                {showTokens ? `${usagePercentage.toFixed(1)}% Used` : "Premium Tier"}
               </span>
             </div>
             <h3 className="text-gray-400 text-xs font-bold uppercase tracking-widest mb-1 relative z-10">API Usage</h3>
             <p className="text-3xl font-black text-white font-serif relative z-10">
-              {!isUnlimitedPlan ? (
+              {showTokens ? (
                 <>
                   {userData?.tokensUsed?.toLocaleString() || 0}
                   <span className="text-sm text-gray-500 font-sans font-medium"> / {userData?.tokensAllocated?.toLocaleString()} msg</span>
@@ -262,7 +274,7 @@ Thank you for choosing ClawLink Enterprise AI.
                 <span className="bg-clip-text text-transparent bg-gradient-to-r from-orange-400 to-pink-500">Unlimited</span>
               )}
             </p>
-            {!isUnlimitedPlan && (
+            {showTokens && (
               <div className="w-full h-1.5 bg-gray-800 rounded-full overflow-hidden mt-4 relative z-10">
                 <motion.div initial={{ width: 0 }} animate={{ width: `${usagePercentage}%` }} transition={{ duration: 1, ease: "easeOut" }} className={`h-full ${usagePercentage > 90 ? 'bg-red-500' : 'bg-orange-500'}`}/>
               </div>
@@ -278,9 +290,9 @@ Thank you for choosing ClawLink Enterprise AI.
             </div>
             <h3 className="text-gray-400 text-xs font-bold uppercase tracking-widest mb-1 relative z-10">AI Provider</h3>
             <p className="text-2xl font-bold text-white capitalize flex items-center gap-2 mt-1 relative z-10">
-              {formatAIProvider(userData?.ai_provider || "", userData?.ai_model || "").name} 
+              {aiInfo.name} 
               <span className="text-sm text-gray-500 font-medium font-sans truncate">
-                ({formatAIProvider(userData?.ai_provider || "", userData?.ai_model || "").badge})
+                ({aiInfo.badge})
               </span>
             </p>
           </motion.div>
