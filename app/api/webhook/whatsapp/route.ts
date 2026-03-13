@@ -7,43 +7,55 @@ export const dynamic = "force-dynamic";
 const rateLimitMap = new Map<string, number>();
 const COOLDOWN_MS = 2000; 
 
+// 🚀 INITIALIZE SUPABASE
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 const AI_CHAINS: Record<string, string[]> = {
-    "openai": ["gpt-5.4-turbo", "gpt-4-turbo", "gpt-3.5-turbo"],
+    "openai": ["gpt-4-turbo", "gpt-3.5-turbo"], // Updated models
     "anthropic": ["claude-3-opus-20240229", "claude-3-sonnet-20240229", "claude-3-haiku-20240307"],
-    "google": ["gemini-1.5-pro-latest", "gemini-1.5-flash-latest", "gemini-pro"]
+    "google": ["gemini-1.5-pro-latest", "gemini-1.5-flash-latest"]
 };
 
+// =========================================================================
+// 1. GET REQUEST: META WEBHOOK VERIFICATION
+// =========================================================================
 export async function GET(req: Request) {
     const url = new URL(req.url);
     const mode = url.searchParams.get("hub.mode");
     const token = url.searchParams.get("hub.verify_token");
     const challenge = url.searchParams.get("hub.challenge");
 
-    const VERIFY_TOKEN = process.env.WHATSAPP_VERIFY_TOKEN || "clawlink_secure";
+    // Strictly locked to match frontend guide
+    const VERIFY_TOKEN = process.env.WHATSAPP_VERIFY_TOKEN || "ClawLinkMeta2026";
 
     if (mode === "subscribe" && token === VERIFY_TOKEN) {
+        console.log("✅ Webhook Verified Successfully");
         return new NextResponse(challenge, { status: 200 });
     }
+    console.warn("🚨 Webhook Verification Failed: Invalid Token");
     return new NextResponse("Forbidden", { status: 403 });
 }
 
-// 🚀 GENERATE EMBEDDING FOR RAG SEARCH
+// =========================================================================
+// 🚀 AI & RAG HELPER FUNCTIONS
+// =========================================================================
 async function generateEmbedding(text: string) {
-    const embedUrl = `https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent?key=${process.env.GEMINI_API_KEY}`;
-    const res = await fetch(embedUrl, {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ model: "models/text-embedding-004", content: { parts: [{ text: text }] } })
-    });
-    const data = await res.json();
-    if (!res.ok) return null;
-    return data.embedding.values;
+    try {
+        const embedUrl = `https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent?key=${process.env.GEMINI_API_KEY}`;
+        const res = await fetch(embedUrl, {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ model: "models/text-embedding-004", content: { parts: [{ text: text }] } })
+        });
+        const data = await res.json();
+        return res.ok ? data.embedding.values : null;
+    } catch (e) {
+        console.error("Embedding Error:", e);
+        return null;
+    }
 }
 
-// 🚀 API CALL WRAPPERS
 async function callGemini(model: string, prompt: string) {
     const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${process.env.GEMINI_API_KEY}`, {
         method: "POST", headers: { "Content-Type": "application/json" },
@@ -74,6 +86,9 @@ async function callClaude(model: string, prompt: string) {
     return data.content[0].text;
 }
 
+// =========================================================================
+// 2. POST REQUEST: PROCESSING INCOMING MESSAGES
+// =========================================================================
 export async function POST(req: Request) {
     let whatsappToken = "";
     let phoneNumberId = "";
@@ -82,8 +97,9 @@ export async function POST(req: Request) {
     try {
         const body = await req.json();
 
+        // 1. Validate Meta Payload Structure
         if (!body.entry || !body.entry[0].changes || !body.entry[0].changes[0].value.messages) {
-            return NextResponse.json({ success: true });
+            return NextResponse.json({ success: true }); // Always return 200 to Meta to prevent retry loops
         }
 
         const value = body.entry[0].changes[0].value;
@@ -93,31 +109,36 @@ export async function POST(req: Request) {
 
         chatId = message.from; 
         const userText = message.text.body;
-        phoneNumberId = value.metadata.phone_number_id;
+        phoneNumberId = value.metadata.phone_number_id; // THIS IS THE TENANT ID
 
+        // 2. Spam / Rate Limiting Check
         const now = Date.now();
         const lastMessageTime = rateLimitMap.get(chatId) || 0;
         if (now - lastMessageTime < COOLDOWN_MS) return NextResponse.json({ success: true });
         rateLimitMap.set(chatId, now);
 
+        // 3. 🚀 CRITICAL FIX: Find the EXACT Customer config using Phone Number ID
         const { data: config, error: configErr } = await supabase
             .from("user_configs")
             .select("*")
-            .not("whatsapp_token", "is", null)
-            .limit(1)
+            .eq("whatsapp_phone_id", phoneNumberId) // PERFECT MULTI-TENANT ROUTING
             .single();
 
-        if (configErr || !config || !config.whatsapp_token) return NextResponse.json({ success: true });
+        if (configErr || !config || !config.whatsapp_token) {
+            console.error(`Unregistered Phone ID accessed: ${phoneNumberId}`);
+            return NextResponse.json({ success: true });
+        }
 
         whatsappToken = config.whatsapp_token;
         const systemPrompt = config.systemPrompt || "You are a helpful AI assistant on WhatsApp.";
         const userEmail = config.email;
         const provider = config.ai_provider || "google";
 
+        // 4. Token & Plan Verification
         if (config.plan_status === "Expired" || (!config.is_unlimited && config.available_tokens <= 0)) {
             await fetch(`https://graph.facebook.com/v18.0/${phoneNumberId}/messages`, {
                 method: "POST", headers: { "Content-Type": "application/json", "Authorization": `Bearer ${whatsappToken}` },
-                body: JSON.stringify({ messaging_product: "whatsapp", to: chatId, text: { body: "I am currently undergoing routine maintenance and upgrades. Please leave your message and we will respond shortly." } })
+                body: JSON.stringify({ messaging_product: "whatsapp", to: chatId, text: { body: "This AI Agent is currently undergoing routine maintenance. We will be back online shortly." } })
             });
 
             const alertHtml = `
@@ -131,7 +152,7 @@ export async function POST(req: Request) {
             return NextResponse.json({ success: true });
         }
 
-        // 🚀 CUSTOM KNOWLEDGE BASE FETCH (RAG)
+        // 5. 🚀 RAG KNOWLEDGE FETCH (Vector DB)
         let customKnowledge = "";
         try {
             const queryVector = await generateEmbedding(userText);
@@ -151,6 +172,7 @@ export async function POST(req: Request) {
             console.error("RAG Fetch Error:", e);
         }
 
+        // 6. FETCH CONVERSATION HISTORY (Memory)
         const { data: pastChats } = await supabase
             .from("bot_conversations")
             .select("role, content")
@@ -164,6 +186,7 @@ export async function POST(req: Request) {
             memoryHistory = pastChats.reverse().map(chat => `${chat.role.toUpperCase()}: ${chat.content}`).join("\n");
         }
 
+        // 7. ASSEMBLE FULL PROMPT
         const fullContext = `System Instructions: ${systemPrompt}
 
 Company Knowledge Base (Use this information to answer if relevant to the query):
@@ -174,8 +197,10 @@ ${memoryHistory}
 
 User's New Message: ${userText}`;
         
+        // Save User Message to CRM Database
         await supabase.from("bot_conversations").insert({ bot_email: userEmail, chat_id: chatId, role: "user", content: userText });
 
+        // 8. 🚀 THE AI WATERFALL SYSTEM
         let aiResponse = "I am currently processing high volumes of data. Please give me a moment and try again.";
         let wasSuccessful = false;
         const chain = AI_CHAINS[provider] || AI_CHAINS["google"];
@@ -187,12 +212,13 @@ User's New Message: ${userText}`;
                 else aiResponse = await callGemini(modelName, fullContext);
                 
                 wasSuccessful = true;
-                break;
+                break; // Break loop if API call succeeds
             } catch (err: any) {
-                console.log(`[WhatsApp AI Error] ${modelName} failed. Trying next...`);
+                console.log(`[AI Error] ${modelName} failed. Falling back to next model in chain...`);
             }
         }
 
+        // 9. CHARGE TOKENS & SAVE AI RESPONSE
         if (wasSuccessful) {
             if (!config.is_unlimited) {
                 await supabase.from("user_configs").update({ available_tokens: config.available_tokens - 1 }).eq("email", userEmail);
@@ -200,6 +226,7 @@ User's New Message: ${userText}`;
             await supabase.from("bot_conversations").insert({ bot_email: userEmail, chat_id: chatId, role: "ai", content: aiResponse });
         }
 
+        // 10. DISPATCH FINAL MESSAGE VIA WHATSAPP CLOUD API
         await fetch(`https://graph.facebook.com/v18.0/${phoneNumberId}/messages`, {
             method: "POST", headers: { "Content-Type": "application/json", "Authorization": `Bearer ${whatsappToken}` },
             body: JSON.stringify({ messaging_product: "whatsapp", to: chatId, text: { body: aiResponse } })
@@ -209,6 +236,7 @@ User's New Message: ${userText}`;
 
     } catch (error: any) {
         console.error("WhatsApp Critical Error:", error.message);
+        // Always return 200 to prevent Meta from banning the webhook URL due to 500 errors
         return NextResponse.json({ success: true }); 
     }
 }
