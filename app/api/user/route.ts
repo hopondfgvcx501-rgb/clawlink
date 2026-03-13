@@ -27,11 +27,25 @@ export async function GET(req: Request) {
       return NextResponse.json({ success: true, data: null });
     }
 
+    // 🚀 THE PERMANENT FIX: Read exactly from 'selected_model' column based on your DB schema
+    const dbModel = data.selected_model || data.ai_model || "gemini-1.5-flash";
+    let dbProvider = data.ai_provider;
+    
+    // Auto-detect provider if it's missing in DB but model exists
+    if (!dbProvider && dbModel) {
+        const m = dbModel.toLowerCase();
+        if (m.includes("gpt")) dbProvider = "openai";
+        else if (m.includes("claude") || m.includes("anthropic")) dbProvider = "anthropic";
+        else dbProvider = "google";
+    }
+
     // Format data specifically for the Dashboard Frontend
     const dashboardData = {
       plan: data.plan || "Starter",
-      provider: data.ai_provider || "google",
-      model: data.ai_model || "gemini-3-flash",
+      provider: dbProvider,
+      model: dbModel,
+      selected_model: data.selected_model, // Explicitly sending this to frontend
+      selected_channel: data.selected_channel,
       tokensAllocated: data.tokens_allocated || 0,
       tokensUsed: data.tokens_used || 0,
       isUnlimited: data.is_unlimited || false,
