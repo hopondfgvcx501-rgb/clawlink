@@ -6,26 +6,24 @@ import { motion, AnimatePresence } from "framer-motion";
 import { 
   Activity, Database, Zap, Save, 
   Receipt, Download, Smartphone, BrainCircuit, 
-  MessageSquare, Search, Bell, ChevronDown 
+  MessageSquare, Search, Bell, ChevronDown, 
+  ExternalLink, Bot
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 
-// 🚀 HELPER FUNCTION: AI Provider ka naam plan aur model ke hisaab se dynamically set karne ke liye
-const formatAIProvider = (provider: string, model: string, plan: string) => {
-  let p = (provider || "").toLowerCase();
-  let m = (model || "").toLowerCase();
-  const currentPlan = (plan || "starter").toLowerCase();
-  
-  // Smart Fallback based on Plan Tier (Agar DB se data na aaye toh)
-  if (!p || !m) {
-    if (currentPlan === "max") { p = "openai"; m = "gpt-4-turbo"; }
-    else if (currentPlan === "pro") { p = "anthropic"; m = "claude-3-opus"; }
-    else { p = "google"; m = "gemini-1.5-flash"; }
+// 🚀 FIXED: Just display exactly what the user selected in the database!
+const formatAIProvider = (provider: string, model: string) => {
+  // Agar user ne abhi tak koi configuration save hi nahi ki hai
+  if (!provider || !model) {
+    return { name: "Google", badge: "Gemini Flash" };
   }
 
+  const p = provider.toLowerCase();
+  const m = model.toLowerCase();
+
   let pName = "Google";
-  if (p === "openai") pName = "OpenAI";
-  if (p === "anthropic") pName = "Anthropic";
+  if (p.includes("openai")) pName = "OpenAI";
+  if (p.includes("anthropic")) pName = "Anthropic";
 
   let mName = m;
   if (m.includes("gpt-4")) mName = "GPT-4 Turbo";
@@ -188,14 +186,14 @@ Thank you for choosing ClawLink Enterprise AI.
     );
   }
 
-  // 🚀 SMART UI LOGIC FOR TOKENS (DYNAMIC CHECK)
+  // 🚀 SMART UI LOGIC FOR TOKENS 
   const currentPlan = userData?.plan?.toLowerCase() || "starter";
-  // ✅ Sirf Starter plan mein tokens dikhenge (PRO aur MAX mein numbers gayab)
+  // Tokens UI only for starter
   const showTokens = currentPlan === "starter"; 
   const usagePercentage = Math.min(((userData?.tokensUsed || 0) / (userData?.tokensAllocated || 1)) * 100, 100);
 
-  // AI Provider info generate using plan as fallback
-  const aiInfo = formatAIProvider(userData?.ai_provider, userData?.ai_model, userData?.plan);
+  // Directly pass the exact provider and model from the database to format it nicely
+  const aiInfo = formatAIProvider(userData?.ai_provider, userData?.ai_model);
 
   return (
     <div className="w-full min-h-screen bg-[#111111] text-[#EDEDED] font-sans relative selection:bg-orange-500/30 overflow-y-auto custom-scrollbar flex flex-col">
@@ -204,18 +202,27 @@ Thank you for choosing ClawLink Enterprise AI.
       <div className="fixed top-[-10%] left-[20%] w-[600px] h-[500px] bg-orange-600/10 rounded-full blur-[150px] pointer-events-none z-0"></div>
       <div className="fixed bottom-[-10%] right-[10%] w-[500px] h-[500px] bg-indigo-600/10 rounded-full blur-[150px] pointer-events-none z-0"></div>
 
-      {/* HEADER */}
+      {/* HEADER WITH NEW 'OPEN LIVE BOT' BUTTON */}
       <header className="flex items-center justify-between p-6 md:p-8 border-b border-white/5 bg-[#111]/50 backdrop-blur-md sticky top-0 z-30">
         <div>
           <h1 className="text-2xl font-serif text-white tracking-tight">Welcome back, {session?.user?.name?.split(' ')[0] || 'Agent'}</h1>
           <p className="text-sm text-gray-400 mt-1">Here is what's happening with your OpenClaw instance today.</p>
         </div>
         <div className="flex items-center gap-4">
+          
+          {/* 🚀 LIVE BOT BUTTON */}
+          <button 
+            onClick={() => router.push(`/widget?email=${session?.user?.email}`)}
+            className="hidden sm:flex items-center gap-2 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white px-5 py-2.5 rounded-full font-bold text-xs uppercase tracking-widest shadow-[0_0_20px_rgba(59,130,246,0.3)] transition-all transform hover:scale-105"
+          >
+            <Bot className="w-4 h-4" /> Open Live Bot <ExternalLink className="w-3 h-3 ml-1" />
+          </button>
+
           <div className="hidden md:flex items-center bg-[#1A1A1A] border border-white/10 rounded-full px-4 py-2">
             <Search className="w-4 h-4 text-gray-500" />
-            <input type="text" placeholder="Search chats, numbers..." className="bg-transparent border-none outline-none text-sm ml-2 text-white placeholder-gray-600 w-48 font-mono" />
+            <input type="text" placeholder="Search chats..." className="bg-transparent border-none outline-none text-sm ml-2 text-white placeholder-gray-600 w-32 font-mono" />
           </div>
-          <button className="relative p-2 bg-[#1A1A1A] border border-white/10 rounded-full hover:bg-white/10 transition-colors">
+          <button className="relative p-2.5 bg-[#1A1A1A] border border-white/10 rounded-full hover:bg-white/10 transition-colors">
             <Bell className="w-5 h-5 text-gray-400" />
             <span className="absolute top-0 right-0 w-2.5 h-2.5 bg-orange-500 rounded-full border-2 border-[#111]"></span>
           </button>
@@ -225,6 +232,16 @@ Thank you for choosing ClawLink Enterprise AI.
       {/* DASHBOARD CONTENT */}
       <div className="p-6 md:p-8 space-y-8 max-w-7xl mx-auto w-full relative z-10 flex-1">
         
+        {/* MOBILE LIVE BOT BUTTON */}
+        <div className="sm:hidden mb-4">
+          <button 
+            onClick={() => router.push(`/widget?email=${session?.user?.email}`)}
+            className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white px-5 py-3.5 rounded-xl font-bold text-xs uppercase tracking-widest shadow-lg"
+          >
+            <Bot className="w-4 h-4" /> Open Live Bot <ExternalLink className="w-3 h-3 ml-1" />
+          </button>
+        </div>
+
         <AnimatePresence>
           {showAppBanner && (
             <motion.div 
@@ -240,7 +257,7 @@ Thank you for choosing ClawLink Enterprise AI.
           )}
         </AnimatePresence>
 
-        {/* 🚀 STATS GRID (DYNAMIC LOGIC ADDED HERE) */}
+        {/* 🚀 STATS GRID */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           
           {/* CARD 1: PLAN */}
