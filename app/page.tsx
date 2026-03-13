@@ -4,7 +4,7 @@ import { signIn, signOut, useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
-import { Globe, Database, Mic, Zap, MessageSquare, Activity, LogOut, Shield, ExternalLink, CheckCircle2 } from "lucide-react";
+import { Globe, Database, Mic, Zap, MessageSquare, Activity, LogOut, Shield, ExternalLink, CheckCircle2, Copy } from "lucide-react";
 
 // --- CORE SYSTEM DATA ---
 const MODEL_DETAILS: Record<string, { name: string; starter: number; pro: number }> = {
@@ -30,7 +30,11 @@ export default function Home() {
   
   const [isMounted, setIsMounted] = useState(false);
   const [isTelegramModalOpen, setIsTelegramModalOpen] = useState(false);
+  
+  // Auth States
   const [telegramToken, setTelegramToken] = useState("");
+  const [waPhoneId, setWaPhoneId] = useState(""); // New state for WhatsApp Phone ID
+  
   const [isTokenSaved, setIsTokenSaved] = useState(false);
   const [showPricingPopup, setShowPricingPopup] = useState(false);
   const [isDeploying, setIsDeploying] = useState(false);
@@ -104,7 +108,15 @@ export default function Home() {
             const configRes = await fetch("/api/config", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ email: session?.user?.email, selectedModel: activeModel, selectedChannel: activeChannel, telegramToken, plan: selectedTier })
+              // Passing both token and phoneId (if applicable) to backend
+              body: JSON.stringify({ 
+                email: session?.user?.email, 
+                selectedModel: activeModel, 
+                selectedChannel: activeChannel, 
+                telegramToken, 
+                waPhoneId, 
+                plan: selectedTier 
+              })
             });
             const configData = await configRes.json();
 
@@ -136,6 +148,11 @@ export default function Home() {
     }
   };
 
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    alert("Copied to clipboard!");
+  };
+
   // 🚀 MARQUEE ARRAYS
   const row1 = ["📅 Productivity & Meetings", "📄 Write contracts & NDAs", "📊 Create presentations", "🔄 Negotiate refunds", "🛒 Shopping & Research", "👥 Team & Monitoring"];
   const row2 = ["📅 Schedule meetings from chat", "💼 Finance, Tax & Payroll", "💰 Do your taxes with AI", "🎯 Screen & prioritize leads", "🧾 Track expenses", "👔 Write job descriptions"];
@@ -160,20 +177,20 @@ export default function Home() {
     </div>
   );
 
-  // 🚀 100% FIXED HELPER FOR ANIMATED CHAT BUBBLES (No 'channel' prop needed to avoid TS Error)
+  // 🚀 HELPER FOR ANIMATED CHAT BUBBLES
   const ChatBubble = ({ text, delay, isUser }: { text: string, delay: number, isUser?: boolean }) => (
     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay, duration: 0.4 }} className={`p-3 rounded-2xl max-w-[85%] text-[11px] shadow-md leading-relaxed ${isUser ? 'bg-[#2AABEE] text-white self-end rounded-tr-sm' : 'bg-[#1A1A1A] border border-white/5 text-gray-200 self-start rounded-tl-sm'}`}>
       {text}
     </motion.div>
   );
 
-  // 🚀 HELPER FOR WHATSAPP GUIDE STEPS
+  // 🚀 HELPER FOR WHATSAPP GUIDE STEPS (Right iPhone Panel)
   const GuideStep = ({ step, title, desc, delay }: { step: string, title: string, desc: string, delay: number }) => (
-    <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay, duration: 0.4 }} className="flex gap-3 bg-[#1A1A1A] border border-white/5 p-3 rounded-xl shadow-md w-[90%] self-center mx-auto">
-      <div className="w-5 h-5 rounded-full bg-[#25D366]/20 text-[#25D366] flex items-center justify-center font-bold text-[10px] shrink-0">{step}</div>
+    <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay, duration: 0.4 }} className="flex gap-3 bg-[#1A1A1A] border border-white/5 p-3 rounded-xl shadow-md w-[90%] self-center mx-auto items-start">
+      <div className="w-5 h-5 rounded-full bg-[#25D366]/20 text-[#25D366] flex items-center justify-center font-bold text-[10px] shrink-0 mt-0.5">{step}</div>
       <div className="flex flex-col">
         <span className="text-white font-bold mb-1 text-[11px]">{title}</span>
-        <span className="text-gray-400 text-[9px] leading-tight">{desc}</span>
+        <span className="text-gray-400 text-[9px] leading-relaxed">{desc}</span>
       </div>
     </motion.div>
   );
@@ -312,7 +329,7 @@ export default function Home() {
               </button>
             </div>
 
-            {/* 🚀 AUTH / DEPLOY ACTION AREA */}
+            {/* 🚀 FIXED AUTH / DEPLOY ACTION AREA */}
             <div className="w-full max-w-xl min-h-[140px] flex flex-col justify-center items-center">
               <AnimatePresence mode="wait">
                 {botLink ? (
@@ -454,11 +471,11 @@ export default function Home() {
       <AnimatePresence>
         {isTelegramModalOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-md p-4">
-            <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }} className={`bg-[#111] border border-white/10 rounded-3xl w-full max-w-[950px] flex flex-col md:flex-row overflow-hidden relative shadow-2xl`}>
+            <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }} className={`bg-[#111] border border-white/10 rounded-3xl w-full max-w-[1000px] flex flex-col md:flex-row overflow-hidden relative shadow-2xl`}>
               <button onClick={() => setIsTelegramModalOpen(false)} className="absolute top-6 right-6 z-20 text-gray-500 hover:text-white bg-white/5 hover:bg-white/10 p-2 rounded-full transition-all">✕</button>
               
               {/* LEFT SIDE: Instructions & Token Input */}
-              <div className="w-full md:w-1/2 p-10 flex flex-col justify-center relative z-10">
+              <div className="w-full md:w-1/2 p-8 md:p-12 flex flex-col justify-center relative z-10 overflow-y-auto max-h-[85vh] md:max-h-none">
                 <div className="flex items-center gap-4 mb-6">
                   <div className="w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center shadow-lg border border-white/10">
                     {activeChannel === 'telegram' ? <Telegram_Icon /> : <WhatsApp_Icon />}
@@ -478,59 +495,85 @@ export default function Home() {
                     <a href="https://t.me/BotFather" target="_blank" rel="noopener noreferrer" className="inline-flex items-center justify-center gap-2 mb-8 bg-[#2AABEE]/10 text-[#2AABEE] hover:bg-[#2AABEE]/20 border border-[#2AABEE]/20 px-4 py-2 rounded-lg text-xs font-bold transition-colors w-fit">
                       <ExternalLink className="w-3 h-3" /> Open @BotFather Directly
                     </a>
+
+                    <div className="bg-[#1A1A1A] p-6 rounded-2xl border border-white/5 shadow-inner">
+                      <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">API Access Token</label>
+                      <input type="password" value={telegramToken} onChange={(e) => setTelegramToken(e.target.value)} placeholder="Enter Token..." className="w-full bg-black border border-white/10 rounded-xl px-4 py-4 text-sm focus:outline-none mb-6 text-white font-mono" />
+                      <button onClick={() => { setIsTokenSaved(true); setIsTelegramModalOpen(false); }} className="w-full bg-white text-black font-bold py-4 rounded-xl text-sm hover:bg-gray-200 uppercase tracking-widest shadow-lg transition-transform hover:scale-[1.02]">
+                        SAVE AND CONTINUE
+                      </button>
+                    </div>
                   </>
                 ) : (
                   <>
-                    <ol className="space-y-3 text-sm text-gray-400 list-decimal pl-5 mb-6 leading-relaxed">
-                      <li>Go to the <strong className="text-white">Meta Developer Console</strong>.</li>
-                      <li>Create a <strong className="text-white">Business App</strong> & Add WhatsApp Product.</li>
-                      <li>Connect your <strong className="text-white">Phone Number</strong>.</li>
-                      <li>Create a <strong className="text-white">System User</strong> to get a <strong className="text-white">Permanent Token</strong>.</li>
-                      <li>In Meta Webhook settings, use the exact URL below.</li>
+                    {/* Detailed 7 Step WhatsApp Guide */}
+                    <ol className="space-y-3 text-[13px] text-gray-400 list-decimal pl-5 mb-6 leading-relaxed">
+                      <li>Go to <strong className="text-white">Meta Developer Console</strong>.</li>
+                      <li>Create a <strong className="text-white">Business App</strong> and add the <strong className="text-white">WhatsApp Product</strong>.</li>
+                      <li>In <strong className="text-white">API Setup</strong>, copy your <strong className="text-white">Phone Number ID</strong> (using test or real number).</li>
+                      <li>Go to <strong className="text-white">System Users</strong>, generate a <strong className="text-white">Permanent Token</strong>.</li>
+                      <li>Go to <strong className="text-white">Configuration</strong>, click Edit to set your Webhook.</li>
+                      <li>Paste the exact <strong className="text-white">Callback URL</strong> and <strong className="text-white">Verify Token</strong> below.</li>
+                      <li>Subscribe to <strong className="text-white">messages</strong> webhook fields.</li>
                     </ol>
 
                     <div className="bg-[#1A1A1A] p-4 rounded-xl border border-[#25D366]/20 mb-6 shadow-[0_0_15px_rgba(37,211,102,0.05)]">
                       <div className="mb-4">
-                        <span className="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">Webhook Callback URL</span>
+                        <div className="flex justify-between items-center mb-1">
+                          <span className="block text-[10px] font-bold text-gray-500 uppercase tracking-widest">Webhook Callback URL</span>
+                          <button onClick={() => copyToClipboard("https://clawlink.com/api/webhook/whatsapp")} className="text-gray-500 hover:text-white"><Copy className="w-3 h-3"/></button>
+                        </div>
                         <code className="block bg-black text-[#25D366] text-xs p-2 rounded border border-white/5 select-all">https://clawlink.com/api/webhook/whatsapp</code>
                       </div>
                       <div>
-                        <span className="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">Verify Token</span>
+                        <div className="flex justify-between items-center mb-1">
+                          <span className="block text-[10px] font-bold text-gray-500 uppercase tracking-widest">Verify Token</span>
+                          <button onClick={() => copyToClipboard("clawlink_secure")} className="text-gray-500 hover:text-white"><Copy className="w-3 h-3"/></button>
+                        </div>
                         <code className="block bg-black text-white text-xs p-2 rounded border border-white/5 select-all">clawlink_secure</code>
                       </div>
                     </div>
+
+                    <div className="bg-[#1A1A1A] p-6 rounded-2xl border border-white/5 shadow-inner">
+                      <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">Phone Number ID</label>
+                      <input type="text" value={waPhoneId} onChange={(e) => setWaPhoneId(e.target.value)} placeholder="e.g. 1029384756" className="w-full bg-black border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#25D366] mb-4 text-white font-mono transition-colors" />
+                      
+                      <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">Permanent API Token</label>
+                      <input type="password" value={telegramToken} onChange={(e) => setTelegramToken(e.target.value)} placeholder="EAABwzL..." className="w-full bg-black border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#25D366] mb-6 text-white font-mono transition-colors" />
+                      
+                      <button onClick={() => { setIsTokenSaved(true); setIsTelegramModalOpen(false); }} className="w-full bg-white text-black font-bold py-4 rounded-xl text-sm hover:bg-gray-200 uppercase tracking-widest shadow-lg transition-transform hover:scale-[1.02]">
+                        SAVE AND CONTINUE
+                      </button>
+                    </div>
                   </>
                 )}
-
-                <div className="bg-[#1A1A1A] p-6 rounded-2xl border border-white/5 shadow-inner">
-                  <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">Permanent API Token</label>
-                  <input type="password" value={telegramToken} onChange={(e) => setTelegramToken(e.target.value)} placeholder="Paste your token here..." className="w-full bg-black border border-white/10 rounded-xl px-4 py-4 text-sm focus:outline-none mb-6 text-white font-mono" />
-                  <button onClick={() => { setIsTokenSaved(true); setIsTelegramModalOpen(false); }} className="w-full bg-white text-black font-bold py-4 rounded-xl text-sm hover:bg-gray-200 uppercase tracking-widest shadow-lg transition-transform hover:scale-[1.02]">
-                    SAVE AND CONTINUE
-                  </button>
-                </div>
               </div>
 
               {/* RIGHT SIDE: Animated iPhone Mockup */}
               <div className="hidden md:flex md:w-1/2 bg-black/40 items-center justify-center p-10 border-l border-white/5 relative">
-                 <div className="w-[300px] h-[550px] border-[8px] border-[#1A1A1A] rounded-[3rem] bg-[#0A0A0B] flex flex-col relative overflow-hidden shadow-2xl">
+                 <div className="w-[320px] h-[600px] border-[8px] border-[#1A1A1A] rounded-[3rem] bg-[#0A0A0B] flex flex-col relative overflow-hidden shadow-2xl">
                     {/* iPhone Notch */}
                     <div className="absolute top-0 inset-x-0 h-7 bg-[#1A1A1A] rounded-b-3xl w-40 mx-auto z-20 flex justify-center items-end pb-1">
                       <div className="w-12 h-1.5 bg-black/50 rounded-full"></div>
                     </div>
                     
-                    {/* Dynamic Chat Header based on Channel */}
+                    {/* Dynamic Header based on Channel */}
                     <div className="bg-[#111]/90 backdrop-blur-md p-4 pt-10 flex items-center gap-3 border-b border-white/5 z-10">
                       <div className={`w-10 h-10 rounded-full flex items-center justify-center shadow-lg ${activeChannel === 'telegram' ? 'bg-[#2AABEE]' : 'bg-[#25D366]'}`}>
                         {activeChannel === 'telegram' ? <Telegram_Icon /> : <WhatsApp_Icon />}
                       </div>
                       <div>
-                        <p className="text-white text-sm font-bold flex items-center gap-1">
-                          {activeChannel === 'telegram' ? 'BotFather' : 'WhatsApp Guide'}
-                        </p>
-                        <p className="text-gray-400 text-[10px] font-mono tracking-wider">
-                          {activeChannel === 'telegram' ? 'verified bot' : 'system setup'}
-                        </p>
+                        {activeChannel === 'telegram' ? (
+                          <>
+                            <p className="text-white text-sm font-bold flex items-center gap-1">BotFather <CheckCircle2 className="w-3 h-3 text-blue-400"/></p>
+                            <p className="text-gray-400 text-[10px] font-mono tracking-wider">verified bot</p>
+                          </>
+                        ) : (
+                          <a href="https://developers.facebook.com/apps/" target="_blank" rel="noopener noreferrer" className="hover:opacity-80 transition-opacity">
+                            <p className="text-white text-sm font-bold flex items-center gap-1">Meta Developer <ExternalLink className="w-3 h-3 text-green-400"/></p>
+                            <p className="text-gray-400 text-[10px] font-mono tracking-wider">API Configuration</p>
+                          </a>
+                        )}
                       </div>
                     </div>
                     
@@ -552,13 +595,13 @@ export default function Home() {
                       ) : (
                         <div className="flex flex-col gap-3 font-sans h-full justify-start pb-4">
                            <GuideStep delay={0.5} step="1" title="Create App" desc="Select Business type in Meta Developer Console." />
-                           <GuideStep delay={1.5} step="2" title="Add WhatsApp" desc="Connect your Business Account & Phone Number." />
-                           <GuideStep delay={2.5} step="3" title="Generate Token" desc="Create a System User & get a Permanent Access Token." />
-                           <GuideStep delay={3.5} step="4" title="Link Webhook" desc="Paste the ClawLink Webhook URL & Verify Token in Meta." />
-                           <GuideStep delay={4.5} step="5" title="Authenticate" desc="Paste your Permanent Token into ClawLink to deploy." />
+                           <GuideStep delay={1.5} step="2" title="API Setup" desc="Get your Phone Number ID from WhatsApp Product settings." />
+                           <GuideStep delay={2.5} step="3" title="System User" desc="Go to Business Settings and generate a Permanent Token." />
+                           <GuideStep delay={3.5} step="4" title="Configuration" desc="Paste the ClawLink Webhook URL & Verify Token." />
+                           <GuideStep delay={4.5} step="5" title="Subscribe" desc="Manage webhook fields and subscribe to messages." />
                            
-                           <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 5.5 }} className="mt-2 bg-[#25D366]/10 border border-[#25D366]/30 p-3 rounded-xl text-center shadow-[0_0_15px_rgba(37,211,102,0.1)]">
-                             <span className="text-[#25D366] font-bold text-xs flex items-center justify-center gap-2"><Zap className="w-3 h-3"/> Ready for Deployment</span>
+                           <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 5.5 }} className="mt-4 bg-[#25D366]/10 border border-[#25D366]/30 p-3 rounded-xl text-center shadow-[0_0_15px_rgba(37,211,102,0.1)]">
+                             <span className="text-[#25D366] font-bold text-xs flex items-center justify-center gap-2"><Zap className="w-3 h-3"/> Dashboard Connected</span>
                            </motion.div>
                         </div>
                       )}
