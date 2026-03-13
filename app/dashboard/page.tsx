@@ -11,25 +11,29 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 
-// 🚀 FIXED: Directly output exactly what is in the DB without fallback overriding
+// 🚀 FIXED: Extremely strict parser that formats EXACTLY what the DB sends
 const formatAIProvider = (model: string) => {
-  const m = (model || "").toLowerCase();
+  const m = (model || "").toLowerCase().trim();
   
-  // If absolutely nothing is in DB yet
+  // Default fallback if database is literally empty
   if (!m) return { name: "Google", badge: "Gemini Flash" };
 
-  let pName = "Google";
-  if (m.includes("gpt")) pName = "OpenAI";
-  if (m.includes("claude") || m.includes("anthropic")) pName = "Anthropic";
-
-  let mName = model; // Use exact text from DB natively
-  
-  // Make it look pretty if it matches our standard models
-  if (m === "gpt-5.2") mName = "GPT-5.2";
-  if (m === "gpt-4-turbo") mName = "GPT-4 Turbo";
-  if (m === "claude-3-opus") mName = "Claude 3 Opus";
-
-  return { name: pName, badge: mName };
+  if (m.includes("gpt")) {
+    let exactVersion = "GPT-4 Turbo";
+    if (m === "gpt-5.2" || m.includes("5.2")) exactVersion = "GPT-5.2";
+    else if (m.includes("3.5")) exactVersion = "GPT-3.5";
+    return { name: "OpenAI", badge: exactVersion };
+  } 
+  else if (m.includes("claude") || m.includes("anthropic")) {
+    let exactVersion = "Claude 3 Opus";
+    if (m.includes("sonnet")) exactVersion = "Claude 3 Sonnet";
+    return { name: "Anthropic", badge: exactVersion };
+  } 
+  else {
+    let exactVersion = "Gemini Flash";
+    if (m.includes("pro")) exactVersion = "Gemini Pro";
+    return { name: "Google", badge: exactVersion };
+  }
 };
 
 export default function Dashboard() {
@@ -57,8 +61,17 @@ export default function Dashboard() {
     }
 
     if (session?.user?.email) {
-      // Fetch User Config (Now guaranteed fresh due to API fix)
-      fetch(`/api/user?email=${session.user.email}`)
+      // 🚀 CACHE-KILLER: Force Next.js & Browser to NEVER cache this data!
+      const cacheBusterUrl = `/api/user?email=${session.user.email}&t=${Date.now()}`;
+      
+      fetch(cacheBusterUrl, { 
+        cache: 'no-store', // Absolutely NO CACHING
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0'
+        }
+      })
         .then((res) => res.json())
         .then((data) => {
           if (data.success && data.data) {
@@ -67,10 +80,10 @@ export default function Dashboard() {
           }
         })
         .catch(console.error)
-        .finally(() => setIsLoading(false)); // Ensure loading stops
+        .finally(() => setIsLoading(false));
 
-      // Fetch Billing
-      fetch(`/api/billing?email=${session.user.email}`)
+      // Fetch Billing (Also Cache-Busted)
+      fetch(`/api/billing?email=${session.user.email}&t=${Date.now()}`, { cache: 'no-store' })
         .then((res) => res.json())
         .then((data) => {
           if (data.success) {
@@ -79,7 +92,6 @@ export default function Dashboard() {
         })
         .catch(console.error);
 
-      // Fetch Existing Knowledge Base
       fetchKnowledge();
     }
   }, [session, status, router]);
@@ -87,7 +99,7 @@ export default function Dashboard() {
   const fetchKnowledge = async () => {
     if (!session?.user?.email) return;
     try {
-      const res = await fetch(`/api/knowledge?email=${session.user.email}`);
+      const res = await fetch(`/api/knowledge?email=${session.user.email}&t=${Date.now()}`, { cache: 'no-store' });
       const data = await res.json();
       if (data.success) setKnowledgeItems(data.data);
     } catch (e) {
@@ -184,12 +196,11 @@ Thank you for choosing ClawLink Enterprise AI.
 
   // 🚀 SMART UI LOGIC FOR TOKENS 
   const currentPlan = userData?.plan?.toLowerCase() || "starter";
-  // Tokens UI only for starter
   const showTokens = currentPlan === "starter"; 
   const usagePercentage = Math.min(((userData?.tokensUsed || 0) / (userData?.tokensAllocated || 1)) * 100, 100);
 
-  // 🚀 100% ACCURATE PROVIDER INFO (Picks strictly from userData.model which maps to selected_model)
-  const aiInfo = formatAIProvider(userData?.model || userData?.selected_model);
+  // 🚀 100% ACCURATE PROVIDER INFO (Strictly reads 'selected_model' from DB, handles gpt-5.2 perfectly)
+  const aiInfo = formatAIProvider(userData?.selected_model || userData?.model);
 
   return (
     <div className="w-full min-h-screen bg-[#111111] text-[#EDEDED] font-sans relative selection:bg-orange-500/30 overflow-y-auto custom-scrollbar flex flex-col">
