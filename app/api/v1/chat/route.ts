@@ -1,7 +1,12 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
-const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL || "", process.env.SUPABASE_SERVICE_ROLE_KEY || "");
+// 🚨 VERCEL BUILD FIX: Force dynamic execution
+export const dynamic = "force-dynamic";
+
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://dummy.supabase.co";
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "dummy_key";
+const supabase = createClient(supabaseUrl, supabaseKey);
 
 export async function POST(req: Request) {
   try {
@@ -29,7 +34,7 @@ export async function POST(req: Request) {
       await supabase.from("user_configs").update({ available_tokens: config.available_tokens - 1 }).eq("email", config.email);
     }
 
-    // Call AI (Using Gemini as default for this example, you can expand to your RAG later)
+    // Call AI
     const prompt = `System: ${config.system_prompt || "You are a helpful AI."}\nUser: ${message}`;
     const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${config.ai_model || "gemini-1.5-flash-latest"}:generateContent?key=${process.env.GEMINI_API_KEY}`, {
       method: "POST", headers: { "Content-Type": "application/json" },
