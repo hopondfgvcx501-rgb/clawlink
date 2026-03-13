@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { sendEmail } from "../../lib/email";
+import { sendEmail } from "../../lib/email"; // Check your exact path
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
@@ -9,7 +9,8 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { email, selectedModel, selectedChannel, telegramToken, plan } = body;
+    // 🚨 FIX: Added waPhoneId and plan to extraction
+    const { email, selectedModel, selectedChannel, telegramToken, waPhoneId, plan } = body;
 
     if (!email) {
       return NextResponse.json({ success: false, error: "Email is required for deployment." });
@@ -25,6 +26,7 @@ export async function POST(req: Request) {
     else if (plan === "pro") allocatedTokens = 500000; 
     else if (plan === "max") { isUnlimited = true; allocatedTokens = 9999999; }
 
+    // 1. UPDATE USER CONFIGURATION
     const { data, error } = await supabase
       .from("user_configs")
       .upsert({
@@ -33,8 +35,11 @@ export async function POST(req: Request) {
         ai_provider: selectedModel === "gpt-5.2" ? "openai" : selectedModel === "gemini" ? "google" : "anthropic",
         telegram_token: selectedChannel === "telegram" ? telegramToken : null,
         whatsapp_token: selectedChannel === "whatsapp" ? telegramToken : null,
+        whatsapp_phone_id: selectedChannel === "whatsapp" ? waPhoneId : null, // 🚨 CRITICAL FIX for Webhook Routing
+        tokens_allocated: allocatedTokens, // Added for Dashboard Sync
         available_tokens: allocatedTokens,
         is_unlimited: isUnlimited,
+        plan: plan, // 🚨 FIX: Added plan name for dashboard
         plan_status: 'Active',
         expires_at: expiryDate.toISOString()
       }, { onConflict: "email" })
@@ -42,12 +47,33 @@ export async function POST(req: Request) {
 
     if (error) throw error;
 
+    // 2. 🚨 FIX: RECORD BILLING HISTORY FOR DASHBOARD INVOICES
+    let amount = "19.00";
+    if (plan === "pro") amount = "39.00";
+    if (plan === "max") amount = "89.00";
+
+    await supabase.from("billing_history").insert({
+      email: email,
+      plan_name: plan,
+      amount: amount,
+      currency: "USD", // Assumes USD for international SaaS
+      status: "PAID",
+      razorpay_order_id: "DEPLOY_" + Math.random().toString(36).substring(7).toUpperCase()
+    });
+
+    // 3. GENERATE BOT LINK & AUTO-SET TELEGRAM WEBHOOK
     let botLink = "";
     if (selectedChannel === "telegram" && telegramToken) {
       try {
         const tRes = await fetch(`https://api.telegram.org/bot${telegramToken}/getMe`);
         const tData = await tRes.json();
-        if (tData.ok) botLink = `https://t.me/${tData.result.username}`;
+        if (tData.ok) {
+          botLink = `https://t.me/${tData.result.username}`;
+          
+          // 🚀 BONUS: AUTO-REGISTER TELEGRAM WEBHOOK (Zero manual effort for customer)
+          const webhookUrl = `https://clawlink-six.vercel.app/api/webhook/telegram`;
+          await fetch(`https://api.telegram.org/bot${telegramToken}/setWebhook?url=${webhookUrl}`);
+        }
       } catch (err) {
         console.error("Telegram link fetch failed.");
       }
@@ -55,6 +81,7 @@ export async function POST(req: Request) {
       botLink = "https://business.facebook.com/wa/manage/";
     }
 
+    // 4. SEND BEAUTIFUL ONBOARDING EMAIL
     const emailHtml = `
       <div style="font-family: monospace; max-w: 600px; margin: 0 auto; background: #0A0A0B; color: #ffffff; padding: 40px; border-radius: 15px; border: 1px solid #333;">
         <h2 style="color: #22c55e; letter-spacing: 2px;">DEPLOYMENT SUCCESSFUL 🚀</h2>
@@ -83,6 +110,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ success: true, botLink });
   } catch (error: any) {
     console.error("Config Deployment Error:", error.message);
-    return NextResponse.json({ success: false, error: error.message });
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }
