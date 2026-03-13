@@ -4,8 +4,7 @@ import { signIn, signOut, useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
-import LandingUI from "../components/LandingUI";
-import { MessageSquare, Zap, Activity, LogOut, CheckCircle2, ExternalLink } from "lucide-react";
+import { Globe, Database, Mic, Zap, MessageSquare, Activity, LogOut, Shield, ExternalLink, CheckCircle2 } from "lucide-react";
 
 // --- CORE SYSTEM DATA ---
 const MODEL_DETAILS: Record<string, { name: string; starter: number; pro: number }> = {
@@ -20,7 +19,7 @@ const OpenAI_Icon = () => <svg viewBox="0 0 24 24" width="20" height="20" fill="
 const Claude_Icon = () => <svg viewBox="0 0 24 24" width="20" height="20" fill="#D97757"><path d="M12 2L13 9L20 7L15 12L22 15L15 16L18 22L12 18L6 22L9 16L2 15L9 12L4 7L11 9L12 2Z"/></svg>;
 const Gemini_Icon = () => <svg viewBox="0 0 24 24" width="20" height="20"><path fill="#4E7CFF" d="M12 2l2.5 7.5L22 12l-7.5 2.5L12 22l-2.5-7.5L2 12l7.5-2.5L12 2z"/></svg>;
 const Discord_Icon = () => <svg viewBox="0 0 24 24" width="16" height="16" fill="#5865F2"><path d="M20.3 5.4c-1.6-.7-3.4-1.2-5.2-1.5-.2.4-.4.9-.6 1.3-1.9-.3-3.8-.3-5.7 0-.2-.4-.4-.9-.6-1.3-1.8.3-3.6.8-5.2 1.5-3.3 4.9-4.2 9.7-3.3 14.4 2.2 1.6 4.3 2.6 6.4 3.2.5-.7 1-1.5 1.4-2.3-1.2-.5-2.4-1.1-3.5-1.8.3-.2.6-.4.9-.7 4.6 2.1 9.7 2.1 14.3 0 .3.2.6.5.9.7-1.1.7-2.3 1.3-3.5 1.8.4.8.9 1.6 1.4 2.3 2.1-.6 4.2-1.6 6.4-3.2 1-5.1.1-10-3.2-14.4zm-11.7 11c-1.3 0-2.4-1.2-2.4-2.6s1.1-2.6 2.4-2.6 2.4 1.2 2.4 2.6-1.1 2.6-2.4 2.6zm6.8 0c-1.3 0-2.4-1.2-2.4-2.6s1.1-2.6 2.4-2.6 2.4 1.2 2.4 2.6-1.1 2.6-2.4 2.6z"/></svg>;
-const Instagram_Icon = () => <div className="w-[16px] h-[16px] rounded-md bg-gradient-to-tr from-[#f09433] via-[#e6683c] to-[#bc1888] flex items-center justify-center"><div className="w-[10px] h-[10px] border-[1.5px] border-white rounded-[3px] flex items-center justify-center"><div className="w-[3px] h-[3px] bg-white rounded-full"></div></div></div>;
+const Instagram_Icon = () => <div className="w-[16px] h-[16px] rounded-md bg-gradient-to-tr from-[#f09433] via-[#e6683c] to-[#bc1888] flex items-center justify-center"><div className="w-[12px] h-[12px] border-[1.5px] border-white rounded-[4px] flex items-center justify-center"><div className="w-[4px] h-[4px] bg-white rounded-full"></div></div></div>;
 const Telegram_Icon = () => <svg viewBox="0 0 24 24" width="20" height="20" fill="#2AABEE"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69.01-.03.01-.14-.07-.18-.08-.04-.19-.02-.27 0-.11.03-1.93 1.23-5.46 3.62-.51.35-.98.53-1.39.52-.46-.01-1.33-.26-1.98-.48-.8-.27-1.43-.42-1.37-.89.03-.25.38-.51 1.03-.78 4.04-1.76 6.74-2.92 8.09-3.48 3.85-1.6 4.64-1.88 5.17-1.89.11 0 .37.03.54.17.14.12.2.27.22.42.02.13.02.26 0 .38z"/></svg>;
 const WhatsApp_Icon = () => <svg viewBox="0 0 24 24" width="20" height="20" fill="#25D366"><path d="M17.47 14.38c-.3-.15-1.76-.87-2.03-.97-.27-.1-.47-.15-.67.15-.2.3-.77.97-.94 1.16-.17.2-.35.22-.64.08-.3-.15-1.26-.46-2.39-1.48-.88-.79-1.48-1.76-1.65-2.06-.17-.3-.02-.46.13-.61.13-.13.3-.35.45-.52.15-.17.2-.3.3-.5.1-.2.05-.37-.03-.52-.07-.15-.67-1.61-.92-2.21-.24-.58-.49-.5-.67-.51h-.57c-.2 0-.52.07-.79.37-.27.3-1.04 1.02-1.04 2.48 0 1.46 1.07 2.88 1.21 3.07.15.2 2.1 3.2 5.08 4.49.71.3 1.26.49 1.69.62.71.23 1.36.2 1.87.12.57-.08 1.76-.72 2.01-1.41.25-.69.25-1.29.17-1.41-.07-.12-.27-.2-.57-.35m-5.42 7.4h-.01a9.87 9.87 0 0 1-5.03-1.38l-.36-.21-3.74.98 1-3.65-.24-.37a9.86 9.86 0 0 1-1.51-5.26c0-5.45 4.44-9.88 9.89-9.88 2.64 0 5.12 1.03 6.99 2.9a9.82 9.82 0 0 1 2.89 6.99c0 5.45-4.44 9.88-9.88 9.88m8.41-18.3A11.81 11.81 0 0 0 12.05 0C5.5 0 .16 5.34.16 11.89c0 2.1.55 4.14 1.59 5.95L.06 24l6.3-1.65a11.88 11.88 0 0 0 5.68 1.45h.01c6.55 0 11.89-5.34 11.89-11.89a11.82 11.82 0 0 0-3.48-8.41z"/></svg>;
 const Google_Icon = () => <svg viewBox="0 0 24 24" width="24" height="24"><path fill="#EA4335" d="M5.266 9.765A7.077 7.077 0 0112 4.909c1.69 0 3.218.6 4.418 1.582L19.91 3C17.782 1.145 15.055 0 12 0 7.27 0 3.198 2.698 1.24 6.65l4.026 3.115Z"/><path fill="#34A853" d="M16.04 18.013c-1.09.703-2.474 1.078-4.04 1.078a7.077 7.077 0 01-6.723-4.823l-4.04 3.067A11.965 11.965 0 0012 24c2.933 0 5.735-1.043 7.834-3l-3.793-2.987Z"/><path fill="#4A90E2" d="M19.834 21c2.195-2.048 3.62-5.096 3.62-9 0-.71-.109-1.473-.272-2.182H12v4.637h6.436c-.317 1.559-1.17 2.766-2.395 3.558L19.834 21Z"/><path fill="#FBBC05" d="M5.277 14.268A7.12 7.12 0 014.909 12c0-.782.125-1.533.357-2.235L1.24 6.65A11.934 11.934 0 000 12c0 1.92.445 3.73 1.237 5.335l4.04-3.067Z"/></svg>;
@@ -61,14 +60,12 @@ export default function Home() {
     document.body.appendChild(script);
   }, []);
 
-  // 🚀 FIXED: Parameter explicitly declared as string
   const handleOpenIntegration = (channel: string) => {
     if(channel === 'discord' || channel === 'instagram') return;
     setActiveChannel(channel);
     setIsTelegramModalOpen(true);
   };
 
-  // 🚀 FIXED: Parameter explicitly declared as string
   const handleOpenPricing = (channel: string) => {
     setActiveChannel(channel);
     setShowPricingPopup(true);
@@ -168,139 +165,25 @@ export default function Home() {
     </div>
   );
 
-  // Helper for animated chat bubbles in Telegram Modal
-  const ChatBubble = ({ text, delay, isUser }: { text: string, delay: number, isUser?: boolean }) => (
-    <motion.div 
-      initial={{ opacity: 0, y: 10 }} 
-      animate={{ opacity: 1, y: 0 }} 
-      transition={{ delay, duration: 0.4 }}
-      className={`p-3 rounded-2xl max-w-[85%] text-[11px] shadow-md leading-relaxed ${isUser ? 'bg-[#2AABEE] text-white self-end rounded-tr-sm' : 'bg-[#1A1A1A] border border-white/5 text-gray-200 self-start rounded-tl-sm'}`}
-    >
-      {text}
-    </motion.div>
-  );
+  // 🚀 HELPER FOR DYNAMIC CHAT BUBBLES IN IPHONE SIMULATION
+  const ChatBubble = ({ text, delay, isUser, channel }: { text: string, delay: number, isUser?: boolean, channel?: string }) => {
+    // Colors based on active channel
+    const tgUser = "bg-[#2AABEE] text-white self-end rounded-tr-sm";
+    const tgBot = "bg-[#1A1A1A] border border-white/5 text-gray-200 self-start rounded-tl-sm";
+    const waUser = "bg-[#005C4B] text-white self-end rounded-tr-sm"; // WhatsApp dark mode outgoing
+    const waBot = "bg-[#202C33] text-gray-200 self-start rounded-tl-sm"; // WhatsApp dark mode incoming
+    
+    const style = channel === 'whatsapp' ? (isUser ? waUser : waBot) : (isUser ? tgUser : tgBot);
 
-  // 🚀 THE MAGIC ACTION AREA INJECTED INTO LANDING UI
-  const renderDynamicButtons = () => {
     return (
-      <div className="w-full flex flex-col items-center mt-6">
-        
-        {/* Model Selector (White pills, SVG Logos, with Blur logic) */}
-        <h3 className="text-white text-xl md:text-2xl mb-6 font-serif tracking-tight">Choose a model to use as your default !</h3>
-        <div className="flex flex-wrap justify-center gap-4 mb-12 w-full max-w-xl">
-          <button 
-            onClick={() => !isTokenSaved && setActiveModel("gpt-5.2")} 
-            className={`bg-white rounded-[2rem] px-6 py-3 flex items-center gap-3 shadow-xl transition-all duration-300 ${activeModel === 'gpt-5.2' ? 'ring-4 ring-blue-500 scale-105' : 'hover:scale-105'} ${isTokenSaved && activeModel !== 'gpt-5.2' ? 'opacity-30 blur-[2px] grayscale scale-95 pointer-events-none' : ''}`}
-          >
-            <OpenAI_Icon />
-            <span className="text-[#10A37F] font-bold text-[16px]">gpt-5.2</span>
-          </button>
-
-          <button 
-            onClick={() => !isTokenSaved && setActiveModel("claude")} 
-            className={`bg-white rounded-[2rem] px-6 py-2.5 flex items-center gap-3 shadow-xl transition-all duration-300 ${activeModel === 'claude' ? 'ring-4 ring-blue-500 scale-105' : 'hover:scale-105'} ${isTokenSaved && activeModel !== 'claude' ? 'opacity-30 blur-[2px] grayscale scale-95 pointer-events-none' : ''}`}
-          >
-            <Claude_Icon />
-            <div className="text-left leading-none flex flex-col justify-center">
-              <span className="text-[#D97757] font-bold text-[16px]">Claude</span>
-              <span className="text-[#D97757] text-[9px] font-bold">Opus 4.6</span>
-            </div>
-          </button>
-
-          <button 
-            onClick={() => !isTokenSaved && setActiveModel("gemini")} 
-            className={`bg-white rounded-[2rem] px-6 py-3 flex items-center gap-3 shadow-xl transition-all duration-300 ${activeModel === 'gemini' ? 'ring-4 ring-blue-500 scale-105' : 'hover:scale-105'} ${isTokenSaved && activeModel !== 'gemini' ? 'opacity-30 blur-[2px] grayscale scale-95 pointer-events-none' : ''}`}
-          >
-            <Gemini_Icon />
-            <span className="text-[#4E7CFF] font-bold text-[16px]">Gemini 3 flash</span>
-          </button>
-
-          <div className={`bg-white rounded-[2rem] px-8 py-3 flex items-center shadow-xl cursor-not-allowed transition-all duration-300 ${isTokenSaved ? 'opacity-20 blur-[2px] grayscale scale-95' : 'opacity-80'}`}>
-            <span className="font-black text-[16px] text-transparent bg-clip-text bg-gradient-to-r from-blue-500 via-orange-500 to-pink-500">soon</span>
-          </div>
-        </div>
-
-        {/* Channel Selector (White rectangles, SVG Logos, with Blur logic) */}
-        <h3 className="text-white text-xl md:text-2xl mb-6 font-serif tracking-tight">Select a channel for sending messages !</h3>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-12 w-full max-w-2xl">
-          <button 
-            onClick={() => !isTokenSaved && setActiveChannel("telegram")} 
-            className={`bg-white text-black py-3 px-4 rounded-xl flex items-center justify-center gap-2 shadow-md transition-all duration-300 ${activeChannel === 'telegram' ? 'ring-4 ring-blue-500 scale-105' : 'hover:scale-105'} ${isTokenSaved && activeChannel !== 'telegram' ? 'opacity-30 blur-[2px] grayscale scale-95 pointer-events-none' : ''}`}
-          >
-            <Telegram_Icon />
-            <span className="text-[14px] font-bold text-gray-800">Telegram</span>
-          </button>
-          <button 
-            onClick={() => !isTokenSaved && setActiveChannel("whatsapp")} 
-            className={`bg-white text-black py-3 px-4 rounded-xl flex items-center justify-center gap-2 shadow-md transition-all duration-300 ${activeChannel === 'whatsapp' ? 'ring-4 ring-green-500 scale-105' : 'hover:scale-105'} ${isTokenSaved && activeChannel !== 'whatsapp' ? 'opacity-30 blur-[2px] grayscale scale-95 pointer-events-none' : ''}`}
-          >
-            <WhatsApp_Icon />
-            <span className="text-[14px] font-bold text-gray-800">WhatsApp</span>
-          </button>
-          <button className={`bg-white text-black py-2 px-4 rounded-xl flex flex-col items-center justify-center shadow-md cursor-not-allowed transition-all duration-300 ${isTokenSaved ? 'opacity-20 blur-[2px] grayscale scale-95' : 'opacity-70'}`}>
-            <span className="text-[14px] font-bold text-gray-800 flex items-center gap-1"><Discord_Icon/> Discord</span>
-            <span className="text-[10px] text-gray-500">coming soon</span>
-          </button>
-          <button className={`bg-white text-black py-2 px-4 rounded-xl flex flex-col items-center justify-center shadow-md cursor-not-allowed transition-all duration-300 ${isTokenSaved ? 'opacity-20 blur-[2px] grayscale scale-95' : 'opacity-70'}`}>
-            <span className="text-[14px] font-bold text-gray-800 flex items-center gap-1"><Instagram_Icon/> Instagram</span>
-            <span className="text-[10px] text-gray-500">coming soon</span>
-          </button>
-        </div>
-
-        {/* 🚀 LOGIN IN-PLACE REPLACEMENT LOGIC */}
-        <div className="w-full max-w-xl min-h-[140px] flex flex-col justify-center items-center">
-          <AnimatePresence mode="wait">
-            {botLink ? (
-              <motion.div key="success" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="w-full bg-green-500/10 border border-green-500/30 p-6 rounded-2xl text-center backdrop-blur-md">
-                <h3 className="text-xl font-bold text-white mb-4">OpenClaw is Live! 🚀</h3>
-                <div className="flex flex-col sm:flex-row justify-center gap-4">
-                  <a href={botLink} target="_blank" rel="noopener noreferrer" className="bg-white text-black font-bold px-8 py-3 rounded-xl text-sm transition-transform hover:scale-105 w-full sm:w-auto text-center">
-                    Open Live Bot
-                  </a>
-                  <button onClick={() => router.push('/dashboard')} className="bg-[#1A1A1A] border border-white/20 text-white font-bold px-8 py-3 rounded-xl text-sm transition-colors hover:bg-white/10 w-full sm:w-auto flex items-center justify-center gap-2">
-                    <Activity className="w-4 h-4"/> Dashboard
-                  </button>
-                </div>
-              </motion.div>
-            ) : status === "unauthenticated" ? (
-              <motion.div key="login" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="w-full flex flex-col items-center">
-                <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={() => signIn("google")} className="w-full bg-white text-[#4A5568] py-4 rounded-2xl flex items-center justify-center gap-3 text-[18px] font-bold shadow-xl">
-                  <Google_Icon /> Login with Google & Quick Deploy
-                </motion.button>
-                <p className="mt-4 text-sm font-serif text-gray-400">
-                  Connect {activeChannel === 'telegram' ? 'Telegram' : 'WhatsApp'} to continue. <span className="text-green-500 italic">Limited cloud servers — only 7 left.</span>
-                </p>
-              </motion.div>
-            ) : (
-              <motion.div key="action" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="w-full flex flex-col items-center gap-4">
-                {/* 🚀 FIXED: User Profile renders exactly where Login button was */}
-                <div className="w-full flex items-center justify-between bg-[#111] border border-white/10 p-3 px-4 rounded-2xl shadow-lg">
-                  <div className="flex items-center gap-3">
-                    <img src={session?.user?.image || ""} className="w-10 h-10 rounded-full border border-white/20" alt="Avatar"/>
-                    <div className="text-left">
-                      <p className="text-sm font-bold text-white">{session?.user?.name}</p>
-                      <p className="text-[10px] text-gray-500 font-mono">{session?.user?.email}</p>
-                    </div>
-                  </div>
-                  <button onClick={() => signOut()} className="text-xs font-bold text-gray-500 hover:text-red-400 transition-colors uppercase tracking-widest flex items-center gap-1">
-                    <LogOut className="w-4 h-4"/> Logout
-                  </button>
-                </div>
-
-                {!isTokenSaved ? (
-                  <button onClick={() => handleOpenIntegration(activeChannel)} className="w-full bg-white text-black font-bold py-4 rounded-2xl text-[18px] shadow-xl uppercase tracking-widest transition-transform hover:scale-[1.02]">
-                    CONNECT {activeChannel} TO CONTINUE
-                  </button>
-                ) : (
-                  <button onClick={() => handleOpenPricing(activeChannel)} className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 rounded-2xl text-[18px] shadow-[0_0_30px_rgba(37,99,235,0.4)] uppercase tracking-widest transition-transform hover:scale-[1.02] flex justify-center items-center gap-3">
-                    <Zap className="w-5 h-5"/> Deploy OpenClaw
-                  </button>
-                )}
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
-      </div>
+      <motion.div 
+        initial={{ opacity: 0, y: 10 }} 
+        animate={{ opacity: 1, y: 0 }} 
+        transition={{ delay, duration: 0.4 }}
+        className={`p-3 rounded-2xl max-w-[85%] text-[11px] shadow-md leading-relaxed ${style}`}
+      >
+        {text}
+      </motion.div>
     );
   };
 
@@ -317,14 +200,183 @@ export default function Home() {
       <nav className="relative z-50 flex items-center justify-between px-6 md:px-12 py-8 max-w-[1600px] mx-auto">
         <div className="text-xl md:text-2xl font-black tracking-widest uppercase text-white font-serif">CLAWLINK.COM</div>
         <div className="flex items-center gap-6">
+          {status === "authenticated" && (
+             <div className="hidden md:flex items-center gap-3">
+               <img src={session?.user?.image || ""} className="w-8 h-8 rounded-full border border-white/20" alt="Avatar"/>
+               <button onClick={() => signOut()} className="text-xs font-bold text-gray-400 hover:text-white uppercase tracking-widest flex items-center gap-1 transition-colors"><LogOut className="w-3 h-3"/> Logout</button>
+             </div>
+          )}
           <a href="#" className="flex items-center gap-2 text-xs font-bold text-gray-300 hover:text-white transition-colors uppercase tracking-widest">
             <MessageSquare className="w-4 h-4"/> CONTACT SUPPORT
           </a>
         </div>
       </nav>
 
-      {/* 🚀 MAIN WRAPPER (Replacing separate Hero for cohesive layout) */}
-      <LandingUI renderActionArea={renderDynamicButtons} isLocked={isTokenSaved || isDeploying} />
+      {/* 🚀 MAIN HERO SPLIT SECTION */}
+      <section className="relative z-10 max-w-[1600px] mx-auto px-6 pt-4 pb-24">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 xl:gap-20 items-start">
+          
+          {/* LEFT: Features Grid (Dark grey cards) */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-[#161618] p-6 md:p-8 rounded-[2rem] border border-white/5 shadow-2xl">
+            <div className="bg-[#1C1C1E] p-6 rounded-2xl border border-white/5 hover:border-white/10 transition-colors">
+              <div className="w-10 h-10 rounded-full bg-blue-500/10 flex items-center justify-center mb-4"><Globe className="w-5 h-5 text-blue-500" /></div>
+              <h3 className="text-white font-bold mb-2 text-sm">Omnichannel Deployment</h3>
+              <p className="text-[12px] text-gray-400 leading-relaxed">Deploy your AI agent across Telegram, WhatsApp Cloud, and your own website with a single click.</p>
+            </div>
+            <div className="bg-[#1C1C1E] p-6 rounded-2xl border border-white/5 hover:border-white/10 transition-colors">
+              <div className="w-10 h-10 rounded-full bg-green-500/10 flex items-center justify-center mb-4"><Database className="w-5 h-5 text-green-500" /></div>
+              <h3 className="text-white font-bold mb-2 text-sm">Enterprise RAG Memory</h3>
+              <p className="text-[12px] text-gray-400 leading-relaxed">Inject your business FAQs, return policies, and product details into the AI's Vector DB Brain.</p>
+            </div>
+            <div className="bg-[#1C1C1E] p-6 rounded-2xl border border-white/5 hover:border-white/10 transition-colors">
+              <div className="w-10 h-10 rounded-full bg-purple-500/10 flex items-center justify-center mb-4"><Mic className="w-5 h-5 text-purple-500" /></div>
+              <h3 className="text-white font-bold mb-2 text-sm">Voice Note Intelligence</h3>
+              <p className="text-[12px] text-gray-400 leading-relaxed">Native integration with OpenAI Whisper. Your bot listens to customer voice notes and replies contextually.</p>
+            </div>
+            <div className="bg-[#1C1C1E] p-6 rounded-2xl border border-white/5 hover:border-white/10 transition-colors">
+              <div className="w-10 h-10 rounded-full bg-orange-500/10 flex items-center justify-center mb-4"><Zap className="w-5 h-5 text-orange-500" /></div>
+              <h3 className="text-white font-bold mb-2 text-sm">Actionable AI Interceptor</h3>
+              <p className="text-[12px] text-gray-400 leading-relaxed">AI doesn't just talk; it acts. Automatically trigger APIs to check order status or book meetings.</p>
+            </div>
+            <div className="bg-[#1C1C1E] p-6 rounded-2xl border border-white/5 hover:border-white/10 transition-colors">
+              <div className="w-10 h-10 rounded-full bg-pink-500/10 flex items-center justify-center mb-4"><MessageSquare className="w-5 h-5 text-pink-500" /></div>
+              <h3 className="text-white font-bold mb-2 text-sm">Live CRM & Human Handoff</h3>
+              <p className="text-[12px] text-gray-400 leading-relaxed">Monitor AI conversations in real-time and instantly take over manually when a human touch is needed.</p>
+            </div>
+            <div className="bg-[#1C1C1E] p-6 rounded-2xl border border-white/5 hover:border-white/10 transition-colors">
+              <div className="w-10 h-10 rounded-full bg-yellow-500/10 flex items-center justify-center mb-4"><Activity className="w-5 h-5 text-yellow-500" /></div>
+              <h3 className="text-white font-bold mb-2 text-sm">Marketing Broadcast Engine</h3>
+              <p className="text-[12px] text-gray-400 leading-relaxed">Blast promotional offers and updates to thousands of captured leads with zero extra marketing cost.</p>
+            </div>
+          </div>
+
+          {/* RIGHT: Deployment Console */}
+          <div className="flex flex-col items-center text-center lg:pt-8 xl:pt-12 w-full">
+            <h1 className="text-4xl md:text-[3rem] text-white mb-4 font-serif tracking-tight leading-tight">
+              Deploy OpenClaw under 30 SECONDS
+            </h1>
+            <p className="text-gray-300 text-sm md:text-base mb-12 font-serif max-w-md mx-auto leading-relaxed">
+              Avoid all technical complexity and one-click deploy your own 24/7 active OpenClaw instance under 30 seconds.
+            </p>
+
+            {/* Model Selector */}
+            <h3 className="text-white text-xl md:text-2xl mb-6 font-serif tracking-tight">Choose a model to use as your default !</h3>
+            <div className="flex flex-wrap justify-center gap-4 mb-12 w-full max-w-xl">
+              <button 
+                onClick={() => !isTokenSaved && setActiveModel("gpt-5.2")} 
+                className={`bg-white rounded-[2rem] px-6 py-3 flex items-center gap-3 shadow-xl transition-all duration-300 ${activeModel === 'gpt-5.2' ? 'ring-4 ring-blue-500 scale-105' : 'hover:scale-105'} ${isTokenSaved && activeModel !== 'gpt-5.2' ? 'opacity-30 blur-[2px] grayscale scale-95 pointer-events-none' : ''}`}
+              >
+                <OpenAI_Icon />
+                <span className="text-[#10A37F] font-bold text-[16px]">gpt-5.2</span>
+              </button>
+
+              <button 
+                onClick={() => !isTokenSaved && setActiveModel("claude")} 
+                className={`bg-white rounded-[2rem] px-6 py-2.5 flex items-center gap-3 shadow-xl transition-all duration-300 ${activeModel === 'claude' ? 'ring-4 ring-blue-500 scale-105' : 'hover:scale-105'} ${isTokenSaved && activeModel !== 'claude' ? 'opacity-30 blur-[2px] grayscale scale-95 pointer-events-none' : ''}`}
+              >
+                <Claude_Icon />
+                <div className="text-left leading-none flex flex-col justify-center">
+                  <span className="text-[#D97757] font-bold text-[16px]">Claude</span>
+                  <span className="text-[#D97757] text-[9px] font-bold">Opus 4.6</span>
+                </div>
+              </button>
+
+              <button 
+                onClick={() => !isTokenSaved && setActiveModel("gemini")} 
+                className={`bg-white rounded-[2rem] px-6 py-3 flex items-center gap-3 shadow-xl transition-all duration-300 ${activeModel === 'gemini' ? 'ring-4 ring-blue-500 scale-105' : 'hover:scale-105'} ${isTokenSaved && activeModel !== 'gemini' ? 'opacity-30 blur-[2px] grayscale scale-95 pointer-events-none' : ''}`}
+              >
+                <Gemini_Icon />
+                <span className="text-[#4E7CFF] font-bold text-[16px]">Gemini 3 flash</span>
+              </button>
+
+              <div className={`bg-white rounded-[2rem] px-8 py-3 flex items-center shadow-xl cursor-not-allowed transition-all duration-300 ${isTokenSaved ? 'opacity-20 blur-[2px] grayscale scale-95' : 'opacity-80'}`}>
+                <span className="font-black text-[16px] text-transparent bg-clip-text bg-gradient-to-r from-blue-500 via-orange-500 to-pink-500">soon</span>
+              </div>
+            </div>
+
+            {/* Channel Selector */}
+            <h3 className="text-white text-xl md:text-2xl mb-6 font-serif tracking-tight">Select a channel for sending messages !</h3>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-12 w-full max-w-2xl">
+              <button 
+                onClick={() => !isTokenSaved && setActiveChannel("telegram")} 
+                className={`bg-white text-black py-3 px-4 rounded-xl flex items-center justify-center gap-2 shadow-md transition-all duration-300 ${activeChannel === 'telegram' ? 'ring-4 ring-blue-500 scale-105' : 'hover:scale-105'} ${isTokenSaved && activeChannel !== 'telegram' ? 'opacity-30 blur-[2px] grayscale scale-95 pointer-events-none' : ''}`}
+              >
+                <Telegram_Icon />
+                <span className="text-[14px] font-bold text-gray-800">Telegram</span>
+              </button>
+              <button 
+                onClick={() => !isTokenSaved && setActiveChannel("whatsapp")} 
+                className={`bg-white text-black py-3 px-4 rounded-xl flex items-center justify-center gap-2 shadow-md transition-all duration-300 ${activeChannel === 'whatsapp' ? 'ring-4 ring-green-500 scale-105' : 'hover:scale-105'} ${isTokenSaved && activeChannel !== 'whatsapp' ? 'opacity-30 blur-[2px] grayscale scale-95 pointer-events-none' : ''}`}
+              >
+                <WhatsApp_Icon />
+                <span className="text-[14px] font-bold text-gray-800">WhatsApp</span>
+              </button>
+              <button className={`bg-white text-black py-2 px-4 rounded-xl flex flex-col items-center justify-center shadow-md cursor-not-allowed transition-all duration-300 ${isTokenSaved ? 'opacity-20 blur-[2px] grayscale scale-95' : 'opacity-70'}`}>
+                <span className="text-[14px] font-bold text-gray-800 flex items-center gap-1"><Discord_Icon/> Discord</span>
+                <span className="text-[10px] text-gray-500">coming soon</span>
+              </button>
+              <button className={`bg-white text-black py-2 px-4 rounded-xl flex flex-col items-center justify-center shadow-md cursor-not-allowed transition-all duration-300 ${isTokenSaved ? 'opacity-20 blur-[2px] grayscale scale-95' : 'opacity-70'}`}>
+                <span className="text-[14px] font-bold text-gray-800 flex items-center gap-1"><Instagram_Icon/> Instagram</span>
+                <span className="text-[10px] text-gray-500">coming soon</span>
+              </button>
+            </div>
+
+            {/* 🚀 FIXED AUTH / DEPLOY ACTION AREA */}
+            <div className="w-full max-w-xl min-h-[140px] flex flex-col justify-center items-center">
+              <AnimatePresence mode="wait">
+                {botLink ? (
+                  <motion.div key="success" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="w-full bg-green-500/10 border border-green-500/30 p-6 rounded-2xl text-center backdrop-blur-md">
+                    <h3 className="text-xl font-bold text-white mb-4">OpenClaw is Live! 🚀</h3>
+                    <div className="flex flex-col sm:flex-row justify-center gap-4">
+                      <a href={botLink} target="_blank" rel="noopener noreferrer" className="bg-white text-black font-bold px-8 py-4 rounded-xl text-sm transition-transform hover:scale-105 w-full sm:w-auto text-center">
+                        Open Live Bot
+                      </a>
+                      <button onClick={() => router.push('/dashboard')} className="bg-[#1A1A1A] border border-white/20 text-white font-bold px-8 py-4 rounded-xl text-sm transition-colors hover:bg-white/10 w-full sm:w-auto flex items-center justify-center gap-2">
+                        <Activity className="w-4 h-4"/> Dashboard
+                      </button>
+                    </div>
+                  </motion.div>
+                ) : status === "unauthenticated" ? (
+                  <motion.div key="login" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="w-full flex flex-col items-center">
+                    <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={() => signIn("google")} className="w-full bg-white text-[#4A5568] py-4 rounded-2xl flex items-center justify-center gap-3 text-[18px] font-bold shadow-xl">
+                      <Google_Icon /> Login with Google & Quick Deploy
+                    </motion.button>
+                    <p className="mt-5 text-sm font-serif text-gray-400">
+                      Connect {activeChannel === 'telegram' ? 'Telegram' : 'WhatsApp'} to continue. <span className="text-green-500 italic">Limited cloud servers — only 7 left.</span>
+                    </p>
+                  </motion.div>
+                ) : (
+                  <motion.div key="action" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="w-full flex flex-col items-center gap-4">
+                    <div className="w-full flex items-center justify-between bg-[#111] border border-white/10 p-3 px-4 rounded-2xl shadow-lg">
+                      <div className="flex items-center gap-3">
+                        <img src={session?.user?.image || ""} className="w-10 h-10 rounded-full border border-white/20" alt="Avatar"/>
+                        <div className="text-left">
+                          <p className="text-sm font-bold text-white">{session?.user?.name}</p>
+                          <p className="text-[10px] text-gray-500 font-mono">{session?.user?.email}</p>
+                        </div>
+                      </div>
+                      <button onClick={() => signOut()} className="text-xs font-bold text-gray-500 hover:text-red-400 transition-colors uppercase tracking-widest flex items-center gap-1">
+                        <LogOut className="w-4 h-4"/> Logout
+                      </button>
+                    </div>
+
+                    {!isTokenSaved ? (
+                      <button onClick={() => handleOpenIntegration(activeChannel)} className="w-full bg-white text-black font-bold py-4 rounded-2xl text-[18px] shadow-xl uppercase tracking-widest transition-transform hover:scale-[1.02]">
+                        CONNECT {activeChannel} TO CONTINUE
+                      </button>
+                    ) : (
+                      <button onClick={() => handleOpenPricing(activeChannel)} className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 rounded-2xl text-[18px] shadow-[0_0_30px_rgba(37,99,235,0.4)] uppercase tracking-widest transition-transform hover:scale-[1.02] flex justify-center items-center gap-3">
+                        <Zap className="w-5 h-5"/> Deploy OpenClaw
+                      </button>
+                    )}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+
+          </div>
+        </div>
+      </section>
 
       {/* 🚀 COMPARISON SECTION */}
       <section className="py-24 relative z-10 border-t border-white/5 bg-[#161618]">
@@ -437,12 +489,18 @@ export default function Home() {
                     </a>
                   </>
                 ) : (
-                  <ol className="space-y-4 text-sm text-gray-400 list-decimal pl-5 mb-10 leading-relaxed">
-                    <li>Go to the <strong className="text-white">Meta for Developers</strong> console.</li>
-                    <li>Create an App and add the <strong className="text-white">WhatsApp Product</strong>.</li>
-                    <li>Generate a <strong className="text-white">Permanent Access Token</strong>.</li>
-                    <li>Copy that exact token and paste it securely below.</li>
-                  </ol>
+                  <>
+                    <ol className="space-y-4 text-sm text-gray-400 list-decimal pl-5 mb-6 leading-relaxed">
+                      <li>Go to the <strong className="text-white">Meta for Developers</strong> console.</li>
+                      <li>Create an App, add the <strong className="text-white">WhatsApp Product</strong>.</li>
+                      <li>Generate a <strong className="text-white">Permanent Access Token</strong>.</li>
+                      <li>Set Webhook URL: <code className="bg-white/10 px-2 py-1 rounded text-green-400 text-xs font-mono">/api/webhook/whatsapp</code></li>
+                      <li>Paste your exact token securely below.</li>
+                    </ol>
+                    <a href="https://developers.facebook.com/apps/" target="_blank" rel="noopener noreferrer" className="inline-flex items-center justify-center gap-2 mb-8 bg-[#25D366]/10 text-[#25D366] hover:bg-[#25D366]/20 px-4 py-2 rounded-lg text-xs font-bold transition-colors w-fit">
+                      <ExternalLink className="w-3 h-3" /> Open Meta Console Directly
+                    </a>
+                  </>
                 )}
 
                 <div className="bg-[#1A1A1A] p-6 rounded-2xl border border-white/5 shadow-inner">
@@ -461,28 +519,52 @@ export default function Home() {
                     <div className="absolute top-0 inset-x-0 h-7 bg-[#1A1A1A] rounded-b-3xl w-40 mx-auto z-20 flex justify-center items-end pb-1">
                       <div className="w-12 h-1.5 bg-black/50 rounded-full"></div>
                     </div>
-                    {/* Chat Header */}
+                    
+                    {/* Dynamic Chat Header based on Channel */}
                     <div className="bg-[#111]/90 backdrop-blur-md p-4 pt-10 flex items-center gap-3 border-b border-white/5 z-10">
-                      <div className="w-10 h-10 rounded-full bg-[#2AABEE] flex items-center justify-center shadow-lg"><Telegram_Icon /></div>
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center shadow-lg ${activeChannel === 'telegram' ? 'bg-[#2AABEE]' : 'bg-[#25D366]'}`}>
+                        {activeChannel === 'telegram' ? <Telegram_Icon /> : <WhatsApp_Icon />}
+                      </div>
                       <div>
-                        <p className="text-white text-sm font-bold flex items-center gap-1">BotFather <CheckCircle2 className="w-3 h-3 text-blue-400"/></p>
-                        <p className="text-gray-400 text-[10px] font-mono tracking-wider">verified bot</p>
+                        <p className="text-white text-sm font-bold flex items-center gap-1">
+                          {activeChannel === 'telegram' ? 'BotFather' : 'WhatsApp Guide'} <CheckCircle2 className={`w-3 h-3 ${activeChannel === 'telegram' ? 'text-blue-400' : 'text-green-400'}`}/>
+                        </p>
+                        <p className="text-gray-400 text-[10px] font-mono tracking-wider">
+                          {activeChannel === 'telegram' ? 'verified bot' : 'system setup'}
+                        </p>
                       </div>
                     </div>
                     
                     {/* Animated Chat Flow */}
                     <div className="p-4 pt-6 flex-1 flex flex-col justify-end space-y-3 opacity-95 text-[11px] font-mono bg-[url('https://www.transparenttextures.com/patterns/stardust.png')]">
-                      <ChatBubble isUser text="/newbot" delay={0.5} />
-                      <ChatBubble text="Alright, a new bot. How are we going to call it? Please choose a name." delay={1.5} />
-                      <ChatBubble isUser text="ClawLink Support" delay={2.5} />
-                      <ChatBubble text="Good. Now let's choose a username..." delay={3.5} />
-                      <ChatBubble isUser text="ClawSupport_bot" delay={4.5} />
-                      
-                      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 5.5, duration: 0.4 }} className="bg-[#1A1A1A] border border-[#2AABEE]/30 p-3 rounded-2xl rounded-tl-sm text-gray-200 self-start max-w-[90%] shadow-[0_0_15px_rgba(42,171,238,0.15)] leading-relaxed">
-                        Done! Congratulations on your new bot.<br/><br/>
-                        <span className="text-gray-400">Use this token to access the HTTP API:</span><br/>
-                        <span className="text-[#2AABEE] font-mono break-all mt-1 block font-bold">1234567890:AAH8ABCdefGhI...</span>
-                      </motion.div>
+                      {activeChannel === 'telegram' ? (
+                        <>
+                          <ChatBubble isUser text="/newbot" delay={0.5} channel="telegram" />
+                          <ChatBubble text="Alright, a new bot. How are we going to call it? Please choose a name." delay={1.5} channel="telegram" />
+                          <ChatBubble isUser text="ClawLink Support" delay={2.5} channel="telegram" />
+                          <ChatBubble text="Good. Now let's choose a username..." delay={3.5} channel="telegram" />
+                          <ChatBubble isUser text="ClawSupport_bot" delay={4.5} channel="telegram" />
+                          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 5.5, duration: 0.4 }} className="bg-[#1A1A1A] border border-[#2AABEE]/30 p-3 rounded-2xl rounded-tl-sm text-gray-200 self-start max-w-[90%] shadow-[0_0_15px_rgba(42,171,238,0.15)] leading-relaxed">
+                            Done! Congratulations on your new bot.<br/><br/>
+                            <span className="text-gray-400">Use this token to access the HTTP API:</span><br/>
+                            <span className="text-[#2AABEE] font-mono break-all mt-1 block font-bold">1234567890:AAH8ABCdefGhI...</span>
+                          </motion.div>
+                        </>
+                      ) : (
+                        <>
+                          <ChatBubble text="Welcome to the WhatsApp setup guide. 🚀" delay={0.5} channel="whatsapp" />
+                          <ChatBubble text="First, copy your Permanent Access Token from Meta." delay={1.5} channel="whatsapp" />
+                          <ChatBubble isUser text="Done! What about the webhook?" delay={2.5} channel="whatsapp" />
+                          <ChatBubble text="Go to Webhook Configuration in Meta." delay={3.5} channel="whatsapp" />
+                          <ChatBubble text="Paste this exact Callback URL:" delay={4.5} channel="whatsapp" />
+                          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 5.5, duration: 0.4 }} className="bg-[#202C33] border border-[#25D366]/30 p-3 rounded-2xl rounded-tl-sm text-gray-200 self-start max-w-[90%] shadow-[0_0_15px_rgba(37,211,102,0.15)] leading-relaxed">
+                            <span className="text-[#25D366] font-mono break-all block font-bold">https://clawlink.com/api/webhook/whatsapp</span>
+                            <br/>
+                            <span className="text-gray-400">Verify Token:</span><br/>
+                            <span className="text-white font-mono mt-1 block font-bold">clawlink_secure</span>
+                          </motion.div>
+                        </>
+                      )}
                     </div>
 
                     <div className="absolute bottom-2 inset-x-0 h-1.5 bg-[#333] rounded-full w-32 mx-auto z-20"></div>
