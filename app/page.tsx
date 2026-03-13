@@ -136,7 +136,7 @@ export default function Home() {
     }
   };
 
-  // 🚀 MARQUEE ARRAYS (Exactly 5 Rows for Cinematic Use Cases)
+  // 🚀 MARQUEE ARRAYS
   const row1 = ["📅 Productivity & Meetings", "📄 Write contracts & NDAs", "📊 Create presentations", "🔄 Negotiate refunds", "🛒 Shopping & Research", "👥 Team & Monitoring"];
   const row2 = ["📅 Schedule meetings from chat", "💼 Finance, Tax & Payroll", "💰 Do your taxes with AI", "🎯 Screen & prioritize leads", "🧾 Track expenses", "👔 Write job descriptions"];
   const row3 = ["✉️ Email & Documents", "📨 Read & summarize emails", "🧮 Run payroll calculations", "🏷️ Find coupons automatically", "📈 Track OKRs & KPIs", "📰 Monitor news & smart alerts"];
@@ -145,17 +145,12 @@ export default function Home() {
 
   const MarqueeRow = ({ items, reverse = false }: { items: string[], reverse?: boolean }) => (
     <div className="flex whitespace-nowrap overflow-hidden py-3">
-      <motion.div 
-        className="flex gap-6"
-        animate={{ x: reverse ? ["-50%", "0%"] : ["0%", "-50%"] }}
-        transition={{ ease: "linear", duration: 40, repeat: Infinity }}
-      >
+      <motion.div className="flex gap-6" animate={{ x: reverse ? ["-50%", "0%"] : ["0%", "-50%"] }} transition={{ ease: "linear", duration: 40, repeat: Infinity }}>
         {items.map((item, i) => (
           <div key={i} className="flex items-center gap-2 text-xs md:text-sm text-gray-300 bg-white/5 px-4 py-2 rounded-full border border-white/10 shadow-lg whitespace-nowrap">
             {item}
           </div>
         ))}
-        {/* Duplicate array for seamless infinite scroll loop */}
         {items.map((item, i) => (
           <div key={`dup-${i}`} className="flex items-center gap-2 text-xs md:text-sm text-gray-300 bg-white/5 px-4 py-2 rounded-full border border-white/10 shadow-lg whitespace-nowrap">
             {item}
@@ -165,27 +160,23 @@ export default function Home() {
     </div>
   );
 
-  // 🚀 HELPER FOR DYNAMIC CHAT BUBBLES IN IPHONE SIMULATION
-  const ChatBubble = ({ text, delay, isUser, channel }: { text: string, delay: number, isUser?: boolean, channel?: string }) => {
-    // Colors based on active channel
-    const tgUser = "bg-[#2AABEE] text-white self-end rounded-tr-sm";
-    const tgBot = "bg-[#1A1A1A] border border-white/5 text-gray-200 self-start rounded-tl-sm";
-    const waUser = "bg-[#005C4B] text-white self-end rounded-tr-sm"; // WhatsApp dark mode outgoing
-    const waBot = "bg-[#202C33] text-gray-200 self-start rounded-tl-sm"; // WhatsApp dark mode incoming
-    
-    const style = channel === 'whatsapp' ? (isUser ? waUser : waBot) : (isUser ? tgUser : tgBot);
+  // 🚀 100% FIXED HELPER FOR ANIMATED CHAT BUBBLES (No 'channel' prop needed to avoid TS Error)
+  const ChatBubble = ({ text, delay, isUser }: { text: string, delay: number, isUser?: boolean }) => (
+    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay, duration: 0.4 }} className={`p-3 rounded-2xl max-w-[85%] text-[11px] shadow-md leading-relaxed ${isUser ? 'bg-[#2AABEE] text-white self-end rounded-tr-sm' : 'bg-[#1A1A1A] border border-white/5 text-gray-200 self-start rounded-tl-sm'}`}>
+      {text}
+    </motion.div>
+  );
 
-    return (
-      <motion.div 
-        initial={{ opacity: 0, y: 10 }} 
-        animate={{ opacity: 1, y: 0 }} 
-        transition={{ delay, duration: 0.4 }}
-        className={`p-3 rounded-2xl max-w-[85%] text-[11px] shadow-md leading-relaxed ${style}`}
-      >
-        {text}
-      </motion.div>
-    );
-  };
+  // 🚀 HELPER FOR WHATSAPP GUIDE STEPS
+  const GuideStep = ({ step, title, desc, delay }: { step: string, title: string, desc: string, delay: number }) => (
+    <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay, duration: 0.4 }} className="flex gap-3 bg-[#1A1A1A] border border-white/5 p-3 rounded-xl shadow-md w-[90%] self-center mx-auto">
+      <div className="w-5 h-5 rounded-full bg-[#25D366]/20 text-[#25D366] flex items-center justify-center font-bold text-[10px] shrink-0">{step}</div>
+      <div className="flex flex-col">
+        <span className="text-white font-bold mb-1 text-[11px]">{title}</span>
+        <span className="text-gray-400 text-[9px] leading-tight">{desc}</span>
+      </div>
+    </motion.div>
+  );
 
   if (!isMounted) return null;
 
@@ -216,7 +207,7 @@ export default function Home() {
       <section className="relative z-10 max-w-[1600px] mx-auto px-6 pt-4 pb-24">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 xl:gap-20 items-start">
           
-          {/* LEFT: Features Grid (Dark grey cards) */}
+          {/* LEFT: Features Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-[#161618] p-6 md:p-8 rounded-[2rem] border border-white/5 shadow-2xl">
             <div className="bg-[#1C1C1E] p-6 rounded-2xl border border-white/5 hover:border-white/10 transition-colors">
               <div className="w-10 h-10 rounded-full bg-blue-500/10 flex items-center justify-center mb-4"><Globe className="w-5 h-5 text-blue-500" /></div>
@@ -321,7 +312,7 @@ export default function Home() {
               </button>
             </div>
 
-            {/* 🚀 FIXED AUTH / DEPLOY ACTION AREA */}
+            {/* 🚀 AUTH / DEPLOY ACTION AREA */}
             <div className="w-full max-w-xl min-h-[140px] flex flex-col justify-center items-center">
               <AnimatePresence mode="wait">
                 {botLink ? (
@@ -341,7 +332,7 @@ export default function Home() {
                     <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={() => signIn("google")} className="w-full bg-white text-[#4A5568] py-4 rounded-2xl flex items-center justify-center gap-3 text-[18px] font-bold shadow-xl">
                       <Google_Icon /> Login with Google & Quick Deploy
                     </motion.button>
-                    <p className="mt-5 text-sm font-serif text-gray-400">
+                    <p className="mt-4 text-sm font-serif text-gray-400">
                       Connect {activeChannel === 'telegram' ? 'Telegram' : 'WhatsApp'} to continue. <span className="text-green-500 italic">Limited cloud servers — only 7 left.</span>
                     </p>
                   </motion.div>
@@ -469,7 +460,7 @@ export default function Home() {
               {/* LEFT SIDE: Instructions & Token Input */}
               <div className="w-full md:w-1/2 p-10 flex flex-col justify-center relative z-10">
                 <div className="flex items-center gap-4 mb-6">
-                  <div className="w-12 h-12 rounded-2xl bg-[#2AABEE]/20 flex items-center justify-center shadow-lg">
+                  <div className="w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center shadow-lg border border-white/10">
                     {activeChannel === 'telegram' ? <Telegram_Icon /> : <WhatsApp_Icon />}
                   </div>
                   <h2 className="text-2xl font-bold text-white tracking-tight">Connect {activeChannel === 'telegram' ? 'Telegram' : 'WhatsApp'}</h2>
@@ -484,28 +475,36 @@ export default function Home() {
                       <li>BotFather will generate an <strong className="text-white">HTTP API Access Token</strong>.</li>
                       <li>Copy that exact token and paste it securely below.</li>
                     </ol>
-                    <a href="https://t.me/BotFather" target="_blank" rel="noopener noreferrer" className="inline-flex items-center justify-center gap-2 mb-8 bg-[#2AABEE]/10 text-[#2AABEE] hover:bg-[#2AABEE]/20 px-4 py-2 rounded-lg text-xs font-bold transition-colors w-fit">
+                    <a href="https://t.me/BotFather" target="_blank" rel="noopener noreferrer" className="inline-flex items-center justify-center gap-2 mb-8 bg-[#2AABEE]/10 text-[#2AABEE] hover:bg-[#2AABEE]/20 border border-[#2AABEE]/20 px-4 py-2 rounded-lg text-xs font-bold transition-colors w-fit">
                       <ExternalLink className="w-3 h-3" /> Open @BotFather Directly
                     </a>
                   </>
                 ) : (
                   <>
-                    <ol className="space-y-4 text-sm text-gray-400 list-decimal pl-5 mb-6 leading-relaxed">
-                      <li>Go to the <strong className="text-white">Meta for Developers</strong> console.</li>
-                      <li>Create an App, add the <strong className="text-white">WhatsApp Product</strong>.</li>
-                      <li>Generate a <strong className="text-white">Permanent Access Token</strong>.</li>
-                      <li>Set Webhook URL: <code className="bg-white/10 px-2 py-1 rounded text-green-400 text-xs font-mono">/api/webhook/whatsapp</code></li>
-                      <li>Paste your exact token securely below.</li>
+                    <ol className="space-y-3 text-sm text-gray-400 list-decimal pl-5 mb-6 leading-relaxed">
+                      <li>Go to the <strong className="text-white">Meta Developer Console</strong>.</li>
+                      <li>Create a <strong className="text-white">Business App</strong> & Add WhatsApp Product.</li>
+                      <li>Connect your <strong className="text-white">Phone Number</strong>.</li>
+                      <li>Create a <strong className="text-white">System User</strong> to get a <strong className="text-white">Permanent Token</strong>.</li>
+                      <li>In Meta Webhook settings, use the exact URL below.</li>
                     </ol>
-                    <a href="https://developers.facebook.com/apps/" target="_blank" rel="noopener noreferrer" className="inline-flex items-center justify-center gap-2 mb-8 bg-[#25D366]/10 text-[#25D366] hover:bg-[#25D366]/20 px-4 py-2 rounded-lg text-xs font-bold transition-colors w-fit">
-                      <ExternalLink className="w-3 h-3" /> Open Meta Console Directly
-                    </a>
+
+                    <div className="bg-[#1A1A1A] p-4 rounded-xl border border-[#25D366]/20 mb-6 shadow-[0_0_15px_rgba(37,211,102,0.05)]">
+                      <div className="mb-4">
+                        <span className="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">Webhook Callback URL</span>
+                        <code className="block bg-black text-[#25D366] text-xs p-2 rounded border border-white/5 select-all">https://clawlink.com/api/webhook/whatsapp</code>
+                      </div>
+                      <div>
+                        <span className="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">Verify Token</span>
+                        <code className="block bg-black text-white text-xs p-2 rounded border border-white/5 select-all">clawlink_secure</code>
+                      </div>
+                    </div>
                   </>
                 )}
 
                 <div className="bg-[#1A1A1A] p-6 rounded-2xl border border-white/5 shadow-inner">
-                  <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">API Access Token</label>
-                  <input type="password" value={telegramToken} onChange={(e) => setTelegramToken(e.target.value)} placeholder="Enter Token..." className="w-full bg-black border border-white/10 rounded-xl px-4 py-4 text-sm focus:outline-none mb-6 text-white font-mono" />
+                  <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">Permanent API Token</label>
+                  <input type="password" value={telegramToken} onChange={(e) => setTelegramToken(e.target.value)} placeholder="Paste your token here..." className="w-full bg-black border border-white/10 rounded-xl px-4 py-4 text-sm focus:outline-none mb-6 text-white font-mono" />
                   <button onClick={() => { setIsTokenSaved(true); setIsTelegramModalOpen(false); }} className="w-full bg-white text-black font-bold py-4 rounded-xl text-sm hover:bg-gray-200 uppercase tracking-widest shadow-lg transition-transform hover:scale-[1.02]">
                     SAVE AND CONTINUE
                   </button>
@@ -527,7 +526,7 @@ export default function Home() {
                       </div>
                       <div>
                         <p className="text-white text-sm font-bold flex items-center gap-1">
-                          {activeChannel === 'telegram' ? 'BotFather' : 'WhatsApp Guide'} <CheckCircle2 className={`w-3 h-3 ${activeChannel === 'telegram' ? 'text-blue-400' : 'text-green-400'}`}/>
+                          {activeChannel === 'telegram' ? 'BotFather' : 'WhatsApp Guide'}
                         </p>
                         <p className="text-gray-400 text-[10px] font-mono tracking-wider">
                           {activeChannel === 'telegram' ? 'verified bot' : 'system setup'}
@@ -535,15 +534,15 @@ export default function Home() {
                       </div>
                     </div>
                     
-                    {/* Animated Chat Flow */}
-                    <div className="p-4 pt-6 flex-1 flex flex-col justify-end space-y-3 opacity-95 text-[11px] font-mono bg-[url('https://www.transparenttextures.com/patterns/stardust.png')]">
+                    {/* Animated Flow */}
+                    <div className="p-4 pt-6 flex-1 flex flex-col justify-end space-y-3 opacity-95 text-[11px] font-mono bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] overflow-y-auto">
                       {activeChannel === 'telegram' ? (
                         <>
-                          <ChatBubble isUser text="/newbot" delay={0.5} channel="telegram" />
-                          <ChatBubble text="Alright, a new bot. How are we going to call it? Please choose a name." delay={1.5} channel="telegram" />
-                          <ChatBubble isUser text="ClawLink Support" delay={2.5} channel="telegram" />
-                          <ChatBubble text="Good. Now let's choose a username..." delay={3.5} channel="telegram" />
-                          <ChatBubble isUser text="ClawSupport_bot" delay={4.5} channel="telegram" />
+                          <ChatBubble isUser text="/newbot" delay={0.5} />
+                          <ChatBubble text="Alright, a new bot. How are we going to call it? Please choose a name." delay={1.5} />
+                          <ChatBubble isUser text="ClawLink Support" delay={2.5} />
+                          <ChatBubble text="Good. Now let's choose a username..." delay={3.5} />
+                          <ChatBubble isUser text="ClawSupport_bot" delay={4.5} />
                           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 5.5, duration: 0.4 }} className="bg-[#1A1A1A] border border-[#2AABEE]/30 p-3 rounded-2xl rounded-tl-sm text-gray-200 self-start max-w-[90%] shadow-[0_0_15px_rgba(42,171,238,0.15)] leading-relaxed">
                             Done! Congratulations on your new bot.<br/><br/>
                             <span className="text-gray-400">Use this token to access the HTTP API:</span><br/>
@@ -551,19 +550,17 @@ export default function Home() {
                           </motion.div>
                         </>
                       ) : (
-                        <>
-                          <ChatBubble text="Welcome to the WhatsApp setup guide. 🚀" delay={0.5} channel="whatsapp" />
-                          <ChatBubble text="First, copy your Permanent Access Token from Meta." delay={1.5} channel="whatsapp" />
-                          <ChatBubble isUser text="Done! What about the webhook?" delay={2.5} channel="whatsapp" />
-                          <ChatBubble text="Go to Webhook Configuration in Meta." delay={3.5} channel="whatsapp" />
-                          <ChatBubble text="Paste this exact Callback URL:" delay={4.5} channel="whatsapp" />
-                          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 5.5, duration: 0.4 }} className="bg-[#202C33] border border-[#25D366]/30 p-3 rounded-2xl rounded-tl-sm text-gray-200 self-start max-w-[90%] shadow-[0_0_15px_rgba(37,211,102,0.15)] leading-relaxed">
-                            <span className="text-[#25D366] font-mono break-all block font-bold">https://clawlink.com/api/webhook/whatsapp</span>
-                            <br/>
-                            <span className="text-gray-400">Verify Token:</span><br/>
-                            <span className="text-white font-mono mt-1 block font-bold">clawlink_secure</span>
-                          </motion.div>
-                        </>
+                        <div className="flex flex-col gap-3 font-sans h-full justify-start pb-4">
+                           <GuideStep delay={0.5} step="1" title="Create App" desc="Select Business type in Meta Developer Console." />
+                           <GuideStep delay={1.5} step="2" title="Add WhatsApp" desc="Connect your Business Account & Phone Number." />
+                           <GuideStep delay={2.5} step="3" title="Generate Token" desc="Create a System User & get a Permanent Access Token." />
+                           <GuideStep delay={3.5} step="4" title="Link Webhook" desc="Paste the ClawLink Webhook URL & Verify Token in Meta." />
+                           <GuideStep delay={4.5} step="5" title="Authenticate" desc="Paste your Permanent Token into ClawLink to deploy." />
+                           
+                           <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 5.5 }} className="mt-2 bg-[#25D366]/10 border border-[#25D366]/30 p-3 rounded-xl text-center shadow-[0_0_15px_rgba(37,211,102,0.1)]">
+                             <span className="text-[#25D366] font-bold text-xs flex items-center justify-center gap-2"><Zap className="w-3 h-3"/> Ready for Deployment</span>
+                           </motion.div>
+                        </div>
                       )}
                     </div>
 
