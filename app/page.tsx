@@ -38,7 +38,9 @@ export default function Home() {
   
   const [activeModel, setActiveModel] = useState("gpt-5.2");
   const [activeChannel, setActiveChannel] = useState("telegram");
-  const [selectedTier, setSelectedTier] = useState<"starter" | "pro" | "max">("pro"); 
+  
+  // 🚀 FIXED: No default plan selected. User MUST choose to proceed.
+  const [selectedTier, setSelectedTier] = useState<"starter" | "pro" | "max" | null>(null); 
   const [currency, setCurrency] = useState<"USD" | "INR">("USD");
   const [currencySymbol, setCurrencySymbol] = useState("$");
   const EXCHANGE_RATE = 83; 
@@ -71,12 +73,29 @@ export default function Home() {
     setShowPricingPopup(true);
   };
 
+  // 🚀 TOKEN VALIDATION LOCK
+  const handleSaveToken = () => {
+    if (!telegramToken || telegramToken.trim() === "") {
+      alert("Please enter a valid API Token/Webhook URL to continue.");
+      return;
+    }
+    setIsTokenSaved(true); 
+    setIsTelegramModalOpen(false);
+  };
+
   const getCurrentPrice = (tier = selectedTier) => {
+    if (!tier) return 0; // Return 0 if no tier is selected
     let basePrice = tier === "max" ? MAX_PLAN_PRICE : (MODEL_DETAILS[activeModel]?.[tier as "starter"|"pro"] || 39);
     return currency === "INR" ? basePrice * EXCHANGE_RATE : basePrice;
   };
 
   const triggerRazorpayPayment = async () => {
+    // 🚀 PLAN VALIDATION LOCK
+    if (!selectedTier) {
+      alert("Please select a plan (Starter, Pro, or Max) to proceed with payment.");
+      return;
+    }
+
     if (typeof window === "undefined" || !(window as any).Razorpay) {
       alert("Payment gateway is loading. Please disable Adblocker.");
       return;
@@ -165,14 +184,12 @@ export default function Home() {
     </div>
   );
 
-  // 🚀 HELPER FOR ANIMATED CHAT BUBBLES
   const ChatBubble = ({ text, delay, isUser }: { text: string, delay: number, isUser?: boolean }) => (
     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay, duration: 0.4 }} className={`p-3 rounded-2xl max-w-[85%] text-[11px] shadow-md leading-relaxed ${isUser ? 'bg-[#2AABEE] text-white self-end rounded-tr-sm' : 'bg-[#1A1A1A] border border-white/5 text-gray-200 self-start rounded-tl-sm'}`}>
       {text}
     </motion.div>
   );
 
-  // 🚀 HELPER FOR WHATSAPP GUIDE STEPS (Right iPhone Panel)
   const GuideStep = ({ step, title, desc, delay }: { step: string, title: string, desc: string, delay: number }) => (
     <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay, duration: 0.4 }} className="flex gap-3 bg-[#1A1A1A] border border-white/5 p-3 rounded-xl shadow-md w-[90%] self-center mx-auto items-start">
       <div className="w-5 h-5 rounded-full bg-[#25D366]/20 text-[#25D366] flex items-center justify-center font-bold text-[10px] shrink-0 mt-0.5">{step}</div>
@@ -202,9 +219,10 @@ export default function Home() {
                <button onClick={() => signOut()} className="text-xs font-bold text-gray-400 hover:text-white uppercase tracking-widest flex items-center gap-1 transition-colors"><LogOut className="w-3 h-3"/> Logout</button>
              </div>
           )}
-          <a href="#" className="flex items-center gap-2 text-xs font-bold text-gray-300 hover:text-white transition-colors uppercase tracking-widest">
+          {/* 🚀 LINKED CONTACT SUPPORT BUTTON */}
+          <button onClick={() => router.push('/dashboard/support')} className="flex items-center gap-2 text-xs font-bold text-gray-300 hover:text-white transition-colors uppercase tracking-widest">
             <MessageSquare className="w-4 h-4"/> CONTACT SUPPORT
-          </a>
+          </button>
         </div>
       </nav>
 
@@ -361,8 +379,9 @@ export default function Home() {
                         CONNECT {activeChannel} TO CONTINUE
                       </button>
                     ) : (
+                      // 🚀 TEXT CHANGED HERE AS ORDERED
                       <button onClick={() => handleOpenPricing(activeChannel)} className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 rounded-2xl text-[18px] shadow-[0_0_30px_rgba(37,99,235,0.4)] uppercase tracking-widest transition-transform hover:scale-[1.02] flex justify-center items-center gap-3">
-                        <Zap className="w-5 h-5"/> Deploy OpenClaw
+                        <Zap className="w-5 h-5"/> DEPLOY YOUR AI AGENT NOW
                       </button>
                     )}
                   </motion.div>
@@ -375,7 +394,7 @@ export default function Home() {
       </section>
 
       {/* 🚀 COMPARISON SECTION */}
-      <section className="py-24 relative z-10 border-t border-white/5 bg-[#161618]">
+      <section id="features" className="py-24 relative z-10 border-t border-white/5 bg-[#161618]">
         <div className="max-w-5xl mx-auto px-6">
           <div className="text-center mb-16">
             <div className="inline-block relative">
@@ -437,7 +456,8 @@ export default function Home() {
       <footer className="pt-24 pb-12 relative z-10 bg-[#141414]">
         <div className="max-w-6xl mx-auto px-10 text-left mb-24">
           <h2 className="text-4xl md:text-[3.5rem] text-white mb-8 tracking-tight" style={{ fontFamily: "Georgia, serif" }}>Deploy. Automate. Relax.</h2>
-          <button className="bg-[#FFA87A] hover:bg-[#FF905A] text-black font-bold px-10 py-4 rounded-lg text-sm transition-colors shadow-lg">
+          {/* 🚀 LINKED LEARN MORE BUTTON TO SCROLL TO FEATURES */}
+          <button onClick={() => document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' })} className="bg-[#FFA87A] hover:bg-[#FF905A] text-black font-bold px-10 py-4 rounded-lg text-sm transition-colors shadow-lg">
             Learn More
           </button>
         </div>
@@ -487,7 +507,8 @@ export default function Home() {
                     <div className="bg-[#1A1A1A] p-6 rounded-2xl border border-white/5 shadow-inner">
                       <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">API Access Token</label>
                       <input type="password" value={telegramToken} onChange={(e) => setTelegramToken(e.target.value)} placeholder="Enter Token..." className="w-full bg-black border border-white/10 rounded-xl px-4 py-4 text-sm focus:outline-none mb-6 text-white font-mono" />
-                      <button onClick={() => { setIsTokenSaved(true); setIsTelegramModalOpen(false); }} className="w-full bg-white text-black font-bold py-4 rounded-xl text-sm hover:bg-gray-200 uppercase tracking-widest shadow-lg transition-transform hover:scale-[1.02]">
+                      {/* 🚀 TOKEN VALIDATION CALLED HERE */}
+                      <button onClick={handleSaveToken} className="w-full bg-white text-black font-bold py-4 rounded-xl text-sm hover:bg-gray-200 uppercase tracking-widest shadow-lg transition-transform hover:scale-[1.02]">
                         SAVE AND CONTINUE
                       </button>
                     </div>
@@ -526,7 +547,8 @@ export default function Home() {
                       <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">Permanent API Token</label>
                       <input type="password" value={telegramToken} onChange={(e) => setTelegramToken(e.target.value)} placeholder="EAABwzL..." className="w-full bg-black border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#25D366] mb-6 text-white font-mono transition-colors" />
                       
-                      <button onClick={() => { setIsTokenSaved(true); setIsTelegramModalOpen(false); }} className="w-full bg-white text-black font-bold py-4 rounded-xl text-sm hover:bg-gray-200 uppercase tracking-widest shadow-lg transition-transform hover:scale-[1.02]">
+                      {/* 🚀 TOKEN VALIDATION CALLED HERE */}
+                      <button onClick={handleSaveToken} className="w-full bg-white text-black font-bold py-4 rounded-xl text-sm hover:bg-gray-200 uppercase tracking-widest shadow-lg transition-transform hover:scale-[1.02]">
                         SAVE AND CONTINUE
                       </button>
                     </div>
@@ -606,30 +628,36 @@ export default function Home() {
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 20 }} className="bg-[#111] border border-white/10 p-8 md:p-12 rounded-[2rem] w-full max-w-4xl text-center shadow-2xl relative">
               {!isDeploying && <button onClick={() => setShowPricingPopup(false)} className="absolute top-6 right-8 text-gray-500 hover:text-white">✕</button>}
               
-              <h2 className="text-3xl font-black mb-4 text-white uppercase tracking-tight">Deploy OpenClaw under 30 seconds.</h2>
-              <p className="text-gray-400 text-base mb-10 max-w-2xl mx-auto">Avoid technical complexity. One-click deploy your autonomous agent immediately.</p>
+              {/* 🚀 TEXT CHANGED AS ORDERED */}
+              <h2 className="text-3xl font-black mb-4 text-white uppercase tracking-tight">CHOOSE PLAN AND LINK AI AGENT</h2>
+              <p className="text-gray-400 text-base mb-10 max-w-2xl mx-auto">Select a subscription tier to activate your AI engine and link it to your chosen channel.</p>
               
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 my-10 text-left">
-                <div onClick={() => !isDeploying && setSelectedTier("starter")} className={`relative p-6 rounded-2xl border transition-all duration-200 ${!isDeploying ? 'cursor-pointer' : ''} ${selectedTier === "starter" ? "bg-[#1A1A1A] border-white shadow-[0_0_20px_rgba(255,255,255,0.1)] scale-105" : "bg-[#0A0A0B] border-white/10"}`}>
+                <div onClick={() => !isDeploying && setSelectedTier("starter")} className={`relative p-6 rounded-2xl border transition-all duration-200 ${!isDeploying ? 'cursor-pointer' : ''} ${selectedTier === "starter" ? "bg-[#1A1A1A] border-white shadow-[0_0_20px_rgba(255,255,255,0.1)] scale-105" : "bg-[#0A0A0B] border-white/10 hover:border-white/30"}`}>
                   <h3 className="text-gray-400 font-bold uppercase text-xs mb-2 tracking-widest">Starter</h3>
                   <div className="text-3xl font-black text-white mb-4">{currencySymbol}{getCurrentPrice("starter")}</div>
                   <p className="text-sm text-gray-400">Limited tokens for personal use.</p>
                 </div>
-                <div onClick={() => !isDeploying && setSelectedTier("pro")} className={`relative p-6 rounded-2xl border transition-all duration-200 ${!isDeploying ? 'cursor-pointer' : ''} ${selectedTier === "pro" ? "bg-[#1A1A1A] border-blue-500 shadow-[0_0_30px_rgba(59,130,246,0.2)] scale-105" : "bg-[#0A0A0B] border-white/10"}`}>
+                <div onClick={() => !isDeploying && setSelectedTier("pro")} className={`relative p-6 rounded-2xl border transition-all duration-200 ${!isDeploying ? 'cursor-pointer' : ''} ${selectedTier === "pro" ? "bg-[#1A1A1A] border-blue-500 shadow-[0_0_30px_rgba(59,130,246,0.2)] scale-105" : "bg-[#0A0A0B] border-white/10 hover:border-white/30"}`}>
                   <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-blue-500 text-white text-[10px] font-bold uppercase px-3 py-1 rounded-full tracking-widest">Popular</div>
                   <h3 className="text-blue-400 font-bold uppercase text-xs mb-2 tracking-widest">Pro</h3>
                   <div className="text-3xl font-black text-white mb-4">{currencySymbol}{getCurrentPrice("pro")}</div>
                   <p className="text-sm text-gray-400">Unlimited credits and Priority Routing.</p>
                 </div>
-                <div onClick={() => !isDeploying && setSelectedTier("max")} className={`relative p-6 rounded-2xl border transition-all duration-200 ${!isDeploying ? 'cursor-pointer' : ''} ${selectedTier === "max" ? "bg-[#1A1A1A] border-orange-500 shadow-[0_0_30px_rgba(249,115,22,0.15)] scale-105" : "bg-[#0A0A0B] border-white/10"}`}>
+                <div onClick={() => !isDeploying && setSelectedTier("max")} className={`relative p-6 rounded-2xl border transition-all duration-200 ${!isDeploying ? 'cursor-pointer' : ''} ${selectedTier === "max" ? "bg-[#1A1A1A] border-orange-500 shadow-[0_0_30px_rgba(249,115,22,0.15)] scale-105" : "bg-[#0A0A0B] border-white/10 hover:border-white/30"}`}>
                   <h3 className="text-orange-400 font-bold uppercase text-xs mb-2 tracking-widest">Max</h3>
                   <div className="text-3xl font-black text-white mb-4">{currencySymbol}{getCurrentPrice("max")}</div>
                   <p className="text-sm text-gray-400">Multi-AI access with maximum speed.</p>
                 </div>
               </div>
 
-              <button onClick={triggerRazorpayPayment} disabled={isDeploying} className="w-full max-w-sm mx-auto bg-white text-black font-black py-4 rounded-xl uppercase tracking-widest flex justify-center items-center gap-2 shadow-xl hover:bg-gray-200 transition-colors disabled:opacity-50">
-                {isDeploying ? "Deploying Database..." : `Deploy OpenClaw ${currencySymbol}${getCurrentPrice()}`}
+              {/* 🚀 BUTTON TEXT CHANGED & DISABLED IF NO PLAN SELECTED */}
+              <button 
+                onClick={triggerRazorpayPayment} 
+                disabled={isDeploying || !selectedTier} 
+                className={`w-full max-w-sm mx-auto font-black py-4 rounded-xl uppercase tracking-widest flex justify-center items-center gap-2 shadow-xl transition-all ${!selectedTier ? 'bg-gray-700 text-gray-400 cursor-not-allowed' : 'bg-white text-black hover:bg-gray-200'}`}
+              >
+                {isDeploying ? "Deploying Database..." : !selectedTier ? "SELECT A PLAN" : `PROCESS PAY AND DEPLOY ${currencySymbol}${getCurrentPrice()}`}
               </button>
             </motion.div>
           </div>
