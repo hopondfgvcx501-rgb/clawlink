@@ -1,39 +1,44 @@
 "use client";
 
-import { useSession } from "next-auth/react";
-import { useEffect, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { useSession, signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { ShieldAlert, CheckCircle, Clock, ArrowLeft, AlertTriangle, Activity, DollarSign, CreditCard } from "lucide-react";
+import { useEffect, useState } from "react";
+import { motion } from "framer-motion";
+import { ShieldAlert, Users, DollarSign, Activity, Database, LogOut, Terminal, RefreshCw, ArrowLeft } from "lucide-react";
 
-// Admin email lock
+// 🚨 ADMIN EMAIL LOCK
 const ADMIN_EMAILS = ["hopondfgvcx501@gmail.com"]; 
-
-interface SupportTicket {
-  id: string;
-  user_email: string;
-  issue_type: string;
-  description: string;
-  status: string;
-  created_at: string;
-}
-
-interface Transaction {
-  email: string;
-  plan_name: string;
-  amount: number;
-  currency: string;
-  created_at: string;
-}
 
 export default function AdminDashboard() {
   const { data: session, status } = useSession();
   const router = useRouter();
   
-  const [tickets, setTickets] = useState<SupportTicket[]>([]);
-  const [stats, setStats] = useState({ totalUsers: 0, activeTickets: 0, totalRevenue: 0, systemStatus: "Loading..." });
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [isAuthorized, setIsAuthorized] = useState(false);
+  const [stats, setStats] = useState({ totalUsers: 0, totalRevenue: 0, apiCalls: 0, systemStatus: "Loading..." });
+  const [clients, setClients] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+
+  const fetchAdminData = async () => {
+    if (!session?.user?.email || !ADMIN_EMAILS.includes(session.user.email)) return;
+    setIsLoading(true);
+    try {
+      const res = await fetch(`/api/admin?email=${session.user.email}`);
+      const data = await res.json();
+      if (data.success) {
+        setStats({
+          totalUsers: data.stats.activeClients,
+          totalRevenue: data.stats.mrr,
+          apiCalls: data.stats.apiCalls,
+          systemStatus: "ALL SYSTEMS NOMINAL"
+        });
+        setClients(data.clients);
+      }
+    } catch (error) {
+      console.error("Failed to load admin data:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
     if (status === "loading") return;
@@ -43,189 +48,156 @@ export default function AdminDashboard() {
       return;
     }
 
+    setIsAuthorized(true);
     fetchAdminData();
   }, [session, status, router]);
 
-  const fetchAdminData = async () => {
-    try {
-      // Fetch Tickets
-      const ticketRes = await fetch("/api/admin/support");
-      const ticketData = await ticketRes.json();
-      if (ticketData.success) {
-        setTickets(ticketData.data);
-      }
-
-      // Fetch Live Stats & Revenue
-      const statsRes = await fetch("/api/admin/stats");
-      const statsData = await statsRes.json();
-      if (statsData.success) {
-        setStats({
-          totalUsers: statsData.data.totalUsers,
-          activeTickets: statsData.data.activeTickets,
-          totalRevenue: statsData.data.totalRevenue,
-          systemStatus: statsData.data.systemStatus
-        });
-        setTransactions(statsData.data.recentTransactions);
-      }
-    } catch (error) {
-      console.error("Failed to load admin data:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const markAsResolved = async (id: string) => {
-    try {
-      const res = await fetch("/api/admin/support", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id, status: "Resolved" })
-      });
-      const data = await res.json();
-      if (data.success) {
-        setTickets(tickets.map(t => t.id === id ? { ...t, status: "Resolved" } : t));
-        setStats(prev => ({ ...prev, activeTickets: Math.max(0, prev.activeTickets - 1) }));
-      } else {
-        alert("Failed to update ticket status.");
-      }
-    } catch (error) {
-      alert("Network error.");
-    }
-  };
-
-  if (isLoading || status === "loading") {
-    return <div className="min-h-screen bg-[#0A0A0B] flex items-center justify-center text-white"><span className="animate-spin text-4xl">⚙️</span></div>;
+  if (status === "loading" || !isAuthorized) {
+    return (
+      <div className="min-h-screen bg-[#050505] flex items-center justify-center text-red-500 font-mono">
+        <ShieldAlert className="w-10 h-10 animate-pulse" />
+        <span className="ml-3 tracking-widest uppercase text-sm">Verifying Level 9 Clearance...</span>
+      </div>
+    );
   }
 
-  const openTickets = tickets.filter(t => t.status === "Open").length;
-
   return (
-    <div className="min-h-screen bg-[#0A0A0B] text-white p-6 md:p-12 font-sans selection:bg-red-500/30">
+    <div className="min-h-screen bg-[#0A0A0B] text-gray-300 font-mono selection:bg-red-500/30 overflow-x-hidden relative flex flex-col">
       
-      <nav className="max-w-6xl mx-auto flex justify-between items-center mb-12 border-b border-red-500/20 pb-6">
+      {/* 🔴 RED "GOD MODE" GLOW */}
+      <div className="absolute top-[-20%] left-1/2 -translate-x-1/2 w-[800px] h-[500px] bg-red-600/10 rounded-full blur-[150px] pointer-events-none z-0"></div>
+
+      <nav className="relative z-10 border-b border-red-500/20 bg-black/50 backdrop-blur-xl p-6 px-10 flex justify-between items-center">
         <div className="flex items-center gap-4">
           <button onClick={() => router.push('/dashboard')} className="p-2 bg-white/5 hover:bg-white/10 rounded-full transition-colors">
             <ArrowLeft className="w-5 h-5 text-gray-400" />
           </button>
-          <div className="text-2xl font-bold tracking-wider font-mono">clawlink<span className="text-red-500">.</span>admin</div>
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-red-500/10 rounded-lg text-red-500 border border-red-500/20 shadow-[0_0_15px_rgba(239,68,68,0.2)]">
+              <ShieldAlert className="w-6 h-6" />
+            </div>
+            <div>
+              <h1 className="text-xl font-black text-white tracking-widest uppercase">CEO Command Center</h1>
+              <p className="text-[10px] text-red-500 font-bold tracking-widest uppercase">Level 9 Clearance: Granted</p>
+            </div>
+          </div>
         </div>
-        <div className="text-xs font-mono text-red-400 border border-red-500/30 bg-red-500/10 px-3 py-1.5 rounded-full flex items-center gap-2">
-          <ShieldAlert className="w-4 h-4"/> ROOT ACCESS GRANTED
+        
+        <div className="flex items-center gap-6">
+          <div className="text-right hidden md:block">
+            <p className="text-sm font-bold text-white uppercase">{session?.user?.name}</p>
+            <p className="text-[10px] text-gray-500">{session?.user?.email}</p>
+          </div>
+          <button onClick={() => signOut({ callbackUrl: '/' })} className="p-2 text-gray-500 hover:text-red-500 bg-white/5 rounded-lg transition-colors">
+            <LogOut className="w-5 h-5" />
+          </button>
         </div>
       </nav>
 
-      <main className="max-w-6xl mx-auto">
-        {/* 🚀 TOP STATS ROW */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-10">
-          {/* Revenue Card */}
-          <div className="bg-gradient-to-br from-[#111] to-[#0A1A10] border border-green-500/30 rounded-2xl p-6 flex items-center gap-4 shadow-[0_0_30px_rgba(34,197,94,0.15)] relative overflow-hidden">
+      <main className="relative z-10 max-w-7xl mx-auto w-full p-6 md:p-10 space-y-8 flex-1">
+        
+        {/* 🚀 TOP STATS */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="bg-gradient-to-br from-[#111] to-[#0A1A10] border border-green-500/30 p-6 rounded-2xl shadow-[0_0_30px_rgba(34,197,94,0.15)] relative overflow-hidden group hover:border-green-500/60 transition-colors">
             <div className="absolute -right-4 -top-4 text-green-500/10 text-8xl"><DollarSign/></div>
-            <div className="p-4 bg-green-500/20 rounded-xl text-green-400 relative z-10"><DollarSign className="w-8 h-8"/></div>
-            <div className="relative z-10">
-              <p className="text-gray-400 text-xs font-bold uppercase tracking-widest">Total Revenue</p>
-              <h3 className="text-3xl font-black text-white">${stats.totalRevenue.toLocaleString()}</h3>
+            <div className="flex items-center gap-4 mb-4 relative z-10">
+              <div className="p-3 bg-green-500/20 text-green-400 rounded-xl"><DollarSign className="w-6 h-6"/></div>
+              <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest">Total Revenue</h3>
             </div>
-          </div>
+            <p className="text-3xl font-black text-white relative z-10">${isLoading ? "..." : stats.totalRevenue.toLocaleString()}</p>
+          </motion.div>
 
-          <div className="bg-[#111] border border-white/10 rounded-2xl p-6 flex items-center gap-4 shadow-lg">
-            <div className="p-4 bg-blue-500/20 rounded-xl text-blue-400"><Activity className="w-8 h-8"/></div>
-            <div>
-              <p className="text-gray-400 text-xs font-bold uppercase tracking-widest">Total Bots</p>
-              <h3 className="text-3xl font-black text-white">{stats.totalUsers}</h3>
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="bg-[#111] border border-white/10 p-6 rounded-2xl shadow-xl relative overflow-hidden group hover:border-blue-500/30 transition-colors">
+            <div className="flex items-center gap-4 mb-4">
+              <div className="p-3 bg-blue-500/10 text-blue-400 rounded-xl"><Users className="w-6 h-6"/></div>
+              <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest">Active Bots</h3>
             </div>
-          </div>
-          
-          <div className="bg-[#111] border border-orange-500/30 rounded-2xl p-6 flex items-center gap-4 shadow-[0_0_20px_rgba(249,115,22,0.1)]">
-            <div className="p-4 bg-orange-500/20 rounded-xl text-orange-400"><AlertTriangle className="w-8 h-8"/></div>
-            <div>
-              <p className="text-gray-400 text-xs font-bold uppercase tracking-widest">Open Tickets</p>
-              <h3 className="text-3xl font-black text-white">{openTickets}</h3>
+            <p className="text-3xl font-black text-white">{isLoading ? "..." : stats.totalUsers.toLocaleString()}</p>
+          </motion.div>
+
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="bg-[#111] border border-white/10 p-6 rounded-2xl shadow-xl relative overflow-hidden group hover:border-orange-500/30 transition-colors">
+            <div className="flex items-center gap-4 mb-4">
+              <div className="p-3 bg-orange-500/10 text-orange-400 rounded-xl"><Activity className="w-6 h-6"/></div>
+              <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest">Total API Calls</h3>
             </div>
-          </div>
-          
-          <div className="bg-[#111] border border-white/10 rounded-2xl p-6 flex items-center gap-4 shadow-lg">
-            <div className="p-4 bg-white/5 rounded-xl text-gray-300"><CheckCircle className="w-8 h-8"/></div>
-            <div>
-              <p className="text-gray-400 text-xs font-bold uppercase tracking-widest">Status</p>
-              <h3 className="text-xl font-black text-green-400 mt-1">{stats.systemStatus}</h3>
+            <p className="text-3xl font-black text-white">{isLoading ? "..." : stats.apiCalls.toLocaleString()}</p>
+          </motion.div>
+
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="bg-[#111] border border-red-500/20 p-6 rounded-2xl shadow-xl relative overflow-hidden flex flex-col justify-center">
+            <div className="flex items-center gap-4 mb-2">
+              <div className="p-3 bg-red-500/10 text-red-500 rounded-xl"><Database className="w-6 h-6"/></div>
+              <h3 className="text-xs font-bold text-red-500 uppercase tracking-widest">System Status</h3>
             </div>
-          </div>
+            <p className="text-sm font-bold text-white flex items-center gap-2 mt-2">
+              <span className="w-2.5 h-2.5 bg-green-500 rounded-full animate-pulse shadow-[0_0_10px_#22c55e]"></span> {stats.systemStatus}
+            </p>
+          </motion.div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-          {/* 🚀 TICKETS LIST */}
-          <div className="bg-[#111] border border-white/10 rounded-3xl p-8 shadow-2xl">
-            <h2 className="text-xl font-bold mb-6 flex items-center gap-2">
-              <Clock className="w-5 h-5 text-gray-400"/> Action Desk
-            </h2>
-
-            {tickets.length === 0 ? (
-              <div className="text-center py-10 bg-black/50 rounded-xl border border-white/5">
-                <p className="text-gray-400">No support tickets found.</p>
-              </div>
-            ) : (
-              <div className="space-y-4 max-h-[500px] overflow-y-auto custom-scrollbar pr-2">
-                <AnimatePresence>
-                  {tickets.map((ticket) => (
-                    <motion.div 
-                      key={ticket.id} 
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, scale: 0.95 }}
-                      className={`p-5 rounded-2xl border ${ticket.status === 'Open' ? 'bg-orange-500/5 border-orange-500/30' : 'bg-black/50 border-white/5'}`}
-                    >
-                      <div className="flex items-center gap-3 mb-2">
-                        <span className={`text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider ${ticket.status === 'Open' ? 'bg-orange-500/20 text-orange-400' : 'bg-green-500/20 text-green-400'}`}>
-                          {ticket.status}
+        {/* 🚀 CLIENT DATABASE TABLE */}
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }} className="bg-[#111] border border-white/5 rounded-2xl overflow-hidden shadow-2xl">
+          <div className="p-6 border-b border-white/5 flex items-center justify-between bg-[#161618]">
+            <div className="flex items-center gap-3">
+              <Terminal className="w-5 h-5 text-red-500" />
+              <h2 className="text-base font-bold text-white uppercase tracking-widest">Global Client Roster</h2>
+            </div>
+            <button onClick={fetchAdminData} className="text-xs text-gray-400 hover:text-white flex items-center gap-2 transition-colors uppercase tracking-widest font-bold">
+              <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin text-red-500' : ''}`} /> Refresh
+            </button>
+          </div>
+          
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm whitespace-nowrap">
+              <thead className="bg-[#0A0A0B] text-[10px] uppercase font-bold text-gray-500 tracking-widest border-b border-white/5">
+                <tr>
+                  <th className="p-5 pl-8">Client Email</th>
+                  <th className="p-5">Platform</th>
+                  <th className="p-5">Model</th>
+                  <th className="p-5">Plan</th>
+                  <th className="p-5 pr-8 text-right">Tokens Left</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-white/5 font-medium text-gray-300">
+                {isLoading ? (
+                  <tr><td colSpan={5} className="p-8 text-center text-gray-500">Decrypting Server Data...</td></tr>
+                ) : clients.length === 0 ? (
+                  <tr><td colSpan={5} className="p-8 text-center text-gray-500">No active clients found in the database.</td></tr>
+                ) : (
+                  clients.map((client, idx) => (
+                    <tr key={idx} className="hover:bg-white/5 transition-colors group">
+                      <td className="p-5 pl-8 text-white">{client.email}</td>
+                      <td className="p-5">
+                        {client.whatsapp_token ? (
+                          <span className="text-green-400 bg-green-400/10 px-2.5 py-1 rounded text-[10px] uppercase font-bold tracking-widest border border-green-400/20">WhatsApp</span>
+                        ) : client.telegram_token ? (
+                          <span className="text-blue-400 bg-blue-400/10 px-2.5 py-1 rounded text-[10px] uppercase font-bold tracking-widest border border-blue-400/20">Telegram</span>
+                        ) : (
+                          <span className="text-gray-400 bg-gray-400/10 px-2.5 py-1 rounded text-[10px] uppercase font-bold tracking-widest">Pending</span>
+                        )}
+                      </td>
+                      <td className="p-5 text-gray-400 font-sans">{client.ai_model}</td>
+                      <td className="p-5">
+                        <span className={`uppercase text-[11px] font-bold tracking-wider ${client.plan === 'max' ? 'text-pink-400' : client.plan === 'pro' ? 'text-orange-400' : 'text-gray-400'}`}>
+                          {client.plan || 'Starter'}
                         </span>
-                        <span className="text-gray-500 text-xs font-mono">{new Date(ticket.created_at).toLocaleDateString()}</span>
-                      </div>
-                      <h4 className="text-base font-bold text-white mb-1">{ticket.issue_type}</h4>
-                      <p className="text-xs text-blue-400 font-mono mb-3">{ticket.user_email}</p>
-                      <div className="bg-[#0A0A0B] p-3 rounded-xl border border-white/5 text-gray-300 text-xs leading-relaxed mb-4">
-                        {ticket.description}
-                      </div>
-                      {ticket.status === "Open" && (
-                        <button onClick={() => markAsResolved(ticket.id)} className="w-full bg-white text-black text-xs font-bold px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors flex items-center justify-center gap-2">
-                          <CheckCircle className="w-3 h-3"/> Mark Resolved
-                        </button>
-                      )}
-                    </motion.div>
-                  ))}
-                </AnimatePresence>
-              </div>
-            )}
+                      </td>
+                      <td className="p-5 pr-8 font-mono text-right">
+                        {client.is_unlimited ? (
+                          <span className="text-purple-400 font-bold">∞ UNLIMITED</span>
+                        ) : (
+                          <span className={`${client.available_tokens < 1000 ? 'text-red-400 animate-pulse' : 'text-gray-300'}`}>
+                            {client.available_tokens?.toLocaleString()}
+                          </span>
+                        )}
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
           </div>
+        </motion.div>
 
-          {/* 🚀 RECENT TRANSACTIONS TABLE */}
-          <div className="bg-[#111] border border-white/10 rounded-3xl p-8 shadow-2xl h-fit">
-            <h2 className="text-xl font-bold mb-6 flex items-center gap-2">
-              <CreditCard className="w-5 h-5 text-gray-400"/> Recent Sales
-            </h2>
-
-            {transactions.length === 0 ? (
-              <div className="text-center py-10 bg-black/50 rounded-xl border border-white/5">
-                <p className="text-gray-400">No transactions recorded yet.</p>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {transactions.map((trx, idx) => (
-                  <div key={idx} className="bg-black/40 border border-white/5 p-4 rounded-xl flex items-center justify-between hover:bg-white/5 transition-colors">
-                    <div>
-                      <p className="text-sm font-bold text-white mb-1">{trx.email}</p>
-                      <p className="text-xs text-gray-500 font-mono flex items-center gap-2">
-                        <span className="text-blue-400 uppercase font-bold">{trx.plan_name}</span> • {new Date(trx.created_at).toLocaleDateString()}
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-lg font-black text-green-400">+{trx.amount} {trx.currency}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
       </main>
     </div>
   );
