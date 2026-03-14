@@ -7,7 +7,7 @@ import {
   Activity, Database, Zap, Save, 
   Receipt, Download, Smartphone, BrainCircuit, 
   MessageSquare, Search, Bell, ChevronDown, 
-  ExternalLink, Bot, Users, ArrowUpRight 
+  ExternalLink, Bot, Users, ArrowUpRight, Crown
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
@@ -19,7 +19,7 @@ export default function Dashboard() {
   // 🚀 CORE STATES
   const [userData, setUserData] = useState<any>(null);
   const [billingHistory, setBillingHistory] = useState<any[]>([]);
-  const [stats, setStats] = useState<any>(null); // NEW: Analytics Stats
+  const [stats, setStats] = useState<any>(null); 
   const [isLoading, setIsLoading] = useState(true);
   const [showAppBanner, setShowAppBanner] = useState(true);
   
@@ -38,7 +38,6 @@ export default function Dashboard() {
     }
 
     if (session?.user?.email) {
-      // 🚀 CACHE-KILLER FETCHES
       fetch(`/api/user?email=${session.user.email}&t=${Date.now()}`, { cache: 'no-store' })
         .then((res) => res.json())
         .then((data) => {
@@ -58,7 +57,6 @@ export default function Dashboard() {
         })
         .catch(console.error);
 
-      // NEW: Fetch Analytics
       fetch(`/api/analytics?email=${session.user.email}&t=${Date.now()}`, { cache: 'no-store' })
         .then(res => res.json())
         .then(data => {
@@ -172,9 +170,19 @@ Thank you for choosing ClawLink Enterprise AI.
 
   // 🚀 UI LOGIC CALCULATIONS
   const currentPlan = userData?.plan?.toLowerCase() || "starter";
-  const showTokens = !stats?.isUnlimited; 
-  const usagePercentage = stats?.isUnlimited ? 100 : Math.min(((stats?.tokensUsed || 0) / (stats?.tokensAllocated || 1)) * 100, 100);
+  const isPremium = currentPlan === "pro" || currentPlan === "max";
+  const showTokens = !isPremium; 
+  const usagePercentage = isPremium ? 100 : Math.min(((stats?.tokensUsed || 0) / (stats?.tokensAllocated || 1)) * 100, 100);
   const totalMsgs = (stats?.platformStats?.whatsapp || 0) + (stats?.platformStats?.telegram || 0) + (stats?.platformStats?.web || 0);
+
+  // Model Display Logic
+  const getModelDisplayName = (modelStr: string) => {
+    if (!modelStr) return "NOT SET";
+    if (modelStr.includes("gpt")) return "GPT-5.2 Turbo";
+    if (modelStr.includes("claude")) return "Claude Opus 4.6";
+    if (modelStr.includes("gemini")) return "Gemini 3 Flash";
+    return modelStr.toUpperCase();
+  };
 
   return (
     <div className="w-full min-h-screen bg-[#0A0A0B] text-[#EDEDED] font-sans relative selection:bg-orange-500/30 overflow-y-auto custom-scrollbar flex flex-col">
@@ -225,22 +233,62 @@ Thank you for choosing ClawLink Enterprise AI.
           )}
         </AnimatePresence>
 
-        {/* 🚀 DATA ANALYTICS: TOP CARDS */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="bg-[#1C1C1E] border border-white/5 p-6 rounded-[1.5rem] shadow-xl relative overflow-hidden group hover:border-white/10 transition-colors">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 rounded-full blur-3xl group-hover:bg-blue-500/10 transition-colors"></div>
-            <div className="flex justify-between items-start mb-4 relative z-10">
-              <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-500 border border-blue-500/20"><Zap className="w-5 h-5"/></div>
-              <span className="text-[10px] font-bold uppercase tracking-widest text-gray-500">API Tokens</span>
+        {/* 🚀 OVERVIEW: PLAN & MODEL INFO */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="bg-[#1C1C1E] border border-white/5 p-6 rounded-[1.5rem] shadow-xl flex justify-between items-center relative overflow-hidden group hover:border-white/10 transition-colors">
+            <div className="absolute top-0 left-0 w-32 h-32 bg-blue-500/5 rounded-full blur-3xl group-hover:bg-blue-500/10 transition-colors"></div>
+            <div className="relative z-10">
+              <h3 className="text-gray-400 text-xs font-bold uppercase tracking-widest mb-1">Current Plan</h3>
+              <div className="flex items-center gap-3">
+                <p className="text-3xl font-black text-white font-serif uppercase tracking-wide">{currentPlan}</p>
+                {isPremium && (
+                  <span className="bg-gradient-to-r from-orange-500 to-pink-500 text-white px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest flex items-center gap-1 shadow-lg">
+                    <Crown className="w-3 h-3"/> Unlimited
+                  </span>
+                )}
+              </div>
             </div>
-            <h3 className="text-3xl font-black text-white relative z-10">{stats?.tokensUsed?.toLocaleString() || 0}</h3>
-            <p className="text-xs text-gray-400 mt-1 relative z-10">/ {stats?.tokensAllocated} Used</p>
-            <div className="w-full bg-[#1A1A1A] h-1.5 mt-4 rounded-full overflow-hidden relative z-10">
-              <div className={`h-full ${stats?.isUnlimited ? 'bg-gradient-to-r from-blue-500 to-purple-500' : 'bg-blue-500'}`} style={{ width: `${usagePercentage}%` }}></div>
+            <div className="w-12 h-12 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-500 border border-blue-500/20 relative z-10">
+              <Receipt className="w-6 h-6"/>
             </div>
           </motion.div>
 
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="bg-[#1C1C1E] border border-white/5 p-6 rounded-[1.5rem] shadow-xl flex justify-between items-center relative overflow-hidden group hover:border-white/10 transition-colors">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/5 rounded-full blur-3xl group-hover:bg-purple-500/10 transition-colors"></div>
+            <div className="relative z-10">
+              <h3 className="text-gray-400 text-xs font-bold uppercase tracking-widest mb-1">Active AI Model</h3>
+              <p className="text-2xl font-black text-white font-sans tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-blue-400">
+                {getModelDisplayName(stats?.activeModel || userData?.selectedModel)}
+              </p>
+            </div>
+            <div className="w-12 h-12 rounded-xl bg-purple-500/10 flex items-center justify-center text-purple-500 border border-purple-500/20 relative z-10">
+              <BrainCircuit className="w-6 h-6"/>
+            </div>
+          </motion.div>
+        </div>
+
+        {/* 🚀 DATA ANALYTICS: METRICS CARDS */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="bg-[#1C1C1E] border border-white/5 p-6 rounded-[1.5rem] shadow-xl relative overflow-hidden group hover:border-white/10 transition-colors">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-orange-500/5 rounded-full blur-3xl group-hover:bg-orange-500/10 transition-colors"></div>
+            <div className="flex justify-between items-start mb-4 relative z-10">
+              <div className="w-10 h-10 rounded-xl bg-orange-500/10 flex items-center justify-center text-orange-500 border border-orange-500/20"><Zap className="w-5 h-5"/></div>
+              <span className="text-[10px] font-bold uppercase tracking-widest text-gray-500">API Tokens</span>
+            </div>
+            <h3 className="text-3xl font-black text-white relative z-10">
+              {showTokens ? (stats?.tokensUsed?.toLocaleString() || 0) : <span className="text-2xl text-orange-400">∞</span>}
+            </h3>
+            <p className="text-xs text-gray-400 mt-1 relative z-10">
+              {showTokens ? `/ ${stats?.tokensAllocated} Used` : "Unlimited Requests Available"}
+            </p>
+            {showTokens && (
+              <div className="w-full bg-[#1A1A1A] h-1.5 mt-4 rounded-full overflow-hidden relative z-10">
+                <div className={`h-full bg-orange-500`} style={{ width: `${usagePercentage}%` }}></div>
+              </div>
+            )}
+          </motion.div>
+
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="bg-[#1C1C1E] border border-white/5 p-6 rounded-[1.5rem] shadow-xl relative overflow-hidden group hover:border-white/10 transition-colors">
             <div className="absolute top-0 right-0 w-32 h-32 bg-green-500/5 rounded-full blur-3xl group-hover:bg-green-500/10 transition-colors"></div>
             <div className="flex justify-between items-start mb-4 relative z-10">
               <div className="w-10 h-10 rounded-xl bg-green-500/10 flex items-center justify-center text-green-500 border border-green-500/20"><Users className="w-5 h-5"/></div>
@@ -250,7 +298,7 @@ Thank you for choosing ClawLink Enterprise AI.
             <p className="text-xs text-green-400 mt-1 flex items-center gap-1 relative z-10"><ArrowUpRight className="w-3 h-3"/> Captured Automatically</p>
           </motion.div>
 
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="bg-[#1C1C1E] border border-white/5 p-6 rounded-[1.5rem] shadow-xl relative overflow-hidden group hover:border-white/10 transition-colors">
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }} className="bg-[#1C1C1E] border border-white/5 p-6 rounded-[1.5rem] shadow-xl relative overflow-hidden group hover:border-white/10 transition-colors">
             <div className="absolute top-0 right-0 w-32 h-32 bg-orange-500/5 rounded-full blur-3xl group-hover:bg-orange-500/10 transition-colors"></div>
             <div className="flex justify-between items-start mb-4 relative z-10">
               <div className="w-10 h-10 rounded-xl bg-orange-500/10 flex items-center justify-center text-orange-500 border border-orange-500/20"><MessageSquare className="w-5 h-5"/></div>
@@ -258,16 +306,6 @@ Thank you for choosing ClawLink Enterprise AI.
             </div>
             <h3 className="text-3xl font-black text-white relative z-10">{totalMsgs.toLocaleString()}</h3>
             <p className="text-xs text-gray-400 mt-1 relative z-10">Messages Processed</p>
-          </motion.div>
-
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }} className="bg-[#1C1C1E] border border-white/5 p-6 rounded-[1.5rem] shadow-xl relative overflow-hidden group hover:border-white/10 transition-colors">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/5 rounded-full blur-3xl group-hover:bg-purple-500/10 transition-colors"></div>
-            <div className="flex justify-between items-start mb-4 relative z-10">
-              <div className="w-10 h-10 rounded-xl bg-purple-500/10 flex items-center justify-center text-purple-500 border border-purple-500/20"><Database className="w-5 h-5"/></div>
-              <span className="text-[10px] font-bold uppercase tracking-widest text-gray-500">Active Brain</span>
-            </div>
-            <h3 className="text-xl font-bold text-white uppercase truncate mt-2 relative z-10">{stats?.activeModel || "Not Set"}</h3>
-            <p className="text-xs text-purple-400 mt-2 relative z-10">Connected to Vector DB</p>
           </motion.div>
         </div>
 
