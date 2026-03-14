@@ -6,7 +6,6 @@ import { motion } from "framer-motion";
 import { Send, User, Bot, ShieldAlert, ArrowLeft, RefreshCw } from "lucide-react";
 import { useRouter } from "next/navigation";
 
-// 👇 YAHAN EXPORT DEFAULT LIKHA HAI, YEHI VERCEL KO CHAHIYE THA!
 export default function CRMDashboard() {
   const { data: session, status } = useSession();
   const router = useRouter();
@@ -36,7 +35,7 @@ export default function CRMDashboard() {
         setGroupedChats(grouped);
       }
     } catch (e) {
-      console.error(e);
+      console.error("Failed to fetch CRM data", e);
     } finally {
       setIsLoading(false);
     }
@@ -218,7 +217,7 @@ export default function CRMDashboard() {
                     {isSending ? <span className="animate-spin text-sm">⚙️</span> : <Send className="w-4 h-4"/>}
                   </button>
                 </div>
-                <p className="text-center text-[10px] text-gray-500 mt-2 font-mono">Press Enter to send. Sending a message automatically pauses AI routing for this conversation.</p>
+                <p className="text-center text-[10px] text-gray-500 mt-2 font-mono">Press Enter to send. Sending a message directly routes it to the customer via Telegram/WhatsApp.</p>
               </div>
             </>
           )}
