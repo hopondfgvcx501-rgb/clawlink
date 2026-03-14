@@ -4,7 +4,8 @@ import { signIn, signOut, useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
-import { Globe, Database, Mic, Zap, MessageSquare, Activity, LogOut, Shield, ExternalLink, CheckCircle2, Copy, MessageCircle, X, Send } from "lucide-react";
+// 🚀 FIXED: Added 'Mail' to the import list below
+import { Globe, Database, Mic, Zap, MessageSquare, Activity, LogOut, Shield, ExternalLink, CheckCircle2, Copy, MessageCircle, X, Send, Mail } from "lucide-react";
 
 // --- CORE SYSTEM DATA ---
 const MODEL_DETAILS: Record<string, { name: string; starter: number; pro: number }> = {
