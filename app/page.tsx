@@ -4,7 +4,7 @@ import { signIn, signOut, useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
-import { Globe, Database, Mic, Zap, MessageSquare, Activity, LogOut, Shield, ExternalLink, CheckCircle2, Copy, MessageCircle, X, Send, Mail } from "lucide-react";
+import { Globe, Database, Mic, Zap, MessageSquare, Activity, LogOut, Shield, ExternalLink, CheckCircle2, Copy, MessageCircle, X, Send } from "lucide-react";
 
 // --- CORE SYSTEM DATA ---
 const MODEL_DETAILS: Record<string, { name: string; starter: number; pro: number }> = {
@@ -45,12 +45,10 @@ export default function Home() {
   const [currencySymbol, setCurrencySymbol] = useState("$");
   const EXCHANGE_RATE = 83; 
 
-  // 🚀 HELP WIDGET STATES
   const [isHelpOpen, setIsHelpOpen] = useState(false);
   const [helpEmail, setHelpEmail] = useState("");
   const [helpMessage, setHelpMessage] = useState("");
   const [helpStatus, setHelpStatus] = useState<"idle" | "sending" | "sent">("idle");
-  // 🚀 SUPPORT MODAL STATE
   const [isSupportModalOpen, setIsSupportModalOpen] = useState(false);
 
   useEffect(() => {
@@ -226,9 +224,9 @@ export default function Home() {
   return (
     <div className="bg-[#1C1D21] min-h-screen relative text-[#EDEDED] font-sans selection:bg-orange-500/30 overflow-x-hidden">
       
-      {/* 🚀 FIXED CINEMATIC SUNSET GLOW EFFECT (Stays on scroll) */}
-      <div className="fixed top-[-10%] right-[-5%] w-[600px] h-[600px] bg-orange-500/20 rounded-full blur-[150px] pointer-events-none z-[-1]"></div>
-      <div className="fixed bottom-[-10%] left-[-10%] w-[600px] h-[600px] bg-indigo-500/20 rounded-full blur-[150px] pointer-events-none z-[-1]"></div>
+      {/* 🚀 FIXED CINEMATIC SUNSET GLOW EFFECT (z-0 to ensure it is visible above bg but behind relative z-10 elements) */}
+      <div className="fixed top-[-10%] right-[-5%] w-[600px] h-[600px] bg-orange-500/20 rounded-full blur-[150px] pointer-events-none z-0"></div>
+      <div className="fixed bottom-[-10%] left-[-10%] w-[600px] h-[600px] bg-indigo-500/20 rounded-full blur-[150px] pointer-events-none z-0"></div>
 
       {/* 🚀 TOP NAVBAR */}
       <nav className="relative z-50 flex items-center justify-between px-6 md:px-12 py-8 max-w-[1600px] mx-auto">
@@ -240,7 +238,6 @@ export default function Home() {
                <button onClick={() => signOut()} className="text-xs font-bold text-gray-400 hover:text-white uppercase tracking-widest flex items-center gap-1 transition-colors"><LogOut className="w-3 h-3"/> Logout</button>
              </div>
           )}
-          {/* 🚀 SUPPORT MODAL TRIGGER (Requirement FIXED) */}
           <button onClick={() => setIsSupportModalOpen(true)} className="flex items-center gap-2 text-[10px] md:text-xs font-bold text-gray-300 hover:text-white transition-colors duration-150 uppercase tracking-widest">
             <MessageSquare className="w-4 h-4"/> CONTACT SUPPORT
           </button>
@@ -285,7 +282,6 @@ export default function Home() {
             </div>
           </div>
 
-          {/* RIGHT: Deployment Console - PIXEL PERFECT MATCH */}
           <div className="flex flex-col items-center text-center lg:pt-8 xl:pt-12 w-full">
             <h1 className="text-3xl md:text-[3.2rem] text-white mb-2 font-serif tracking-tight leading-tight">
               Deploy OpenClaw under 30 SECOND
@@ -294,7 +290,6 @@ export default function Home() {
               Avoid all technical complexity and one-click<br/>deploy your own 24/7 active OpenClaw instance under 30 second.
             </p>
 
-            {/* 🚀 Model Selector */}
             <h3 className="text-white text-xl md:text-2xl mb-4 font-serif tracking-tight">Choose a model to use as your default !</h3>
             <div className="flex flex-wrap justify-center items-center gap-3 mb-10 w-full max-w-2xl px-2">
               <button 
@@ -330,7 +325,6 @@ export default function Home() {
               </div>
             </div>
 
-            {/* 🚀 Channel Selector */}
             <h3 className="text-white text-xl md:text-2xl mb-4 font-serif tracking-tight">Select a channel for sending messages !</h3>
             <div className="flex flex-wrap justify-center items-center gap-3 mb-10 w-full max-w-2xl px-2">
               <button 
@@ -363,7 +357,6 @@ export default function Home() {
               </button>
             </div>
 
-            {/* 🚀 FIXED AUTH / DEPLOY ACTION AREA */}
             <div className="w-full max-w-[600px] min-h-[120px] flex flex-col justify-center items-center">
               <AnimatePresence mode="wait">
                 {botLink ? (
@@ -516,14 +509,15 @@ export default function Home() {
             © 2026 CLAWLINK INC. GLOBAL AI SAAS INFRASTRUCTURE.
           </div>
           <div className="flex gap-6 mt-4 md:mt-0 font-serif">
-            <a href="#" className="hover:text-white transition-colors duration-150">Privacy Policy</a>
-            <a href="#" className="hover:text-white transition-colors duration-150">Terms of Service</a>
-            <a href="#" className="hover:text-white transition-colors duration-150">Documentation</a>
+            {/* 🚀 ADDED LINKS AS REQUESTED */}
+            <a href="/privacy" className="hover:text-white transition-colors duration-150">Privacy Policy</a>
+            <a href="/terms" className="hover:text-white transition-colors duration-150">Terms of Service</a>
+            <a href="/docs" className="hover:text-white transition-colors duration-150">Documentation</a>
           </div>
         </div>
       </footer>
 
-      {/* 🚀 FAST IN-PAGE CONTACT SUPPORT MODAL (Requirement FIXED) */}
+      {/* 🚀 FAST IN-PAGE CONTACT SUPPORT MODAL */}
       <AnimatePresence>
         {isSupportModalOpen && (
           <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/90 backdrop-blur-md p-4">
