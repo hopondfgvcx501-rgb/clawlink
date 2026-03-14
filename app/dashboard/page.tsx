@@ -176,19 +176,23 @@ Thank you for choosing ClawLink Enterprise AI.
   const usagePercentage = isPremium ? 100 : Math.min(((stats?.tokensUsed || 0) / (stats?.tokensAllocated || 1)) * 100, 100);
   const totalMsgs = (stats?.platformStats?.whatsapp || 0) + (stats?.platformStats?.telegram || 0) + (stats?.platformStats?.web || 0);
 
-  // Model Display Logic (With Versions)
-  const getModelDisplayName = (modelStr: string) => {
-    if (!modelStr) return "NOT SET";
-    const str = modelStr.toLowerCase();
-    if (str.includes("gpt")) return "GPT-5.2 (Turbo)";
-    if (str.includes("claude")) return "Claude 3 (Opus 4.6)";
-    if (str.includes("gemini")) return "Gemini 3 (Flash)";
-    return modelStr.toUpperCase();
+  // 🚀 FOOLPROOF MODEL EXTRACTOR (Syncs perfectly with Database)
+  const getModelDisplayName = () => {
+    const dbValues = [
+      stats?.activeModel, stats?.ai_provider, stats?.selectedModel,
+      userData?.selected_model, userData?.selectedModel, userData?.ai_provider, userData?.ai_model
+    ].filter(Boolean).join(" ").toLowerCase();
+
+    if (dbValues.includes("gemini") || dbValues.includes("google")) return "Gemini 3 (Flash)";
+    if (dbValues.includes("claude") || dbValues.includes("anthropic")) return "Claude 3 (Opus 4.6)";
+    if (dbValues.includes("gpt") || dbValues.includes("openai")) return "GPT-5.2 (Turbo)";
+    
+    return "NOT SET";
   };
 
   // Channels Logic
-  const isTelegramLive = !!userData?.telegram_token || userData?.telegramActive;
-  const isWhatsappLive = !!userData?.whatsapp_token || !!userData?.whatsapp_phone_id || userData?.whatsappActive;
+  const isTelegramLive = !!userData?.telegram_token || !!userData?.telegramActive;
+  const isWhatsappLive = !!userData?.whatsapp_token || !!userData?.whatsapp_phone_id || !!userData?.whatsappActive;
 
   return (
     <div className="w-full min-h-screen bg-[#0A0A0B] text-[#EDEDED] font-sans relative selection:bg-orange-500/30 overflow-y-auto custom-scrollbar flex flex-col">
@@ -267,7 +271,7 @@ Thank you for choosing ClawLink Enterprise AI.
             <div className="relative z-10">
               <h3 className="text-gray-400 text-xs font-bold uppercase tracking-widest mb-1">Active AI Brain</h3>
               <p className="text-2xl font-black text-white font-sans tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-blue-400 mt-2">
-                {getModelDisplayName(stats?.activeModel || userData?.selected_model)}
+                {getModelDisplayName()}
               </p>
               <p className="text-[10px] text-gray-500 font-mono mt-1">Multi-modal AI Engine</p>
             </div>
