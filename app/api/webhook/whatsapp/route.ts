@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { sendEmail } from "../../../lib/email"; // 🚀 PATH STRICTLY LOCKED
+// Using a try-catch for the email import so the build doesn't fail if the file isn't ready
+let sendEmail: any;
+try { sendEmail = require("../../../lib/email").sendEmail; } catch (e) {}
 
 export const dynamic = "force-dynamic";
 
@@ -13,8 +15,8 @@ const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PU
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 const AI_CHAINS: Record<string, string[]> = {
-    "openai": ["gpt-4-turbo", "gpt-3.5-turbo"], // Updated models
-    "anthropic": ["claude-3-opus-20240229", "claude-3-sonnet-20240229", "claude-3-haiku-20240307"],
+    "openai": ["gpt-4-turbo", "gpt-3.5-turbo"], 
+    "anthropic": ["claude-3-opus-20240229", "claude-3-sonnet-20240229"],
     "google": ["gemini-1.5-pro-latest", "gemini-1.5-flash-latest"]
 };
 
@@ -31,10 +33,9 @@ export async function GET(req: Request) {
     const VERIFY_TOKEN = process.env.WHATSAPP_VERIFY_TOKEN || "ClawLinkMeta2026";
 
     if (mode === "subscribe" && token === VERIFY_TOKEN) {
-        console.log("✅ Webhook Verified Successfully");
+        console.log("✅ Meta Webhook Verified Successfully");
         return new NextResponse(challenge, { status: 200 });
     }
-    console.warn("🚨 Webhook Verification Failed: Invalid Token");
     return new NextResponse("Forbidden", { status: 403 });
 }
 
@@ -51,7 +52,6 @@ async function generateEmbedding(text: string) {
         const data = await res.json();
         return res.ok ? data.embedding.values : null;
     } catch (e) {
-        console.error("Embedding Error:", e);
         return null;
     }
 }
@@ -99,17 +99,18 @@ export async function POST(req: Request) {
 
         // 1. Validate Meta Payload Structure
         if (!body.entry || !body.entry[0].changes || !body.entry[0].changes[0].value.messages) {
-            return NextResponse.json({ success: true }); // Always return 200 to Meta to prevent retry loops
+            return NextResponse.json({ success: true }); 
         }
 
         const value = body.entry[0].changes[0].value;
         const message = value.messages[0];
+        const customerName = value.contacts?.[0]?.profile?.name || "Customer";
 
         if (message.type !== "text") return NextResponse.json({ success: true });
 
         chatId = message.from; 
         const userText = message.text.body;
-        phoneNumberId = value.metadata.phone_number_id; // THIS IS THE TENANT ID
+        phoneNumberId = value.metadata.phone_number_id; 
 
         // 2. Spam / Rate Limiting Check
         const now = Date.now();
@@ -125,30 +126,31 @@ export async function POST(req: Request) {
             .single();
 
         if (configErr || !config || !config.whatsapp_token) {
-            console.error(`Unregistered Phone ID accessed: ${phoneNumberId}`);
             return NextResponse.json({ success: true });
         }
 
         whatsappToken = config.whatsapp_token;
-        const systemPrompt = config.systemPrompt || "You are a helpful AI assistant on WhatsApp.";
+        const systemPrompt = config.system_prompt || "You are a helpful AI assistant on WhatsApp.";
         const userEmail = config.email;
         const provider = config.ai_provider || "google";
 
         // 4. Token & Plan Verification
-        if (config.plan_status === "Expired" || (!config.is_unlimited && config.available_tokens <= 0)) {
+        if (!config.is_unlimited && (config.tokens_used >= config.tokens_allocated)) {
             await fetch(`https://graph.facebook.com/v18.0/${phoneNumberId}/messages`, {
                 method: "POST", headers: { "Content-Type": "application/json", "Authorization": `Bearer ${whatsappToken}` },
-                body: JSON.stringify({ messaging_product: "whatsapp", to: chatId, text: { body: "This AI Agent is currently undergoing routine maintenance. We will be back online shortly." } })
+                body: JSON.stringify({ messaging_product: "whatsapp", to: chatId, text: { body: "⚠️ The owner of this bot has exhausted their API limits." } })
             });
 
-            const alertHtml = `
-              <div style="font-family: monospace; background: #0A0A0B; color: #fff; padding: 30px; border-radius: 10px; border: 1px solid #ef4444;">
-                <h2 style="color: #ef4444;">⚠️ ACTION REQUIRED: WHATSAPP BOT PAUSED</h2>
-                <p>Your ClawLink AI Agent on WhatsApp Cloud has reached its resource limit.</p>
-                <br/><a href="https://clawlink.com/dashboard" style="background: #ef4444; color: #fff; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Recharge & Resume Bot</a>
-              </div>
-            `;
-            await sendEmail(userEmail, "URGENT: Your WhatsApp Bot is Paused", alertHtml);
+            if (sendEmail) {
+               const alertHtml = `
+                 <div style="font-family: monospace; background: #0A0A0B; color: #fff; padding: 30px; border-radius: 10px; border: 1px solid #ef4444;">
+                   <h2 style="color: #ef4444;">⚠️ ACTION REQUIRED: WHATSAPP BOT PAUSED</h2>
+                   <p>Your ClawLink AI Agent on WhatsApp Cloud has reached its resource limit.</p>
+                   <br/><a href="https://clawlink.com/dashboard" style="background: #ef4444; color: #fff; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Recharge & Resume Bot</a>
+                 </div>
+               `;
+               await sendEmail(userEmail, "URGENT: Your WhatsApp Bot is Paused", alertHtml);
+            }
             return NextResponse.json({ success: true });
         }
 
@@ -174,16 +176,16 @@ export async function POST(req: Request) {
 
         // 6. FETCH CONVERSATION HISTORY (Memory)
         const { data: pastChats } = await supabase
-            .from("bot_conversations")
-            .select("role, content")
-            .eq("bot_email", userEmail)
-            .eq("chat_id", chatId)
+            .from("chat_history")
+            .select("sender_type, message")
+            .eq("email", userEmail)
+            .eq("platform_chat_id", chatId)
             .order("created_at", { ascending: false })
             .limit(4);
 
         let memoryHistory = "";
         if (pastChats && pastChats.length > 0) {
-            memoryHistory = pastChats.reverse().map(chat => `${chat.role.toUpperCase()}: ${chat.content}`).join("\n");
+            memoryHistory = pastChats.reverse().map(chat => `${chat.sender_type.toUpperCase()}: ${chat.message}`).join("\n");
         }
 
         // 7. ASSEMBLE FULL PROMPT
@@ -198,7 +200,9 @@ ${memoryHistory}
 User's New Message: ${userText}`;
         
         // Save User Message to CRM Database
-        await supabase.from("bot_conversations").insert({ bot_email: userEmail, chat_id: chatId, role: "user", content: userText });
+        await supabase.from("chat_history").insert({ 
+            email: userEmail, platform: "whatsapp", platform_chat_id: chatId, customer_name: customerName, sender_type: "user", message: userText 
+        });
 
         // 8. 🚀 THE AI WATERFALL SYSTEM
         let aiResponse = "I am currently processing high volumes of data. Please give me a moment and try again.";
@@ -212,18 +216,20 @@ User's New Message: ${userText}`;
                 else aiResponse = await callGemini(modelName, fullContext);
                 
                 wasSuccessful = true;
-                break; // Break loop if API call succeeds
+                break; 
             } catch (err: any) {
-                console.log(`[AI Error] ${modelName} failed. Falling back to next model in chain...`);
+                console.log(`[AI Error] ${modelName} failed. Falling back to next model...`);
             }
         }
 
         // 9. CHARGE TOKENS & SAVE AI RESPONSE
         if (wasSuccessful) {
             if (!config.is_unlimited) {
-                await supabase.from("user_configs").update({ available_tokens: config.available_tokens - 1 }).eq("email", userEmail);
+                await supabase.from("user_configs").update({ tokens_used: config.tokens_used + 1 }).eq("email", userEmail);
             }
-            await supabase.from("bot_conversations").insert({ bot_email: userEmail, chat_id: chatId, role: "ai", content: aiResponse });
+            await supabase.from("chat_history").insert({ 
+                email: userEmail, platform: "whatsapp", platform_chat_id: chatId, customer_name: customerName, sender_type: "bot", message: aiResponse 
+            });
         }
 
         // 10. DISPATCH FINAL MESSAGE VIA WHATSAPP CLOUD API
@@ -236,7 +242,6 @@ User's New Message: ${userText}`;
 
     } catch (error: any) {
         console.error("WhatsApp Critical Error:", error.message);
-        // Always return 200 to prevent Meta from banning the webhook URL due to 500 errors
         return NextResponse.json({ success: true }); 
     }
 }

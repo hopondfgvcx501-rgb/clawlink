@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
+export const dynamic = "force-dynamic";
+
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
 const supabase = createClient(supabaseUrl, supabaseKey);
@@ -72,14 +74,22 @@ export async function POST(req: Request) {
 
         const chatId = body.message.chat.id.toString();
         const userText = body.message.text;
+        const customerName = body.message.from.first_name || "Customer";
 
-        // 2. Fetch Active Bot Config (For multi-tenant SaaS)
-        // Note: For advanced multi-tenant, we assume the active config is the one with telegram enabled.
+        // 2. Identify WHICH user's bot this is via URL params 
+        // 🔒 CRITICAL FIX: To support multiple customers on the same platform
+        const { searchParams } = new URL(req.url);
+        const ownerEmail = searchParams.get("email");
+
+        if (!ownerEmail) {
+            console.error("Missing email parameter in webhook URL");
+            return NextResponse.json({ success: true });
+        }
+
         const { data: config, error: configErr } = await supabase
             .from("user_configs")
             .select("*")
-            .not("telegram_token", "is", null)
-            .limit(1)
+            .eq("email", ownerEmail)
             .single();
 
         if (configErr || !config || !config.telegram_token) {
@@ -88,14 +98,13 @@ export async function POST(req: Request) {
 
         const telegramToken = config.telegram_token;
         const systemPrompt = config.system_prompt || "You are a helpful AI assistant.";
-        const userEmail = config.email;
         const provider = config.ai_provider || "google";
 
         // 3. Token & Plan Verification
-        if (config.plan_status === "Expired" || (!config.is_unlimited && config.available_tokens <= 0)) {
+        if (!config.is_unlimited && (config.tokens_used >= config.tokens_allocated)) {
             await fetch(`https://api.telegram.org/bot${telegramToken}/sendMessage`, {
                 method: "POST", headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ chat_id: chatId, text: "This AI Agent is currently undergoing routine maintenance. We will be back online shortly." })
+                body: JSON.stringify({ chat_id: chatId, text: "⚠️ This AI Agent has reached its resource limits. Please try again later." })
             });
             return NextResponse.json({ success: true });
         }
@@ -109,7 +118,7 @@ export async function POST(req: Request) {
                     query_embedding: queryVector,
                     match_threshold: 0.65,
                     match_count: 3,
-                    p_user_email: userEmail
+                    p_user_email: ownerEmail
                 });
                 
                 if (matchedDocs && matchedDocs.length > 0) {
@@ -122,16 +131,16 @@ export async function POST(req: Request) {
 
         // 5. FETCH CONVERSATION HISTORY (Memory)
         const { data: pastChats } = await supabase
-            .from("bot_conversations")
-            .select("role, content")
-            .eq("bot_email", userEmail)
-            .eq("chat_id", chatId)
+            .from("chat_history")
+            .select("sender_type, message")
+            .eq("email", ownerEmail)
+            .eq("platform_chat_id", chatId)
             .order("created_at", { ascending: false })
             .limit(4);
 
         let memoryHistory = "";
         if (pastChats && pastChats.length > 0) {
-            memoryHistory = pastChats.reverse().map(chat => `${chat.role.toUpperCase()}: ${chat.content}`).join("\n");
+            memoryHistory = pastChats.reverse().map(chat => `${chat.sender_type.toUpperCase()}: ${chat.message}`).join("\n");
         }
 
         // 6. ASSEMBLE FULL AI PROMPT
@@ -145,8 +154,10 @@ ${memoryHistory}
 
 User's New Message: ${userText}`;
         
-        // Save User Message to Live CRM Database
-        await supabase.from("bot_conversations").insert({ bot_email: userEmail, chat_id: chatId, role: "user", content: userText });
+        // Save User Message to CRM Database
+        await supabase.from("chat_history").insert({ 
+            email: ownerEmail, platform: "telegram", platform_chat_id: chatId, customer_name: customerName, sender_type: "user", message: userText 
+        });
 
         // 7. THE AI WATERFALL SYSTEM
         let aiResponse = "Processing... Please wait.";
@@ -169,9 +180,11 @@ User's New Message: ${userText}`;
         // 8. CHARGE TOKENS & SAVE AI RESPONSE
         if (wasSuccessful) {
             if (!config.is_unlimited) {
-                await supabase.from("user_configs").update({ available_tokens: config.available_tokens - 1 }).eq("email", userEmail);
+                await supabase.from("user_configs").update({ tokens_used: config.tokens_used + 1 }).eq("email", ownerEmail);
             }
-            await supabase.from("bot_conversations").insert({ bot_email: userEmail, chat_id: chatId, role: "ai", content: aiResponse });
+            await supabase.from("chat_history").insert({ 
+                email: ownerEmail, platform: "telegram", platform_chat_id: chatId, customer_name: customerName, sender_type: "bot", message: aiResponse 
+            });
         }
 
         // 9. DISPATCH FINAL MESSAGE TO TELEGRAM
@@ -184,7 +197,6 @@ User's New Message: ${userText}`;
 
     } catch (error: any) {
         console.error("Telegram Webhook Error:", error.message);
-        // Always return 200 so Telegram doesn't retry infinitely
         return NextResponse.json({ success: true }); 
     }
 }
