@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
+export const dynamic = "force-dynamic";
+
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
 const supabase = createClient(supabaseUrl, supabaseKey);
@@ -64,8 +66,8 @@ export async function POST(req: Request) {
         if (!config) return NextResponse.json({ success: false, error: "Configuration not found" }, { status: 404 });
 
         // Check if out of tokens
-        if (config.plan_status === "Expired" || (!config.is_unlimited && config.available_tokens <= 0)) {
-            return NextResponse.json({ success: true, reply: "This AI Agent is currently undergoing maintenance. Please try again later." });
+        if (config.plan_status === "Expired" || (!config.is_unlimited && config.tokens_used >= config.tokens_allocated)) {
+            return NextResponse.json({ success: true, reply: "⚠️ The owner of this website has exhausted their AI API quota." });
         }
 
         // 2. Fetch RAG Knowledge
@@ -87,18 +89,18 @@ export async function POST(req: Request) {
             console.error("RAG Error:", e);
         }
 
-        // 3. Fetch Conversation History
+        // 3. Fetch Conversation History (From `chat_history` to sync with CRM!)
         const { data: pastChats } = await supabase
-            .from("bot_conversations")
-            .select("role, content")
-            .eq("bot_email", email)
-            .eq("chat_id", sessionId) // Using sessionId as the unique identifier for web chats
+            .from("chat_history")
+            .select("sender_type, message")
+            .eq("email", email)
+            .eq("platform_chat_id", sessionId)
             .order("created_at", { ascending: false })
             .limit(5);
 
         let memoryHistory = "";
         if (pastChats && pastChats.length > 0) {
-            memoryHistory = pastChats.reverse().map(chat => `${chat.role.toUpperCase()}: ${chat.content}`).join("\n");
+            memoryHistory = pastChats.reverse().map(chat => `${chat.sender_type.toUpperCase()}: ${chat.message}`).join("\n");
         }
 
         // 4. Assemble the Prompt
@@ -113,13 +115,21 @@ ${memoryHistory}
 
 User's New Message: ${message}`;
 
-        // Save User Message to Live CRM (Dashboard users can now see Web Widget chats too!)
-        await supabase.from("bot_conversations").insert({ bot_email: email, chat_id: sessionId, role: "user", content: message });
+        // 5. 🔒 CRITICAL: Save User Message to CRM using `chat_history`
+        await supabase.from("chat_history").insert({ 
+            email: email, 
+            platform: "web",
+            platform_chat_id: sessionId, 
+            customer_name: "Web Visitor",
+            sender_type: "user", 
+            message: message 
+        });
 
-        // 5. Call the specific AI Provider
+        // 6. Call the specific AI Provider
         let aiResponse = "I'm having trouble connecting to my brain. Please try again in a moment.";
         const provider = config.ai_provider || "google";
-        const model = config.ai_model || "gemini-1.5-flash-latest";
+        // Default to the models from the previous webhook arrays
+        const model = config.selected_model || (provider === "openai" ? "gpt-4-turbo" : provider === "anthropic" ? "claude-3-opus-20240229" : "gemini-1.5-flash-latest");
 
         try {
             if (provider === "openai") {
@@ -132,14 +142,22 @@ User's New Message: ${message}`;
             
             // Deduct token
             if (!config.is_unlimited) {
-                await supabase.from("user_configs").update({ available_tokens: config.available_tokens - 1 }).eq("email", email);
+                await supabase.from("user_configs").update({ tokens_used: config.tokens_used + 1 }).eq("email", email);
             }
         } catch (error) {
             console.error("AI Generation Error:", error);
+            // Fallback response handled
         }
 
-        // 6. Save AI Response to Live CRM
-        await supabase.from("bot_conversations").insert({ bot_email: email, chat_id: sessionId, role: "ai", content: aiResponse });
+        // 7. 🔒 CRITICAL: Save AI Response to Live CRM
+        await supabase.from("chat_history").insert({ 
+            email: email, 
+            platform: "web",
+            platform_chat_id: sessionId, 
+            customer_name: "Web Visitor",
+            sender_type: "bot", 
+            message: aiResponse 
+        });
 
         return NextResponse.json({ success: true, reply: aiResponse });
 
