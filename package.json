@@ -12,6 +12,7 @@
     "@anthropic-ai/sdk": "^0.78.0",
     "@google/generative-ai": "^0.24.1",
     "@supabase/supabase-js": "^2.99.1",
+    "cheerio": "^1.2.0",
     "clsx": "^2.1.1",
     "framer-motion": "^12.35.2",
     "geist": "^1.7.0",
