@@ -3,8 +3,12 @@ import Razorpay from "razorpay";
 
 export async function POST(req: Request) {
   try {
-    // Frontend se amount le rahe hain
-    const { amount, currency } = await req.json();
+    // 🚀 NEW: Frontend se amount ke sath Email, Plan, aur Model bhi le rahe hain
+    const { amount, currency, email, planName, selectedModel } = await req.json();
+
+    if (!email) {
+       return NextResponse.json({ error: "User Email is required" }, { status: 400 });
+    }
 
     // Razorpay engine initialize kar rahe hain
     const razorpay = new Razorpay({
@@ -17,6 +21,12 @@ export async function POST(req: Request) {
       amount: amount, // Amount in paise/cents
       currency: currency || "USD",
       receipt: `receipt_${Date.now()}`,
+      // 🔒 THE MAGIC FIX: Ye notes webhook ko batayenge ki kya save karna hai
+      notes: {
+        email: email,
+        plan_name: planName || "Unknown",
+        selected_model: selectedModel || "google" // frontend se aaya hua model (claude/openai/google)
+      }
     };
 
     const order = await razorpay.orders.create(options);
