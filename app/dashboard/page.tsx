@@ -194,12 +194,25 @@ Thank you for choosing ClawLink Enterprise AI.
   const isTelegramLive = !!userData?.telegram_token || !!userData?.telegramActive;
   const isWhatsappLive = !!userData?.whatsapp_token || !!userData?.whatsapp_phone_id || !!userData?.whatsappActive;
 
-  // 🚀 NEW: DYNAMIC BOT REDIRECT LOGIC
-  const handleOpenLiveBot = () => {
-    if (isTelegramLive) {
-      window.open("https://t.me/BotFather", "_blank"); // Open Telegram
+  // 🚀 THE ULTIMATE LIVE BOT REDIRECT LOGIC
+  const handleOpenLiveBot = async () => {
+    if (isTelegramLive && userData?.telegram_token) {
+      try {
+        // Smartly fetch the user's exact bot username using their token directly from Telegram!
+        const res = await fetch(`https://api.telegram.org/bot${userData.telegram_token}/getMe`);
+        const data = await res.json();
+        if (data.ok && data.result.username) {
+          window.open(`https://t.me/${data.result.username}`, "_blank");
+          return;
+        }
+      } catch (e) {
+        console.error("Failed to fetch exact telegram bot link");
+      }
+      // Fallback if network fails
+      window.open("https://web.telegram.org", "_blank"); 
     } else if (isWhatsappLive) {
-      window.open("https://business.facebook.com/wa/manage/", "_blank"); // Open WhatsApp Manager
+      // Open WhatsApp direct chat
+      window.open("https://web.whatsapp.com", "_blank"); 
     } else {
       router.push(`/widget?email=${session?.user?.email}`); // Fallback to Web Widget
     }
@@ -219,12 +232,12 @@ Thank you for choosing ClawLink Enterprise AI.
           <p className="text-sm text-gray-400 mt-1">Welcome back, {session?.user?.name?.split(' ')[0] || 'Agent'}. Your AI fleet is active.</p>
         </div>
         <div className="flex items-center gap-4">
-          {/* 🚀 BUTTON ONCLICK UPDATED HERE */}
+          {/* 🚀 BUTTON TEXT AND CLICK LOGIC UPDATED TO YOUR EXACT ORDER */}
           <button 
             onClick={handleOpenLiveBot}
             className="hidden sm:flex items-center gap-2 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white px-5 py-2.5 rounded-full font-bold text-xs uppercase tracking-widest shadow-[0_0_20px_rgba(59,130,246,0.3)] transition-all transform hover:scale-105"
           >
-            <Bot className="w-4 h-4" /> Open Live Bot <ExternalLink className="w-3 h-3 ml-1" />
+            <Bot className="w-4 h-4" /> DEPLOY LIVE AGENT NOW <ExternalLink className="w-3 h-3 ml-1" />
           </button>
           <div className="hidden md:flex items-center bg-[#1A1A1A] border border-white/10 rounded-full px-4 py-2">
             <Search className="w-4 h-4 text-gray-500" />
