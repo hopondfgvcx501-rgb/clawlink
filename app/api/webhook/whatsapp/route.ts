@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+
 // Using a try-catch for the email import so the build doesn't fail if the file isn't ready
 let sendEmail: any;
 try { sendEmail = require("../../../lib/email").sendEmail; } catch (e) {}
@@ -14,8 +15,9 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
 const supabase = createClient(supabaseUrl, supabaseKey);
 
+// 🚀 STRICT INTRA-PROVIDER FALLBACK ARCHITECTURE
 const AI_CHAINS: Record<string, string[]> = {
-    "openai": ["gpt-4-turbo", "gpt-3.5-turbo"], 
+    "openai": ["gpt-4-turbo", "gpt-4o", "gpt-3.5-turbo"], 
     "anthropic": ["claude-3-opus-20240229", "claude-3-sonnet-20240229"],
     "google": ["gemini-1.5-pro-latest", "gemini-1.5-flash-latest"]
 };
@@ -43,6 +45,7 @@ export async function GET(req: Request) {
 // 🚀 AI & RAG HELPER FUNCTIONS
 // =========================================================================
 async function generateEmbedding(text: string) {
+    if (!process.env.GEMINI_API_KEY) return null;
     try {
         const embedUrl = `https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent?key=${process.env.GEMINI_API_KEY}`;
         const res = await fetch(embedUrl, {
@@ -57,6 +60,7 @@ async function generateEmbedding(text: string) {
 }
 
 async function callGemini(model: string, prompt: string) {
+    if (!process.env.GEMINI_API_KEY) throw new Error("GEMINI_API_KEY missing");
     const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${process.env.GEMINI_API_KEY}`, {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: prompt }] }] })
@@ -67,6 +71,7 @@ async function callGemini(model: string, prompt: string) {
 }
 
 async function callOpenAI(model: string, prompt: string) {
+    if (!process.env.OPENAI_API_KEY) throw new Error("OPENAI_API_KEY missing");
     const res = await fetch("https://api.openai.com/v1/chat/completions", {
         method: "POST", headers: { "Content-Type": "application/json", "Authorization": `Bearer ${process.env.OPENAI_API_KEY}` },
         body: JSON.stringify({ model: model, messages: [{ role: "user", content: prompt }] })
@@ -77,8 +82,9 @@ async function callOpenAI(model: string, prompt: string) {
 }
 
 async function callClaude(model: string, prompt: string) {
+    if (!process.env.ANTHROPIC_API_KEY) throw new Error("ANTHROPIC_API_KEY missing");
     const res = await fetch("https://api.anthropic.com/v1/messages", {
-        method: "POST", headers: { "Content-Type": "application/json", "x-api-key": process.env.ANTHROPIC_API_KEY || "", "anthropic-version": "2023-06-01" },
+        method: "POST", headers: { "Content-Type": "application/json", "x-api-key": process.env.ANTHROPIC_API_KEY, "anthropic-version": "2023-06-01" },
         body: JSON.stringify({ model: model, max_tokens: 1024, messages: [{ role: "user", content: prompt }] })
     });
     const data = await res.json();
@@ -122,7 +128,7 @@ export async function POST(req: Request) {
         const { data: config, error: configErr } = await supabase
             .from("user_configs")
             .select("*")
-            .eq("whatsapp_phone_id", phoneNumberId) // PERFECT MULTI-TENANT ROUTING
+            .eq("whatsapp_phone_id", phoneNumberId)
             .single();
 
         if (configErr || !config || !config.whatsapp_token) {
@@ -132,7 +138,12 @@ export async function POST(req: Request) {
         whatsappToken = config.whatsapp_token;
         const systemPrompt = config.system_prompt || "You are a helpful AI assistant on WhatsApp.";
         const userEmail = config.email;
-        const provider = config.ai_provider || "google";
+        
+        // 🔒 GET STRICT AI PROVIDER FROM DB
+        let rawProvider = (config.ai_provider || config.selected_model || "openai").toLowerCase();
+        let provider = "openai"; 
+        if (rawProvider.includes("claude") || rawProvider.includes("anthropic")) provider = "anthropic";
+        if (rawProvider.includes("gemini") || rawProvider.includes("google")) provider = "google";
 
         // 4. Token & Plan Verification
         if (!config.is_unlimited && (config.tokens_used >= config.tokens_allocated)) {
@@ -170,9 +181,7 @@ export async function POST(req: Request) {
                     customKnowledge = matchedDocs.map((doc: any) => doc.content).join("\n\n");
                 }
             }
-        } catch (e) {
-            console.error("RAG Fetch Error:", e);
-        }
+        } catch (e) {}
 
         // 6. FETCH CONVERSATION HISTORY (Memory)
         const { data: pastChats } = await supabase
@@ -183,31 +192,22 @@ export async function POST(req: Request) {
             .order("created_at", { ascending: false })
             .limit(4);
 
-        let memoryHistory = "";
-        if (pastChats && pastChats.length > 0) {
-            memoryHistory = pastChats.reverse().map(chat => `${chat.sender_type.toUpperCase()}: ${chat.message}`).join("\n");
-        }
+        let memoryHistory = pastChats && pastChats.length > 0 
+            ? pastChats.reverse().map(chat => `${chat.sender_type.toUpperCase()}: ${chat.message}`).join("\n") 
+            : "";
 
         // 7. ASSEMBLE FULL PROMPT
-        const fullContext = `System Instructions: ${systemPrompt}
-
-Company Knowledge Base (Use this information to answer if relevant to the query):
-${customKnowledge ? customKnowledge : "No specific company data found for this query."}
-
-Recent Conversation History:
-${memoryHistory}
-
-User's New Message: ${userText}`;
+        const fullContext = `System Instructions: ${systemPrompt}\n\nCompany Knowledge Base:\n${customKnowledge ? customKnowledge : "None."}\n\nMemory:\n${memoryHistory}\n\nUser: ${userText}`;
         
         // Save User Message to CRM Database
         await supabase.from("chat_history").insert({ 
             email: userEmail, platform: "whatsapp", platform_chat_id: chatId, customer_name: customerName, sender_type: "user", message: userText 
         });
 
-        // 8. 🚀 THE AI WATERFALL SYSTEM
-        let aiResponse = "I am currently processing high volumes of data. Please give me a moment and try again.";
+        // 8. 🔒 STRICT INTRA-PROVIDER AI WATERFALL
+        let aiResponse = `API Error: Ensure the API keys for ${provider.toUpperCase()} are added in your Vercel Environment Variables.`;
         let wasSuccessful = false;
-        const chain = AI_CHAINS[provider] || AI_CHAINS["google"];
+        const chain = AI_CHAINS[provider] || AI_CHAINS["openai"];
 
         for (const modelName of chain) {
             try {
@@ -218,7 +218,8 @@ User's New Message: ${userText}`;
                 wasSuccessful = true;
                 break; 
             } catch (err: any) {
-                console.log(`[AI Error] ${modelName} failed. Falling back to next model...`);
+                console.error(`[WhatsApp AI Error] ${modelName} failed:`, err.message);
+                // Continues to fallback model within same provider
             }
         }
 
