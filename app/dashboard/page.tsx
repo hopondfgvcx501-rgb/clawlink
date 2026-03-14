@@ -176,7 +176,7 @@ Thank you for choosing ClawLink Enterprise AI.
   const usagePercentage = isPremium ? 100 : Math.min(((stats?.tokensUsed || 0) / (stats?.tokensAllocated || 1)) * 100, 100);
   const totalMsgs = (stats?.platformStats?.whatsapp || 0) + (stats?.platformStats?.telegram || 0) + (stats?.platformStats?.web || 0);
 
-  // 🚀 FOOLPROOF MODEL EXTRACTOR (Syncs perfectly with Database)
+  // 🚀 FOOLPROOF MODEL EXTRACTOR
   const getModelDisplayName = () => {
     const dbValues = [
       stats?.activeModel, stats?.ai_provider, stats?.selectedModel,
@@ -194,6 +194,17 @@ Thank you for choosing ClawLink Enterprise AI.
   const isTelegramLive = !!userData?.telegram_token || !!userData?.telegramActive;
   const isWhatsappLive = !!userData?.whatsapp_token || !!userData?.whatsapp_phone_id || !!userData?.whatsappActive;
 
+  // 🚀 NEW: DYNAMIC BOT REDIRECT LOGIC
+  const handleOpenLiveBot = () => {
+    if (isTelegramLive) {
+      window.open("https://t.me/BotFather", "_blank"); // Open Telegram
+    } else if (isWhatsappLive) {
+      window.open("https://business.facebook.com/wa/manage/", "_blank"); // Open WhatsApp Manager
+    } else {
+      router.push(`/widget?email=${session?.user?.email}`); // Fallback to Web Widget
+    }
+  };
+
   return (
     <div className="w-full min-h-screen bg-[#0A0A0B] text-[#EDEDED] font-sans relative selection:bg-orange-500/30 overflow-y-auto custom-scrollbar flex flex-col">
       
@@ -208,8 +219,9 @@ Thank you for choosing ClawLink Enterprise AI.
           <p className="text-sm text-gray-400 mt-1">Welcome back, {session?.user?.name?.split(' ')[0] || 'Agent'}. Your AI fleet is active.</p>
         </div>
         <div className="flex items-center gap-4">
+          {/* 🚀 BUTTON ONCLICK UPDATED HERE */}
           <button 
-            onClick={() => router.push(`/widget?email=${session?.user?.email}`)}
+            onClick={handleOpenLiveBot}
             className="hidden sm:flex items-center gap-2 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white px-5 py-2.5 rounded-full font-bold text-xs uppercase tracking-widest shadow-[0_0_20px_rgba(59,130,246,0.3)] transition-all transform hover:scale-105"
           >
             <Bot className="w-4 h-4" /> Open Live Bot <ExternalLink className="w-3 h-3 ml-1" />
