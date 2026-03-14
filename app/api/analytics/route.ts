@@ -10,56 +10,69 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 export async function GET(req: Request) {
     try {
         const { searchParams } = new URL(req.url);
-        const email = searchParams.get('email');
+        const email = searchParams.get("email");
 
-        if (!email) return NextResponse.json({ success: false, error: "Email required" }, { status: 400 });
+        if (!email) return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
 
-        // Fetch all conversations for this specific bot owner
-        const { data: chats, error } = await supabase
-            .from("bot_conversations")
-            .select("chat_id, role, created_at")
-            .eq("bot_email", email)
-            .order("created_at", { ascending: true });
+        // 1. Fetch Token Limits & Config
+        const { data: config } = await supabase
+            .from("user_configs")
+            .select("tokens_used, tokens_allocated, is_unlimited, selected_model")
+            .eq("email", email)
+            .single();
 
-        if (error) throw new Error(error.message);
+        if (!config) return NextResponse.json({ success: false, error: "Config not found" }, { status: 404 });
 
-        // 🚀 CALCULATE THE DATA GOLDMINE
-        const totalMessages = chats.length;
-        const aiReplies = chats.filter(c => c.role === "ai").length;
-        const userMessages = chats.filter(c => c.role === "user").length;
-        
-        // Extract Unique Leads (Customers)
-        const uniqueCustomers = [...new Set(chats.map(c => c.chat_id))];
-        const totalLeads = uniqueCustomers.length;
+        // 2. Fetch Total Unique Leads (Customers)
+        const { data: chats } = await supabase
+            .from("chat_history")
+            .select("platform_chat_id, platform, created_at")
+            .eq("email", email);
 
-        // Get Recent 10 Unique Leads for the Lead Table
-        const recentLeads = [];
-        const seen = new Set();
-        for (let i = chats.length - 1; i >= 0; i--) {
-            const chat = chats[i];
-            if (!seen.has(chat.chat_id)) {
-                seen.add(chat.chat_id);
-                recentLeads.push({
-                    chatId: chat.chat_id,
-                    lastActive: chat.created_at
-                });
-                if (recentLeads.length >= 10) break;
-            }
+        const chatData = chats || [];
+        const uniqueLeads = new Set(chatData.map(c => c.platform_chat_id)).size;
+
+        // 3. Platform Distribution
+        const telegramCount = chatData.filter(c => c.platform === "telegram").length;
+        const whatsappCount = chatData.filter(c => c.platform === "whatsapp").length;
+        const webCount = chatData.filter(c => c.platform === "web").length;
+
+        // 4. Generate Chart Data (Last 7 Days Activity)
+        const chartDataMap: Record<string, number> = {};
+        const today = new Date();
+        for (let i = 6; i >= 0; i--) {
+            const d = new Date(today);
+            d.setDate(d.getDate() - i);
+            chartDataMap[d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })] = 0;
         }
 
-        return NextResponse.json({ 
-            success: true, 
+        chatData.forEach(msg => {
+            const dateStr = new Date(msg.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            if (chartDataMap[dateStr] !== undefined) {
+                chartDataMap[dateStr]++;
+            }
+        });
+
+        const chartData = Object.keys(chartDataMap).map(date => ({
+            name: date,
+            messages: chartDataMap[date]
+        }));
+
+        return NextResponse.json({
+            success: true,
             data: {
-                totalMessages,
-                aiReplies,
-                userMessages,
-                totalLeads,
-                recentLeads
-            } 
+                tokensUsed: config.tokens_used,
+                tokensAllocated: config.is_unlimited ? "Unlimited" : config.tokens_allocated,
+                isUnlimited: config.is_unlimited,
+                activeModel: config.selected_model,
+                totalLeads: uniqueLeads,
+                platformStats: { telegram: telegramCount, whatsapp: whatsappCount, web: webCount },
+                chartData
+            }
         });
 
     } catch (error: any) {
-        console.error("Analytics API Error:", error.message);
-        return NextResponse.json({ success: false, error: "Failed to fetch analytics" }, { status: 500 });
+        console.error("Analytics API Error:", error);
+        return NextResponse.json({ success: false, error: "Server Error" }, { status: 500 });
     }
 }
