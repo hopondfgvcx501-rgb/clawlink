@@ -7,7 +7,8 @@ import {
   Activity, Database, Zap, Save, 
   Receipt, Download, Smartphone, BrainCircuit, 
   MessageSquare, Search, Bell, ChevronDown, 
-  ExternalLink, Bot, Users, ArrowUpRight, Crown
+  ExternalLink, Bot, Users, ArrowUpRight, Crown,
+  Radio
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
@@ -175,14 +176,19 @@ Thank you for choosing ClawLink Enterprise AI.
   const usagePercentage = isPremium ? 100 : Math.min(((stats?.tokensUsed || 0) / (stats?.tokensAllocated || 1)) * 100, 100);
   const totalMsgs = (stats?.platformStats?.whatsapp || 0) + (stats?.platformStats?.telegram || 0) + (stats?.platformStats?.web || 0);
 
-  // Model Display Logic
+  // Model Display Logic (With Versions)
   const getModelDisplayName = (modelStr: string) => {
     if (!modelStr) return "NOT SET";
-    if (modelStr.includes("gpt")) return "GPT-5.2 Turbo";
-    if (modelStr.includes("claude")) return "Claude Opus 4.6";
-    if (modelStr.includes("gemini")) return "Gemini 3 Flash";
+    const str = modelStr.toLowerCase();
+    if (str.includes("gpt")) return "GPT-5.2 (Turbo)";
+    if (str.includes("claude")) return "Claude 3 (Opus 4.6)";
+    if (str.includes("gemini")) return "Gemini 3 (Flash)";
     return modelStr.toUpperCase();
   };
+
+  // Channels Logic
+  const isTelegramLive = !!userData?.telegram_token || userData?.telegramActive;
+  const isWhatsappLive = !!userData?.whatsapp_token || !!userData?.whatsapp_phone_id || userData?.whatsappActive;
 
   return (
     <div className="w-full min-h-screen bg-[#0A0A0B] text-[#EDEDED] font-sans relative selection:bg-orange-500/30 overflow-y-auto custom-scrollbar flex flex-col">
@@ -233,17 +239,19 @@ Thank you for choosing ClawLink Enterprise AI.
           )}
         </AnimatePresence>
 
-        {/* 🚀 OVERVIEW: PLAN & MODEL INFO */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* 🚀 OVERVIEW: PLAN, MODEL & CHANNELS */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          
+          {/* PLAN CARD */}
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="bg-[#1C1C1E] border border-white/5 p-6 rounded-[1.5rem] shadow-xl flex justify-between items-center relative overflow-hidden group hover:border-white/10 transition-colors">
             <div className="absolute top-0 left-0 w-32 h-32 bg-blue-500/5 rounded-full blur-3xl group-hover:bg-blue-500/10 transition-colors"></div>
             <div className="relative z-10">
               <h3 className="text-gray-400 text-xs font-bold uppercase tracking-widest mb-1">Current Plan</h3>
-              <div className="flex items-center gap-3">
-                <p className="text-3xl font-black text-white font-serif uppercase tracking-wide">{currentPlan}</p>
+              <div className="flex flex-col items-start gap-2 mt-2">
+                <p className="text-3xl font-black text-white font-serif uppercase tracking-wide leading-none">{currentPlan}</p>
                 {isPremium && (
-                  <span className="bg-gradient-to-r from-orange-500 to-pink-500 text-white px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest flex items-center gap-1 shadow-lg">
-                    <Crown className="w-3 h-3"/> Unlimited
+                  <span className="bg-gradient-to-r from-orange-500 to-pink-500 text-white px-3 py-1 rounded border border-orange-400/50 text-[10px] font-black uppercase tracking-widest flex items-center gap-1 shadow-[0_0_15px_rgba(249,115,22,0.4)]">
+                    <Crown className="w-3 h-3"/> UNLIMITED TIER
                   </span>
                 )}
               </div>
@@ -253,18 +261,47 @@ Thank you for choosing ClawLink Enterprise AI.
             </div>
           </motion.div>
 
+          {/* MODEL CARD */}
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="bg-[#1C1C1E] border border-white/5 p-6 rounded-[1.5rem] shadow-xl flex justify-between items-center relative overflow-hidden group hover:border-white/10 transition-colors">
             <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/5 rounded-full blur-3xl group-hover:bg-purple-500/10 transition-colors"></div>
             <div className="relative z-10">
-              <h3 className="text-gray-400 text-xs font-bold uppercase tracking-widest mb-1">Active AI Model</h3>
-              <p className="text-2xl font-black text-white font-sans tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-blue-400">
-                {getModelDisplayName(stats?.activeModel || userData?.selectedModel)}
+              <h3 className="text-gray-400 text-xs font-bold uppercase tracking-widest mb-1">Active AI Brain</h3>
+              <p className="text-2xl font-black text-white font-sans tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-blue-400 mt-2">
+                {getModelDisplayName(stats?.activeModel || userData?.selected_model)}
               </p>
+              <p className="text-[10px] text-gray-500 font-mono mt-1">Multi-modal AI Engine</p>
             </div>
             <div className="w-12 h-12 rounded-xl bg-purple-500/10 flex items-center justify-center text-purple-500 border border-purple-500/20 relative z-10">
               <BrainCircuit className="w-6 h-6"/>
             </div>
           </motion.div>
+
+          {/* LIVE CHANNELS CARD */}
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="bg-[#1C1C1E] border border-white/5 p-6 rounded-[1.5rem] shadow-xl flex justify-between items-center relative overflow-hidden group hover:border-white/10 transition-colors">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-green-500/5 rounded-full blur-3xl group-hover:bg-green-500/10 transition-colors"></div>
+            <div className="relative z-10 w-full">
+              <h3 className="text-gray-400 text-xs font-bold uppercase tracking-widest mb-3">Live Channels</h3>
+              <div className="flex flex-col gap-2">
+                {isWhatsappLive && (
+                  <div className="flex items-center gap-2 text-sm font-bold text-white">
+                    <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span> WhatsApp Cloud
+                  </div>
+                )}
+                {isTelegramLive && (
+                  <div className="flex items-center gap-2 text-sm font-bold text-white">
+                    <span className="w-2 h-2 bg-blue-400 rounded-full animate-pulse"></span> Telegram Bot
+                  </div>
+                )}
+                <div className="flex items-center gap-2 text-sm font-bold text-white">
+                  <span className="w-2 h-2 bg-purple-500 rounded-full"></span> Web Widget
+                </div>
+              </div>
+            </div>
+            <div className="w-12 h-12 rounded-xl bg-green-500/10 flex items-center justify-center text-green-500 border border-green-500/20 relative z-10 shrink-0">
+              <Radio className="w-6 h-6"/>
+            </div>
+          </motion.div>
+
         </div>
 
         {/* 🚀 DATA ANALYTICS: METRICS CARDS */}
@@ -276,10 +313,10 @@ Thank you for choosing ClawLink Enterprise AI.
               <span className="text-[10px] font-bold uppercase tracking-widest text-gray-500">API Tokens</span>
             </div>
             <h3 className="text-3xl font-black text-white relative z-10">
-              {showTokens ? (stats?.tokensUsed?.toLocaleString() || 0) : <span className="text-2xl text-orange-400">∞</span>}
+              {showTokens ? (stats?.tokensUsed?.toLocaleString() || 0) : <span className="text-2xl text-orange-400 font-bold">UNLIMITED</span>}
             </h3>
             <p className="text-xs text-gray-400 mt-1 relative z-10">
-              {showTokens ? `/ ${stats?.tokensAllocated} Used` : "Unlimited Requests Available"}
+              {showTokens ? `/ ${stats?.tokensAllocated} Used` : "Fair Usage Policy Applies"}
             </p>
             {showTokens && (
               <div className="w-full bg-[#1A1A1A] h-1.5 mt-4 rounded-full overflow-hidden relative z-10">
