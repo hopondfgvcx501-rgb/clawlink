@@ -61,55 +61,112 @@ async function callClaude(model: string, prompt: string) {
 }
 
 // =========================================================================
+// 🎤 OPENAI WHISPER: AUDIO TO TEXT FUNCTION
+// =========================================================================
+async function transcribeAudio(fileId: string, botToken: string) {
+    try {
+        // 1. Get File Path from Telegram
+        const fileRes = await fetch(`https://api.telegram.org/bot${botToken}/getFile?file_id=${fileId}`);
+        const fileData = await fileRes.json();
+        if (!fileData.ok) throw new Error("Could not get file path");
+        
+        const filePath = fileData.result.file_path;
+
+        // 2. Download the Audio Buffer
+        const audioRes = await fetch(`https://api.telegram.org/file/bot${botToken}/${filePath}`);
+        const audioBuffer = await audioRes.arrayBuffer();
+
+        // 3. Send to OpenAI Whisper
+        const formData = new FormData();
+        const blob = new Blob([audioBuffer], { type: 'audio/ogg' }); // Telegram voice notes are .ogg
+        formData.append("file", blob, "voice.ogg");
+        formData.append("model", "whisper-1");
+
+        const whisperRes = await fetch("https://api.openai.com/v1/audio/transcriptions", {
+            method: "POST",
+            headers: {
+                "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`
+            },
+            body: formData
+        });
+        
+        const whisperData = await whisperRes.json();
+        return whisperData.text || null;
+    } catch (e) {
+        console.error("Whisper Error:", e);
+        return null;
+    }
+}
+
+// =========================================================================
 // 🚀 MAIN TELEGRAM WEBHOOK PROCESSOR
 // =========================================================================
 export async function POST(req: Request) {
     try {
         const body = await req.json();
 
-        // 1. Verify Telegram Payload
-        if (!body.message || !body.message.text) {
-            return NextResponse.json({ success: true }); // Ignore non-text messages safely
+        // 1. Verify Telegram Payload (Accept both text and voice)
+        if (!body.message || (!body.message.text && !body.message.voice)) {
+            return NextResponse.json({ success: true }); 
         }
 
         const chatId = body.message.chat.id.toString();
-        const userText = body.message.text;
         const customerName = body.message.from.first_name || "Customer";
 
-        // 2. Identify WHICH user's bot this is via URL params 
-        // 🔒 CRITICAL FIX: To support multiple customers on the same platform
+        // 2. Identify Bot Owner
         const { searchParams } = new URL(req.url);
         const ownerEmail = searchParams.get("email");
 
-        if (!ownerEmail) {
-            console.error("Missing email parameter in webhook URL");
-            return NextResponse.json({ success: true });
-        }
+        if (!ownerEmail) return NextResponse.json({ success: true });
 
-        const { data: config, error: configErr } = await supabase
+        const { data: config } = await supabase
             .from("user_configs")
             .select("*")
             .eq("email", ownerEmail)
             .single();
 
-        if (configErr || !config || !config.telegram_token) {
-            return NextResponse.json({ success: true });
-        }
+        if (!config || !config.telegram_token) return NextResponse.json({ success: true });
 
         const telegramToken = config.telegram_token;
         const systemPrompt = config.system_prompt || "You are a helpful AI assistant.";
         const provider = config.ai_provider || "google";
 
-        // 3. Token & Plan Verification
+        // 3. Token Check
         if (!config.is_unlimited && (config.tokens_used >= config.tokens_allocated)) {
             await fetch(`https://api.telegram.org/bot${telegramToken}/sendMessage`, {
                 method: "POST", headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ chat_id: chatId, text: "⚠️ This AI Agent has reached its resource limits. Please try again later." })
+                body: JSON.stringify({ chat_id: chatId, text: "⚠️ This AI Agent has reached its resource limits." })
             });
             return NextResponse.json({ success: true });
         }
 
-        // 4. RAG KNOWLEDGE FETCH (Vector DB)
+        // 4. 🎤 PROCESS VOICE NOTE OR TEXT
+        let userText = "";
+        let crmLogMessage = "";
+
+        if (body.message.voice) {
+            // Send a quick typing action to feel natural while listening
+            await fetch(`https://api.telegram.org/bot${telegramToken}/sendChatAction`, {
+                method: "POST", headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ chat_id: chatId, action: "typing" })
+            });
+
+            const transcription = await transcribeAudio(body.message.voice.file_id, telegramToken);
+            if (!transcription) {
+                await fetch(`https://api.telegram.org/bot${telegramToken}/sendMessage`, {
+                    method: "POST", headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ chat_id: chatId, text: "Sorry, I couldn't clearly hear that audio. Could you type it out?" })
+                });
+                return NextResponse.json({ success: true });
+            }
+            userText = transcription;
+            crmLogMessage = `🎤 [Voice Note]: "${userText}"`;
+        } else {
+            userText = body.message.text;
+            crmLogMessage = userText;
+        }
+
+        // 5. RAG KNOWLEDGE FETCH (Vector DB)
         let customKnowledge = "";
         try {
             const queryVector = await generateEmbedding(userText);
@@ -120,7 +177,6 @@ export async function POST(req: Request) {
                     match_count: 3,
                     p_user_email: ownerEmail
                 });
-                
                 if (matchedDocs && matchedDocs.length > 0) {
                     customKnowledge = matchedDocs.map((doc: any) => doc.content).join("\n\n");
                 }
@@ -129,7 +185,7 @@ export async function POST(req: Request) {
             console.error("RAG Fetch Error:", e);
         }
 
-        // 5. FETCH CONVERSATION HISTORY (Memory)
+        // 6. FETCH MEMORY
         const { data: pastChats } = await supabase
             .from("chat_history")
             .select("sender_type, message")
@@ -143,20 +199,11 @@ export async function POST(req: Request) {
             memoryHistory = pastChats.reverse().map(chat => `${chat.sender_type.toUpperCase()}: ${chat.message}`).join("\n");
         }
 
-        // 6. ASSEMBLE FULL AI PROMPT
-        const fullContext = `System Instructions: ${systemPrompt}
-
-Company Knowledge Base:
-${customKnowledge ? customKnowledge : "No specific company data found for this query."}
-
-Recent Conversation History:
-${memoryHistory}
-
-User's New Message: ${userText}`;
+        const fullContext = `System Instructions: ${systemPrompt}\n\nCompany Knowledge:\n${customKnowledge ? customKnowledge : "None."}\n\nMemory:\n${memoryHistory}\n\nUser: ${userText}`;
         
-        // Save User Message to CRM Database
+        // Save User Message to CRM (with Voice Note icon if applicable)
         await supabase.from("chat_history").insert({ 
-            email: ownerEmail, platform: "telegram", platform_chat_id: chatId, customer_name: customerName, sender_type: "user", message: userText 
+            email: ownerEmail, platform: "telegram", platform_chat_id: chatId, customer_name: customerName, sender_type: "user", message: crmLogMessage 
         });
 
         // 7. THE AI WATERFALL SYSTEM
@@ -171,7 +218,7 @@ User's New Message: ${userText}`;
                 else aiResponse = await callGemini(modelName, fullContext);
                 
                 wasSuccessful = true;
-                break; // Model success!
+                break;
             } catch (err: any) {
                 console.log(`[Telegram AI Error] ${modelName} failed. Trying next...`);
             }
@@ -187,7 +234,7 @@ User's New Message: ${userText}`;
             });
         }
 
-        // 9. DISPATCH FINAL MESSAGE TO TELEGRAM
+        // 9. DISPATCH REPLY
         await fetch(`https://api.telegram.org/bot${telegramToken}/sendMessage`, {
             method: "POST", headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ chat_id: chatId, text: aiResponse })
