@@ -7,39 +7,28 @@ import { useRouter } from "next/navigation";
 import { Globe, Database, Mic, Zap, MessageSquare, Activity, LogOut, Shield, ExternalLink, CheckCircle2, Copy, MessageCircle, X, Send, Mail } from "lucide-react";
 import Image from "next/image";
 
-// --- TEMPORARY ₹100 TEST PRICING & NORMAL MODELS ---
+// --- PRICING DETAILS ---
 const MODEL_DETAILS: Record<string, { name: string; starter: number; pro: number }> = {
-  gemini: { name: "Gemini 3 Flash", starter: 1.2, pro: 19 }, // 👈 Starter is $1.2 (~₹100)
+  gemini: { name: "Gemini 3 Flash", starter: 1.2, pro: 19 }, 
   "gpt-5.2": { name: "GPT-5.2", starter: 19, pro: 39 }, 
-  claude: { name: "Opus 4.6", starter: 29, pro: 59 } 
+  claude: { name: "Opus 4.6", starter: 29, pro: 59 }
 };
 const MAX_PLAN_PRICE = 89; 
 
-// 🚀 OMNIAGENT NEXUS PRICING
-const OMNI_PRICING = { monthly: 89, yearly: 890 };
+// 🚀 OMNIAGENT NEXUS PRICING (Calculated for 3 Models: GPT + Claude + Gemini)
+const OMNI_PRICING = { monthly: 79, yearly: 790 }; // Adjusted price for 3 models
 
-// --- Standardized sizes for all logos (24x24) ---
+// --- ICONS FROM PUBLIC FOLDER ---
 const OpenAI_Icon = () => <Image src="/logos/openai.svg" alt="OpenAI" width={24} height={24} />;
 const Claude_Icon = () => <Image src="/logos/claude.svg" alt="Claude" width={24} height={24} />;
 const Gemini_Icon = () => <Image src="/logos/gemini.svg" alt="Gemini" width={24} height={24} />;
+
+// 🚀 Llama (Disabled) & Omni Icons
+const Llama_Icon = () => <img src="/logos/llama.svg" alt="Llama" className="w-5 h-5 object-contain" />; 
+const Omni_Icon = () => <img src="/logos/omni.jpg" alt="OmniAgent Nexus" className="w-6 h-6 rounded-full object-cover shadow-[0_0_10px_rgba(0,198,255,0.5)] border border-cyan-500/50" />;
+
 const Telegram_Icon = () => <Image src="/logos/Telegram.svg" alt="Telegram" width={24} height={24} />;
 const WhatsApp_Icon = () => <Image src="/logos/WhatsApp.svg" alt="WhatsApp" width={24} height={24} />;
-
-// ⚡ OMNI NEXUS ICON
-const Omni_Icon = () => (
-  <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="url(#omni-grad)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
-    <defs>
-      <linearGradient id="omni-grad" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" stopColor="#fff" />
-        <stop offset="100%" stopColor="#c084fc" />
-      </linearGradient>
-    </defs>
-    <path d="M12 2L2 12l10 10 10-10L12 2z" className="animate-pulse" />
-    <circle cx="12" cy="12" r="4" fill="#fff" />
-  </svg>
-);
-
-const Soon_Icon = () => <svg viewBox="0 0 24 24" width="24" height="24" className="shrink-0"><path fill="#FFB900" d="M12 2a10 10 0 00-7.07 17.07l1.41-1.41A8 8 0 1120 12h2a10 10 0 00-10-10z"/><path fill="#F25022" d="M2 12a10 10 0 0017.07 7.07l-1.41-1.41A8 8 0 014 12H2z"/><path fill="#7FBA00" d="M12 22a10 10 0 007.07-17.07l-1.41 1.41A8 8 0 0112 20v2z"/><path fill="#00A4EF" d="M22 12A10 10 0 004.93 4.93l1.41 1.41A8 8 0 0120 12h2z"/></svg>;
 const Discord_Icon = () => <svg viewBox="0 0 24 24" width="22" height="22" fill="#5865F2"><path d="M20.3 5.4c-1.6-.7-3.4-1.2-5.2-1.5-.2.4-.4.9-.6 1.3-1.9-.3-3.8-.3-5.7 0-.2-.4-.4-.9-.6-1.3-1.8.3-3.6.8-5.2 1.5-3.3 4.9-4.2 9.7-3.3 14.4 2.2 1.6 4.3 2.6 6.4 3.2.5-.7 1-1.5 1.4-2.3-1.2-.5-2.4-1.1-3.5-1.8.3-.2.6-.4.9-.7 4.6 2.1 9.7 2.1 14.3 0 .3.2.6.5.9.7-1.1.7-2.3 1.3-3.5 1.8.4.8.9 1.6 1.4 2.3 2.1-.6 4.2-1.6 6.4-3.2 1-5.1.1-10-3.2-14.4zm-11.7 11c-1.3 0-2.4-1.2-2.4-2.6s1.1-2.6 2.4-2.6 2.4 1.2 2.4 2.6-1.1 2.6-2.4 2.6zm6.8 0c-1.3 0-2.4-1.2-2.4-2.6s1.1-2.6 2.4-2.6 2.4 1.2 2.4 2.6-1.1 2.6-2.4 2.6z"/></svg>;
 const Instagram_Icon = () => <div className="w-[22px] h-[22px] rounded-md bg-gradient-to-tr from-[#f09433] via-[#e6683c] to-[#bc1888] flex items-center justify-center"><div className="w-[16px] h-[16px] border-[2px] border-white rounded-[4px] flex items-center justify-center"><div className="w-[6px] h-[6px] bg-white rounded-full"></div></div></div>;
 const Google_Icon = () => <svg viewBox="0 0 24 24" width="24" height="24"><path fill="#EA4335" d="M5.266 9.765A7.077 7.077 0 0112 4.909c1.69 0 3.218.6 4.418 1.582L19.91 3C17.782 1.145 15.055 0 12 0 7.27 0 3.198 2.698 1.24 6.65l4.026 3.115Z"/><path fill="#34A853" d="M16.04 18.013c-1.09.703-2.474 1.078-4.04 1.078a7.077 7.077 0 01-6.723-4.823l-4.04 3.067A11.965 11.965 0 0012 24c2.933 0 5.735-1.043 7.834-3l-3.793-2.987Z"/><path fill="#4A90E2" d="M19.834 21c2.195-2.048 3.62-5.096 3.62-9 0-.71-.109-1.473-.272-2.182H12v4.637h6.436c-.317 1.559-1.17 2.766-2.395 3.558L19.834 21Z"/><path fill="#FBBC05" d="M5.277 14.268A7.12 7.12 0 014.909 12c0-.782.125-1.533.357-2.235L1.24 6.65A11.934 11.934 0 000 12c0 1.92.445 3.73 1.237 5.335l4.04-3.067Z"/></svg>;
@@ -107,22 +96,6 @@ export default function Home() {
     setIsTelegramModalOpen(false);
   };
 
-  const handleSendHelpRequest = () => {
-    if (!helpEmail.trim() || !helpMessage.trim()) {
-      alert("Please fill in your email and message.");
-      return;
-    }
-    setHelpStatus("sending");
-    setTimeout(() => {
-      setHelpStatus("sent");
-      setTimeout(() => {
-        setIsHelpOpen(false);
-        setHelpStatus("idle");
-        setHelpMessage("");
-      }, 2000);
-    }, 1000);
-  };
-
   // 🚀 DYNAMIC PRICE CALCULATOR
   const getCurrentPrice = (tier = selectedTier) => {
     if (!tier) return 0; 
@@ -151,8 +124,6 @@ export default function Home() {
     
     try {
       const exactPaise = Math.round(finalPrice * 100);
-
-      // 🚀 SENDING "multi_model" FOR OMNI TO BACKEND
       const selectedModelForDB = activeModel === "omni" ? "multi_model" : activeModel;
 
       const response = await fetch("/api/razorpay", {
@@ -179,7 +150,7 @@ export default function Home() {
         amount: order.amount,
         currency: order.currency, 
         name: "ClawLink Premium",
-        description: `Plan: ${selectedTier.toUpperCase()} | Model: ${activeModel === 'omni' ? 'OmniAgent Nexus' : MODEL_DETAILS[activeModel]?.name}`,
+        description: `Plan: ${selectedTier.toUpperCase()} | Model: ${activeModel === 'omni' ? 'OmniAgent Nexus (3x AI)' : MODEL_DETAILS[activeModel]?.name}`,
         order_id: order.id,
         handler: async function () {
           try {
@@ -197,7 +168,7 @@ export default function Home() {
               alert("Deployment failed: " + configData.error);
             }
           } catch (error) {
-            alert("An error occurred during deployment. Please check console.");
+            alert("An error occurred during deployment.");
           } finally {
             setIsDeploying(false);
           }
@@ -267,7 +238,12 @@ export default function Home() {
   return (
     <div className="bg-[#1C1D21] min-h-screen relative text-[#EDEDED] font-sans selection:bg-orange-500/30 overflow-x-hidden">
       
-      {/* 🚀 FIXED CINEMATIC SUNSET GLOW EFFECT */}
+      {/* 🚀 CSS for hiding scrollbar */}
+      <style dangerouslySetInnerHTML={{__html: `
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      `}} />
+
       <div className="fixed top-[-10%] right-[-5%] w-[600px] h-[600px] bg-orange-500/20 rounded-full blur-[150px] pointer-events-none z-0"></div>
       <div className="fixed bottom-[-10%] left-[-10%] w-[600px] h-[600px] bg-indigo-500/20 rounded-full blur-[150px] pointer-events-none z-0"></div>
 
@@ -325,7 +301,7 @@ export default function Home() {
             </div>
           </div>
 
-          <div className="flex flex-col items-center text-center lg:pt-8 xl:pt-12 w-full">
+          <div className="flex flex-col items-center text-center lg:pt-8 w-full">
             <h1 className="text-3xl md:text-[3.2rem] text-white mb-2 font-serif tracking-tight leading-tight">
               Deploy OpenClaw under 30 SECOND
             </h1>
@@ -335,12 +311,12 @@ export default function Home() {
 
             <h3 className="text-white text-xl md:text-2xl mb-4 font-serif tracking-tight">Choose a model to use as your default !</h3>
             
-            {/* 🚀 5 PERFECTLY SIZED BUTTONS IN A LINE */}
-            <div className="flex flex-wrap justify-center items-center gap-2 md:gap-3 mb-10 w-full max-w-4xl px-2">
+            {/* 🚀 5 ALIGNED BUTTONS */}
+            <div className="flex flex-nowrap justify-start lg:justify-center items-center gap-2 md:gap-3 mb-10 w-full max-w-[900px] px-2 py-2 overflow-x-auto no-scrollbar snap-x">
               
               <button 
                 onClick={() => { if(!isTokenSaved) { setActiveModel("gpt-5.2"); setSelectedTier(null); } }} 
-                className={`bg-white rounded-full px-4 py-2 flex items-center justify-center gap-2 shadow-xl transition-all duration-150 hover:scale-105 ${activeModel === 'gpt-5.2' ? 'ring-[3px] ring-blue-500 scale-105' : ''} ${isTokenSaved && activeModel !== 'gpt-5.2' ? 'opacity-30 pointer-events-none' : ''}`}
+                className={`shrink-0 bg-white rounded-full px-4 py-2 flex items-center justify-center gap-2 shadow-xl transition-all duration-150 hover:scale-105 snap-center ${activeModel === 'gpt-5.2' ? 'ring-[3px] ring-blue-500 scale-105' : ''} ${isTokenSaved && activeModel !== 'gpt-5.2' ? 'opacity-30 pointer-events-none' : ''}`}
               >
                 <OpenAI_Icon />
                 <span className="text-[#10A37F] font-bold text-sm md:text-[15px] tracking-tight">GPT-5.2</span>
@@ -348,7 +324,7 @@ export default function Home() {
 
               <button 
                 onClick={() => { if(!isTokenSaved) { setActiveModel("claude"); setSelectedTier(null); } }} 
-                className={`bg-white rounded-full px-4 py-2 flex items-center justify-center gap-2 shadow-xl transition-all duration-150 hover:scale-105 ${activeModel === 'claude' ? 'ring-[3px] ring-blue-500 scale-105' : ''} ${isTokenSaved && activeModel !== 'claude' ? 'opacity-30 pointer-events-none' : ''}`}
+                className={`shrink-0 bg-white rounded-full px-4 py-2 flex items-center justify-center gap-2 shadow-xl transition-all duration-150 hover:scale-105 snap-center ${activeModel === 'claude' ? 'ring-[3px] ring-blue-500 scale-105' : ''} ${isTokenSaved && activeModel !== 'claude' ? 'opacity-30 pointer-events-none' : ''}`}
               >
                 <Claude_Icon />
                 <div className="text-left flex flex-col justify-center leading-none">
@@ -359,7 +335,7 @@ export default function Home() {
 
               <button 
                 onClick={() => { if(!isTokenSaved) { setActiveModel("gemini"); setSelectedTier(null); } }} 
-                className={`bg-white rounded-full px-4 py-2 flex items-center justify-center gap-2 shadow-xl transition-all duration-150 hover:scale-105 ${activeModel === 'gemini' ? 'ring-[3px] ring-blue-500 scale-105' : ''} ${isTokenSaved && activeModel !== 'gemini' ? 'opacity-30 pointer-events-none' : ''}`}
+                className={`shrink-0 bg-white rounded-full px-4 py-2 flex items-center justify-center gap-2 shadow-xl transition-all duration-150 hover:scale-105 snap-center ${activeModel === 'gemini' ? 'ring-[3px] ring-blue-500 scale-105' : ''} ${isTokenSaved && activeModel !== 'gemini' ? 'opacity-30 pointer-events-none' : ''}`}
               >
                 <Gemini_Icon />
                 <div className="text-left flex flex-col justify-center leading-none">
@@ -368,23 +344,28 @@ export default function Home() {
                 </div>
               </button>
 
-              {/* 🚀 OMNIAGENT NEXUS (Stacked Text for Perfect Width) */}
+              {/* 🚀 THE OMNIAGENT NEXUS BUTTON (Live & Clickable) */}
               <button 
                 onClick={() => { if(!isTokenSaved) { setActiveModel("omni"); setSelectedTier(null); } }} 
-                className={`bg-gradient-to-r from-gray-900 to-[#18181b] border border-white/20 rounded-full px-4 py-2 flex items-center justify-center gap-2 shadow-[0_0_15px_rgba(255,255,255,0.1)] transition-all duration-150 hover:scale-105 ${activeModel === 'omni' ? 'ring-[3px] ring-purple-500 shadow-[0_0_25px_rgba(168,85,247,0.5)] scale-105' : ''} ${isTokenSaved && activeModel !== 'omni' ? 'opacity-30 pointer-events-none' : ''}`}
+                className={`shrink-0 bg-gradient-to-r from-[#020b1c] to-[#011e40] border border-[#00c6ff]/30 rounded-full px-4 py-2 flex items-center justify-center gap-2 shadow-[0_0_15px_rgba(0,198,255,0.15)] transition-all duration-150 hover:scale-105 snap-center ${activeModel === 'omni' ? 'ring-[3px] ring-[#00c6ff] shadow-[0_0_25px_rgba(0,198,255,0.5)] scale-105' : ''} ${isTokenSaved && activeModel !== 'omni' ? 'opacity-30 pointer-events-none' : ''}`}
               >
                 <Omni_Icon />
                 <div className="text-left flex flex-col justify-center leading-none">
-                  <span className="bg-gradient-to-r from-purple-400 to-pink-500 bg-clip-text text-transparent font-bold text-sm md:text-[15px] tracking-wide">OmniAgent</span>
-                  <span className="text-purple-400 text-[9px] md:text-[10px] font-bold mt-0.5 tracking-widest uppercase">Nexus</span>
+                  {/* Colors matching the orbital logo */}
+                  <span className="bg-gradient-to-r from-[#0052D4] to-[#00BFFF] bg-clip-text text-transparent font-bold text-sm md:text-[15px] tracking-wide">OmniAgent</span>
+                  <span className="text-[#00BFFF] text-[9px] md:text-[10px] font-bold mt-0.5 tracking-widest uppercase">Nexus</span>
                 </div>
               </button>
 
-              {/* 🚀 SOON BUTTON */}
-              <div className={`bg-white rounded-full px-4 py-2 flex items-center justify-center gap-2 shadow-xl cursor-not-allowed opacity-90 ${isTokenSaved ? 'opacity-20' : ''}`}>
-                <Soon_Icon />
-                <span className="font-bold text-sm md:text-[15px] text-gray-800 tracking-tight">Soon</span>
+              {/* 🚀 THE LLAMA 3 BUTTON (Visual Only / Disabled / Upcoming) */}
+              <div className={`shrink-0 bg-white rounded-full px-4 py-2 flex items-center justify-center gap-2 shadow-xl cursor-not-allowed opacity-60 snap-center`}>
+                <Llama_Icon />
+                <div className="text-left flex flex-col justify-center leading-none">
+                  <span className="text-gray-800 font-bold text-sm md:text-[15px] tracking-tight">Llama 3</span>
+                  <span className="text-blue-500 text-[9px] md:text-[10px] font-bold mt-0.5 tracking-widest uppercase animate-pulse">Soon</span>
+                </div>
               </div>
+
             </div>
 
             <h3 className="text-white text-xl md:text-2xl mb-4 font-serif tracking-tight">Select a channel for sending messages !</h3>
@@ -776,22 +757,24 @@ export default function Home() {
                 {activeModel === 'omni' ? "OMNIAGENT ENTERPRISE PLANS" : "CHOOSE PLAN AND LINK AI AGENT"}
               </h2>
               <p className="text-gray-400 text-base mb-10 max-w-2xl mx-auto">
+                {/* 🚀 TEXT CLEARLY STATES 3 MODELS FOR NOW */}
                 {activeModel === 'omni' 
-                  ? "4x AI Fallback guarantees 0% downtime. Access GPT, Claude, Gemini, and Llama under one roof." 
+                  ? "3x AI Fallback (GPT, Claude, Gemini) guarantees 0% downtime. Llama 3 coming soon!" 
                   : "Select a subscription tier to activate your AI engine and link it to your chosen channel."}
               </p>
               
               {/* 🚀 CONDITIONAL PRICING GRID */}
               {activeModel === "omni" ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 my-10 text-left max-w-2xl mx-auto">
-                  <div onClick={() => !isDeploying && setSelectedTier("monthly")} className={`relative p-8 rounded-2xl border transition-all duration-150 ${!isDeploying ? 'cursor-pointer' : ''} ${selectedTier === "monthly" ? "bg-[#1A1A1A] border-purple-500 shadow-[0_0_30px_rgba(168,85,247,0.2)] scale-105" : "bg-[#0A0A0B] border-white/10 hover:border-white/30"}`}>
-                    <h3 className="text-purple-400 font-bold uppercase text-xs mb-2 tracking-widest">Monthly Enterprise</h3>
+                  <div onClick={() => !isDeploying && setSelectedTier("monthly")} className={`relative p-8 rounded-2xl border transition-all duration-150 ${!isDeploying ? 'cursor-pointer' : ''} ${selectedTier === "monthly" ? "bg-[#1A1A1A] border-[#00BFFF] shadow-[0_0_30px_rgba(0,191,255,0.2)] scale-105" : "bg-[#0A0A0B] border-white/10 hover:border-white/30"}`}>
+                    <h3 className="text-[#00BFFF] font-bold uppercase text-xs mb-2 tracking-widest">Monthly Enterprise</h3>
                     <div className="text-4xl font-black text-white mb-4">{currencySymbol}{getCurrentPrice("monthly")}</div>
-                    <p className="text-sm text-gray-400 leading-relaxed">4x Smart Fallback Engine. Billed monthly.</p>
+                    {/* 🚀 TEXT RE-CONFIRMS 3x FALLBACK */}
+                    <p className="text-sm text-gray-400 leading-relaxed">3x Smart Fallback Engine. Billed monthly.</p>
                   </div>
-                  <div onClick={() => !isDeploying && setSelectedTier("yearly")} className={`relative p-8 rounded-2xl border transition-all duration-150 ${!isDeploying ? 'cursor-pointer' : ''} ${selectedTier === "yearly" ? "bg-[#1A1A1A] border-green-500 shadow-[0_0_30px_rgba(34,197,94,0.2)] scale-105" : "bg-[#0A0A0B] border-white/10 hover:border-white/30"}`}>
-                    <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-green-500 text-white text-[10px] font-bold uppercase px-3 py-1 rounded-full tracking-widest">Save 16%</div>
-                    <h3 className="text-green-400 font-bold uppercase text-xs mb-2 tracking-widest">Yearly Enterprise</h3>
+                  <div onClick={() => !isDeploying && setSelectedTier("yearly")} className={`relative p-8 rounded-2xl border transition-all duration-150 ${!isDeploying ? 'cursor-pointer' : ''} ${selectedTier === "yearly" ? "bg-[#1A1A1A] border-[#0052D4] shadow-[0_0_30px_rgba(0,82,212,0.2)] scale-105" : "bg-[#0A0A0B] border-white/10 hover:border-white/30"}`}>
+                    <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-[#0052D4] text-white text-[10px] font-bold uppercase px-3 py-1 rounded-full tracking-widest">Save 16%</div>
+                    <h3 className="text-[#0052D4] font-bold uppercase text-xs mb-2 tracking-widest">Yearly Enterprise</h3>
                     <div className="text-4xl font-black text-white mb-4">{currencySymbol}{getCurrentPrice("yearly")}</div>
                     <p className="text-sm text-gray-400 leading-relaxed">Best value for large scale operations. Billed yearly.</p>
                   </div>
@@ -820,7 +803,7 @@ export default function Home() {
               <button 
                 onClick={triggerRazorpayPayment} 
                 disabled={isDeploying || !selectedTier} 
-                className={`w-full max-w-sm mx-auto font-black py-4 rounded-xl uppercase tracking-widest flex justify-center items-center gap-2 shadow-xl transition-all duration-150 ${!selectedTier ? 'bg-gray-700 text-gray-400 cursor-not-allowed' : activeModel === 'omni' ? 'bg-gradient-to-r from-purple-500 to-indigo-500 text-white hover:scale-[1.02]' : 'bg-white text-black hover:bg-gray-200 hover:scale-[1.02]'}`}
+                className={`w-full max-w-sm mx-auto font-black py-4 rounded-xl uppercase tracking-widest flex justify-center items-center gap-2 shadow-xl transition-all duration-150 ${!selectedTier ? 'bg-gray-700 text-gray-400 cursor-not-allowed' : activeModel === 'omni' ? 'bg-gradient-to-r from-[#0052D4] to-[#00BFFF] text-white hover:scale-[1.02]' : 'bg-white text-black hover:bg-gray-200 hover:scale-[1.02]'}`}
               >
                 {isDeploying ? "Deploying Database..." : !selectedTier ? "SELECT A PLAN" : `PROCESS PAY AND DEPLOY ${currencySymbol}${getCurrentPrice()}`}
               </button>
