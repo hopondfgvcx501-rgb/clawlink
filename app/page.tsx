@@ -16,16 +16,16 @@ const MODEL_DETAILS: Record<string, { name: string; starter: number; pro: number
 const MAX_PLAN_PRICE = 89; 
 
 // 🚀 OMNIAGENT NEXUS PRICING (Calculated for 3 Models: GPT + Claude + Gemini)
-const OMNI_PRICING = { monthly: 79, yearly: 790 }; // Adjusted price for 3 models
+const OMNI_PRICING = { monthly: 79, yearly: 790 };
 
 // --- ICONS FROM PUBLIC FOLDER ---
 const OpenAI_Icon = () => <Image src="/logos/openai.svg" alt="OpenAI" width={24} height={24} />;
 const Claude_Icon = () => <Image src="/logos/claude.svg" alt="Claude" width={24} height={24} />;
 const Gemini_Icon = () => <Image src="/logos/gemini.svg" alt="Gemini" width={24} height={24} />;
 
-// 🚀 Llama (Disabled) & Omni Icons
-const Llama_Icon = () => <img src="/logos/llama.svg" alt="Llama" className="w-5 h-5 object-contain" />; 
-const Omni_Icon = () => <img src="/logos/omni.jpg" alt="OmniAgent Nexus" className="w-6 h-6 rounded-full object-cover shadow-[0_0_10px_rgba(0,198,255,0.5)] border border-cyan-500/50" />;
+// 🚀 Llama 4 (Disabled) & Omni Icons
+const Llama_Icon = () => <img src="/logos/llama.svg" alt="Llama 4" className="w-5 h-5 object-contain" />; 
+const Omni_Icon = () => <img src="/logos/omni.jpg" alt="OmniAgent Nexus" className="w-6 h-6 rounded-full object-cover shadow-[0_0_15px_rgba(0,198,255,0.8)] border border-[#00c6ff]/50" />;
 
 const Telegram_Icon = () => <Image src="/logos/Telegram.svg" alt="Telegram" width={24} height={24} />;
 const WhatsApp_Icon = () => <Image src="/logos/WhatsApp.svg" alt="WhatsApp" width={24} height={24} />;
@@ -96,7 +96,22 @@ export default function Home() {
     setIsTelegramModalOpen(false);
   };
 
-  // 🚀 DYNAMIC PRICE CALCULATOR
+  const handleSendHelpRequest = () => {
+    if (!helpEmail.trim() || !helpMessage.trim()) {
+      alert("Please fill in your email and message.");
+      return;
+    }
+    setHelpStatus("sending");
+    setTimeout(() => {
+      setHelpStatus("sent");
+      setTimeout(() => {
+        setIsHelpOpen(false);
+        setHelpStatus("idle");
+        setHelpMessage("");
+      }, 1500);
+    }, 800);
+  };
+
   const getCurrentPrice = (tier = selectedTier) => {
     if (!tier) return 0; 
     let basePrice = 0;
@@ -202,7 +217,7 @@ export default function Home() {
 
   const MarqueeRow = ({ items, reverse = false }: { items: string[], reverse?: boolean }) => (
     <div className="flex whitespace-nowrap overflow-hidden py-3">
-      <motion.div className="flex gap-6" animate={{ x: reverse ? ["-50%", "0%"] : ["0%", "-50%"] }} transition={{ ease: "linear", duration: 40, repeat: Infinity }}>
+      <motion.div className="flex gap-6" animate={{ x: reverse ? ["-50%", "0%"] : ["0%", "-50%"] }} transition={{ ease: "linear", duration: 30, repeat: Infinity }}>
         {items.map((item, i) => (
           <div key={i} className="flex items-center gap-2 text-xs md:text-sm text-gray-300 bg-white/5 px-4 py-2 rounded-full border border-white/10 shadow-lg whitespace-nowrap">
             {item}
@@ -218,13 +233,13 @@ export default function Home() {
   );
 
   const ChatBubble = ({ text, delay, isUser }: { text: string, delay: number, isUser?: boolean }) => (
-    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay, duration: 0.2, ease: "easeOut" }} className={`p-3 rounded-2xl max-w-[85%] text-[11px] shadow-md leading-relaxed ${isUser ? 'bg-[#2AABEE] text-white self-end rounded-tr-sm' : 'bg-[#1A1A1A] border border-white/5 text-gray-200 self-start rounded-tl-sm'}`}>
+    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay, duration: 0.15, ease: "easeOut" }} className={`p-3 rounded-2xl max-w-[85%] text-[11px] shadow-md leading-relaxed ${isUser ? 'bg-[#2AABEE] text-white self-end rounded-tr-sm' : 'bg-[#1A1A1A] border border-white/5 text-gray-200 self-start rounded-tl-sm'}`}>
       {text}
     </motion.div>
   );
 
   const GuideStep = ({ step, title, desc, delay }: { step: string, title: string, desc: string, delay: number }) => (
-    <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay, duration: 0.2, ease: "easeOut" }} className="flex gap-3 bg-[#1A1A1A] border border-white/5 p-3 rounded-xl shadow-md w-[90%] self-center mx-auto items-start">
+    <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay, duration: 0.15, ease: "easeOut" }} className="flex gap-3 bg-[#1A1A1A] border border-white/5 p-3 rounded-xl shadow-md w-[90%] self-center mx-auto items-start">
       <div className="w-5 h-5 rounded-full bg-[#25D366]/20 text-[#25D366] flex items-center justify-center font-bold text-[10px] shrink-0 mt-0.5">{step}</div>
       <div className="flex flex-col">
         <span className="text-white font-bold mb-1 text-[11px]">{title}</span>
@@ -254,10 +269,10 @@ export default function Home() {
           {status === "authenticated" && (
              <div className="hidden md:flex items-center gap-3">
                <img src={session?.user?.image || ""} className="w-8 h-8 rounded-full border border-white/20" alt="Avatar"/>
-               <button onClick={() => signOut()} className="text-xs font-bold text-gray-400 hover:text-white uppercase tracking-widest flex items-center gap-1 transition-colors"><LogOut className="w-3 h-3"/> Logout</button>
+               <button onClick={() => signOut()} className="text-xs font-bold text-gray-400 hover:text-white uppercase tracking-widest flex items-center gap-1 transition-colors duration-100"><LogOut className="w-3 h-3"/> Logout</button>
              </div>
           )}
-          <button onClick={() => setIsSupportModalOpen(true)} className="flex items-center gap-2 text-[10px] md:text-xs font-bold text-gray-300 hover:text-white transition-colors duration-150 uppercase tracking-widest">
+          <button onClick={() => setIsSupportModalOpen(true)} className="flex items-center gap-2 text-[10px] md:text-xs font-bold text-gray-300 hover:text-white transition-colors duration-100 uppercase tracking-widest">
             <MessageSquare className="w-4 h-4"/> CONTACT SUPPORT
           </button>
         </div>
@@ -269,32 +284,32 @@ export default function Home() {
           
           {/* LEFT: Features Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-[#111] p-6 md:p-8 rounded-2xl border border-white/5 shadow-2xl">
-            <div className="bg-[#18181A] p-6 rounded-2xl border border-white/5 hover:border-white/10 transition-colors duration-150">
+            <div className="bg-[#18181A] p-6 rounded-2xl border border-white/5 hover:border-white/10 transition-colors duration-100">
               <div className="w-10 h-10 rounded-full bg-blue-500/10 flex items-center justify-center mb-4"><Globe className="w-5 h-5 text-blue-500" /></div>
               <h3 className="text-white font-bold mb-2 text-sm">Omnichannel Deployment</h3>
               <p className="text-[12px] text-gray-400 leading-relaxed">Deploy your AI agent across Telegram, WhatsApp Cloud, and your own website with a single click.</p>
             </div>
-            <div className="bg-[#18181A] p-6 rounded-2xl border border-white/5 hover:border-white/10 transition-colors duration-150">
+            <div className="bg-[#18181A] p-6 rounded-2xl border border-white/5 hover:border-white/10 transition-colors duration-100">
               <div className="w-10 h-10 rounded-full bg-green-500/10 flex items-center justify-center mb-4"><Database className="w-5 h-5 text-green-500" /></div>
               <h3 className="text-white font-bold mb-2 text-sm">Enterprise RAG Memory</h3>
               <p className="text-[12px] text-gray-400 leading-relaxed">Inject your business FAQs, return policies, and product details into the AI's Vector DB Brain.</p>
             </div>
-            <div className="bg-[#18181A] p-6 rounded-2xl border border-white/5 hover:border-white/10 transition-colors duration-150">
+            <div className="bg-[#18181A] p-6 rounded-2xl border border-white/5 hover:border-white/10 transition-colors duration-100">
               <div className="w-10 h-10 rounded-full bg-purple-500/10 flex items-center justify-center mb-4"><Mic className="w-5 h-5 text-purple-500" /></div>
               <h3 className="text-white font-bold mb-2 text-sm">Voice Note Intelligence</h3>
               <p className="text-[12px] text-gray-400 leading-relaxed">Native integration with OpenAI Whisper. Your bot listens to customer voice notes and replies contextually.</p>
             </div>
-            <div className="bg-[#18181A] p-6 rounded-2xl border border-white/5 hover:border-white/10 transition-colors duration-150">
+            <div className="bg-[#18181A] p-6 rounded-2xl border border-white/5 hover:border-white/10 transition-colors duration-100">
               <div className="w-10 h-10 rounded-full bg-orange-500/10 flex items-center justify-center mb-4"><Zap className="w-5 h-5 text-orange-500" /></div>
               <h3 className="text-white font-bold mb-2 text-sm">Actionable AI Interceptor</h3>
               <p className="text-[12px] text-gray-400 leading-relaxed">AI doesn't just talk; it acts. Automatically trigger APIs to check order status or book meetings.</p>
             </div>
-            <div className="bg-[#18181A] p-6 rounded-2xl border border-white/5 hover:border-white/10 transition-colors duration-150">
+            <div className="bg-[#18181A] p-6 rounded-2xl border border-white/5 hover:border-white/10 transition-colors duration-100">
               <div className="w-10 h-10 rounded-full bg-pink-500/10 flex items-center justify-center mb-4"><MessageSquare className="w-5 h-5 text-pink-500" /></div>
               <h3 className="text-white font-bold mb-2 text-sm">Live CRM & Human Handoff</h3>
               <p className="text-[12px] text-gray-400 leading-relaxed">Monitor AI conversations in real-time and instantly take over manually when a human touch is needed.</p>
             </div>
-            <div className="bg-[#18181A] p-6 rounded-2xl border border-white/5 hover:border-white/10 transition-colors duration-150">
+            <div className="bg-[#18181A] p-6 rounded-2xl border border-white/5 hover:border-white/10 transition-colors duration-100">
               <div className="w-10 h-10 rounded-full bg-yellow-500/10 flex items-center justify-center mb-4"><Activity className="w-5 h-5 text-yellow-500" /></div>
               <h3 className="text-white font-bold mb-2 text-sm">Marketing Broadcast Engine</h3>
               <p className="text-[12px] text-gray-400 leading-relaxed">Blast promotional offers and updates to thousands of captured leads with zero extra marketing cost.</p>
@@ -311,12 +326,12 @@ export default function Home() {
 
             <h3 className="text-white text-xl md:text-2xl mb-4 font-serif tracking-tight">Choose a model to use as your default !</h3>
             
-            {/* 🚀 5 ALIGNED BUTTONS */}
+            {/* 🚀 5 SUPER FAST & GLOWING BUTTONS */}
             <div className="flex flex-nowrap justify-start lg:justify-center items-center gap-2 md:gap-3 mb-10 w-full max-w-[900px] px-2 py-2 overflow-x-auto no-scrollbar snap-x">
               
               <button 
                 onClick={() => { if(!isTokenSaved) { setActiveModel("gpt-5.2"); setSelectedTier(null); } }} 
-                className={`shrink-0 bg-white rounded-full px-4 py-2 flex items-center justify-center gap-2 shadow-xl transition-all duration-150 hover:scale-105 snap-center ${activeModel === 'gpt-5.2' ? 'ring-[3px] ring-blue-500 scale-105' : ''} ${isTokenSaved && activeModel !== 'gpt-5.2' ? 'opacity-30 pointer-events-none' : ''}`}
+                className={`shrink-0 bg-white rounded-full px-4 py-2 flex items-center justify-center gap-2 shadow-xl transition-all duration-100 hover:scale-110 hover:shadow-[0_0_20px_rgba(255,255,255,0.5)] snap-center ${activeModel === 'gpt-5.2' ? 'ring-[3px] ring-blue-500 shadow-[0_0_20px_rgba(59,130,246,0.6)] scale-110' : ''} ${isTokenSaved && activeModel !== 'gpt-5.2' ? 'opacity-30 pointer-events-none' : ''}`}
               >
                 <OpenAI_Icon />
                 <span className="text-[#10A37F] font-bold text-sm md:text-[15px] tracking-tight">GPT-5.2</span>
@@ -324,7 +339,7 @@ export default function Home() {
 
               <button 
                 onClick={() => { if(!isTokenSaved) { setActiveModel("claude"); setSelectedTier(null); } }} 
-                className={`shrink-0 bg-white rounded-full px-4 py-2 flex items-center justify-center gap-2 shadow-xl transition-all duration-150 hover:scale-105 snap-center ${activeModel === 'claude' ? 'ring-[3px] ring-blue-500 scale-105' : ''} ${isTokenSaved && activeModel !== 'claude' ? 'opacity-30 pointer-events-none' : ''}`}
+                className={`shrink-0 bg-white rounded-full px-4 py-2 flex items-center justify-center gap-2 shadow-xl transition-all duration-100 hover:scale-110 hover:shadow-[0_0_20px_rgba(255,255,255,0.5)] snap-center ${activeModel === 'claude' ? 'ring-[3px] ring-blue-500 shadow-[0_0_20px_rgba(59,130,246,0.6)] scale-110' : ''} ${isTokenSaved && activeModel !== 'claude' ? 'opacity-30 pointer-events-none' : ''}`}
               >
                 <Claude_Icon />
                 <div className="text-left flex flex-col justify-center leading-none">
@@ -335,7 +350,7 @@ export default function Home() {
 
               <button 
                 onClick={() => { if(!isTokenSaved) { setActiveModel("gemini"); setSelectedTier(null); } }} 
-                className={`shrink-0 bg-white rounded-full px-4 py-2 flex items-center justify-center gap-2 shadow-xl transition-all duration-150 hover:scale-105 snap-center ${activeModel === 'gemini' ? 'ring-[3px] ring-blue-500 scale-105' : ''} ${isTokenSaved && activeModel !== 'gemini' ? 'opacity-30 pointer-events-none' : ''}`}
+                className={`shrink-0 bg-white rounded-full px-4 py-2 flex items-center justify-center gap-2 shadow-xl transition-all duration-100 hover:scale-110 hover:shadow-[0_0_20px_rgba(255,255,255,0.5)] snap-center ${activeModel === 'gemini' ? 'ring-[3px] ring-blue-500 shadow-[0_0_20px_rgba(59,130,246,0.6)] scale-110' : ''} ${isTokenSaved && activeModel !== 'gemini' ? 'opacity-30 pointer-events-none' : ''}`}
               >
                 <Gemini_Icon />
                 <div className="text-left flex flex-col justify-center leading-none">
@@ -344,25 +359,24 @@ export default function Home() {
                 </div>
               </button>
 
-              {/* 🚀 THE OMNIAGENT NEXUS BUTTON (Live & Clickable) */}
+              {/* 🚀 THE OMNIAGENT NEXUS BUTTON (Super Glow & Fast) */}
               <button 
                 onClick={() => { if(!isTokenSaved) { setActiveModel("omni"); setSelectedTier(null); } }} 
-                className={`shrink-0 bg-gradient-to-r from-[#020b1c] to-[#011e40] border border-[#00c6ff]/30 rounded-full px-4 py-2 flex items-center justify-center gap-2 shadow-[0_0_15px_rgba(0,198,255,0.15)] transition-all duration-150 hover:scale-105 snap-center ${activeModel === 'omni' ? 'ring-[3px] ring-[#00c6ff] shadow-[0_0_25px_rgba(0,198,255,0.5)] scale-105' : ''} ${isTokenSaved && activeModel !== 'omni' ? 'opacity-30 pointer-events-none' : ''}`}
+                className={`shrink-0 bg-gradient-to-r from-[#020b1c] to-[#011e40] border border-[#00c6ff]/50 rounded-full px-4 py-2 flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(0,198,255,0.3)] transition-all duration-100 hover:scale-110 hover:shadow-[0_0_35px_rgba(0,198,255,0.8)] snap-center ${activeModel === 'omni' ? 'ring-[3px] ring-[#00c6ff] shadow-[0_0_35px_rgba(0,198,255,0.8)] scale-110' : ''} ${isTokenSaved && activeModel !== 'omni' ? 'opacity-30 pointer-events-none' : ''}`}
               >
                 <Omni_Icon />
                 <div className="text-left flex flex-col justify-center leading-none">
-                  {/* Colors matching the orbital logo */}
                   <span className="bg-gradient-to-r from-[#0052D4] to-[#00BFFF] bg-clip-text text-transparent font-bold text-sm md:text-[15px] tracking-wide">OmniAgent</span>
                   <span className="text-[#00BFFF] text-[9px] md:text-[10px] font-bold mt-0.5 tracking-widest uppercase">Nexus</span>
                 </div>
               </button>
 
-              {/* 🚀 THE LLAMA 3 BUTTON (Visual Only / Disabled / Upcoming) */}
-              <div className={`shrink-0 bg-white rounded-full px-4 py-2 flex items-center justify-center gap-2 shadow-xl cursor-not-allowed opacity-60 snap-center`}>
+              {/* 🚀 THE LLAMA 4 BUTTON (Disabled / Visual Only) */}
+              <div className="shrink-0 bg-white/90 rounded-full px-4 py-2 flex items-center justify-center gap-2 shadow-xl cursor-not-allowed opacity-60 snap-center transition-all duration-100 hover:shadow-[0_0_20px_rgba(255,255,255,0.2)]">
                 <Llama_Icon />
                 <div className="text-left flex flex-col justify-center leading-none">
-                  <span className="text-gray-800 font-bold text-sm md:text-[15px] tracking-tight">Llama 3</span>
-                  <span className="text-blue-500 text-[9px] md:text-[10px] font-bold mt-0.5 tracking-widest uppercase animate-pulse">Soon</span>
+                  <span className="text-gray-800 font-bold text-sm md:text-[15px] tracking-tight">Llama 4</span>
+                  <span className="text-blue-600 text-[9px] md:text-[10px] font-bold mt-0.5 tracking-widest uppercase animate-pulse">Soon</span>
                 </div>
               </div>
 
@@ -372,14 +386,14 @@ export default function Home() {
             <div className="flex flex-wrap justify-center items-center gap-3 mb-10 w-full max-w-2xl px-2">
               <button 
                 onClick={() => !isTokenSaved && setActiveChannel("telegram")} 
-                className={`bg-white rounded px-6 py-3 flex items-center justify-center gap-3 shadow-md transition-all duration-150 hover:scale-105 min-w-[140px] ${activeChannel === 'telegram' ? 'ring-[3px] ring-blue-500 scale-105' : ''} ${isTokenSaved && activeChannel !== 'telegram' ? 'opacity-30 pointer-events-none' : ''}`}
+                className={`bg-white rounded px-6 py-3 flex items-center justify-center gap-3 shadow-md transition-all duration-100 hover:scale-110 hover:shadow-[0_0_20px_rgba(255,255,255,0.5)] min-w-[140px] ${activeChannel === 'telegram' ? 'ring-[3px] ring-blue-500 shadow-[0_0_20px_rgba(59,130,246,0.6)] scale-110' : ''} ${isTokenSaved && activeChannel !== 'telegram' ? 'opacity-30 pointer-events-none' : ''}`}
               >
                 <Telegram_Icon />
                 <span className="text-base text-gray-700">Telegram</span>
               </button>
               <button 
                 onClick={() => !isTokenSaved && setActiveChannel("whatsapp")} 
-                className={`bg-white rounded px-6 py-3 flex items-center justify-center gap-3 shadow-md transition-all duration-150 hover:scale-105 min-w-[140px] ${activeChannel === 'whatsapp' ? 'ring-[3px] ring-green-500 scale-105' : ''} ${isTokenSaved && activeChannel !== 'whatsapp' ? 'opacity-30 pointer-events-none' : ''}`}
+                className={`bg-white rounded px-6 py-3 flex items-center justify-center gap-3 shadow-md transition-all duration-100 hover:scale-110 hover:shadow-[0_0_20px_rgba(255,255,255,0.5)] min-w-[140px] ${activeChannel === 'whatsapp' ? 'ring-[3px] ring-green-500 shadow-[0_0_20px_rgba(34,197,94,0.6)] scale-110' : ''} ${isTokenSaved && activeChannel !== 'whatsapp' ? 'opacity-30 pointer-events-none' : ''}`}
               >
                 <WhatsApp_Icon />
                 <span className="text-base text-gray-700">whatsapp</span>
@@ -403,20 +417,20 @@ export default function Home() {
             <div className="w-full max-w-[600px] min-h-[120px] flex flex-col justify-center items-center">
               <AnimatePresence mode="wait">
                 {botLink ? (
-                  <motion.div key="success" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.15, ease: "easeOut" }} className="w-full bg-green-500/10 border border-green-500/30 p-6 rounded-2xl text-center backdrop-blur-md">
+                  <motion.div key="success" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.1, ease: "easeOut" }} className="w-full bg-green-500/10 border border-green-500/30 p-6 rounded-2xl text-center backdrop-blur-md">
                     <h3 className="text-xl font-bold text-white mb-4">OpenClaw is Live! 🚀</h3>
                     <div className="flex flex-col sm:flex-row justify-center gap-4">
-                      <a href={botLink} target="_blank" rel="noopener noreferrer" className="bg-white text-black font-bold px-8 py-4 rounded-xl text-sm transition-transform duration-150 hover:scale-105 w-full sm:w-auto text-center">
+                      <a href={botLink} target="_blank" rel="noopener noreferrer" className="bg-white text-black font-bold px-8 py-4 rounded-xl text-sm transition-transform duration-100 hover:scale-110 w-full sm:w-auto text-center shadow-[0_0_20px_rgba(255,255,255,0.3)]">
                         Open Live Bot
                       </a>
-                      <button onClick={() => router.push('/dashboard')} className="bg-[#1A1A1A] border border-white/20 text-white font-bold px-8 py-4 rounded-xl text-sm transition-colors duration-150 hover:bg-white/10 w-full sm:w-auto flex items-center justify-center gap-2">
+                      <button onClick={() => router.push('/dashboard')} className="bg-[#1A1A1A] border border-white/20 text-white font-bold px-8 py-4 rounded-xl text-sm transition-colors duration-100 hover:bg-white/10 w-full sm:w-auto flex items-center justify-center gap-2 hover:scale-105">
                         <Activity className="w-4 h-4"/> Dashboard
                       </button>
                     </div>
                   </motion.div>
                 ) : status === "unauthenticated" ? (
-                  <motion.div key="login" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15, ease: "easeOut" }} className="w-full flex flex-col items-center">
-                    <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} transition={{ duration: 0.1 }} onClick={() => signIn("google")} className="w-full bg-white text-[#4B6B8A] py-4 rounded-[2rem] flex items-center justify-center gap-4 text-[22px] font-serif tracking-tight shadow-xl">
+                  <motion.div key="login" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.1, ease: "easeOut" }} className="w-full flex flex-col items-center">
+                    <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} transition={{ duration: 0.05 }} onClick={() => signIn("google")} className="w-full bg-white text-[#4B6B8A] py-4 rounded-[2rem] flex items-center justify-center gap-4 text-[22px] font-serif tracking-tight shadow-xl hover:shadow-[0_0_20px_rgba(255,255,255,0.4)]">
                       <Google_Icon /> loogin google & quick deploy
                     </motion.button>
                     <p className="mt-5 text-sm font-serif text-white tracking-wide">
@@ -424,7 +438,7 @@ export default function Home() {
                     </p>
                   </motion.div>
                 ) : (
-                  <motion.div key="action" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15, ease: "easeOut" }} className="w-full flex flex-col items-center gap-4">
+                  <motion.div key="action" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.1, ease: "easeOut" }} className="w-full flex flex-col items-center gap-4">
                     <div className="w-full flex items-center justify-between bg-[#111] border border-white/10 p-3 px-4 rounded-[2rem] shadow-lg">
                       <div className="flex items-center gap-3">
                         <img src={session?.user?.image || ""} className="w-10 h-10 rounded-full border border-white/20" alt="Avatar"/>
@@ -433,17 +447,17 @@ export default function Home() {
                           <p className="text-[10px] text-gray-500 font-mono">{session?.user?.email}</p>
                         </div>
                       </div>
-                      <button onClick={() => signOut()} className="text-xs font-bold text-gray-500 hover:text-red-400 transition-colors duration-150 uppercase tracking-widest flex items-center gap-1">
+                      <button onClick={() => signOut()} className="text-xs font-bold text-gray-500 hover:text-red-400 transition-colors duration-100 uppercase tracking-widest flex items-center gap-1">
                         <LogOut className="w-4 h-4"/> Logout
                       </button>
                     </div>
 
                     {!isTokenSaved ? (
-                      <button onClick={() => handleOpenIntegration(activeChannel)} className="w-full bg-white text-black font-bold py-4 rounded-[2rem] text-[18px] shadow-xl uppercase tracking-widest transition-transform duration-150 hover:scale-[1.02]">
+                      <button onClick={() => handleOpenIntegration(activeChannel)} className="w-full bg-white text-black font-bold py-4 rounded-[2rem] text-[18px] shadow-xl uppercase tracking-widest transition-transform duration-100 hover:scale-105 hover:shadow-[0_0_20px_rgba(255,255,255,0.3)]">
                         CONNECT {activeChannel} TO CONTINUE
                       </button>
                     ) : (
-                      <button onClick={() => handleOpenPricing(activeChannel)} className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 rounded-[2rem] text-[18px] shadow-[0_0_30px_rgba(37,99,235,0.4)] uppercase tracking-widest transition-transform duration-150 hover:scale-[1.02] flex justify-center items-center gap-3">
+                      <button onClick={() => handleOpenPricing(activeChannel)} className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 rounded-[2rem] text-[18px] shadow-[0_0_30px_rgba(37,99,235,0.4)] uppercase tracking-widest transition-transform duration-100 hover:scale-105 hover:shadow-[0_0_40px_rgba(37,99,235,0.6)] flex justify-center items-center gap-3">
                         <Zap className="w-5 h-5"/> DEPLOY YOUR AI AGENT NOW
                       </button>
                     )}
@@ -541,7 +555,7 @@ export default function Home() {
       <footer className="pt-24 pb-12 relative z-10 bg-[#141414]">
         <div className="max-w-6xl mx-auto px-10 text-left mb-24">
           <h2 className="text-4xl md:text-[3.5rem] text-white mb-8 tracking-tight" style={{ fontFamily: "Georgia, serif" }}>Deploy. Automate. Relax.</h2>
-          <button onClick={() => document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' })} className="bg-[#FFA87A] hover:bg-[#FF905A] text-black font-bold px-10 py-3 rounded text-lg transition-colors duration-150 shadow-lg font-serif">
+          <button onClick={() => document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' })} className="bg-[#FFA87A] hover:bg-[#FF905A] text-black font-bold px-10 py-3 rounded text-lg transition-colors duration-100 shadow-lg font-serif hover:scale-105">
             learn more
           </button>
         </div>
@@ -552,9 +566,9 @@ export default function Home() {
             © 2026 CLAWLINK INC. GLOBAL AI SAAS INFRASTRUCTURE.
           </div>
           <div className="flex gap-6 mt-4 md:mt-0 font-serif">
-            <a href="/privacy" className="hover:text-white transition-colors duration-150">Privacy Policy</a>
-            <a href="/terms" className="hover:text-white transition-colors duration-150">Terms of Service</a>
-            <a href="/docs" className="hover:text-white transition-colors duration-150">Documentation</a>
+            <a href="/privacy" className="hover:text-white transition-colors duration-100">Privacy Policy</a>
+            <a href="/terms" className="hover:text-white transition-colors duration-100">Terms of Service</a>
+            <a href="/docs" className="hover:text-white transition-colors duration-100">Documentation</a>
           </div>
         </div>
       </footer>
@@ -567,10 +581,10 @@ export default function Home() {
               initial={{ opacity: 0, scale: 0.95, y: 10 }} 
               animate={{ opacity: 1, scale: 1, y: 0 }} 
               exit={{ opacity: 0, scale: 0.95, y: 10 }} 
-              transition={{ duration: 0.15, ease: "easeOut" }}
+              transition={{ duration: 0.1, ease: "easeOut" }}
               className="bg-[#111] border border-white/10 p-8 rounded-[2rem] w-full max-w-md shadow-2xl relative max-h-[90vh] overflow-y-auto custom-scrollbar"
             >
-              <button onClick={() => setIsSupportModalOpen(false)} className="absolute top-6 right-6 text-gray-500 hover:text-white bg-white/5 hover:bg-white/10 p-2 rounded-full transition-colors duration-150">
+              <button onClick={() => setIsSupportModalOpen(false)} className="absolute top-6 right-6 text-gray-500 hover:text-white bg-white/5 hover:bg-white/10 p-2 rounded-full transition-colors duration-100">
                 <X className="w-5 h-5"/>
               </button>
               
@@ -583,15 +597,15 @@ export default function Home() {
               <p className="text-gray-400 text-sm mb-8 leading-relaxed">Need help with your OpenClaw instance? We're here for you 24/7.</p>
               
               <div className="space-y-4">
-                <div className="bg-[#1A1A1A] border border-white/5 rounded-2xl p-5 hover:border-white/10 transition-colors duration-150">
+                <div className="bg-[#1A1A1A] border border-white/5 rounded-2xl p-5 hover:border-white/10 transition-colors duration-100">
                    <div className="flex items-center gap-3 mb-2">
                      <Mail className="w-5 h-5 text-orange-500" />
                      <span className="text-white font-bold text-sm">Direct Email</span>
                    </div>
-                   <a href="mailto:support@clawlink.com" className="text-blue-400 hover:text-blue-300 transition-colors duration-150 text-sm font-mono break-all">support@clawlink.com</a>
+                   <a href="mailto:support@clawlink.com" className="text-blue-400 hover:text-blue-300 transition-colors duration-100 text-sm font-mono break-all">support@clawlink.com</a>
                 </div>
 
-                <div className="bg-[#1A1A1A] border border-white/5 rounded-2xl p-5 hover:border-white/10 transition-colors duration-150">
+                <div className="bg-[#1A1A1A] border border-white/5 rounded-2xl p-5 hover:border-white/10 transition-colors duration-100">
                    <div className="flex items-center gap-3 mb-2">
                      <Shield className="w-5 h-5 text-green-500" />
                      <span className="text-white font-bold text-sm">Enterprise SLAs</span>
@@ -600,7 +614,7 @@ export default function Home() {
                 </div>
               </div>
               
-              <button onClick={() => setIsSupportModalOpen(false)} className="w-full mt-8 bg-white text-black font-bold py-3.5 rounded-xl text-sm transition-transform duration-150 hover:scale-[1.02] shadow-lg">
+              <button onClick={() => setIsSupportModalOpen(false)} className="w-full mt-8 bg-white text-black font-bold py-3.5 rounded-xl text-sm transition-transform duration-100 hover:scale-[1.05] shadow-[0_0_15px_rgba(255,255,255,0.2)]">
                 CLOSE
               </button>
             </motion.div>
@@ -612,8 +626,8 @@ export default function Home() {
       <AnimatePresence>
         {isTelegramModalOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-md p-4">
-            <motion.div initial={{ opacity: 0, scale: 0.95, y: 10 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 10 }} transition={{ duration: 0.15, ease: "easeOut" }} className={`bg-[#111] border border-white/10 rounded-3xl w-full max-w-[1000px] flex flex-col md:flex-row overflow-hidden relative shadow-2xl`}>
-              <button onClick={() => setIsTelegramModalOpen(false)} className="absolute top-6 right-6 z-20 text-gray-500 hover:text-white bg-white/5 hover:bg-white/10 p-2 rounded-full transition-all duration-150">✕</button>
+            <motion.div initial={{ opacity: 0, scale: 0.95, y: 10 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 10 }} transition={{ duration: 0.1, ease: "easeOut" }} className={`bg-[#111] border border-white/10 rounded-3xl w-full max-w-[1000px] flex flex-col md:flex-row overflow-hidden relative shadow-[0_0_40px_rgba(0,0,0,0.8)]`}>
+              <button onClick={() => setIsTelegramModalOpen(false)} className="absolute top-6 right-6 z-20 text-gray-500 hover:text-white bg-white/5 hover:bg-white/10 p-2 rounded-full transition-all duration-100">✕</button>
               
               <div className="w-full md:w-1/2 p-8 md:p-12 flex flex-col justify-center relative z-10 overflow-y-auto max-h-[85vh] md:max-h-none custom-scrollbar">
                 <div className="flex items-center gap-4 mb-6">
@@ -632,14 +646,14 @@ export default function Home() {
                       <li>BotFather will generate an <strong className="text-white">HTTP API Access Token</strong>.</li>
                       <li>Copy that exact token and paste it securely below.</li>
                     </ol>
-                    <a href="https://t.me/BotFather" target="_blank" rel="noopener noreferrer" className="inline-flex items-center justify-center gap-2 mb-8 bg-[#2AABEE]/10 text-[#2AABEE] hover:bg-[#2AABEE]/20 border border-[#2AABEE]/20 px-4 py-2 rounded-lg text-xs font-bold transition-colors duration-150 w-fit">
+                    <a href="https://t.me/BotFather" target="_blank" rel="noopener noreferrer" className="inline-flex items-center justify-center gap-2 mb-8 bg-[#2AABEE]/10 text-[#2AABEE] hover:bg-[#2AABEE]/20 border border-[#2AABEE]/20 px-4 py-2 rounded-lg text-xs font-bold transition-colors duration-100 w-fit">
                       <ExternalLink className="w-3 h-3" /> Open @BotFather Directly
                     </a>
 
                     <div className="bg-[#1A1A1A] p-6 rounded-2xl border border-white/5 shadow-inner">
                       <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">API Access Token</label>
                       <input type="password" value={telegramToken} onChange={(e) => setTelegramToken(e.target.value)} placeholder="Enter Token..." className="w-full bg-black border border-white/10 rounded-xl px-4 py-4 text-sm focus:outline-none mb-6 text-white font-mono" />
-                      <button onClick={handleSaveToken} className="w-full bg-white text-black font-bold py-4 rounded-xl text-sm hover:bg-gray-200 uppercase tracking-widest shadow-lg transition-transform duration-150 hover:scale-[1.02]">
+                      <button onClick={handleSaveToken} className="w-full bg-white text-black font-bold py-4 rounded-xl text-sm hover:bg-gray-200 uppercase tracking-widest shadow-[0_0_15px_rgba(255,255,255,0.2)] transition-transform duration-100 hover:scale-[1.05]">
                         SAVE AND CONTINUE
                       </button>
                     </div>
@@ -660,14 +674,14 @@ export default function Home() {
                       <div className="mb-4">
                         <div className="flex justify-between items-center mb-1">
                           <span className="block text-[10px] font-bold text-gray-500 uppercase tracking-widest">Webhook Callback URL</span>
-                          <button onClick={() => copyToClipboard("https://clawlink-six.vercel.app/api/webhook/whatsapp")} className="text-gray-500 hover:text-white transition-colors duration-150"><Copy className="w-3 h-3"/></button>
+                          <button onClick={() => copyToClipboard("https://clawlink-six.vercel.app/api/webhook/whatsapp")} className="text-gray-500 hover:text-white transition-colors duration-100"><Copy className="w-3 h-3"/></button>
                         </div>
                         <code className="block bg-black text-[#25D366] text-[10px] sm:text-xs p-2 rounded border border-white/5 select-all truncate">https://clawlink-six.vercel.app/api/webhook/whatsapp</code>
                       </div>
                       <div>
                         <div className="flex justify-between items-center mb-1">
                           <span className="block text-[10px] font-bold text-gray-500 uppercase tracking-widest">Verify Token</span>
-                          <button onClick={() => copyToClipboard("ClawLinkMeta2026")} className="text-gray-500 hover:text-white transition-colors duration-150"><Copy className="w-3 h-3"/></button>
+                          <button onClick={() => copyToClipboard("ClawLinkMeta2026")} className="text-gray-500 hover:text-white transition-colors duration-100"><Copy className="w-3 h-3"/></button>
                         </div>
                         <code className="block bg-black text-white text-xs p-2 rounded border border-white/5 select-all">ClawLinkMeta2026</code>
                       </div>
@@ -677,7 +691,7 @@ export default function Home() {
                       <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">Permanent API Token</label>
                       <input type="password" value={telegramToken} onChange={(e) => setTelegramToken(e.target.value)} placeholder="EAABwzL..." className="w-full bg-black border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#25D366] mb-6 text-white font-mono transition-colors" />
                       
-                      <button onClick={handleSaveToken} className="w-full bg-white text-black font-bold py-4 rounded-xl text-sm hover:bg-gray-200 uppercase tracking-widest shadow-lg transition-transform duration-150 hover:scale-[1.02]">
+                      <button onClick={handleSaveToken} className="w-full bg-white text-black font-bold py-4 rounded-xl text-sm hover:bg-gray-200 uppercase tracking-widest shadow-[0_0_15px_rgba(255,255,255,0.2)] transition-transform duration-100 hover:scale-[1.05]">
                         SAVE AND CONTINUE
                       </button>
                     </div>
@@ -686,7 +700,7 @@ export default function Home() {
               </div>
 
               <div className="hidden md:flex md:w-1/2 bg-black/40 items-center justify-center p-10 border-l border-white/5 relative">
-                 <div className="w-[320px] h-[600px] border-[8px] border-[#1A1A1A] rounded-[3rem] bg-[#0A0A0B] flex flex-col relative overflow-hidden shadow-2xl">
+                 <div className="w-[320px] h-[600px] border-[8px] border-[#1A1A1A] rounded-[3rem] bg-[#0A0A0B] flex flex-col relative overflow-hidden shadow-[0_0_30px_rgba(0,0,0,0.5)]">
                     <div className="absolute top-0 inset-x-0 h-7 bg-[#1A1A1A] rounded-b-3xl w-40 mx-auto z-20 flex justify-center items-end pb-1">
                       <div className="w-12 h-1.5 bg-black/50 rounded-full"></div>
                     </div>
@@ -702,7 +716,7 @@ export default function Home() {
                             <p className="text-gray-400 text-[10px] font-mono tracking-wider">verified bot</p>
                           </>
                         ) : (
-                          <a href="https://developers.facebook.com/apps/" target="_blank" rel="noopener noreferrer" className="hover:opacity-80 transition-opacity duration-150">
+                          <a href="https://developers.facebook.com/apps/" target="_blank" rel="noopener noreferrer" className="hover:opacity-80 transition-opacity duration-100">
                             <p className="text-white text-sm font-bold flex items-center gap-1">Meta Developer <ExternalLink className="w-3 h-3 text-green-400"/></p>
                             <p className="text-gray-400 text-[10px] font-mono tracking-wider">API Configuration</p>
                           </a>
@@ -713,12 +727,12 @@ export default function Home() {
                     <div className="p-4 pt-6 flex-1 flex flex-col justify-end space-y-3 opacity-95 text-[11px] font-mono bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] overflow-y-auto custom-scrollbar pr-1">
                       {activeChannel === 'telegram' ? (
                         <>
-                          <ChatBubble isUser text="/newbot" delay={0.2} />
-                          <ChatBubble text="Alright, a new bot. How are we going to call it? Please choose a name." delay={0.6} />
-                          <ChatBubble isUser text="ClawLink Support" delay={1.0} />
-                          <ChatBubble text="Good. Now let's choose a username..." delay={1.4} />
-                          <ChatBubble isUser text="ClawSupport_bot" delay={1.8} />
-                          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 2.2, duration: 0.2, ease: "easeOut" }} className="bg-[#1A1A1A] border border-[#2AABEE]/30 p-3 rounded-2xl rounded-tl-sm text-gray-200 self-start max-w-[90%] shadow-[0_0_15px_rgba(42,171,238,0.15)] leading-relaxed">
+                          <ChatBubble isUser text="/newbot" delay={0.1} />
+                          <ChatBubble text="Alright, a new bot. How are we going to call it? Please choose a name." delay={0.3} />
+                          <ChatBubble isUser text="ClawLink Support" delay={0.5} />
+                          <ChatBubble text="Good. Now let's choose a username..." delay={0.7} />
+                          <ChatBubble isUser text="ClawSupport_bot" delay={0.9} />
+                          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 1.1, duration: 0.15, ease: "easeOut" }} className="bg-[#1A1A1A] border border-[#2AABEE]/30 p-3 rounded-2xl rounded-tl-sm text-gray-200 self-start max-w-[90%] shadow-[0_0_15px_rgba(42,171,238,0.15)] leading-relaxed">
                             Done! Congratulations on your new bot.<br/><br/>
                             <span className="text-gray-400">Use this token to access the HTTP API:</span><br/>
                             <span className="text-[#2AABEE] font-mono break-all mt-1 block font-bold">1234567890:AAH8ABCdefGhI...</span>
@@ -726,13 +740,13 @@ export default function Home() {
                         </>
                       ) : (
                         <div className="flex flex-col gap-3 font-sans h-full justify-start pb-4">
-                           <GuideStep delay={0.2} step="1" title="Create App" desc="Select Business type in Meta Developer Console." />
-                           <GuideStep delay={0.6} step="2" title="Add Number" desc="Add & verify your real phone number in API Setup." />
-                           <GuideStep delay={1.0} step="3" title="Generate Token" desc="Create a System User & get a Permanent Access Token." />
-                           <GuideStep delay={1.4} step="4" title="Link Webhook" desc="Paste Webhook URL & Verify Token." />
-                           <GuideStep delay={1.8} step="5" title="Subscribe" desc="Subscribe to the 'messages' webhook field." />
+                           <GuideStep delay={0.1} step="1" title="Create App" desc="Select Business type in Meta Developer Console." />
+                           <GuideStep delay={0.3} step="2" title="Add Number" desc="Add & verify your real phone number in API Setup." />
+                           <GuideStep delay={0.5} step="3" title="Generate Token" desc="Create a System User & get a Permanent Access Token." />
+                           <GuideStep delay={0.7} step="4" title="Link Webhook" desc="Paste Webhook URL & Verify Token." />
+                           <GuideStep delay={0.9} step="5" title="Subscribe" desc="Subscribe to the 'messages' webhook field." />
                            
-                           <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 2.2, duration: 0.2, ease: "easeOut" }} className="mt-4 bg-[#25D366]/10 border border-[#25D366]/30 p-3 rounded-xl text-center shadow-[0_0_15px_rgba(37,211,102,0.1)] mx-auto w-[90%]">
+                           <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 1.1, duration: 0.15, ease: "easeOut" }} className="mt-4 bg-[#25D366]/10 border border-[#25D366]/30 p-3 rounded-xl text-center shadow-[0_0_15px_rgba(37,211,102,0.1)] mx-auto w-[90%]">
                              <span className="text-[#25D366] font-bold text-xs flex items-center justify-center gap-2"><Zap className="w-3 h-3"/> Dashboard Connected</span>
                            </motion.div>
                         </div>
@@ -750,29 +764,29 @@ export default function Home() {
       <AnimatePresence>
         {showPricingPopup && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 backdrop-blur-md p-4">
-            <motion.div initial={{ opacity: 0, y: 10, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 10, scale: 0.98 }} transition={{ duration: 0.15, ease: "easeOut" }} className="bg-[#111] border border-white/10 p-8 md:p-12 rounded-[2rem] w-full max-w-4xl text-center shadow-2xl relative max-h-[95vh] overflow-y-auto custom-scrollbar">
-              {!isDeploying && <button onClick={() => setShowPricingPopup(false)} className="absolute top-6 right-8 text-gray-500 hover:text-white bg-white/5 hover:bg-white/10 p-1.5 rounded-full transition-colors duration-150">✕</button>}
+            <motion.div initial={{ opacity: 0, y: 10, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 10, scale: 0.98 }} transition={{ duration: 0.1, ease: "easeOut" }} className="bg-[#111] border border-white/10 p-8 md:p-12 rounded-[2rem] w-full max-w-4xl text-center shadow-[0_0_50px_rgba(0,0,0,0.8)] relative max-h-[95vh] overflow-y-auto custom-scrollbar">
+              {!isDeploying && <button onClick={() => setShowPricingPopup(false)} className="absolute top-6 right-8 text-gray-500 hover:text-white bg-white/5 hover:bg-white/10 p-1.5 rounded-full transition-colors duration-100">✕</button>}
               
               <h2 className="text-3xl font-black mb-4 text-white uppercase tracking-tight">
                 {activeModel === 'omni' ? "OMNIAGENT ENTERPRISE PLANS" : "CHOOSE PLAN AND LINK AI AGENT"}
               </h2>
               <p className="text-gray-400 text-base mb-10 max-w-2xl mx-auto">
-                {/* 🚀 TEXT CLEARLY STATES 3 MODELS FOR NOW */}
+                {/* 🚀 TEXT CLEARLY EXPLAINS LLAMA 4 PRICING LOGIC */}
                 {activeModel === 'omni' 
-                  ? "3x AI Fallback (GPT, Claude, Gemini) guarantees 0% downtime. Llama 3 coming soon!" 
+                  ? "Abhi 3 models (GPT, Claude, Gemini) par fallback chalega, Llama 4 isme aane wala hai (Soon). Isliye Llama ka koi charge nahi kat raha hai." 
                   : "Select a subscription tier to activate your AI engine and link it to your chosen channel."}
               </p>
               
               {/* 🚀 CONDITIONAL PRICING GRID */}
               {activeModel === "omni" ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 my-10 text-left max-w-2xl mx-auto">
-                  <div onClick={() => !isDeploying && setSelectedTier("monthly")} className={`relative p-8 rounded-2xl border transition-all duration-150 ${!isDeploying ? 'cursor-pointer' : ''} ${selectedTier === "monthly" ? "bg-[#1A1A1A] border-[#00BFFF] shadow-[0_0_30px_rgba(0,191,255,0.2)] scale-105" : "bg-[#0A0A0B] border-white/10 hover:border-white/30"}`}>
+                  <div onClick={() => !isDeploying && setSelectedTier("monthly")} className={`relative p-8 rounded-2xl border transition-all duration-100 ${!isDeploying ? 'cursor-pointer hover:scale-105' : ''} ${selectedTier === "monthly" ? "bg-[#1A1A1A] border-[#00BFFF] shadow-[0_0_30px_rgba(0,191,255,0.3)] scale-105" : "bg-[#0A0A0B] border-white/10 hover:border-white/30 hover:shadow-[0_0_15px_rgba(255,255,255,0.1)]"}`}>
                     <h3 className="text-[#00BFFF] font-bold uppercase text-xs mb-2 tracking-widest">Monthly Enterprise</h3>
                     <div className="text-4xl font-black text-white mb-4">{currencySymbol}{getCurrentPrice("monthly")}</div>
                     {/* 🚀 TEXT RE-CONFIRMS 3x FALLBACK */}
-                    <p className="text-sm text-gray-400 leading-relaxed">3x Smart Fallback Engine. Billed monthly.</p>
+                    <p className="text-sm text-gray-400 leading-relaxed">3x AI Fallback Engine. Billed monthly.</p>
                   </div>
-                  <div onClick={() => !isDeploying && setSelectedTier("yearly")} className={`relative p-8 rounded-2xl border transition-all duration-150 ${!isDeploying ? 'cursor-pointer' : ''} ${selectedTier === "yearly" ? "bg-[#1A1A1A] border-[#0052D4] shadow-[0_0_30px_rgba(0,82,212,0.2)] scale-105" : "bg-[#0A0A0B] border-white/10 hover:border-white/30"}`}>
+                  <div onClick={() => !isDeploying && setSelectedTier("yearly")} className={`relative p-8 rounded-2xl border transition-all duration-100 ${!isDeploying ? 'cursor-pointer hover:scale-105' : ''} ${selectedTier === "yearly" ? "bg-[#1A1A1A] border-[#0052D4] shadow-[0_0_30px_rgba(0,82,212,0.3)] scale-105" : "bg-[#0A0A0B] border-white/10 hover:border-white/30 hover:shadow-[0_0_15px_rgba(255,255,255,0.1)]"}`}>
                     <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-[#0052D4] text-white text-[10px] font-bold uppercase px-3 py-1 rounded-full tracking-widest">Save 16%</div>
                     <h3 className="text-[#0052D4] font-bold uppercase text-xs mb-2 tracking-widest">Yearly Enterprise</h3>
                     <div className="text-4xl font-black text-white mb-4">{currencySymbol}{getCurrentPrice("yearly")}</div>
@@ -781,18 +795,18 @@ export default function Home() {
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 my-10 text-left">
-                  <div onClick={() => !isDeploying && setSelectedTier("starter")} className={`relative p-6 rounded-2xl border transition-all duration-150 ${!isDeploying ? 'cursor-pointer' : ''} ${selectedTier === "starter" ? "bg-[#1A1A1A] border-white shadow-[0_0_20px_rgba(255,255,255,0.1)] scale-105" : "bg-[#0A0A0B] border-white/10 hover:border-white/30"}`}>
+                  <div onClick={() => !isDeploying && setSelectedTier("starter")} className={`relative p-6 rounded-2xl border transition-all duration-100 ${!isDeploying ? 'cursor-pointer hover:scale-105' : ''} ${selectedTier === "starter" ? "bg-[#1A1A1A] border-white shadow-[0_0_20px_rgba(255,255,255,0.2)] scale-105" : "bg-[#0A0A0B] border-white/10 hover:border-white/30 hover:shadow-[0_0_15px_rgba(255,255,255,0.05)]"}`}>
                     <h3 className="text-gray-400 font-bold uppercase text-xs mb-2 tracking-widest">Starter</h3>
                     <div className="text-3xl font-black text-white mb-4">{currencySymbol}{getCurrentPrice("starter")}</div>
                     <p className="text-sm text-gray-400 leading-relaxed">Limited tokens for personal use.</p>
                   </div>
-                  <div onClick={() => !isDeploying && setSelectedTier("pro")} className={`relative p-6 rounded-2xl border transition-all duration-150 ${!isDeploying ? 'cursor-pointer' : ''} ${selectedTier === "pro" ? "bg-[#1A1A1A] border-blue-500 shadow-[0_0_30px_rgba(59,130,246,0.2)] scale-105" : "bg-[#0A0A0B] border-white/10 hover:border-white/30"}`}>
+                  <div onClick={() => !isDeploying && setSelectedTier("pro")} className={`relative p-6 rounded-2xl border transition-all duration-100 ${!isDeploying ? 'cursor-pointer hover:scale-105' : ''} ${selectedTier === "pro" ? "bg-[#1A1A1A] border-blue-500 shadow-[0_0_30px_rgba(59,130,246,0.3)] scale-105" : "bg-[#0A0A0B] border-white/10 hover:border-white/30 hover:shadow-[0_0_15px_rgba(59,130,246,0.1)]"}`}>
                     <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-blue-500 text-white text-[10px] font-bold uppercase px-3 py-1 rounded-full tracking-widest">Popular</div>
                     <h3 className="text-blue-400 font-bold uppercase text-xs mb-2 tracking-widest">Pro</h3>
                     <div className="text-3xl font-black text-white mb-4">{currencySymbol}{getCurrentPrice("pro")}</div>
                     <p className="text-sm text-gray-400 leading-relaxed">Unlimited credits and Priority Routing.</p>
                   </div>
-                  <div onClick={() => !isDeploying && setSelectedTier("max")} className={`relative p-6 rounded-2xl border transition-all duration-150 ${!isDeploying ? 'cursor-pointer' : ''} ${selectedTier === "max" ? "bg-[#1A1A1A] border-orange-500 shadow-[0_0_30px_rgba(249,115,22,0.15)] scale-105" : "bg-[#0A0A0B] border-white/10 hover:border-white/30"}`}>
+                  <div onClick={() => !isDeploying && setSelectedTier("max")} className={`relative p-6 rounded-2xl border transition-all duration-100 ${!isDeploying ? 'cursor-pointer hover:scale-105' : ''} ${selectedTier === "max" ? "bg-[#1A1A1A] border-orange-500 shadow-[0_0_30px_rgba(249,115,22,0.2)] scale-105" : "bg-[#0A0A0B] border-white/10 hover:border-white/30 hover:shadow-[0_0_15px_rgba(249,115,22,0.1)]"}`}>
                     <h3 className="text-orange-400 font-bold uppercase text-xs mb-2 tracking-widest">Max</h3>
                     <div className="text-3xl font-black text-white mb-4">{currencySymbol}{getCurrentPrice("max")}</div>
                     <p className="text-sm text-gray-400 leading-relaxed">Multi-AI access with maximum speed.</p>
@@ -803,7 +817,7 @@ export default function Home() {
               <button 
                 onClick={triggerRazorpayPayment} 
                 disabled={isDeploying || !selectedTier} 
-                className={`w-full max-w-sm mx-auto font-black py-4 rounded-xl uppercase tracking-widest flex justify-center items-center gap-2 shadow-xl transition-all duration-150 ${!selectedTier ? 'bg-gray-700 text-gray-400 cursor-not-allowed' : activeModel === 'omni' ? 'bg-gradient-to-r from-[#0052D4] to-[#00BFFF] text-white hover:scale-[1.02]' : 'bg-white text-black hover:bg-gray-200 hover:scale-[1.02]'}`}
+                className={`w-full max-w-sm mx-auto font-black py-4 rounded-xl uppercase tracking-widest flex justify-center items-center gap-2 shadow-xl transition-all duration-100 ${!selectedTier ? 'bg-gray-700 text-gray-400 cursor-not-allowed' : activeModel === 'omni' ? 'bg-gradient-to-r from-[#0052D4] to-[#00BFFF] text-white hover:scale-110 hover:shadow-[0_0_25px_rgba(0,198,255,0.5)]' : 'bg-white text-black hover:bg-gray-200 hover:scale-110 hover:shadow-[0_0_20px_rgba(255,255,255,0.4)]'}`}
               >
                 {isDeploying ? "Deploying Database..." : !selectedTier ? "SELECT A PLAN" : `PROCESS PAY AND DEPLOY ${currencySymbol}${getCurrentPrice()}`}
               </button>
@@ -820,10 +834,10 @@ export default function Home() {
               initial={{ opacity: 0, y: 20, scale: 0.9 }} 
               animate={{ opacity: 1, y: 0, scale: 1 }} 
               exit={{ opacity: 0, y: 20, scale: 0.9 }} 
-              transition={{ duration: 0.15, ease: "easeOut" }}
-              className="bg-[#111] border border-white/10 shadow-2xl rounded-2xl w-80 p-5 mb-4 overflow-hidden relative"
+              transition={{ duration: 0.1, ease: "easeOut" }}
+              className="bg-[#111] border border-white/10 shadow-[0_0_30px_rgba(0,0,0,0.8)] rounded-2xl w-80 p-5 mb-4 overflow-hidden relative"
             >
-              <button onClick={() => setIsHelpOpen(false)} className="absolute top-4 right-4 text-gray-500 hover:text-white transition-colors duration-150">
+              <button onClick={() => setIsHelpOpen(false)} className="absolute top-4 right-4 text-gray-500 hover:text-white transition-colors duration-100">
                 <X className="w-4 h-4" />
               </button>
               
@@ -838,7 +852,7 @@ export default function Home() {
               ) : (
                 <>
                   <div className="flex items-center gap-3 mb-4 pb-4 border-b border-white/5">
-                    <div className="w-10 h-10 bg-blue-500/20 text-blue-400 rounded-full flex items-center justify-center">
+                    <div className="w-10 h-10 bg-blue-500/20 text-blue-400 rounded-full flex items-center justify-center shadow-inner">
                       <MessageSquare className="w-5 h-5" />
                     </div>
                     <div>
@@ -853,19 +867,20 @@ export default function Home() {
                       placeholder="Your Email Address" 
                       value={helpEmail}
                       onChange={(e) => setHelpEmail(e.target.value)}
-                      className="w-full bg-[#1A1A1A] border border-white/5 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-blue-500/50 transition-colors duration-150"
+                      className="w-full bg-[#1A1A1A] border border-white/5 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-blue-500/50 transition-colors duration-100"
                     />
                     <textarea 
                       placeholder="How can we help you?" 
                       rows={3}
                       value={helpMessage}
                       onChange={(e) => setHelpMessage(e.target.value)}
-                      className="w-full bg-[#1A1A1A] border border-white/5 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-blue-500/50 transition-colors duration-150 resize-none"
+                      className="w-full bg-[#1A1A1A] border border-white/5 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-blue-500/50 transition-colors duration-100 resize-none"
                     ></textarea>
+                    {/* 🚀 THE FIXED BUTTON WITHOUT BAD CHARACTERS */}
                     <button 
                       onClick={handleSendHelpRequest}
                       disabled={helpStatus === "sending"}
-                      className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs py-2.5 rounded-lg flex items-center justify-center gap-2 transition-colors duration-150"
+                      className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs py-2.5 rounded-lg flex items-center justify-center gap-2 transition-all duration-100 hover:shadow-[0_0_15px_rgba(37,99,235,0.5)]"
                     >
                       {helpStatus === "sending" ? "Sending..." : <><Send className="w-3 h-3" /> Send Message</>}
                     </button>
@@ -877,10 +892,10 @@ export default function Home() {
         </AnimatePresence>
 
         <motion.button 
-          whileHover={{ scale: 1.05 }} 
-          whileTap={{ scale: 0.95 }}
+          whileHover={{ scale: 1.1 }} 
+          whileTap={{ scale: 0.9 }}
           onClick={() => setIsHelpOpen(!isHelpOpen)}
-          className="w-14 h-14 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-full shadow-[0_0_20px_rgba(59,130,246,0.4)] flex items-center justify-center hover:shadow-[0_0_30px_rgba(59,130,246,0.6)] transition-shadow duration-150"
+          className="w-14 h-14 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-full shadow-[0_0_20px_rgba(59,130,246,0.4)] flex items-center justify-center hover:shadow-[0_0_35px_rgba(59,130,246,0.8)] transition-all duration-100"
         >
           {isHelpOpen ? <X className="w-6 h-6" /> : <MessageCircle className="w-6 h-6" />}
         </motion.button>
