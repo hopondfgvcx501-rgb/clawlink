@@ -7,9 +7,9 @@ import { useRouter } from "next/navigation";
 import { Globe, Database, Mic, Zap, MessageSquare, Activity, LogOut, Shield, ExternalLink, CheckCircle2, Copy, MessageCircle, X, Send, Mail } from "lucide-react";
 import Image from "next/image";
 
-// --- CORE SYSTEM DATA ---
+// --- TEMPORARY ₹100 TEST PRICING ---
 const MODEL_DETAILS: Record<string, { name: string; starter: number; pro: number }> = {
-  gemini: { name: "Gemini 3 Flash", starter: 9, pro: 19 },
+  gemini: { name: "Gemini 3 Flash", starter: 1.2, pro: 19 }, // 👈 Starter is now $1.2 (~₹100)
   "gpt-5.2": { name: "GPT-5.2", starter: 19, pro: 39 }, 
   claude: { name: "Opus 4.6", starter: 29, pro: 59 } 
 };
