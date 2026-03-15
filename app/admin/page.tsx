@@ -4,9 +4,9 @@ import { useSession, signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { ShieldAlert, Users, DollarSign, Activity, Database, LogOut, Terminal, RefreshCw, ArrowLeft, LifeBuoy, CheckCircle } from "lucide-react";
+import { ShieldAlert, Users, DollarSign, Activity, Database, LogOut, Terminal, RefreshCw, ArrowLeft, AlertTriangle, LifeBuoy, CheckCircle } from "lucide-react";
 
-// 🚨 ADMIN EMAIL LOCK
+// 🚨 ADMIN EMAIL LOCK (Strict Lowercase)
 const ADMIN_EMAILS = ["hopondfgvcx501@gmail.com"]; 
 
 export default function AdminDashboard() {
@@ -14,6 +14,7 @@ export default function AdminDashboard() {
   const router = useRouter();
   
   const [isAuthorized, setIsAuthorized] = useState(false);
+  const [accessDeniedReason, setAccessDeniedReason] = useState<string | null>(null); // 🚀 NEW: Tracker
   const [stats, setStats] = useState({ totalUsers: 0, totalRevenue: 0, apiCalls: 0, systemStatus: "Loading..." });
   const [clients, setClients] = useState<any[]>([]);
   const [systemLogs, setSystemLogs] = useState<any[]>([]);
@@ -21,10 +22,9 @@ export default function AdminDashboard() {
   const [isLoading, setIsLoading] = useState(true);
 
   const fetchAdminData = async () => {
-    if (!session?.user?.email || !ADMIN_EMAILS.includes(session.user.email)) return;
     setIsLoading(true);
     try {
-      const res = await fetch(`/api/admin?email=${session.user.email}`);
+      const res = await fetch(`/api/admin?email=${session?.user?.email}`);
       const data = await res.json();
       if (data.success) {
         setStats({
@@ -36,6 +36,8 @@ export default function AdminDashboard() {
         setClients(data.clients);
         setSystemLogs(data.logs || []);
         setSupportTickets(data.tickets || []);
+      } else {
+        setAccessDeniedReason("API ne access deny kar diya: " + data.error);
       }
     } catch (error) {
       console.error("Failed to load admin data:", error);
@@ -47,15 +49,47 @@ export default function AdminDashboard() {
   useEffect(() => {
     if (status === "loading") return;
 
-    if (status === "unauthenticated" || !session?.user?.email || !ADMIN_EMAILS.includes(session.user.email)) {
-      router.push("/");
+    // 🚀 NEW LOGIC: Hum user ko bahar nahi phekenge, balki yahi rok kar error dikhayenge!
+    if (status === "unauthenticated") {
+      setAccessDeniedReason("Aap logged in nahi hain. Kripya pehle Home Page par jaa kar Google se Login karein.");
       return;
     }
 
+    // Force lower case and remove spaces
+    const userEmail = session?.user?.email?.toLowerCase().trim();
+
+    if (!userEmail) {
+      setAccessDeniedReason("System aapki Google Email ID detect nahi kar paa raha hai. (Browser Cookie Issue)");
+      return;
+    }
+
+    if (!ADMIN_EMAILS.includes(userEmail)) {
+      setAccessDeniedReason(`ACCESS DENIED: Aapki email ID [ ${userEmail} ] ko Level 9 God Mode ki permission nahi hai. Sirf hopondfgvcx501@gmail.com allowed hai.`);
+      return;
+    }
+
+    // Agar sab sahi hai toh andar aane do!
     setIsAuthorized(true);
     fetchAdminData();
-  }, [session, status, router]);
+  }, [session, status]);
 
+  // 🚨 🚨 ACCESS DENIED SCREEN (Bahar phekne ki jagah yahan rokega)
+  if (accessDeniedReason) {
+    return (
+      <div className="min-h-screen bg-[#050505] flex flex-col items-center justify-center text-center p-6">
+        <ShieldAlert className="w-16 h-16 text-red-500 mb-6 animate-pulse" />
+        <h1 className="text-3xl font-black text-white tracking-widest uppercase mb-4">Security Lockdown</h1>
+        <p className="text-red-400 font-mono max-w-lg p-4 bg-red-500/10 border border-red-500/20 rounded-xl leading-relaxed">
+          {accessDeniedReason}
+        </p>
+        <button onClick={() => router.push('/')} className="mt-8 px-6 py-3 bg-white/10 hover:bg-white/20 text-white rounded-lg font-bold uppercase tracking-widest text-xs transition-colors">
+          Go Back to Home
+        </button>
+      </div>
+    );
+  }
+
+  // Loading Screen
   if (status === "loading" || !isAuthorized) {
     return (
       <div className="min-h-screen bg-[#050505] flex items-center justify-center text-red-500 font-mono">
@@ -65,10 +99,9 @@ export default function AdminDashboard() {
     );
   }
 
+  // 🟢 ASLI ADMIN DASHBOARD UI (Jo aapne bheja tha)
   return (
     <div className="min-h-screen bg-[#0A0A0B] text-gray-300 font-mono selection:bg-red-500/30 overflow-x-hidden relative flex flex-col">
-      
-      {/* 🔴 RED "GOD MODE" GLOW */}
       <div className="absolute top-[-20%] left-1/2 -translate-x-1/2 w-[800px] h-[500px] bg-red-600/10 rounded-full blur-[150px] pointer-events-none z-0"></div>
 
       <nav className="relative z-10 border-b border-red-500/20 bg-black/50 backdrop-blur-xl p-6 px-10 flex justify-between items-center">
@@ -135,72 +168,6 @@ export default function AdminDashboard() {
             <p className="text-sm font-bold text-white flex items-center gap-2 mt-2">
               <span className="w-2.5 h-2.5 bg-green-500 rounded-full animate-pulse shadow-[0_0_10px_#22c55e]"></span> {stats.systemStatus}
             </p>
-          </motion.div>
-        </div>
-
-        {/* 🚀 RADAR PANELS: ERROR LOGS & SUPPORT TICKETS */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          
-          {/* SYSTEM ERROR LOGS (TERMINAL) */}
-          <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.4 }} className="bg-[#0A0A0B] border border-red-500/30 rounded-2xl overflow-hidden shadow-[0_0_20px_rgba(239,68,68,0.1)] flex flex-col">
-            <div className="p-4 border-b border-red-500/20 bg-red-950/20 flex items-center gap-3">
-              <Terminal className="w-5 h-5 text-red-500" />
-              <h2 className="text-sm font-bold text-red-500 uppercase tracking-widest">Live System Logs</h2>
-              <span className="ml-auto flex h-3 w-3 relative">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
-              </span>
-            </div>
-            <div className="p-4 space-y-3 h-[250px] overflow-y-auto custom-scrollbar font-mono text-xs">
-              {systemLogs.length === 0 ? (
-                <p className="text-green-500">System running smoothly. No errors detected.</p>
-              ) : (
-                systemLogs.map((log, i) => (
-                  <div key={i} className="flex items-start gap-3 border-b border-white/5 pb-2">
-                    <span className={`px-1.5 py-0.5 rounded text-[9px] font-black ${log.type === 'ERROR' ? 'bg-red-500 text-black' : log.type === 'WARNING' ? 'bg-yellow-500 text-black' : 'bg-blue-500 text-white'}`}>
-                      {log.type}
-                    </span>
-                    <div className="flex-1">
-                      <p className="text-gray-300">{log.message}</p>
-                      <p className="text-[10px] text-gray-600 mt-1">{log.time}</p>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          </motion.div>
-
-          {/* CLIENT SUPPORT TICKETS */}
-          <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.5 }} className="bg-[#111] border border-white/10 rounded-2xl overflow-hidden shadow-xl flex flex-col">
-            <div className="p-4 border-b border-white/5 bg-[#161618] flex items-center gap-3">
-              <LifeBuoy className="w-5 h-5 text-blue-400" />
-              <h2 className="text-sm font-bold text-white uppercase tracking-widest">Active Support Tickets</h2>
-              <span className="ml-auto bg-blue-500 text-white text-[10px] font-bold px-2 py-1 rounded-full">{supportTickets.length} Pending</span>
-            </div>
-            <div className="p-4 space-y-3 h-[250px] overflow-y-auto custom-scrollbar">
-              {supportTickets.length === 0 ? (
-                <div className="flex flex-col items-center justify-center h-full text-gray-500">
-                  <CheckCircle className="w-10 h-10 mb-2 opacity-50" />
-                  <p className="text-sm font-sans">All caught up! No active tickets.</p>
-                </div>
-              ) : (
-                supportTickets.map((ticket, i) => (
-                  <div key={i} className="bg-black/50 border border-white/5 p-4 rounded-xl hover:border-blue-500/30 transition-colors">
-                    <div className="flex justify-between items-start mb-2">
-                      <span className="text-xs font-bold text-blue-400">{ticket.user}</span>
-                      <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded ${ticket.status === 'URGENT' ? 'bg-red-500/20 text-red-400' : 'bg-yellow-500/20 text-yellow-400'}`}>
-                        {ticket.status}
-                      </span>
-                    </div>
-                    <p className="text-sm text-gray-300 font-sans leading-relaxed">{ticket.issue}</p>
-                    <div className="flex justify-between items-center mt-3 pt-3 border-t border-white/5">
-                      <span className="text-[10px] text-gray-600">{ticket.time}</span>
-                      <button className="text-[10px] uppercase tracking-widest font-bold text-blue-500 hover:text-white transition-colors">Resolve →</button>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
           </motion.div>
         </div>
 
