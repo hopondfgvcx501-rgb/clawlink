@@ -127,12 +127,27 @@ export default function Home() {
     setIsDeploying(true);
     
     try {
+      // 🚀 SAFE FIX: Round to integer (paise) and pass missing dynamic details for backend note tracking
+      const exactPaise = Math.round(finalPrice * 100);
+
       const response = await fetch("/api/razorpay", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ amount: finalPrice * 100, currency: currency }), 
+        body: JSON.stringify({ 
+          amount: exactPaise, 
+          currency: currency,
+          email: session?.user?.email || "user@clawlink.com",
+          planName: selectedTier,
+          selectedModel: activeModel
+        }), 
       });
       const order = await response.json();
+
+      if (order.error) {
+        alert("Order Error: " + order.error);
+        setIsDeploying(false);
+        return;
+      }
 
       const options = {
         key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID, 
