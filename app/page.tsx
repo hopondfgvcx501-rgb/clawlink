@@ -15,12 +15,12 @@ const MODEL_DETAILS: Record<string, { name: string; starter: number; pro: number
 };
 const MAX_PLAN_PRICE = 89; 
 
-// --- UPDATED: Using Official Local SVG Assets ---
-const OpenAI_Icon = () => <Image src="/logos/openai.svg" alt="OpenAI" width={22} height={22} className="object-contain" />;
-const Claude_Icon = () => <Image src="/logos/claude.svg" alt="Claude" width={24} height={24} className="object-contain" />;
-const Gemini_Icon = () => <Image src="/logos/gemini.svg" alt="Gemini" width={24} height={24} className="object-contain" />;
-const Telegram_Icon = () => <Image src="/logos/Telegram.svg" alt="Telegram" width={22} height={22} className="object-contain" />;
-const WhatsApp_Icon = () => <Image src="/logos/WhatsApp.svg" alt="WhatsApp" width={22} height={22} className="object-contain" />;
+// --- UPDATED: Standardized sizes for all logos (24x24) ---
+const OpenAI_Icon = () => <Image src="/logos/openai.svg" alt="OpenAI" width={24} height={24} />;
+const Claude_Icon = () => <Image src="/logos/claude.svg" alt="Claude" width={24} height={24} />;
+const Gemini_Icon = () => <Image src="/logos/gemini.svg" alt="Gemini" width={24} height={24} />;
+const Telegram_Icon = () => <Image src="/logos/Telegram.svg" alt="Telegram" width={24} height={24} />;
+const WhatsApp_Icon = () => <Image src="/logos/WhatsApp.svg" alt="WhatsApp" width={24} height={24} />;
 
 // --- Kept existing placeholders ---
 const Soon_Icon = () => <svg viewBox="0 0 24 24" width="24" height="24"><path fill="#FFB900" d="M12 2a10 10 0 00-7.07 17.07l1.41-1.41A8 8 0 1120 12h2a10 10 0 00-10-10z"/><path fill="#F25022" d="M2 12a10 10 0 0017.07 7.07l-1.41-1.41A8 8 0 014 12H2z"/><path fill="#7FBA00" d="M12 22a10 10 0 007.07-17.07l-1.41 1.41A8 8 0 0112 20v2z"/><path fill="#00A4EF" d="M22 12A10 10 0 004.93 4.93l1.41 1.41A8 8 0 0120 12h2z"/></svg>;
