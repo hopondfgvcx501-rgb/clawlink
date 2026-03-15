@@ -3,7 +3,7 @@ import Razorpay from "razorpay";
 
 export async function POST(req: Request) {
   try {
-    // 🚀 NEW: Frontend se amount ke sath Email, Plan, aur Model bhi le rahe hain
+    // 🚀 Frontend se amount ke sath Email, Plan, aur Model le rahe hain
     const { amount, currency, email, planName, selectedModel } = await req.json();
 
     if (!email) {
@@ -16,16 +16,20 @@ export async function POST(req: Request) {
       key_secret: process.env.RAZORPAY_KEY_SECRET!,
     });
 
+    // 🔒 SAFETY CHECK: Razorpay strictly expects integer in PAISE.
+    // Math.round() ensures there are no decimal points that could crash the payment.
+    const safeAmount = Math.round(amount);
+
     // Order create kar rahe hain
     const options = {
-      amount: amount, // Amount in paise/cents
-      currency: currency || "USD",
+      amount: safeAmount, // Amount in paise/cents safely rounded
+      currency: currency || "INR", // Changed default to INR for India
       receipt: `receipt_${Date.now()}`,
       // 🔒 THE MAGIC FIX: Ye notes webhook ko batayenge ki kya save karna hai
       notes: {
         email: email,
         plan_name: planName || "Unknown",
-        selected_model: selectedModel || "google" // frontend se aaya hua model (claude/openai/google)
+        selected_model: selectedModel || "google" // frontend se aaya hua model
       }
     };
 
