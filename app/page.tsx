@@ -23,12 +23,14 @@ const OpenAI_Icon = () => <Image src="/logos/openai.svg" alt="OpenAI" width={24}
 const Claude_Icon = () => <Image src="/logos/claude.svg" alt="Claude" width={24} height={24} />;
 const Gemini_Icon = () => <Image src="/logos/gemini.svg" alt="Gemini" width={24} height={24} />;
 
-// 🚀 Llama 4 (Disabled) & Omni Icons
-const Llama_Icon = () => <img src="/logos/llama.svg" alt="Llama 4" className="w-5 h-5 object-contain" />; 
-const Omni_Icon = () => <img src="/logos/omni.jpg" alt="OmniAgent Nexus" className="w-6 h-6 rounded-full object-cover shadow-[0_0_15px_rgba(0,198,255,0.8)] border border-[#00c6ff]/50" />;
+// 🚀 Llama 4 Maverick & Omni Icons
+const Llama_Icon = () => <img src="/logos/llama 4 maverick.svg" alt="Llama 4 Maverick" className="w-5 h-5 object-contain" />; 
+const Omni_Icon = () => <img src="/logos/omniagentnexus.svg" alt="OmniAgent Nexus" className="w-6 h-6 object-contain drop-shadow-[0_0_5px_rgba(0,198,255,0.4)]" />;
 
-const Telegram_Icon = () => <Image src="/logos/Telegram.svg" alt="Telegram" width={24} height={24} />;
-const WhatsApp_Icon = () => <Image src="/logos/WhatsApp.svg" alt="WhatsApp" width={24} height={24} />;
+// 🚀 Dynamic Sizes for Channel Icons
+const Telegram_Icon = ({ size = 28 }: { size?: number }) => <Image src="/logos/Telegram.svg" alt="Telegram" width={size} height={size} />;
+const WhatsApp_Icon = ({ size = 28 }: { size?: number }) => <Image src="/logos/WhatsApp.svg" alt="WhatsApp" width={size} height={size} />;
+
 const Discord_Icon = () => <svg viewBox="0 0 24 24" width="22" height="22" fill="#5865F2"><path d="M20.3 5.4c-1.6-.7-3.4-1.2-5.2-1.5-.2.4-.4.9-.6 1.3-1.9-.3-3.8-.3-5.7 0-.2-.4-.4-.9-.6-1.3-1.8.3-3.6.8-5.2 1.5-3.3 4.9-4.2 9.7-3.3 14.4 2.2 1.6 4.3 2.6 6.4 3.2.5-.7 1-1.5 1.4-2.3-1.2-.5-2.4-1.1-3.5-1.8.3-.2.6-.4.9-.7 4.6 2.1 9.7 2.1 14.3 0 .3.2.6.5.9.7-1.1.7-2.3 1.3-3.5 1.8.4.8.9 1.6 1.4 2.3 2.1-.6 4.2-1.6 6.4-3.2 1-5.1.1-10-3.2-14.4zm-11.7 11c-1.3 0-2.4-1.2-2.4-2.6s1.1-2.6 2.4-2.6 2.4 1.2 2.4 2.6-1.1 2.6-2.4 2.6zm6.8 0c-1.3 0-2.4-1.2-2.4-2.6s1.1-2.6 2.4-2.6 2.4 1.2 2.4 2.6-1.1 2.6-2.4 2.6z"/></svg>;
 const Instagram_Icon = () => <div className="w-[22px] h-[22px] rounded-md bg-gradient-to-tr from-[#f09433] via-[#e6683c] to-[#bc1888] flex items-center justify-center"><div className="w-[16px] h-[16px] border-[2px] border-white rounded-[4px] flex items-center justify-center"><div className="w-[6px] h-[6px] bg-white rounded-full"></div></div></div>;
 const Google_Icon = () => <svg viewBox="0 0 24 24" width="24" height="24"><path fill="#EA4335" d="M5.266 9.765A7.077 7.077 0 0112 4.909c1.69 0 3.218.6 4.418 1.582L19.91 3C17.782 1.145 15.055 0 12 0 7.27 0 3.198 2.698 1.24 6.65l4.026 3.115Z"/><path fill="#34A853" d="M16.04 18.013c-1.09.703-2.474 1.078-4.04 1.078a7.077 7.077 0 01-6.723-4.823l-4.04 3.067A11.965 11.965 0 0012 24c2.933 0 5.735-1.043 7.834-3l-3.793-2.987Z"/><path fill="#4A90E2" d="M19.834 21c2.195-2.048 3.62-5.096 3.62-9 0-.71-.109-1.473-.272-2.182H12v4.637h6.436c-.317 1.559-1.17 2.766-2.395 3.558L19.834 21Z"/><path fill="#FBBC05" d="M5.277 14.268A7.12 7.12 0 014.909 12c0-.782.125-1.533.357-2.235L1.24 6.65A11.934 11.934 0 000 12c0 1.92.445 3.73 1.237 5.335l4.04-3.067Z"/></svg>;
@@ -359,19 +361,19 @@ export default function Home() {
                 </div>
               </button>
 
-              {/* 🚀 THE OMNIAGENT NEXUS BUTTON (Super Glow & Fast) */}
+              {/* 🚀 THE OMNIAGENT NEXUS BUTTON (Black Text, Cyan Glow) */}
               <button 
                 onClick={() => { if(!isTokenSaved) { setActiveModel("omni"); setSelectedTier(null); } }} 
-                className={`shrink-0 bg-gradient-to-r from-[#020b1c] to-[#011e40] border border-[#00c6ff]/50 rounded-full px-4 py-2 flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(0,198,255,0.3)] transition-all duration-100 hover:scale-110 hover:shadow-[0_0_35px_rgba(0,198,255,0.8)] snap-center ${activeModel === 'omni' ? 'ring-[3px] ring-[#00c6ff] shadow-[0_0_35px_rgba(0,198,255,0.8)] scale-110' : ''} ${isTokenSaved && activeModel !== 'omni' ? 'opacity-30 pointer-events-none' : ''}`}
+                className={`shrink-0 bg-white border border-[#00BFFF]/50 rounded-full px-4 py-2 flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(0,198,255,0.3)] transition-all duration-100 hover:scale-110 hover:shadow-[0_0_35px_rgba(0,198,255,0.8)] snap-center ${activeModel === 'omni' ? 'ring-[3px] ring-[#00BFFF] shadow-[0_0_35px_rgba(0,198,255,0.8)] scale-110' : ''} ${isTokenSaved && activeModel !== 'omni' ? 'opacity-30 pointer-events-none' : ''}`}
               >
                 <Omni_Icon />
                 <div className="text-left flex flex-col justify-center leading-none">
-                  <span className="bg-gradient-to-r from-[#0052D4] to-[#00BFFF] bg-clip-text text-transparent font-bold text-sm md:text-[15px] tracking-wide">OmniAgent</span>
+                  <span className="text-[#000000] font-black text-sm md:text-[15px] tracking-wide">OmniAgent</span>
                   <span className="text-[#00BFFF] text-[9px] md:text-[10px] font-bold mt-0.5 tracking-widest uppercase">Nexus</span>
                 </div>
               </button>
 
-              {/* 🚀 THE LLAMA 4 BUTTON (Disabled / Visual Only) */}
+              {/* 🚀 THE LLAMA 4 MAVERICK BUTTON (Disabled / Visual Only) */}
               <div className="shrink-0 bg-white/90 rounded-full px-4 py-2 flex items-center justify-center gap-2 shadow-xl cursor-not-allowed opacity-60 snap-center transition-all duration-100 hover:shadow-[0_0_20px_rgba(255,255,255,0.2)]">
                 <Llama_Icon />
                 <div className="text-left flex flex-col justify-center leading-none">
@@ -388,27 +390,27 @@ export default function Home() {
                 onClick={() => !isTokenSaved && setActiveChannel("telegram")} 
                 className={`bg-white rounded px-6 py-3 flex items-center justify-center gap-3 shadow-md transition-all duration-100 hover:scale-110 hover:shadow-[0_0_20px_rgba(255,255,255,0.5)] min-w-[140px] ${activeChannel === 'telegram' ? 'ring-[3px] ring-blue-500 shadow-[0_0_20px_rgba(59,130,246,0.6)] scale-110' : ''} ${isTokenSaved && activeChannel !== 'telegram' ? 'opacity-30 pointer-events-none' : ''}`}
               >
-                <Telegram_Icon />
-                <span className="text-base text-gray-700">Telegram</span>
+                <Telegram_Icon size={28} />
+                <span className="text-base text-gray-700 font-bold">Telegram</span>
               </button>
               <button 
                 onClick={() => !isTokenSaved && setActiveChannel("whatsapp")} 
                 className={`bg-white rounded px-6 py-3 flex items-center justify-center gap-3 shadow-md transition-all duration-100 hover:scale-110 hover:shadow-[0_0_20px_rgba(255,255,255,0.5)] min-w-[140px] ${activeChannel === 'whatsapp' ? 'ring-[3px] ring-green-500 shadow-[0_0_20px_rgba(34,197,94,0.6)] scale-110' : ''} ${isTokenSaved && activeChannel !== 'whatsapp' ? 'opacity-30 pointer-events-none' : ''}`}
               >
-                <WhatsApp_Icon />
-                <span className="text-base text-gray-700">whatsapp</span>
+                <WhatsApp_Icon size={28} />
+                <span className="text-base text-gray-700 font-bold">WhatsApp</span>
               </button>
               <button className={`bg-white rounded px-4 py-2 flex items-center justify-center gap-3 shadow-md cursor-not-allowed min-w-[140px] ${isTokenSaved ? 'opacity-20' : ''}`}>
                 <Discord_Icon/>
                 <div className="text-left flex flex-col leading-tight">
-                  <span className="text-base text-gray-700">discord</span>
+                  <span className="text-base text-gray-700 font-bold">Discord</span>
                   <span className="text-[11px] text-gray-500">coming soon</span>
                 </div>
               </button>
               <button className={`bg-white rounded px-4 py-2 flex items-center justify-center gap-3 shadow-md cursor-not-allowed min-w-[140px] ${isTokenSaved ? 'opacity-20' : ''}`}>
                 <Instagram_Icon/>
                  <div className="text-left flex flex-col leading-tight">
-                   <span className="text-base text-gray-700">instagram</span>
+                   <span className="text-base text-gray-700 font-bold">Instagram</span>
                    <span className="text-[11px] text-gray-500">coming soon</span>
                  </div>
               </button>
