@@ -267,12 +267,6 @@ export default function Home() {
   return (
     <div className="bg-[#1C1D21] min-h-screen relative text-[#EDEDED] font-sans selection:bg-orange-500/30 overflow-x-hidden">
       
-      {/* 🚀 CSS for hiding scrollbar on the horizontal list */}
-      <style dangerouslySetInnerHTML={{__html: `
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-      `}} />
-
       {/* 🚀 FIXED CINEMATIC SUNSET GLOW EFFECT */}
       <div className="fixed top-[-10%] right-[-5%] w-[600px] h-[600px] bg-orange-500/20 rounded-full blur-[150px] pointer-events-none z-0"></div>
       <div className="fixed bottom-[-10%] left-[-10%] w-[600px] h-[600px] bg-indigo-500/20 rounded-full blur-[150px] pointer-events-none z-0"></div>
@@ -341,48 +335,55 @@ export default function Home() {
 
             <h3 className="text-white text-xl md:text-2xl mb-4 font-serif tracking-tight">Choose a model to use as your default !</h3>
             
-            {/* 🚀 5 BUTTONS IN A SINGLE LINE (Scrollable on mobile) */}
-            <div className="flex flex-nowrap justify-start lg:justify-center items-center gap-3 mb-10 w-full max-w-[800px] px-2 py-2 overflow-x-auto no-scrollbar snap-x">
+            {/* 🚀 5 PERFECTLY SIZED BUTTONS IN A LINE */}
+            <div className="flex flex-wrap justify-center items-center gap-2 md:gap-3 mb-10 w-full max-w-4xl px-2">
               
               <button 
                 onClick={() => { if(!isTokenSaved) { setActiveModel("gpt-5.2"); setSelectedTier(null); } }} 
-                className={`shrink-0 bg-white rounded-full px-5 py-2.5 flex items-center gap-2 shadow-xl transition-all duration-150 hover:scale-105 snap-center ${activeModel === 'gpt-5.2' ? 'ring-[3px] ring-blue-500 scale-105' : ''} ${isTokenSaved && activeModel !== 'gpt-5.2' ? 'opacity-30 pointer-events-none' : ''}`}
+                className={`bg-white rounded-full px-4 py-2 flex items-center justify-center gap-2 shadow-xl transition-all duration-150 hover:scale-105 ${activeModel === 'gpt-5.2' ? 'ring-[3px] ring-blue-500 scale-105' : ''} ${isTokenSaved && activeModel !== 'gpt-5.2' ? 'opacity-30 pointer-events-none' : ''}`}
               >
                 <OpenAI_Icon />
-                <span className="text-[#10A37F] font-semibold text-sm md:text-lg tracking-tight">gpt-5.2</span>
+                <span className="text-[#10A37F] font-bold text-sm md:text-[15px] tracking-tight">GPT-5.2</span>
               </button>
 
               <button 
                 onClick={() => { if(!isTokenSaved) { setActiveModel("claude"); setSelectedTier(null); } }} 
-                className={`shrink-0 bg-white rounded-full px-4 py-2 flex items-center gap-2 shadow-xl transition-all duration-150 hover:scale-105 snap-center ${activeModel === 'claude' ? 'ring-[3px] ring-blue-500 scale-105' : ''} ${isTokenSaved && activeModel !== 'claude' ? 'opacity-30 pointer-events-none' : ''}`}
+                className={`bg-white rounded-full px-4 py-2 flex items-center justify-center gap-2 shadow-xl transition-all duration-150 hover:scale-105 ${activeModel === 'claude' ? 'ring-[3px] ring-blue-500 scale-105' : ''} ${isTokenSaved && activeModel !== 'claude' ? 'opacity-30 pointer-events-none' : ''}`}
               >
                 <Claude_Icon />
-                <div className="text-left flex items-center gap-1.5">
-                  <span className="text-[#D97757] font-semibold text-sm md:text-lg tracking-tight">Claude</span>
-                  <span className="text-[#D97757] text-[9px] md:text-[10px] font-bold leading-none mt-1">Opus<br/>4.6</span>
+                <div className="text-left flex flex-col justify-center leading-none">
+                  <span className="text-[#D97757] font-bold text-sm md:text-[15px] tracking-tight">Claude</span>
+                  <span className="text-[#D97757] text-[9px] md:text-[10px] font-bold mt-0.5">Opus 4.6</span>
                 </div>
               </button>
 
               <button 
                 onClick={() => { if(!isTokenSaved) { setActiveModel("gemini"); setSelectedTier(null); } }} 
-                className={`shrink-0 bg-white rounded-full px-5 py-2.5 flex items-center gap-2 shadow-xl transition-all duration-150 hover:scale-105 snap-center ${activeModel === 'gemini' ? 'ring-[3px] ring-blue-500 scale-105' : ''} ${isTokenSaved && activeModel !== 'gemini' ? 'opacity-30 pointer-events-none' : ''}`}
+                className={`bg-white rounded-full px-4 py-2 flex items-center justify-center gap-2 shadow-xl transition-all duration-150 hover:scale-105 ${activeModel === 'gemini' ? 'ring-[3px] ring-blue-500 scale-105' : ''} ${isTokenSaved && activeModel !== 'gemini' ? 'opacity-30 pointer-events-none' : ''}`}
               >
                 <Gemini_Icon />
-                <span className="text-[#648AF5] font-semibold text-sm md:text-[17px] tracking-tight whitespace-nowrap">Gemini 3 flash</span>
+                <div className="text-left flex flex-col justify-center leading-none">
+                  <span className="text-[#648AF5] font-bold text-sm md:text-[15px] tracking-tight">Gemini</span>
+                  <span className="text-[#648AF5] text-[9px] md:text-[10px] font-bold mt-0.5">3 Flash</span>
+                </div>
               </button>
 
-              {/* 🚀 THE NEW OMNIAGENT NEXUS BUTTON */}
+              {/* 🚀 OMNIAGENT NEXUS (Stacked Text for Perfect Width) */}
               <button 
                 onClick={() => { if(!isTokenSaved) { setActiveModel("omni"); setSelectedTier(null); } }} 
-                className={`shrink-0 bg-gradient-to-r from-gray-900 to-[#18181b] border border-white/20 rounded-full px-5 py-2.5 flex items-center gap-2 shadow-[0_0_15px_rgba(255,255,255,0.1)] transition-all duration-150 hover:scale-105 snap-center ${activeModel === 'omni' ? 'ring-[3px] ring-purple-500 shadow-[0_0_25px_rgba(168,85,247,0.5)] scale-105' : ''} ${isTokenSaved && activeModel !== 'omni' ? 'opacity-30 pointer-events-none' : ''}`}
+                className={`bg-gradient-to-r from-gray-900 to-[#18181b] border border-white/20 rounded-full px-4 py-2 flex items-center justify-center gap-2 shadow-[0_0_15px_rgba(255,255,255,0.1)] transition-all duration-150 hover:scale-105 ${activeModel === 'omni' ? 'ring-[3px] ring-purple-500 shadow-[0_0_25px_rgba(168,85,247,0.5)] scale-105' : ''} ${isTokenSaved && activeModel !== 'omni' ? 'opacity-30 pointer-events-none' : ''}`}
               >
                 <Omni_Icon />
-                <span className="bg-gradient-to-r from-purple-400 to-pink-500 bg-clip-text text-transparent font-black text-sm md:text-[16px] tracking-widest whitespace-nowrap">OmniAgent Nexus</span>
+                <div className="text-left flex flex-col justify-center leading-none">
+                  <span className="bg-gradient-to-r from-purple-400 to-pink-500 bg-clip-text text-transparent font-bold text-sm md:text-[15px] tracking-wide">OmniAgent</span>
+                  <span className="text-purple-400 text-[9px] md:text-[10px] font-bold mt-0.5 tracking-widest uppercase">Nexus</span>
+                </div>
               </button>
 
-              <div className={`shrink-0 bg-white rounded-full px-5 py-2.5 flex items-center gap-2 shadow-xl cursor-not-allowed opacity-90 snap-center ${isTokenSaved ? 'opacity-20' : ''}`}>
+              {/* 🚀 SOON BUTTON */}
+              <div className={`bg-white rounded-full px-4 py-2 flex items-center justify-center gap-2 shadow-xl cursor-not-allowed opacity-90 ${isTokenSaved ? 'opacity-20' : ''}`}>
                 <Soon_Icon />
-                <span className="font-bold text-sm md:text-[17px] text-gray-800 tracking-tight">soon</span>
+                <span className="font-bold text-sm md:text-[15px] text-gray-800 tracking-tight">Soon</span>
               </div>
             </div>
 
