@@ -17,18 +17,18 @@ export default function Dashboard() {
   const { data: session, status } = useSession();
   const router = useRouter();
   
-  // 🚀 CORE STATES
+  // Core States
   const [userData, setUserData] = useState<any>(null);
   const [billingHistory, setBillingHistory] = useState<any[]>([]);
   const [stats, setStats] = useState<any>(null); 
   const [isLoading, setIsLoading] = useState(true);
   const [showAppBanner, setShowAppBanner] = useState(true);
   
-  // 🚀 PERSONA STATES
+  // Persona States
   const [systemPrompt, setSystemPrompt] = useState("");
   const [isSavingPrompt, setIsSavingPrompt] = useState(false);
 
-  // 🚀 RAG KNOWLEDGE BASE STATES
+  // RAG Knowledge Base States
   const [knowledgeText, setKnowledgeText] = useState("");
   const [isInjecting, setIsInjecting] = useState(false);
   const [knowledgeItems, setKnowledgeItems] = useState<any[]>([]);
@@ -169,36 +169,37 @@ Thank you for choosing ClawLink Enterprise AI.
     );
   }
 
-  // 🚀 UI LOGIC CALCULATIONS
+  // UI Logic Calculations
   const currentPlan = userData?.plan?.toLowerCase() || "starter";
-  const isPremium = currentPlan === "pro" || currentPlan === "max";
+  const isPremium = currentPlan === "pro" || currentPlan === "max" || currentPlan === "monthly" || currentPlan === "yearly";
   const showTokens = !isPremium; 
   const usagePercentage = isPremium ? 100 : Math.min(((stats?.tokensUsed || 0) / (stats?.tokensAllocated || 1)) * 100, 100);
   const totalMsgs = (stats?.platformStats?.whatsapp || 0) + (stats?.platformStats?.telegram || 0) + (stats?.platformStats?.web || 0);
 
-  // 🚀 FOOLPROOF MODEL EXTRACTOR
-  const getModelDisplayName = () => {
-    const dbValues = [
-      stats?.activeModel, stats?.ai_provider, stats?.selectedModel,
-      userData?.selected_model, userData?.selectedModel, userData?.ai_provider, userData?.ai_model
-    ].filter(Boolean).join(" ").toLowerCase();
+  // Omni-Powered Identity Verification
+  const dbValues = [
+    stats?.activeModel, stats?.ai_provider, stats?.selectedModel,
+    userData?.selected_model, userData?.selectedModel, userData?.ai_provider, userData?.ai_model
+  ].filter(Boolean).join(" ").toLowerCase();
 
+  const isOmniActive = dbValues.includes("omni") || dbValues.includes("multi_model") || currentPlan === "monthly" || currentPlan === "yearly";
+
+  const getModelDisplayName = () => {
+    if (isOmniActive) return "🌌 OmniAgent Nexus";
     if (dbValues.includes("gemini") || dbValues.includes("google")) return "Gemini 3 (Flash)";
     if (dbValues.includes("claude") || dbValues.includes("anthropic")) return "Claude 3 (Opus 4.6)";
     if (dbValues.includes("gpt") || dbValues.includes("openai")) return "GPT-5.2 (Turbo)";
-    
     return "NOT SET";
   };
 
-  // Channels Logic
+  // Live Channels Logic
   const isTelegramLive = !!userData?.telegram_token || !!userData?.telegramActive;
   const isWhatsappLive = !!userData?.whatsapp_token || !!userData?.whatsapp_phone_id || !!userData?.whatsappActive;
 
-  // 🚀 THE ULTIMATE LIVE BOT REDIRECT LOGIC
+  // Ultimate Live Bot Redirect Logic
   const handleOpenLiveBot = async () => {
     if (isTelegramLive && userData?.telegram_token) {
       try {
-        // Smartly fetch the user's exact bot username using their token directly from Telegram!
         const res = await fetch(`https://api.telegram.org/bot${userData.telegram_token}/getMe`);
         const data = await res.json();
         if (data.ok && data.result.username) {
@@ -208,20 +209,18 @@ Thank you for choosing ClawLink Enterprise AI.
       } catch (e) {
         console.error("Failed to fetch exact telegram bot link");
       }
-      // Fallback if network fails
       window.open("https://web.telegram.org", "_blank"); 
     } else if (isWhatsappLive) {
-      // Open WhatsApp direct chat
       window.open("https://web.whatsapp.com", "_blank"); 
     } else {
-      router.push(`/widget?email=${session?.user?.email}`); // Fallback to Web Widget
+      router.push(`/widget?email=${session?.user?.email}`); 
     }
   };
 
   return (
     <div className="w-full min-h-screen bg-[#0A0A0B] text-[#EDEDED] font-sans relative selection:bg-orange-500/30 overflow-y-auto custom-scrollbar flex flex-col">
       
-      {/* 🌇 CINEMATIC SUNSET GLOW EFFECT */}
+      {/* CINEMATIC SUNSET GLOW EFFECT */}
       <div className="fixed top-[-10%] right-[0%] w-[600px] h-[500px] bg-orange-600/10 rounded-full blur-[150px] pointer-events-none z-0"></div>
       <div className="fixed bottom-[-10%] left-[0%] w-[500px] h-[500px] bg-indigo-600/10 rounded-full blur-[150px] pointer-events-none z-0"></div>
 
@@ -232,7 +231,6 @@ Thank you for choosing ClawLink Enterprise AI.
           <p className="text-sm text-gray-400 mt-1">Welcome back, {session?.user?.name?.split(' ')[0] || 'Agent'}. Your AI fleet is active.</p>
         </div>
         <div className="flex items-center gap-4">
-          {/* 🚀 BUTTON TEXT AND CLICK LOGIC UPDATED TO YOUR EXACT ORDER */}
           <button 
             onClick={handleOpenLiveBot}
             className="hidden sm:flex items-center gap-2 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white px-5 py-2.5 rounded-full font-bold text-xs uppercase tracking-widest shadow-[0_0_20px_rgba(59,130,246,0.3)] transition-all transform hover:scale-105"
@@ -261,14 +259,14 @@ Thank you for choosing ClawLink Enterprise AI.
             >
               <div className="flex items-center gap-3 text-blue-200 text-sm font-medium">
                 <Smartphone className="w-5 h-5 text-blue-400 flex-shrink-0" />
-                <p>For the best experience, click <strong className="text-white">"Add to Home Screen"</strong> in your browser menu to install the ClawLink Web App.</p>
+                <p>For the optimal experience, click <strong className="text-white">"Add to Home Screen"</strong> in your browser menu to install the ClawLink Web App.</p>
               </div>
               <button onClick={() => setShowAppBanner(false)} className="text-gray-400 hover:text-white flex-shrink-0 bg-white/5 p-2 rounded-full">✕</button>
             </motion.div>
           )}
         </AnimatePresence>
 
-        {/* 🚀 OVERVIEW: PLAN, MODEL & CHANNELS */}
+        {/* OVERVIEW: PLAN, MODEL & CHANNELS */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           
           {/* PLAN CARD */}
@@ -290,7 +288,7 @@ Thank you for choosing ClawLink Enterprise AI.
             </div>
           </motion.div>
 
-          {/* MODEL CARD */}
+          {/* AI MODEL CARD */}
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="bg-[#1C1C1E] border border-white/5 p-6 rounded-[1.5rem] shadow-xl flex justify-between items-center relative overflow-hidden group hover:border-white/10 transition-colors">
             <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/5 rounded-full blur-3xl group-hover:bg-purple-500/10 transition-colors"></div>
             <div className="relative z-10">
@@ -298,7 +296,14 @@ Thank you for choosing ClawLink Enterprise AI.
               <p className="text-2xl font-black text-white font-sans tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-blue-400 mt-2">
                 {getModelDisplayName()}
               </p>
-              <p className="text-[10px] text-gray-500 font-mono mt-1">Multi-modal AI Engine</p>
+              {isOmniActive ? (
+                <div className="mt-2 flex items-center gap-2">
+                  <span className="w-2 h-2 bg-[#00BFFF] rounded-full animate-pulse shadow-[0_0_8px_#00BFFF]"></span>
+                  <span className="text-[#00BFFF] text-[9px] font-black tracking-widest uppercase">3x Matrix: GPT • Claude • Gemini</span>
+                </div>
+              ) : (
+                <p className="text-[10px] text-gray-500 font-mono mt-1">Single-modal AI Engine</p>
+              )}
             </div>
             <div className="w-12 h-12 rounded-xl bg-purple-500/10 flex items-center justify-center text-purple-500 border border-purple-500/20 relative z-10">
               <BrainCircuit className="w-6 h-6"/>
@@ -321,9 +326,11 @@ Thank you for choosing ClawLink Enterprise AI.
                     <span className="w-2 h-2 bg-blue-400 rounded-full animate-pulse"></span> Telegram Bot
                   </div>
                 )}
-                <div className="flex items-center gap-2 text-sm font-bold text-white">
-                  <span className="w-2 h-2 bg-purple-500 rounded-full"></span> Web Widget
-                </div>
+                {(!isWhatsappLive && !isTelegramLive) && (
+                  <div className="flex items-center gap-2 text-sm font-bold text-white">
+                    <span className="w-2 h-2 bg-purple-500 rounded-full animate-pulse"></span> Web Widget
+                  </div>
+                )}
               </div>
             </div>
             <div className="w-12 h-12 rounded-xl bg-green-500/10 flex items-center justify-center text-green-500 border border-green-500/20 relative z-10 shrink-0">
@@ -333,7 +340,7 @@ Thank you for choosing ClawLink Enterprise AI.
 
         </div>
 
-        {/* 🚀 DATA ANALYTICS: METRICS CARDS */}
+        {/* DATA ANALYTICS: METRICS CARDS */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="bg-[#1C1C1E] border border-white/5 p-6 rounded-[1.5rem] shadow-xl relative overflow-hidden group hover:border-white/10 transition-colors">
             <div className="absolute top-0 right-0 w-32 h-32 bg-orange-500/5 rounded-full blur-3xl group-hover:bg-orange-500/10 transition-colors"></div>
@@ -375,7 +382,7 @@ Thank you for choosing ClawLink Enterprise AI.
           </motion.div>
         </div>
 
-        {/* 🚀 DATA ANALYTICS: CHARTS & ROUTING */}
+        {/* DATA ANALYTICS: CHARTS & ROUTING */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.5 }} className="lg:col-span-2 bg-[#1C1C1E] border border-white/5 p-6 md:p-8 rounded-[1.5rem] shadow-xl">
             <h3 className="text-sm font-bold uppercase tracking-widest text-gray-400 mb-8">AI Traffic (Last 7 Days)</h3>
@@ -426,13 +433,13 @@ Thank you for choosing ClawLink Enterprise AI.
           </motion.div>
         </div>
 
-        {/* 🚀 AI SETTINGS (PROMPT & RAG) */}
+        {/* AI SETTINGS (PROMPT & RAG) */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.7 }} className="bg-[#1C1C1E] border border-white/5 rounded-[1.5rem] p-8 shadow-2xl relative flex flex-col">
             <h3 className="text-lg font-bold text-white mb-2 tracking-wide flex items-center gap-2">🤖 AI Persona Configuration</h3>
             <p className="text-sm text-gray-400 mb-6">Define exactly how your AI agent should behave, speak, and respond to users.</p>
-            <textarea rows={6} value={systemPrompt} onChange={(e) => setSystemPrompt(e.target.value)} placeholder="e.g., You are a friendly customer support agent for ClawLink. Always answer in Hinglish..." className="flex-1 w-full bg-black/50 border border-white/10 rounded-xl p-4 text-sm text-gray-200 focus:border-blue-500 focus:shadow-[0_0_15px_rgba(59,130,246,0.15)] focus:outline-none transition-all resize-none mb-6 font-mono custom-scrollbar" />
+            <textarea rows={6} value={systemPrompt} onChange={(e) => setSystemPrompt(e.target.value)} placeholder="e.g., You are a friendly customer support agent for ClawLink..." className="flex-1 w-full bg-black/50 border border-white/10 rounded-xl p-4 text-sm text-gray-200 focus:border-blue-500 focus:shadow-[0_0_15px_rgba(59,130,246,0.15)] focus:outline-none transition-all resize-none mb-6 font-mono custom-scrollbar" />
             <div className="flex justify-end mt-auto">
               <button onClick={handleSavePrompt} disabled={isSavingPrompt} className="bg-white text-black px-8 py-3.5 rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-gray-200 transition-transform hover:scale-[1.02] shadow-[0_0_20px_rgba(255,255,255,0.1)] disabled:opacity-50 disabled:scale-100">
                 {isSavingPrompt ? "Saving..." : <><Save className="w-4 h-4"/> Save Persona</>}
@@ -468,7 +475,7 @@ Thank you for choosing ClawLink Enterprise AI.
 
         </div>
 
-        {/* 🚀 BILLING & INVOICES */}
+        {/* BILLING & INVOICES */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.9 }} className="bg-[#1C1C1E] border border-white/5 rounded-[1.5rem] overflow-hidden shadow-2xl">
           <div className="p-6 md:p-8 border-b border-white/5 flex items-center justify-between bg-[#1A1A1A]">
             <div className="flex items-center gap-3">
