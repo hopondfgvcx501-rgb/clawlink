@@ -9,7 +9,6 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    // 🚨 FIX: Added waPhoneId and plan to extraction
     const { email, selectedModel, selectedChannel, telegramToken, waPhoneId, plan } = body;
 
     if (!email) {
@@ -22,9 +21,19 @@ export async function POST(req: Request) {
     let allocatedTokens = 10000;
     let isUnlimited = false;
 
+    // Plan Allowances
     if (plan === "starter") allocatedTokens = 50000;
     else if (plan === "pro") allocatedTokens = 500000; 
-    else if (plan === "max") { isUnlimited = true; allocatedTokens = 9999999; }
+    else if (plan === "max" || plan === "monthly" || plan === "yearly") { 
+      isUnlimited = true; 
+      allocatedTokens = 9999999; 
+    }
+
+    // 🚀 CRITICAL FIX: Ensure 'multi_model' saves correctly as the provider for OmniAgent
+    let providerToSave = "anthropic"; // default fallback
+    if (selectedModel === "multi_model") providerToSave = "multi_model"; // This triggers the OmniEngine
+    else if (selectedModel === "gpt-5.2") providerToSave = "openai";
+    else if (selectedModel === "gemini") providerToSave = "google";
 
     // 1. UPDATE USER CONFIGURATION
     const { data, error } = await supabase
@@ -32,14 +41,14 @@ export async function POST(req: Request) {
       .upsert({
         email: email,
         ai_model: selectedModel,
-        ai_provider: selectedModel === "gpt-5.2" ? "openai" : selectedModel === "gemini" ? "google" : "anthropic",
+        ai_provider: providerToSave, // 🚦 SAVED CORRECTLY FOR ROUTER
         telegram_token: selectedChannel === "telegram" ? telegramToken : null,
         whatsapp_token: selectedChannel === "whatsapp" ? telegramToken : null,
-        whatsapp_phone_id: selectedChannel === "whatsapp" ? waPhoneId : null, // 🚨 CRITICAL FIX for Webhook Routing
-        tokens_allocated: allocatedTokens, // Added for Dashboard Sync
+        whatsapp_phone_id: selectedChannel === "whatsapp" ? waPhoneId : null, 
+        tokens_allocated: allocatedTokens, 
         available_tokens: allocatedTokens,
         is_unlimited: isUnlimited,
-        plan: plan, // 🚨 FIX: Added plan name for dashboard
+        plan: plan, 
         plan_status: 'Active',
         expires_at: expiryDate.toISOString()
       }, { onConflict: "email" })
@@ -47,16 +56,18 @@ export async function POST(req: Request) {
 
     if (error) throw error;
 
-    // 2. 🚨 FIX: RECORD BILLING HISTORY FOR DASHBOARD INVOICES
-    let amount = "19.00";
+    // 2. RECORD BILLING HISTORY FOR DASHBOARD INVOICES
+    let amount = "19.00"; // Fallback
     if (plan === "pro") amount = "39.00";
     if (plan === "max") amount = "89.00";
+    if (plan === "monthly") amount = "79.00"; // Omni Monthly
+    if (plan === "yearly") amount = "790.00"; // Omni Yearly
 
     await supabase.from("billing_history").insert({
       email: email,
       plan_name: plan,
       amount: amount,
-      currency: "USD", // Assumes USD for international SaaS
+      currency: "USD", 
       status: "PAID",
       razorpay_order_id: "DEPLOY_" + Math.random().toString(36).substring(7).toUpperCase()
     });
@@ -70,8 +81,8 @@ export async function POST(req: Request) {
         if (tData.ok) {
           botLink = `https://t.me/${tData.result.username}`;
           
-          // 🚀 BONUS: AUTO-REGISTER TELEGRAM WEBHOOK (Zero manual effort for customer)
-          const webhookUrl = `https://clawlink-six.vercel.app/api/webhook/telegram`;
+          // 🚀 AUTO-REGISTER TELEGRAM WEBHOOK
+          const webhookUrl = `https://clawlink-six.vercel.app/api/webhook/telegram?email=${email}`;
           await fetch(`https://api.telegram.org/bot${telegramToken}/setWebhook?url=${webhookUrl}`);
         }
       } catch (err) {
@@ -90,7 +101,7 @@ export async function POST(req: Request) {
         
         <div style="background: #111; padding: 20px; border-radius: 10px; border: 1px solid #222; margin: 20px 0;">
           <p style="margin: 5px 0; color: #aaa;"><strong>Plan:</strong> <span style="color: #fff; text-transform: uppercase;">${plan}</span></p>
-          <p style="margin: 5px 0; color: #aaa;"><strong>AI Engine:</strong> <span style="color: #fff; text-transform: uppercase;">${selectedModel}</span></p>
+          <p style="margin: 5px 0; color: #aaa;"><strong>AI Engine:</strong> <span style="color: #fff; text-transform: uppercase;">${selectedModel === 'multi_model' ? 'OmniAgent Nexus' : selectedModel}</span></p>
           <p style="margin: 5px 0; color: #aaa;"><strong>Channel:</strong> <span style="color: #fff; text-transform: capitalize;">${selectedChannel}</span></p>
           <p style="margin: 5px 0; color: #aaa;"><strong>Validity:</strong> <span style="color: #fff;">30 Days</span></p>
         </div>
