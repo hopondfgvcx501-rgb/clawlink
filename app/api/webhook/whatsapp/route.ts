@@ -142,8 +142,11 @@ export async function POST(req: Request) {
         // 🔒 GET STRICT AI PROVIDER FROM DB
         let rawProvider = (config.ai_provider || config.selected_model || "openai").toLowerCase();
         let provider = "openai"; 
-        if (rawProvider.includes("claude") || rawProvider.includes("anthropic")) provider = "anthropic";
-        if (rawProvider.includes("gemini") || rawProvider.includes("google")) provider = "google";
+        
+        // 🚦 Routing Identity Logic
+        if (rawProvider === "multi_model") provider = "omni";
+        else if (rawProvider.includes("claude") || rawProvider.includes("anthropic")) provider = "anthropic";
+        else if (rawProvider.includes("gemini") || rawProvider.includes("google")) provider = "google";
 
         // 4. Token & Plan Verification
         if (!config.is_unlimited && (config.tokens_used >= config.tokens_allocated)) {
@@ -204,22 +207,51 @@ export async function POST(req: Request) {
             email: userEmail, platform: "whatsapp", platform_chat_id: chatId, customer_name: customerName, sender_type: "user", message: userText 
         });
 
-        // 8. 🔒 STRICT INTRA-PROVIDER AI WATERFALL
-        let aiResponse = `API Error: Ensure the API keys for ${provider.toUpperCase()} are added in your Vercel Environment Variables.`;
+        // 8. 🔒 THE SMART ROUTER (Omni vs Normal)
+        let aiResponse = "API Error: Model failed to process request.";
         let wasSuccessful = false;
-        const chain = AI_CHAINS[provider] || AI_CHAINS["openai"];
 
-        for (const modelName of chain) {
+        if (provider === "omni") {
+            // 🚀 ROUTE TO VIP OMNI ENGINE
+            console.log("🚦 Routing request to OmniAgent Nexus Engine...");
+            const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://clawlink-six.vercel.app";
+            
             try {
-                if (provider === "openai") aiResponse = await callOpenAI(modelName, fullContext);
-                else if (provider === "anthropic") aiResponse = await callClaude(modelName, fullContext);
-                else aiResponse = await callGemini(modelName, fullContext);
-                
-                wasSuccessful = true;
-                break; 
-            } catch (err: any) {
-                console.error(`[WhatsApp AI Error] ${modelName} failed:`, err.message);
-                // Continues to fallback model within same provider
+                const omniRes = await fetch(`${baseUrl}/api/omni`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        prompt: userText,
+                        systemPrompt: `System Instructions: ${systemPrompt}\n\nCompany Knowledge:\n${customKnowledge ? customKnowledge : "None."}`,
+                        history: pastChats ? pastChats.reverse().map(chat => ({ role: chat.sender_type === "bot" ? "assistant" : "user", content: chat.message })) : []
+                    })
+                });
+
+                if (omniRes.ok) {
+                    const omniData = await omniRes.json();
+                    if (omniData.success) {
+                        aiResponse = omniData.reply;
+                        wasSuccessful = true;
+                    }
+                }
+            } catch (err) {
+                console.error("❌ Omni Engine call failed:", err);
+            }
+        } else {
+            // 🚗 ROUTE TO NORMAL INTRA-PROVIDER ENGINE
+            console.log(`🚦 Routing request to Normal Engine: ${provider}...`);
+            const chain = AI_CHAINS[provider] || AI_CHAINS["openai"];
+            for (const modelName of chain) {
+                try {
+                    if (provider === "openai") aiResponse = await callOpenAI(modelName, fullContext);
+                    else if (provider === "anthropic") aiResponse = await callClaude(modelName, fullContext);
+                    else aiResponse = await callGemini(modelName, fullContext);
+                    
+                    wasSuccessful = true;
+                    break; 
+                } catch (err: any) {
+                    console.error(`[WhatsApp AI Error] ${modelName} failed:`, err.message);
+                }
             }
         }
 
