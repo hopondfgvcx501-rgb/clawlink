@@ -15,12 +15,13 @@ async function generateEmbedding(text: string) {
   }
 
   try {
-    const embedUrl = `https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent?key=${process.env.GEMINI_API_KEY}`;
+    // FIXED: Switched to the highly stable embedding-001 model to prevent 404 errors
+    const embedUrl = `https://generativelanguage.googleapis.com/v1beta/models/embedding-001:embedContent?key=${process.env.GEMINI_API_KEY}`;
     const res = await fetch(embedUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: "models/text-embedding-004",
+        model: "models/embedding-001", // 🟢 ONLY THIS WAS CHANGED
         content: { parts: [{ text: text }] },
       }),
     });
