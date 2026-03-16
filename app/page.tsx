@@ -426,9 +426,10 @@ export default function Home() {
                   <motion.div key="success" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.1, ease: "easeOut" }} className="w-full bg-green-500/10 border border-green-500/30 p-6 rounded-2xl text-center backdrop-blur-md">
                     <h3 className="text-xl font-bold text-white mb-4">Your Bot is Live! 🚀</h3>
                     <div className="flex flex-col sm:flex-row justify-center gap-4">
-                      <a href={botLink} target="_blank" rel="noopener noreferrer" className="bg-white text-black font-bold px-8 py-4 rounded-xl text-sm transition-transform duration-100 hover:scale-110 w-full sm:w-auto text-center shadow-[0_0_20px_rgba(255,255,255,0.3)]">
+                      {/* FIXED BUTTON FOR SMART REDIRECT */}
+                      <button onClick={() => window.open(activeChannel === 'whatsapp' ? "https://web.whatsapp.com" : botLink, "_blank")} className="bg-white text-black font-bold px-8 py-4 rounded-xl text-sm transition-transform duration-100 hover:scale-110 w-full sm:w-auto text-center shadow-[0_0_20px_rgba(255,255,255,0.3)]">
                         Open Live Bot
-                      </a>
+                      </button>
                       <button onClick={() => router.push('/dashboard')} className="bg-[#1A1A1A] border border-white/20 text-white font-bold px-8 py-4 rounded-xl text-sm transition-colors duration-100 hover:bg-white/10 w-full sm:w-auto flex items-center justify-center gap-2 hover:scale-105">
                         <Activity className="w-4 h-4"/> Dashboard
                       </button>
