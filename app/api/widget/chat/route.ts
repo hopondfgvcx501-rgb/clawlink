@@ -7,7 +7,16 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-// 🚀 AI PROVIDER FUNCTIONS
+// 🚀 STRICT INTRA-PROVIDER FALLBACK ARCHITECTURE (For Normal Models)
+const AI_CHAINS: Record<string, string[]> = {
+    "openai": ["gpt-4-turbo", "gpt-4o", "gpt-3.5-turbo"],
+    "anthropic": ["claude-3-opus-20240229", "claude-3-sonnet-20240229"],
+    "google": ["gemini-1.5-pro-latest", "gemini-1.5-flash-latest"]
+};
+
+// =========================================================================
+// 🚀 AI & RAG HELPER FUNCTIONS
+// =========================================================================
 async function callGemini(model: string, prompt: string) {
     const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${process.env.GEMINI_API_KEY}`, {
         method: "POST", headers: { "Content-Type": "application/json" },
@@ -53,6 +62,9 @@ async function generateEmbedding(text: string) {
     }
 }
 
+// =========================================================================
+// 🚀 MAIN WIDGET CHAT PROCESSOR
+// =========================================================================
 export async function POST(req: Request) {
     try {
         const { email, message, sessionId } = await req.json();
@@ -67,10 +79,10 @@ export async function POST(req: Request) {
 
         // Check if out of tokens
         if (config.plan_status === "Expired" || (!config.is_unlimited && config.tokens_used >= config.tokens_allocated)) {
-            return NextResponse.json({ success: true, reply: "⚠️ The owner of this website has exhausted their AI API quota." });
+            return NextResponse.json({ success: true, reply: "⚠️ The owner of this website has exhausted their API quota." });
         }
 
-        // 2. Fetch RAG Knowledge
+        // 2. Fetch RAG Knowledge (Vector DB)
         let customKnowledge = "";
         try {
             const queryVector = await generateEmbedding(message);
@@ -86,10 +98,10 @@ export async function POST(req: Request) {
                 }
             }
         } catch (e) {
-            console.error("RAG Error:", e);
+            console.error("RAG Extraction Error:", e);
         }
 
-        // 3. Fetch Conversation History (From `chat_history` to sync with CRM!)
+        // 3. Fetch Conversation History (From `chat_history` to sync with CRM)
         const { data: pastChats } = await supabase
             .from("chat_history")
             .select("sender_type, message")
@@ -103,17 +115,9 @@ export async function POST(req: Request) {
             memoryHistory = pastChats.reverse().map(chat => `${chat.sender_type.toUpperCase()}: ${chat.message}`).join("\n");
         }
 
-        // 4. Assemble the Prompt
+        // 4. Assemble the System Prompt & Full Context
         const systemPrompt = config.system_prompt || "You are a helpful AI assistant.";
-        const fullContext = `System Instructions: ${systemPrompt}
-
-Company Knowledge Base:
-${customKnowledge ? customKnowledge : "No specific company data found for this query."}
-
-Recent Conversation History:
-${memoryHistory}
-
-User's New Message: ${message}`;
+        const fullContext = `System Instructions: ${systemPrompt}\n\nCompany Knowledge Base:\n${customKnowledge ? customKnowledge : "No specific company data found for this query."}\n\nRecent Conversation History:\n${memoryHistory}\n\nUser's New Message: ${message}`;
 
         // 5. 🔒 CRITICAL: Save User Message to CRM using `chat_history`
         await supabase.from("chat_history").insert({ 
@@ -125,44 +129,82 @@ User's New Message: ${message}`;
             message: message 
         });
 
-        // 6. Call the specific AI Provider
-        let aiResponse = "I'm having trouble connecting to my brain. Please try again in a moment.";
-        const provider = config.ai_provider || "google";
-        // Default to the models from the previous webhook arrays
-        const model = config.selected_model || (provider === "openai" ? "gpt-4-turbo" : provider === "anthropic" ? "claude-3-opus-20240229" : "gemini-1.5-flash-latest");
+        // 6. 🚦 THE TRAFFIC POLICEMAN (OMNIAGENT NEXUS ROUTING LOGIC)
+        let aiResponse = "I am having trouble connecting to my neural network. Please try again in a moment.";
+        let wasSuccessful = false;
+        
+        let rawProvider = (config.ai_provider || config.selected_model || "openai").toLowerCase();
+        let provider = "openai"; 
 
-        try {
-            if (provider === "openai") {
-                aiResponse = await callOpenAI(model, fullContext);
-            } else if (provider === "anthropic") {
-                aiResponse = await callClaude(model, fullContext);
-            } else {
-                aiResponse = await callGemini(model, fullContext);
-            }
+        if (rawProvider === "multi_model") provider = "omni";
+        else if (rawProvider.includes("claude") || rawProvider.includes("anthropic")) provider = "anthropic";
+        else if (rawProvider.includes("gemini") || rawProvider.includes("google")) provider = "google";
+
+        if (provider === "omni") {
+            // 🚀 ROUTE TO VIP OMNI ENGINE
+            console.log("🚦 [WIDGET ROUTER] Redirecting request to OmniAgent Nexus Engine...");
+            const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://clawlink-six.vercel.app";
             
-            // Deduct token
+            try {
+                const omniRes = await fetch(`${baseUrl}/api/omni`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        prompt: message,
+                        systemPrompt: `System Instructions: ${systemPrompt}\n\nCompany Knowledge:\n${customKnowledge ? customKnowledge : "None."}`,
+                        history: pastChats ? pastChats.reverse().map(chat => ({ role: chat.sender_type === "bot" ? "assistant" : "user", content: chat.message })) : []
+                    })
+                });
+
+                if (omniRes.ok) {
+                    const omniData = await omniRes.json();
+                    if (omniData.success) {
+                        aiResponse = omniData.reply;
+                        wasSuccessful = true;
+                    }
+                }
+            } catch (err) {
+                console.error("❌ [WIDGET ROUTER] Omni Engine call failed:", err);
+            }
+        } else {
+            // 🚗 ROUTE TO NORMAL INTRA-PROVIDER ENGINE
+            console.log(`🚦 [WIDGET ROUTER] Processing request locally via Normal Engine: ${provider}...`);
+            const chain = AI_CHAINS[provider] || AI_CHAINS["openai"];
+            
+            for (const modelName of chain) {
+                try {
+                    if (provider === "openai") aiResponse = await callOpenAI(modelName, fullContext);
+                    else if (provider === "anthropic") aiResponse = await callClaude(modelName, fullContext);
+                    else aiResponse = await callGemini(modelName, fullContext);
+                    
+                    wasSuccessful = true;
+                    break; // Stop waterfall loop on successful response
+                } catch (error: any) {
+                    console.error(`[Widget AI Error] ${modelName} failed:`, error.message);
+                    // Continues to fallback model within the same provider chain
+                }
+            }
+        }
+
+        // 7. 🔒 CRITICAL: Charge Tokens & Save AI Response to Live CRM
+        if (wasSuccessful) {
             if (!config.is_unlimited) {
                 await supabase.from("user_configs").update({ tokens_used: config.tokens_used + 1 }).eq("email", email);
             }
-        } catch (error) {
-            console.error("AI Generation Error:", error);
-            // Fallback response handled
+            await supabase.from("chat_history").insert({ 
+                email: email, 
+                platform: "web",
+                platform_chat_id: sessionId, 
+                customer_name: "Web Visitor",
+                sender_type: "bot", 
+                message: aiResponse 
+            });
         }
-
-        // 7. 🔒 CRITICAL: Save AI Response to Live CRM
-        await supabase.from("chat_history").insert({ 
-            email: email, 
-            platform: "web",
-            platform_chat_id: sessionId, 
-            customer_name: "Web Visitor",
-            sender_type: "bot", 
-            message: aiResponse 
-        });
 
         return NextResponse.json({ success: true, reply: aiResponse });
 
     } catch (error: any) {
-        console.error("Widget API Error:", error.message);
+        console.error("Widget API Fatal Error:", error.message);
         return NextResponse.json({ success: false, error: "Internal Server Error" }, { status: 500 });
     }
 }
