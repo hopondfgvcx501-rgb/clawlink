@@ -447,8 +447,9 @@ export default function Home() {
                       <button onClick={openLiveBotHandler} className="bg-white text-black font-bold px-8 py-4 rounded-xl text-sm transition-transform duration-100 hover:scale-110 w-full sm:w-auto text-center shadow-[0_0_20px_rgba(255,255,255,0.3)]">
                         Open Live Bot
                       </button>
+                      {/* 🔒 ONLY THIS BUTTON TEXT WAS CHANGED AS PER BOSS'S ORDER */}
                       <button onClick={() => router.push('/dashboard')} className="bg-[#1A1A1A] border border-white/20 text-white font-bold px-8 py-4 rounded-xl text-sm transition-colors duration-100 hover:bg-white/10 w-full sm:w-auto flex items-center justify-center gap-2 hover:scale-105">
-                        <Activity className="w-4 h-4"/> OPEN LIVE AGENT
+                        <Activity className="w-4 h-4"/> Live Dashboard
                       </button>
                     </div>
                   </motion.div>
