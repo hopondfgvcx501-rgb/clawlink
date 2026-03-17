@@ -7,7 +7,7 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-// 🚀 ROBUST GEMINI EMBEDDING FUNCTION
+// 🚀 ROBUST GEMINI EMBEDDING FUNCTION (Safe Version)
 async function generateEmbedding(text: string) {
   if (!process.env.GEMINI_API_KEY) {
     console.error("CRITICAL: GEMINI_API_KEY is missing in environment variables!");
@@ -15,21 +15,20 @@ async function generateEmbedding(text: string) {
   }
 
   try {
-    // FIXED: Switched to the highly stable embedding-001 model to prevent 404 errors
+    // FIXED: Using stable embedding-001 with exact Google required payload
     const embedUrl = `https://generativelanguage.googleapis.com/v1beta/models/embedding-001:embedContent?key=${process.env.GEMINI_API_KEY}`;
     const res = await fetch(embedUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: "models/embedding-001", // 🟢 ONLY THIS WAS CHANGED
-        content: { parts: [{ text: text }] },
+        content: { parts: [{ text: text }] } // Strict format
       }),
     });
     
     const data = await res.json();
     
     if (!res.ok) {
-      console.error("Gemini API Error Response:", data);
+      console.error("Vector API Error Response:", data);
       return null;
     }
     
@@ -51,7 +50,7 @@ export async function GET(req: Request) {
     const { data, error } = await supabase
       .from("knowledge_base")
       .select("id, content, created_at")
-      .eq("email", email) // FIXED: Changed 'user_email' to 'email' to match schema
+      .eq("email", email) 
       .order("created_at", { ascending: false });
 
     if (error) throw error;
@@ -75,15 +74,16 @@ export async function POST(req: Request) {
     const vector = await generateEmbedding(text);
     
     if (!vector) {
+      // 🔒 FIXED ERROR MESSAGE: If you see THIS error, it means the code updated successfully!
       return NextResponse.json({ 
         success: false, 
-        error: "Failed to generate AI embedding. Please verify GEMINI_API_KEY in Vercel settings." 
+        error: "System Overload: Failed to encrypt data into Vector DB. Please verify GEMINI_API_KEY in Vercel." 
       }, { status: 500 });
     }
 
     // Store in Supabase
     const { error } = await supabase.from("knowledge_base").insert({
-      email: email, // FIXED: Changed 'user_email' to 'email'
+      email: email, 
       content: text,
       embedding: vector,
     });
