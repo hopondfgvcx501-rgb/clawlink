@@ -4,10 +4,20 @@ import { NextResponse } from "next/server";
 // Architecture: Cross-Provider Fallback WITH Intra-Provider Version Fallback
 // No external SDKs. 100% Native Fetch for Vercel Edge Speed.
 
+// 🛡️ ENTERPRISE GUARDRAIL: Strict RAG Enforcement & Human Handoff Protocol
+const ENTERPRISE_GUARDRAIL = `
+CRITICAL INSTRUCTION: You are an Enterprise AI Support Agent. 
+1. ANTI-HALLUCINATION LOCK: You must ONLY use the provided Knowledge Base (RAG) to answer questions. 
+2. ZERO SPECULATION: If the answer is NOT explicitly written in the provided context, DO NOT guess, make up prices, or create policies.
+3. HUMAN HANDOFF: If the user asks something outside the Knowledge Base, or seems frustrated, reply EXACTLY with: "I apologize, but I don't have that specific information. Let me connect you with a human support agent who can help you right away."
+4. TONE: Be professional, concise, and helpful.
+`;
+
 // ==========================================
 // 🥇 HELPER 1: ANTHROPIC (CLAUDE)
 // ==========================================
 async function callAnthropic(models: string[], history: any[], systemPrompt: string, prompt: string) {
+  const finalSystemPrompt = `${ENTERPRISE_GUARDRAIL}\n\n${systemPrompt || "You are a highly advanced AI assistant."}`;
   for (const model of models) {
     try {
       console.log(`🟢 [OMNI-NEXUS] Trying Anthropic Model: ${model}`);
@@ -21,7 +31,7 @@ async function callAnthropic(models: string[], history: any[], systemPrompt: str
         body: JSON.stringify({
           model: model,
           max_tokens: 1024,
-          system: systemPrompt || "You are a highly advanced AI assistant.",
+          system: finalSystemPrompt,
           messages: [...history, { role: "user", content: prompt }]
         }),
       });
@@ -42,7 +52,14 @@ async function callAnthropic(models: string[], history: any[], systemPrompt: str
 // ==========================================
 // 🥈 HELPER 2: OPENAI (GPT)
 // ==========================================
-async function callOpenAI(models: string[], formattedMessages: any[]) {
+async function callOpenAI(models: string[], systemPrompt: string, history: any[], prompt: string) {
+  const finalSystemPrompt = `${ENTERPRISE_GUARDRAIL}\n\n${systemPrompt || "You are a highly advanced AI assistant."}`;
+  const formattedMessages = [
+    { role: "system", content: finalSystemPrompt },
+    ...history,
+    { role: "user", content: prompt }
+  ];
+
   for (const model of models) {
     try {
       console.log(`🟡 [OMNI-NEXUS] Trying OpenAI Model: ${model}`);
@@ -76,6 +93,8 @@ async function callOpenAI(models: string[], formattedMessages: any[]) {
 // ==========================================
 async function callGemini(models: string[], systemPrompt: string, prompt: string) {
   const geminiKey = process.env.GEMINI_API_KEY || "";
+  const finalSystemPrompt = `${ENTERPRISE_GUARDRAIL}\n\n${systemPrompt || ""}`;
+  
   for (const model of models) {
     try {
       console.log(`🟠 [OMNI-NEXUS] Trying Gemini Model: ${model}`);
@@ -83,7 +102,7 @@ async function callGemini(models: string[], systemPrompt: string, prompt: string
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          contents: [{ parts: [{ text: `${systemPrompt ? `System Rules: ${systemPrompt}\n\n` : ''}User Query: ${prompt}` }] }]
+          contents: [{ parts: [{ text: `${finalSystemPrompt ? `System Rules: ${finalSystemPrompt}\n\n` : ''}User Query: ${prompt}` }] }]
         }),
       });
 
@@ -114,19 +133,13 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Prompt payload is missing" }, { status: 400 });
     }
 
-    // Prepare OpenAI standardized history format
-    const formattedMessagesOpenAI = [
-      ...(systemPrompt ? [{ role: "system", content: systemPrompt }] : []),
-      ...history,
-      { role: "user", content: prompt }
-    ];
-
     console.log("⚡ [OMNI-NEXUS] Request intercepted. Engaging Deep Fallback Matrix...");
 
     // ----------------------------------------------------------------------
     // PRIORITY 1: CLAUDE (Deep Version Fallback)
     // ----------------------------------------------------------------------
-    const claudeModels = ["claude-3-opus-20240229", "claude-4.6-opus", "claude-4.5-sonnet", "claude-4.5-haiku"];
+    // 🔒 FIXED: Real Production Models added to prevent matrix exhaustion
+    const claudeModels = ["claude-3-haiku-20240307", "claude-3-sonnet-20240229", "claude-3-opus-20240229"];
     const claudeResult = await callAnthropic(claudeModels, history, systemPrompt, prompt);
     if (claudeResult.success) {
       console.log(`✅ [OMNI-NEXUS] Success via ${claudeResult.provider} (${claudeResult.model})`);
@@ -136,8 +149,9 @@ export async function POST(req: Request) {
     // ----------------------------------------------------------------------
     // PRIORITY 2: OPENAI (Deep Version Fallback)
     // ----------------------------------------------------------------------
-    const openAIModels = ["gpt-5.2", "gpt-4o"];
-    const openAIResult = await callOpenAI(openAIModels, formattedMessagesOpenAI);
+    // 🔒 FIXED: Real Production Models added
+    const openAIModels = ["gpt-4o-mini", "gpt-4o", "gpt-3.5-turbo"];
+    const openAIResult = await callOpenAI(openAIModels, systemPrompt, history, prompt);
     if (openAIResult.success) {
       console.log(`✅ [OMNI-NEXUS] Success via ${openAIResult.provider} (${openAIResult.model})`);
       return NextResponse.json(openAIResult);
@@ -146,7 +160,8 @@ export async function POST(req: Request) {
     // ----------------------------------------------------------------------
     // PRIORITY 3: GEMINI (Deep Version Fallback)
     // ----------------------------------------------------------------------
-    const geminiModels = ["gemini-3", "gemini-1.5-flash"];
+    // 🔒 FIXED: Real Production Models added
+    const geminiModels = ["gemini-1.5-flash", "gemini-1.5-pro", "gemini-pro"];
     const geminiResult = await callGemini(geminiModels, systemPrompt, prompt);
     if (geminiResult.success) {
       console.log(`✅ [OMNI-NEXUS] Success via ${geminiResult.provider} (${geminiResult.model})`);
