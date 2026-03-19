@@ -8,7 +8,7 @@ import {
   Receipt, Download, Smartphone, BrainCircuit, 
   MessageSquare, Search, Bell, ChevronDown, 
   ExternalLink, Bot, Users, ArrowUpRight, Crown,
-  Radio
+  Radio, Copy, Check, Globe
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
@@ -23,6 +23,7 @@ export default function Dashboard() {
   const [stats, setStats] = useState<any>(null); 
   const [isLoading, setIsLoading] = useState(true);
   const [showAppBanner, setShowAppBanner] = useState(true);
+  const [copiedScript, setCopiedScript] = useState(false); // 🚀 NEW: For copying webchat
   
   // Persona States
   const [systemPrompt, setSystemPrompt] = useState("");
@@ -160,6 +161,15 @@ Thank you for choosing ClawLink Enterprise AI.
     URL.revokeObjectURL(url);
   };
 
+  // 🚀 NEW: Webchat Script Generator
+  const webChatScript = `<script src="https://clawlink-six.vercel.app/api/widget?id=${session?.user?.email}" defer></script>`;
+
+  const copyScript = () => {
+    navigator.clipboard.writeText(webChatScript);
+    setCopiedScript(true);
+    setTimeout(() => setCopiedScript(false), 2000);
+  };
+
   if (isLoading || status === "loading") {
     return (
       <div className="w-full h-screen bg-[#111111] flex flex-col items-center justify-center text-orange-500 font-mono">
@@ -196,7 +206,7 @@ Thank you for choosing ClawLink Enterprise AI.
   const isTelegramLive = !!userData?.telegram_token || !!userData?.telegramActive;
   const isWhatsappLive = !!userData?.whatsapp_token || !!userData?.whatsapp_phone_id || !!userData?.whatsappActive;
 
-  // Ultimate Live Bot Redirect Logic
+  // Ultimate Live Bot Redirect Logic (🚀 FIXED FOR WHATSAPP)
   const handleOpenLiveBot = async () => {
     if (isTelegramLive && userData?.telegram_token) {
       try {
@@ -209,9 +219,14 @@ Thank you for choosing ClawLink Enterprise AI.
       } catch (e) {
         console.error("Failed to fetch exact telegram bot link");
       }
-      window.open("https://web.telegram.org", "_blank"); 
+      window.open(`https://t.me/${userData?.tg_username || ""}`, "_blank"); 
     } else if (isWhatsappLive) {
-      window.open("https://web.whatsapp.com", "_blank"); 
+      // 🚀 Fix: Redirects to actual wa.me link if number exists
+      if (userData?.whatsapp_number) {
+        window.open(`https://wa.me/${userData.whatsapp_number.replace(/\D/g, '')}`, "_blank");
+      } else {
+        window.open("https://web.whatsapp.com", "_blank"); 
+      }
     } else {
       router.push(`/widget?email=${session?.user?.email}`); 
     }
@@ -339,6 +354,30 @@ Thank you for choosing ClawLink Enterprise AI.
           </motion.div>
 
         </div>
+
+        {/* 🚀 NEW: WEBCHAT DEPLOYMENT WIDGET SECTION */}
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }} className="bg-gradient-to-r from-[#1C1C1E] to-[#111] border border-pink-500/20 p-6 md:p-8 rounded-[1.5rem] shadow-[0_0_30px_rgba(236,72,153,0.05)] relative overflow-hidden flex flex-col lg:flex-row items-center justify-between gap-6">
+          <div className="absolute top-0 left-0 w-64 h-64 bg-pink-500/5 rounded-full blur-3xl pointer-events-none"></div>
+          
+          <div className="flex-1 relative z-10">
+            <h3 className="text-lg font-black text-white flex items-center gap-2 mb-2">
+              <Globe className="w-5 h-5 text-pink-500" /> Webchat Integration (Live)
+            </h3>
+            <p className="text-sm text-gray-400">Want this AI on your own website? Copy the script below and paste it just before the <code className="text-pink-400 bg-pink-500/10 px-1 rounded">&lt;/body&gt;</code> tag in your HTML code.</p>
+          </div>
+
+          <div className="w-full lg:w-1/2 relative z-10 group">
+            <pre className="w-full bg-[#0A0A0B] border border-white/10 p-4 rounded-xl text-xs text-pink-400 font-mono overflow-x-auto custom-scrollbar">
+              {webChatScript}
+            </pre>
+            <button 
+              onClick={copyScript} 
+              className="absolute top-2 right-2 p-2 bg-[#1A1A1A] hover:bg-[#222] border border-white/10 rounded-lg transition-all"
+            >
+              {copiedScript ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4 text-gray-400" />}
+            </button>
+          </div>
+        </motion.div>
 
         {/* DATA ANALYTICS: METRICS CARDS */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

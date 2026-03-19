@@ -11,7 +11,8 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { email, selectedModel, selectedChannel, telegramToken, waPhoneId, plan } = body;
+    // 🚀 NEW: Added whatsappNumber and tgUsername to the destructuring
+    const { email, selectedModel, selectedChannel, telegramToken, waPhoneId, plan, whatsappNumber, tgUsername } = body;
 
     if (!email) {
       return NextResponse.json({ success: false, error: "Email is required for deployment." });
@@ -31,9 +32,8 @@ export async function POST(req: Request) {
       allocatedTokens = 9999999; 
     }
 
-    // 🚀 CRITICAL FIX: Ensure 'multi_model' saves correctly as the provider for OmniAgent
-    let providerToSave = "anthropic"; // default fallback
-    if (selectedModel === "multi_model") providerToSave = "multi_model"; // This triggers the OmniEngine
+    let providerToSave = "anthropic"; 
+    if (selectedModel === "multi_model") providerToSave = "multi_model"; 
     else if (selectedModel === "gpt-5.2") providerToSave = "openai";
     else if (selectedModel === "gemini") providerToSave = "google";
 
@@ -43,10 +43,12 @@ export async function POST(req: Request) {
       .upsert({
         email: email,
         ai_model: selectedModel,
-        ai_provider: providerToSave, // 🚦 SAVED CORRECTLY FOR ROUTER
+        ai_provider: providerToSave, 
         telegram_token: selectedChannel === "telegram" ? telegramToken : null,
         whatsapp_token: selectedChannel === "whatsapp" ? telegramToken : null,
         whatsapp_phone_id: selectedChannel === "whatsapp" ? waPhoneId : null, 
+        whatsapp_number: whatsappNumber || null, // 🚀 NEW: Saving WA Number
+        tg_username: tgUsername || null,         // 🚀 NEW: Saving TG Username
         tokens_allocated: allocatedTokens, 
         available_tokens: allocatedTokens,
         is_unlimited: isUnlimited,
@@ -59,11 +61,11 @@ export async function POST(req: Request) {
     if (error) throw error;
 
     // 2. RECORD BILLING HISTORY FOR DASHBOARD INVOICES
-    let amount = "19.00"; // Fallback
+    let amount = "19.00"; 
     if (plan === "pro") amount = "39.00";
     if (plan === "max") amount = "89.00";
-    if (plan === "monthly") amount = "79.00"; // Omni Monthly
-    if (plan === "yearly") amount = "790.00"; // Omni Yearly
+    if (plan === "monthly") amount = "79.00"; 
+    if (plan === "yearly") amount = "790.00"; 
 
     await supabase.from("billing_history").insert({
       email: email,
@@ -83,7 +85,6 @@ export async function POST(req: Request) {
         if (tData.ok) {
           botLink = `https://t.me/${tData.result.username}`;
           
-          // 🚀 AUTO-REGISTER TELEGRAM WEBHOOK
           const webhookUrl = `https://clawlink-six.vercel.app/api/webhook/telegram?email=${email}`;
           await fetch(`https://api.telegram.org/bot${telegramToken}/setWebhook?url=${webhookUrl}`);
         }
@@ -91,7 +92,8 @@ export async function POST(req: Request) {
         console.error("Telegram link fetch failed.");
       }
     } else if (selectedChannel === "whatsapp") {
-      botLink = "https://business.facebook.com/wa/manage/";
+      // 🚀 NEW: Smart redirect link generation for email
+      botLink = whatsappNumber ? `https://wa.me/${whatsappNumber.replace(/\D/g, '')}` : "https://business.facebook.com/wa/manage/";
     }
 
     // 4. SEND BEAUTIFUL ONBOARDING EMAIL
