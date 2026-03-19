@@ -3,21 +3,66 @@
 import { useSession } from "next-auth/react";
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Book, Save, Database, FileText, Activity, ShieldCheck } from "lucide-react";
+import { Book, Save, Database, FileText, Activity, ShieldCheck, CheckCircle2 } from "lucide-react";
 import TopHeader from "@/components/TopHeader";
 
 export default function KnowledgeBase() {
   const { data: session, status } = useSession();
   const [isSaving, setIsSaving] = useState(false);
   const [data, setData] = useState({ companyName: "", businessInfo: "" });
+  const [saveStatus, setSaveStatus] = useState<"idle" | "success" | "error">("idle");
 
-  const handleSave = () => {
+  // 🚀 FETCH EXISTING KNOWLEDGE ON LOAD
+  useEffect(() => {
+    if (status === "authenticated" && session?.user?.email) {
+      fetch(`/api/knowledge?email=${session.user.email}`)
+        .then(res => res.json())
+        .then(result => {
+          if (result.success && result.data && result.data.length > 0) {
+            // Join all existing knowledge chunks into the textarea
+            const existingKnowledge = result.data.map((doc: any) => doc.content).join("\n\n");
+            setData(prev => ({ ...prev, businessInfo: existingKnowledge }));
+          }
+        })
+        .catch(err => console.error("Failed to load existing knowledge", err));
+    }
+  }, [status, session]);
+
+  const handleSave = async () => {
+    if (!data.businessInfo.trim()) {
+      alert("Please enter some business knowledge before saving.");
+      return;
+    }
+    
     setIsSaving(true);
-    // Future Backend Connection Here
-    setTimeout(() => {
+    setSaveStatus("idle");
+
+    try {
+      // 🚀 REAL BACKEND CONNECTION TO VECTOR DB
+      const res = await fetch("/api/knowledge", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ 
+          email: session?.user?.email, 
+          text: `[Company: ${data.companyName || "Unknown"}]\n${data.businessInfo}` 
+        })
+      });
+      
+      const result = await res.json();
+      
+      if (result.success) {
+        setSaveStatus("success");
+        setTimeout(() => setSaveStatus("idle"), 3000);
+      } else {
+        setSaveStatus("error");
+        alert("Error: " + result.error);
+      }
+    } catch (error) {
+      setSaveStatus("error");
+      alert("Network error while connecting to Vector DB.");
+    } finally {
       setIsSaving(false);
-      alert("Knowledge Base securely updated. AI is now trained on this data.");
-    }, 1500);
+    }
   };
 
   if (status === "loading") {
@@ -72,13 +117,21 @@ export default function KnowledgeBase() {
                 <div className="flex items-center gap-2 text-blue-500/80 text-[10px] uppercase tracking-widest font-bold">
                   <ShieldCheck className="w-4 h-4" /> Vectorized & Encrypted
                 </div>
-                <button 
-                  onClick={handleSave}
-                  disabled={isSaving}
-                  className="bg-blue-600 hover:bg-blue-500 text-white px-8 py-3 rounded-xl font-black uppercase tracking-widest text-xs flex items-center gap-2 transition-all hover:scale-105 shadow-[0_0_20px_rgba(59,130,246,0.3)] disabled:opacity-50 disabled:scale-100"
-                >
-                  {isSaving ? "Vectorizing..." : <><Save className="w-4 h-4" /> Inject Knowledge</>}
-                </button>
+                
+                <div className="flex items-center gap-4">
+                  {saveStatus === "success" && (
+                    <motion.span initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} className="text-green-500 text-xs font-bold flex items-center gap-1">
+                      <CheckCircle2 className="w-4 h-4"/> AI Brain Updated
+                    </motion.span>
+                  )}
+                  <button 
+                    onClick={handleSave}
+                    disabled={isSaving}
+                    className="bg-blue-600 hover:bg-blue-500 text-white px-8 py-3 rounded-xl font-black uppercase tracking-widest text-xs flex items-center gap-2 transition-all hover:scale-105 shadow-[0_0_20px_rgba(59,130,246,0.3)] disabled:opacity-50 disabled:scale-100"
+                  >
+                    {isSaving ? "Vectorizing..." : <><Save className="w-4 h-4" /> Inject Knowledge</>}
+                  </button>
+                </div>
               </div>
 
             </div>

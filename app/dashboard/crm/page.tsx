@@ -3,8 +3,7 @@
 import { useSession } from "next-auth/react";
 import { useEffect, useState, useRef } from "react";
 import { motion } from "framer-motion";
-// 🚀 FIX: Added 'Activity' to the imports here!
-import { Send, User, Bot, ShieldAlert, ArrowLeft, RefreshCw, MessageSquare, Activity } from "lucide-react";
+import { Send, User, Bot, ShieldAlert, RefreshCw, MessageSquare, Activity } from "lucide-react";
 import { useRouter } from "next/navigation";
 import TopHeader from "@/components/TopHeader"; 
 
@@ -28,7 +27,7 @@ export default function CRMDashboard() {
       const res = await fetch(`/api/crm?email=${session.user.email}`);
       const data = await res.json();
       if (data.success) {
-        setLeads(data.leads || []); // Fallback to empty array to prevent map errors
+        setLeads(data.leads || []); 
         setGroupedChats(data.groupedChats || {}); 
       }
     } catch (e) {
@@ -71,7 +70,7 @@ export default function CRMDashboard() {
         alert("Failed to send message: " + data.error);
       }
     } catch (error) {
-      alert("Network error.");
+      alert("Network error while sending manual reply.");
     } finally {
       setIsSending(false);
     }
@@ -92,7 +91,6 @@ export default function CRMDashboard() {
   return (
     <div className="w-full min-h-screen bg-[#0A0A0B] text-[#EDEDED] font-sans flex flex-col h-screen overflow-hidden">
       
-      {/* 🚀 Our unified TopHeader component */}
       <TopHeader title="Live CRM Inbox" session={session} />
 
       <div className="flex-1 flex overflow-hidden p-6 gap-6 max-w-7xl mx-auto w-full">
