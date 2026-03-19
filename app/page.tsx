@@ -23,9 +23,23 @@ const OpenAI_Icon = () => <Image src="/logos/openai.svg" alt="OpenAI" width={26}
 const Claude_Icon = () => <Image src="/logos/claude.svg" alt="Claude" width={26} height={26} />;
 const Gemini_Icon = () => <Image src="/logos/gemini.svg" alt="Gemini" width={26} height={26} />;
 
-// Llama 4 Maverick & OmniAgent Nexus Icons
-const Llama_Icon = () => <img src="/logos/llama 4 maverick.svg" alt="Llama 4 Maverick" className="w-6 h-6 object-contain" />; 
-const Omni_Icon = () => <img src="/logos/omniagentnexus.svg" alt="OmniAgent Nexus" className="w-8 h-8 object-contain drop-shadow-[0_0_8px_rgba(0,198,255,0.4)]" />;
+// 🚀 FIXED: Robust Inline SVG Icons to prevent 404 image errors
+const Llama_Icon = () => (
+  <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-800">
+    <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"></path>
+    <line x1="4" y1="22" x2="4" y2="15"></line>
+  </svg>
+); 
+
+const Omni_Icon = () => (
+  <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-[#00BFFF] drop-shadow-[0_0_8px_rgba(0,198,255,0.4)]">
+    <polygon points="12 2 22 8.5 22 15.5 12 22 2 15.5 2 8.5 12 2"></polygon>
+    <line x1="12" y1="22" x2="12" y2="15.5"></line>
+    <polyline points="22 8.5 12 15.5 2 8.5"></polyline>
+    <polyline points="2 15.5 12 8.5 22 15.5"></polyline>
+    <line x1="12" y1="2" x2="12" y2="8.5"></line>
+  </svg>
+);
 
 // Scaled Channel Icons (Size 42)
 const Telegram_Icon = ({ size = 42 }: { size?: number }) => <Image src="/logos/Telegram.svg" alt="Telegram" width={size} height={size} />;
