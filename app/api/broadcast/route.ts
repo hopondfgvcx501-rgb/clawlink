@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
+// 🔒 Edge disabled to prevent mass-sending timeouts
 export const dynamic = "force-dynamic";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
@@ -8,7 +9,7 @@ const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PU
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 // =========================================================================
-// 1. GET: Fetch Total Audience Size for the User
+// 1. GET: Fetch Total Audience Size (Clawlink Core)
 // =========================================================================
 export async function GET(req: Request) {
     try {
@@ -17,7 +18,6 @@ export async function GET(req: Request) {
 
         if (!email) return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
 
-        // Get all unique chat IDs the bot has interacted with
         const { data, error } = await supabase
             .from('chat_history')
             .select('platform_chat_id')
@@ -25,43 +25,39 @@ export async function GET(req: Request) {
         
         if (error) throw error;
 
-        // Use a Set to count unique customers only
         const uniqueUsers = new Set(data.map(d => d.platform_chat_id));
-        
         return NextResponse.json({ success: true, audienceCount: uniqueUsers.size });
     } catch (error: any) {
-        console.error("Broadcast GET Error:", error);
         return NextResponse.json({ success: false, error: error.message }, { status: 500 });
     }
 }
 
 // =========================================================================
-// 2. POST: Execute the Mass Broadcast Blast
+// 2. POST: Execute Blast with Token Management
 // =========================================================================
 export async function POST(req: Request) {
     try {
-        const body = await req.json();
-        const { email, message, channel } = body;
+        const { email, message, channel } = await req.json();
 
         if (!email || !message || !channel) {
             return NextResponse.json({ success: false, error: "Missing parameters" }, { status: 400 });
         }
 
-        // 1. Get bot owner's configuration & tokens
-        const { data: config, error: configErr } = await supabase
+        // 1. Verify Bot Configuration & Tokens
+        const { data: config } = await supabase
             .from("user_configs")
             .select("*")
             .eq("email", email)
             .single();
 
-        if (configErr || !config) throw new Error("Bot configuration not found");
+        if (!config) return NextResponse.json({ success: false, error: "Config not found" }, { status: 404 });
 
-        // 2. Fetch all unique users specifically for the selected channel
+        // 2. Target specific audience based on channel
         const { data: users } = await supabase
             .from('chat_history')
             .select('platform_chat_id')
             .eq('email', email)
-            .eq('platform', channel); // Filter by whatsapp or telegram
+            .eq('platform', channel);
 
         const uniqueChatIds = Array.from(new Set((users || []).map(u => u.platform_chat_id)));
 
@@ -69,14 +65,17 @@ export async function POST(req: Request) {
             return NextResponse.json({ success: false, error: `No audience found on ${channel}.` });
         }
 
-        // 3. Token Limits Check (Cost: 1 Token per Broadcast Message)
+        // 3. Token Check logic (Clawlink Business Logic)
         if (!config.is_unlimited && (config.tokens_used + uniqueChatIds.length) > config.tokens_allocated) {
-            return NextResponse.json({ success: false, error: `Insufficient tokens. You need ${uniqueChatIds.length} tokens for this blast.` });
+            return NextResponse.json({ 
+                success: false, 
+                error: `Insufficient tokens. Need ${uniqueChatIds.length}, you have ${config.tokens_allocated - config.tokens_used}` 
+            });
         }
 
-        // 4. 🔥 THE BLAST LOOP (Sending messages)
+        // 4. 🔥 THE BLAST LOOP
         let sentCount = 0;
-        for (const chatId of uniqueChatIds) {
+        const blastPromises = uniqueChatIds.map(async (chatId) => {
             try {
                 if (channel === "telegram" && config.telegram_token) {
                     await fetch(`https://api.telegram.org/bot${config.telegram_token}/sendMessage`, {
@@ -91,32 +90,30 @@ export async function POST(req: Request) {
                     });
                     sentCount++;
                 }
-            } catch (e) {
-                console.log(`Failed to send to ${chatId}`);
-            }
-        }
+            } catch (e) { console.error(`Error sending to ${chatId}`); }
+        });
 
-        // 5. Update token usage & save blast record to memory
+        await Promise.all(blastPromises);
+
+        // 5. Update usage & logs
         if (sentCount > 0) {
             if (!config.is_unlimited) {
                 await supabase.from("user_configs").update({ tokens_used: config.tokens_used + sentCount }).eq("email", email);
             }
             
-            // Save to memory so CRM shows the broadcast was sent
             await supabase.from("chat_history").insert({
                 email: email,
                 platform: channel,
-                platform_chat_id: "BROADCAST_BLAST",
-                customer_name: "All Audience",
-                sender_type: "human", // Mark as admin action
-                message: `[MASS BROADCAST SENT TO ${sentCount} USERS]: ${message}`
+                platform_chat_id: "BROADCAST_LOG",
+                customer_name: "Broadcast System",
+                sender_type: "human", 
+                message: `[BLAST SENT TO ${sentCount} USERS]: ${message}`
             });
         }
 
         return NextResponse.json({ success: true, sentCount });
 
     } catch (error: any) {
-        console.error("Broadcast POST Error:", error);
-        return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+        return NextResponse.json({ success: false, error: "Server Error" }, { status: 500 });
     }
 }
