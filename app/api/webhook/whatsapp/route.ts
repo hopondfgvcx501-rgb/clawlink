@@ -15,11 +15,20 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-// 🚀 STRICT INTRA-PROVIDER FALLBACK ARCHITECTURE
+// 🛡️ ENTERPRISE GUARDRAIL: Strict RAG Enforcement & Human Handoff Protocol
+const ENTERPRISE_GUARDRAIL = `
+CRITICAL INSTRUCTION: You are an Enterprise AI Support Agent. 
+1. ANTI-HALLUCINATION LOCK: You must ONLY use the provided Company Knowledge to answer questions. 
+2. ZERO SPECULATION: If the answer is NOT explicitly written in the provided context, DO NOT guess, make up prices, or create policies.
+3. HUMAN HANDOFF: If the user asks something outside the Knowledge Base, or seems frustrated/angry, reply EXACTLY with: "I apologize, but I don't have that specific information. Let me connect you with a human support agent who can help you right away."
+4. TONE: Be professional, concise, and highly polite. Never argue with the customer.
+`;
+
+// 🚀 STRICT INTRA-PROVIDER FALLBACK ARCHITECTURE (Updated to Real Production Models)
 const AI_CHAINS: Record<string, string[]> = {
-    "openai": ["gpt-4-turbo", "gpt-4o", "gpt-3.5-turbo"], 
-    "anthropic": ["claude-3-opus-20240229", "claude-3-sonnet-20240229"],
-    "google": ["gemini-1.5-pro-latest", "gemini-1.5-flash-latest"]
+    "openai": ["gpt-4o-mini", "gpt-4o", "gpt-3.5-turbo"], 
+    "anthropic": ["claude-3-haiku-20240307", "claude-3-sonnet-20240229", "claude-3-opus-20240229"],
+    "google": ["gemini-1.5-flash", "gemini-1.5-pro"]
 };
 
 // =========================================================================
@@ -47,10 +56,10 @@ export async function GET(req: Request) {
 async function generateEmbedding(text: string) {
     if (!process.env.GEMINI_API_KEY) return null;
     try {
-        const embedUrl = `https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent?key=${process.env.GEMINI_API_KEY}`;
+        const embedUrl = `https://generativelanguage.googleapis.com/v1beta/models/embedding-001:embedContent?key=${process.env.GEMINI_API_KEY}`;
         const res = await fetch(embedUrl, {
             method: "POST", headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ model: "models/text-embedding-004", content: { parts: [{ text: text }] } })
+            body: JSON.stringify({ content: { parts: [{ text: text }] } }) // Strict Format
         });
         const data = await res.json();
         return res.ok ? data.embedding.values : null;
@@ -199,8 +208,8 @@ export async function POST(req: Request) {
             ? pastChats.reverse().map(chat => `${chat.sender_type.toUpperCase()}: ${chat.message}`).join("\n") 
             : "";
 
-        // 7. ASSEMBLE FULL PROMPT
-        const fullContext = `System Instructions: ${systemPrompt}\n\nCompany Knowledge Base:\n${customKnowledge ? customKnowledge : "None."}\n\nMemory:\n${memoryHistory}\n\nUser: ${userText}`;
+        // 7. 🛡️ INJECT ENTERPRISE GUARDRAIL DIRECTLY INTO CONTEXT
+        const fullContext = `${ENTERPRISE_GUARDRAIL}\n\nSystem Instructions: ${systemPrompt}\n\nCompany Knowledge Base:\n${customKnowledge ? customKnowledge : "None."}\n\nMemory:\n${memoryHistory}\n\nUser: ${userText}`;
         
         // Save User Message to CRM Database
         await supabase.from("chat_history").insert({ 
