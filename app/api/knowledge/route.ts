@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
+// ⚡ ULTRA FAST EDGE RUNTIME (0ms Cold Start)
+export const runtime = "edge";
 export const dynamic = "force-dynamic";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
@@ -51,7 +53,7 @@ export async function GET(req: Request) {
     const { data, error } = await supabase
       .from("knowledge_base")
       .select("id, content, created_at")
-      .eq("user_email", email) // 🟢 REVERTED TO CORRECT COLUMN 'user_email'
+      .eq("user_email", email) 
       .order("created_at", { ascending: false });
 
     if (error) throw error;
@@ -82,7 +84,7 @@ export async function POST(req: Request) {
 
     // Store in Supabase
     const { error } = await supabase.from("knowledge_base").insert({
-      user_email: email, // 🟢 REVERTED TO CORRECT COLUMN 'user_email'
+      user_email: email, 
       content: text,
       embedding: vector,
     });
