@@ -157,11 +157,11 @@ export async function POST(req: Request) {
         else if (rawProvider.includes("claude") || rawProvider.includes("anthropic")) provider = "anthropic";
         else if (rawProvider.includes("gemini") || rawProvider.includes("google")) provider = "google";
 
-        // 4. Token & Plan Verification
+        // 4. Token & Plan Verification - FIXED: Professional Message
         if (!config.is_unlimited && (config.tokens_used >= config.tokens_allocated)) {
             await fetch(`https://graph.facebook.com/v18.0/${phoneNumberId}/messages`, {
                 method: "POST", headers: { "Content-Type": "application/json", "Authorization": `Bearer ${whatsappToken}` },
-                body: JSON.stringify({ messaging_product: "whatsapp", to: chatId, text: { body: "⚠️ The owner of this bot has exhausted their API limits." } })
+                body: JSON.stringify({ messaging_product: "whatsapp", to: chatId, text: { body: "Thank you for reaching out! Our automated assistant is currently offline for scheduled maintenance. A human support agent will review your message and reply shortly." } })
             });
 
             if (sendEmail) {
@@ -216,8 +216,8 @@ export async function POST(req: Request) {
             email: userEmail, platform: "whatsapp", platform_chat_id: chatId, customer_name: customerName, sender_type: "user", message: userText 
         });
 
-        // 8. 🔒 THE SMART ROUTER (Omni vs Normal)
-        let aiResponse = "API Error: Model failed to process request.";
+        // 8. 🔒 THE SMART ROUTER (Omni vs Normal) - FIXED: Professional Fallback Message
+        let aiResponse = "I apologize, but I am experiencing an unusually high volume of requests right now. I have notified our human support team, and they will get back to you shortly.";
         let wasSuccessful = false;
 
         if (provider === "omni") {
@@ -269,10 +269,12 @@ export async function POST(req: Request) {
             if (!config.is_unlimited) {
                 await supabase.from("user_configs").update({ tokens_used: config.tokens_used + 1 }).eq("email", userEmail);
             }
-            await supabase.from("chat_history").insert({ 
-                email: userEmail, platform: "whatsapp", platform_chat_id: chatId, customer_name: customerName, sender_type: "bot", message: aiResponse 
-            });
         }
+        
+        // Save Response (Bot's reply OR the fail-safe message) to DB
+        await supabase.from("chat_history").insert({ 
+            email: userEmail, platform: "whatsapp", platform_chat_id: chatId, customer_name: customerName, sender_type: "bot", message: aiResponse 
+        });
 
         // 10. DISPATCH FINAL MESSAGE VIA WHATSAPP CLOUD API
         await fetch(`https://graph.facebook.com/v18.0/${phoneNumberId}/messages`, {

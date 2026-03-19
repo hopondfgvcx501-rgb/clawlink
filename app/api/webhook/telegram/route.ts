@@ -152,11 +152,11 @@ export async function POST(req: Request) {
         else if (rawProvider.includes("claude") || rawProvider.includes("anthropic")) provider = "anthropic";
         else if (rawProvider.includes("gemini") || rawProvider.includes("google")) provider = "google";
 
-        // 4. Token Check
+        // 4. Token Check - FIXED: Professional Message
         if (!config.is_unlimited && (config.tokens_used >= config.tokens_allocated)) {
             await fetch(`https://api.telegram.org/bot${telegramToken}/sendMessage`, {
                 method: "POST", headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ chat_id: chatId, text: "⚠️ This AI Agent has exhausted its API limits." })
+                body: JSON.stringify({ chat_id: chatId, text: "Thank you for reaching out! Our automated assistant is currently offline for scheduled maintenance. A human support agent will review your message and reply shortly." })
             });
             return NextResponse.json({ success: true });
         }
@@ -175,7 +175,7 @@ export async function POST(req: Request) {
             if (!transcription) {
                 await fetch(`https://api.telegram.org/bot${telegramToken}/sendMessage`, {
                     method: "POST", headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ chat_id: chatId, text: "Audio transcription failed. Ensure OPENAI_API_KEY is configured in Vercel." })
+                    body: JSON.stringify({ chat_id: chatId, text: "I'm sorry, I couldn't process that voice note clearly. Could you please type your message?" })
                 });
                 return NextResponse.json({ success: true });
             }
@@ -224,8 +224,8 @@ export async function POST(req: Request) {
             email: ownerEmail, platform: "telegram", platform_chat_id: chatId, customer_name: customerName, sender_type: "user", message: crmLogMessage 
         });
 
-        // 8. 🔒 THE SMART ROUTER (Omni vs Normal)
-        let aiResponse = "API Error: Model failed to process request.";
+        // 8. 🔒 THE SMART ROUTER (Omni vs Normal) - FIXED: Professional Fallback Message
+        let aiResponse = "I apologize, but I am experiencing an unusually high volume of requests right now. I have notified our human support team, and they will get back to you shortly.";
         let wasSuccessful = false;
 
         if (provider === "omni") {
@@ -279,10 +279,12 @@ export async function POST(req: Request) {
             if (!config.is_unlimited) {
                 await supabase.from("user_configs").update({ tokens_used: config.tokens_used + 1 }).eq("email", ownerEmail);
             }
-            await supabase.from("chat_history").insert({ 
-                email: ownerEmail, platform: "telegram", platform_chat_id: chatId, customer_name: customerName, sender_type: "bot", message: aiResponse 
-            });
         }
+        
+        // Save Response (Bot's reply OR the fail-safe message) to DB
+        await supabase.from("chat_history").insert({ 
+            email: ownerEmail, platform: "telegram", platform_chat_id: chatId, customer_name: customerName, sender_type: "bot", message: aiResponse 
+        });
 
         // 10. DISPATCH REPLY TO TELEGRAM
         await fetch(`https://api.telegram.org/bot${telegramToken}/sendMessage`, {
