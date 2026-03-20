@@ -128,8 +128,9 @@ export default function Home() {
   const [isMounted,          setIsMounted]          = useState(false);
   const [isTelegramModalOpen,setIsTelegramModalOpen] = useState(false);
   const [telegramToken,      setTelegramToken]       = useState("");
+  const [waPhoneId,          setWaPhoneId]           = useState(""); // 🚀 NEW: Phone ID State
   const [isTokenSaved,       setIsTokenSaved]        = useState(false);
-  const [isVerifying,        setIsVerifying]         = useState(false); // 🚀 ADDED LOADER
+  const [isVerifying,        setIsVerifying]         = useState(false); 
   const [showPricingPopup,   setShowPricingPopup]    = useState(false);
   const [isDeploying,        setIsDeploying]         = useState(false);
   const [botLink,            setBotLink]             = useState("");
@@ -165,11 +166,13 @@ export default function Home() {
   
   const handleOpenPricing = (ch: string) => { setActiveChannel(ch); setShowPricingPopup(true); };
 
-  // 🚀 FIXED THE SECURITY ISSUE: Real Backend Validation
+  // 🚀 STRICT API & PHONE ID VERIFICATION
   const handleSaveToken = async () => {
-    if (!telegramToken.trim()) { 
-      alert("Please enter a valid API Token."); 
-      return; 
+    if (activeChannel === "telegram" && !telegramToken.trim()) { 
+      alert("Please enter a valid Telegram API Token."); return; 
+    }
+    if (activeChannel === "whatsapp" && (!telegramToken.trim() || !waPhoneId.trim())) {
+      alert("Please enter BOTH your Permanent API Token and Phone Number ID."); return;
     }
     
     setIsVerifying(true);
@@ -180,7 +183,8 @@ export default function Home() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 
           channel: activeChannel, 
-          token: telegramToken 
+          token: telegramToken,
+          phoneId: waPhoneId // Sent for WhatsApp Meta Check
         })
       });
       
@@ -238,7 +242,8 @@ export default function Home() {
           try {
             const cfgRes = await fetch("/api/config", {
               method: "POST", headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ email: session?.user?.email, selectedModel: selectedModelForDB, selectedChannel: activeChannel, telegramToken, plan: selectedTier }),
+              // 🚀 Send phoneId to save in DB for WhatsApp Webhook routing
+              body: JSON.stringify({ email: session?.user?.email, selectedModel: selectedModelForDB, selectedChannel: activeChannel, telegramToken, phoneId: waPhoneId, plan: selectedTier }),
             });
             const cfg = await cfgRes.json();
             if (cfg.success && cfg.botLink) { setBotLink(cfg.botLink); setShowPricingPopup(false); }
@@ -815,7 +820,18 @@ export default function Home() {
                         </div>
                       ))}
                     </div>
+                    
+                    {/* 🚀 UPDATED WHATSAPP FORM WITH PHONE ID */}
                     <div className="p-6 rounded-2xl" style={{background:"rgba(255,255,255,0.03)",border:"0.5px solid rgba(255,255,255,0.07)"}}>
+                      
+                      <label className="block text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-3">Phone Number ID</label>
+                      <input type="text" value={waPhoneId} onChange={e=>setWaPhoneId(e.target.value)}
+                        placeholder="e.g. 1044727838716942"
+                        className="w-full px-4 py-3.5 rounded-xl text-[13px] text-white font-mono mb-4 outline-none transition-colors duration-150"
+                        style={{background:"#0A0A0B",border:"0.5px solid rgba(255,255,255,0.1)"}}
+                        onFocus={e=>(e.target.style.border="0.5px solid rgba(37,211,102,0.5)")}
+                        onBlur={e=>(e.target.style.border="0.5px solid rgba(255,255,255,0.1)")}/>
+
                       <label className="block text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-3">Permanent API Token</label>
                       <input type="password" value={telegramToken} onChange={e=>setTelegramToken(e.target.value)}
                         placeholder="EAABwzL…"
@@ -823,6 +839,7 @@ export default function Home() {
                         style={{background:"#0A0A0B",border:"0.5px solid rgba(255,255,255,0.1)"}}
                         onFocus={e=>(e.target.style.border="0.5px solid rgba(37,211,102,0.5)")}
                         onBlur={e=>(e.target.style.border="0.5px solid rgba(255,255,255,0.1)")}/>
+                      
                       <button onClick={handleSaveToken} disabled={isVerifying}
                         className={`w-full bg-white text-black font-black py-4 rounded-xl text-[13px] uppercase tracking-widest ${glowBtn}
                           hover:bg-gray-100 hover:scale-[1.02] shadow-[0_0_18px_rgba(255,255,255,0.2)] disabled:opacity-50 disabled:scale-100`}>
