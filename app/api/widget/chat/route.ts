@@ -7,7 +7,18 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-// 🚀 STRICT INTRA-PROVIDER FALLBACK ARCHITECTURE (For Normal Models)
+// 🛡️ CORS HEADERS (Crucial for external websites to connect to this API)
+const corsHeaders = {
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type",
+};
+
+export async function OPTIONS() {
+    return new NextResponse(null, { status: 204, headers: corsHeaders });
+}
+
+// 🚀 STRICT INTRA-PROVIDER FALLBACK ARCHITECTURE
 const AI_CHAINS: Record<string, string[]> = {
     "openai": ["gpt-4-turbo", "gpt-4o", "gpt-3.5-turbo"],
     "anthropic": ["claude-3-opus-20240229", "claude-3-sonnet-20240229"],
@@ -15,8 +26,34 @@ const AI_CHAINS: Record<string, string[]> = {
 };
 
 // =========================================================================
-// 🚀 AI & RAG HELPER FUNCTIONS
+// 🚀 AI, RAG & VOICE HELPER FUNCTIONS
 // =========================================================================
+
+// 🎤 OPENAI WHISPER: AUDIO TO TEXT
+async function transcribeAudio(base64Audio: string) {
+    if (!process.env.OPENAI_API_KEY) return null;
+    try {
+        // Convert base64 from web widget to binary blob
+        const audioBuffer = Buffer.from(base64Audio, 'base64');
+        const blob = new Blob([audioBuffer], { type: 'audio/webm' }); 
+
+        const formData = new FormData();
+        formData.append("file", blob, "voice.webm");
+        formData.append("model", "whisper-1");
+
+        const res = await fetch("https://api.openai.com/v1/audio/transcriptions", {
+            method: "POST",
+            headers: { "Authorization": `Bearer ${process.env.OPENAI_API_KEY}` },
+            body: formData
+        });
+        const data = await res.json();
+        return data.text || null;
+    } catch (e) {
+        console.error("Whisper Web Widget Error:", e);
+        return null;
+    }
+}
+
 async function callGemini(model: string, prompt: string) {
     const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${process.env.GEMINI_API_KEY}`, {
         method: "POST", headers: { "Content-Type": "application/json" },
@@ -47,7 +84,6 @@ async function callClaude(model: string, prompt: string) {
     return data.content[0].text;
 }
 
-// 🚀 RAG EMBEDDING GENERATOR
 async function generateEmbedding(text: string) {
     try {
         const embedUrl = `https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent?key=${process.env.GEMINI_API_KEY}`;
@@ -67,31 +103,42 @@ async function generateEmbedding(text: string) {
 // =========================================================================
 export async function POST(req: Request) {
     try {
-        const { email, message, sessionId } = await req.json();
+        const { email, message, audio, sessionId } = await req.json();
 
-        if (!email || !message || !sessionId) {
-            return NextResponse.json({ success: false, error: "Missing required fields" }, { status: 400 });
+        let userText = message;
+        let crmLogMessage = message;
+
+        // 🎤 PROCESS VOICE IF RECEIVED FROM WIDGET
+        if (audio) {
+            const transcription = await transcribeAudio(audio);
+            if (transcription) {
+                userText = transcription;
+                crmLogMessage = `🎤 [Voice Note]: "${userText}"`;
+            } else {
+                return NextResponse.json({ success: true, reply: "Sorry, I couldn't process your voice clearly. Could you type it?" }, { headers: corsHeaders });
+            }
+        }
+
+        if (!email || !userText || !sessionId) {
+            return NextResponse.json({ success: false, error: "Missing required fields" }, { status: 400, headers: corsHeaders });
         }
 
         // 1. Fetch User Config & Plan Details
         const { data: config } = await supabase.from("user_configs").select("*").eq("email", email).single();
-        if (!config) return NextResponse.json({ success: false, error: "Configuration not found" }, { status: 404 });
+        if (!config) return NextResponse.json({ success: false, error: "Configuration not found" }, { status: 404, headers: corsHeaders });
 
         // Check if out of tokens
         if (config.plan_status === "Expired" || (!config.is_unlimited && config.tokens_used >= config.tokens_allocated)) {
-            return NextResponse.json({ success: true, reply: "⚠️ The owner of this website has exhausted their API quota." });
+            return NextResponse.json({ success: true, reply: "⚠️ The owner of this website has exhausted their API quota." }, { headers: corsHeaders });
         }
 
         // 2. Fetch RAG Knowledge (Vector DB)
         let customKnowledge = "";
         try {
-            const queryVector = await generateEmbedding(message);
+            const queryVector = await generateEmbedding(userText);
             if (queryVector) {
                 const { data: matchedDocs } = await supabase.rpc("match_knowledge", {
-                    query_embedding: queryVector,
-                    match_threshold: 0.65,
-                    match_count: 3,
-                    p_user_email: email
+                    query_embedding: queryVector, match_threshold: 0.65, match_count: 3, p_user_email: email
                 });
                 if (matchedDocs && matchedDocs.length > 0) {
                     customKnowledge = matchedDocs.map((doc: any) => doc.content).join("\n\n");
@@ -117,7 +164,7 @@ export async function POST(req: Request) {
 
         // 4. Assemble the System Prompt & Full Context
         const systemPrompt = config.system_prompt || "You are a helpful AI assistant.";
-        const fullContext = `System Instructions: ${systemPrompt}\n\nCompany Knowledge Base:\n${customKnowledge ? customKnowledge : "No specific company data found for this query."}\n\nRecent Conversation History:\n${memoryHistory}\n\nUser's New Message: ${message}`;
+        const fullContext = `System Instructions: ${systemPrompt}\n\nCompany Knowledge Base:\n${customKnowledge ? customKnowledge : "No specific company data found for this query."}\n\nRecent Conversation History:\n${memoryHistory}\n\nUser's New Message: ${userText}`;
 
         // 5. 🔒 CRITICAL: Save User Message to CRM using `chat_history`
         await supabase.from("chat_history").insert({ 
@@ -126,7 +173,7 @@ export async function POST(req: Request) {
             platform_chat_id: sessionId, 
             customer_name: "Web Visitor",
             sender_type: "user", 
-            message: message 
+            message: crmLogMessage 
         });
 
         // 6. 🚦 THE TRAFFIC POLICEMAN (OMNIAGENT NEXUS ROUTING LOGIC)
@@ -150,7 +197,7 @@ export async function POST(req: Request) {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
-                        prompt: message,
+                        prompt: userText,
                         systemPrompt: `System Instructions: ${systemPrompt}\n\nCompany Knowledge:\n${customKnowledge ? customKnowledge : "None."}`,
                         history: pastChats ? pastChats.reverse().map(chat => ({ role: chat.sender_type === "bot" ? "assistant" : "user", content: chat.message })) : []
                     })
@@ -181,30 +228,28 @@ export async function POST(req: Request) {
                     break; // Stop waterfall loop on successful response
                 } catch (error: any) {
                     console.error(`[Widget AI Error] ${modelName} failed:`, error.message);
-                    // Continues to fallback model within the same provider chain
                 }
             }
         }
 
         // 7. 🔒 CRITICAL: Charge Tokens & Save AI Response to Live CRM
-        if (wasSuccessful) {
-            if (!config.is_unlimited) {
-                await supabase.from("user_configs").update({ tokens_used: config.tokens_used + 1 }).eq("email", email);
-            }
-            await supabase.from("chat_history").insert({ 
-                email: email, 
-                platform: "web",
-                platform_chat_id: sessionId, 
-                customer_name: "Web Visitor",
-                sender_type: "bot", 
-                message: aiResponse 
-            });
+        if (wasSuccessful && !config.is_unlimited) {
+            await supabase.from("user_configs").update({ tokens_used: config.tokens_used + 1 }).eq("email", email);
         }
 
-        return NextResponse.json({ success: true, reply: aiResponse });
+        await supabase.from("chat_history").insert({ 
+            email: email, 
+            platform: "web",
+            platform_chat_id: sessionId, 
+            customer_name: "Web Visitor",
+            sender_type: "bot", 
+            message: aiResponse 
+        });
+
+        return NextResponse.json({ success: true, reply: aiResponse }, { headers: corsHeaders });
 
     } catch (error: any) {
         console.error("Widget API Fatal Error:", error.message);
-        return NextResponse.json({ success: false, error: "Internal Server Error" }, { status: 500 });
+        return NextResponse.json({ success: false, error: "Internal Server Error" }, { status: 500, headers: corsHeaders });
     }
 }
