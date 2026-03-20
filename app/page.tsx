@@ -129,6 +129,7 @@ export default function Home() {
   const [isTelegramModalOpen,setIsTelegramModalOpen] = useState(false);
   const [telegramToken,      setTelegramToken]       = useState("");
   const [isTokenSaved,       setIsTokenSaved]        = useState(false);
+  const [isVerifying,        setIsVerifying]         = useState(false); // 🚀 ADDED LOADER
   const [showPricingPopup,   setShowPricingPopup]    = useState(false);
   const [isDeploying,        setIsDeploying]         = useState(false);
   const [botLink,            setBotLink]             = useState("");
@@ -161,11 +162,43 @@ export default function Home() {
     if (ch === "discord" || ch === "instagram") return;
     setActiveChannel(ch); setIsTelegramModalOpen(true);
   };
+  
   const handleOpenPricing = (ch: string) => { setActiveChannel(ch); setShowPricingPopup(true); };
-  const handleSaveToken   = () => {
-    if (!telegramToken.trim()) { alert("Please enter a valid API Token."); return; }
-    setIsTokenSaved(true); setIsTelegramModalOpen(false);
+
+  // 🚀 FIXED THE SECURITY ISSUE: Real Backend Validation
+  const handleSaveToken = async () => {
+    if (!telegramToken.trim()) { 
+      alert("Please enter a valid API Token."); 
+      return; 
+    }
+    
+    setIsVerifying(true);
+    
+    try {
+      const res = await fetch("/api/verify-token", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ 
+          channel: activeChannel, 
+          token: telegramToken 
+        })
+      });
+      
+      const data = await res.json();
+      
+      if (data.success) {
+        setIsTokenSaved(true); 
+        setIsTelegramModalOpen(false);
+      } else {
+        alert("❌ VERIFICATION FAILED: " + data.error);
+      }
+    } catch (error) {
+      alert("Network error during verification.");
+    } finally {
+      setIsVerifying(false);
+    }
   };
+
   const handleSendHelpRequest = () => {
     if (!helpEmail.trim() || !helpMessage.trim()) { alert("Please fill all fields."); return; }
     setHelpStatus("sending");
@@ -526,7 +559,7 @@ export default function Home() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-[1px] rounded-2xl overflow-hidden"
           style={{background:"rgba(255,255,255,0.06)",border:"0.5px solid rgba(255,255,255,0.07)"}}>
           {[
-            {icon:<Globe className="w-5 h-5 text-blue-400"/>,  bg:"rgba(59,130,246,0.1)",  t:"Omnichannel Deployment",      d:"Deploy across Telegram, WhatsApp Cloud, and your website with a single click."},
+            {icon:<Globe className="w-5 h-5 text-blue-400"/>,  bg:"rgba(59,130,246,0.1)",  t:"Omnichannel Deployment",     d:"Deploy across Telegram, WhatsApp Cloud, and your website with a single click."},
             {icon:<Database className="w-5 h-5 text-green-400"/>,bg:"rgba(34,197,94,0.1)", t:"Enterprise RAG Memory",        d:"Inject FAQs, return policies and product details into the AI's Vector DB Brain."},
             {icon:<Mic className="w-5 h-5 text-purple-400"/>,  bg:"rgba(168,85,247,0.1)",  t:"Voice Note Intelligence",      d:"OpenAI Whisper integration — your bot listens to voice notes and replies contextually."},
             {icon:<Zap className="w-5 h-5 text-orange-400"/>,  bg:"rgba(249,115,22,0.1)",  t:"Actionable AI Interceptor",    d:"AI doesn't just talk; it acts. Trigger APIs to check order status or book meetings."},
@@ -655,7 +688,7 @@ export default function Home() {
       </footer>
 
       {/* ══════════════════════════════════════════════════════════ */}
-      {/*  MODALS (logic identical, styling upgraded)               */}
+      {/* MODALS (logic identical, styling upgraded)                */}
       {/* ══════════════════════════════════════════════════════════ */}
 
       {/* Contact Support Modal */}
@@ -745,10 +778,10 @@ export default function Home() {
                         style={{background:"#0A0A0B",border:"0.5px solid rgba(255,255,255,0.1)"}}
                         onFocus={e=>(e.target.style.border="0.5px solid rgba(249,115,22,0.5)")}
                         onBlur={e=>(e.target.style.border="0.5px solid rgba(255,255,255,0.1)")}/>
-                      <button onClick={handleSaveToken}
+                      <button onClick={handleSaveToken} disabled={isVerifying}
                         className={`w-full bg-white text-black font-black py-4 rounded-xl text-[13px] uppercase tracking-widest ${glowBtn}
-                          hover:bg-gray-100 hover:scale-[1.02] shadow-[0_0_18px_rgba(255,255,255,0.2)]`}>
-                        Save and Proceed
+                          hover:bg-gray-100 hover:scale-[1.02] shadow-[0_0_18px_rgba(255,255,255,0.2)] disabled:opacity-50 disabled:scale-100`}>
+                        {isVerifying ? "Verifying..." : "Save and Proceed"}
                       </button>
                     </div>
                   </>
@@ -790,10 +823,10 @@ export default function Home() {
                         style={{background:"#0A0A0B",border:"0.5px solid rgba(255,255,255,0.1)"}}
                         onFocus={e=>(e.target.style.border="0.5px solid rgba(37,211,102,0.5)")}
                         onBlur={e=>(e.target.style.border="0.5px solid rgba(255,255,255,0.1)")}/>
-                      <button onClick={handleSaveToken}
+                      <button onClick={handleSaveToken} disabled={isVerifying}
                         className={`w-full bg-white text-black font-black py-4 rounded-xl text-[13px] uppercase tracking-widest ${glowBtn}
-                          hover:bg-gray-100 hover:scale-[1.02] shadow-[0_0_18px_rgba(255,255,255,0.2)]`}>
-                        Save and Proceed
+                          hover:bg-gray-100 hover:scale-[1.02] shadow-[0_0_18px_rgba(255,255,255,0.2)] disabled:opacity-50 disabled:scale-100`}>
+                        {isVerifying ? "Verifying..." : "Save and Proceed"}
                       </button>
                     </div>
                   </>
