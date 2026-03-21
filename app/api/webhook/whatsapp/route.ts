@@ -3,19 +3,19 @@ import { createClient } from "@supabase/supabase-js";
 
 // Using a try-catch for the email import so the build doesn't fail if the file isn't ready
 let sendEmail: any;
-try { sendEmail = require("../../../lib/email").sendEmail; } catch (e) {}
+try { sendEmail = require("../../../../lib/email").sendEmail; } catch (e) {}
 
 export const dynamic = "force-dynamic";
 
 const rateLimitMap = new Map<string, number>();
-const COOLDOWN_MS = 2000; 
+const COOLDOWN_MS = 2000; // 2 seconds spam cooldown
 
 // 🚀 INITIALIZE SUPABASE
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-// 🛡️ ENTERPRISE GUARDRAIL: Strict RAG Enforcement & Human Handoff Protocol
+// 🛡️ ENTERPRISE GUARDRAIL
 const ENTERPRISE_GUARDRAIL = `
 CRITICAL INSTRUCTION: You are an Enterprise AI Support Agent. 
 1. ANTI-HALLUCINATION LOCK: You must ONLY use the provided Company Knowledge to answer questions. 
@@ -24,11 +24,11 @@ CRITICAL INSTRUCTION: You are an Enterprise AI Support Agent.
 4. TONE: Be professional, concise, and highly polite. Never argue with the customer.
 `;
 
-// 🚀 STRICT INTRA-PROVIDER FALLBACK ARCHITECTURE (Updated to Real Production Models)
+// 🚀 STRICT INTRA-PROVIDER FALLBACK ARCHITECTURE (Smart Cost Routing)
 const AI_CHAINS: Record<string, string[]> = {
-    "openai": ["gpt-4o-mini", "gpt-4o", "gpt-3.5-turbo"], 
-    "anthropic": ["claude-3-haiku-20240307", "claude-3-sonnet-20240229", "claude-3-opus-20240229"],
-    "google": ["gemini-1.5-flash", "gemini-1.5-pro"]
+    "openai": ["gpt-4o", "gpt-4o-mini", "gpt-3.5-turbo"], 
+    "anthropic": ["claude-3-opus-20240229", "claude-3-sonnet-20240229", "claude-3-haiku-20240307"],
+    "google": ["gemini-1.5-pro", "gemini-1.5-flash"]
 };
 
 // =========================================================================
@@ -40,7 +40,6 @@ export async function GET(req: Request) {
     const token = url.searchParams.get("hub.verify_token");
     const challenge = url.searchParams.get("hub.challenge");
 
-    // Strictly locked to match frontend guide
     const VERIFY_TOKEN = process.env.WHATSAPP_VERIFY_TOKEN || "ClawLinkMeta2026";
 
     if (mode === "subscribe" && token === VERIFY_TOKEN) {
@@ -51,26 +50,26 @@ export async function GET(req: Request) {
 }
 
 // =========================================================================
-// 🚀 AI & RAG HELPER FUNCTIONS
+// 🚀 AI HELPER FUNCTIONS (NOW USING DYNAMIC 'BYOK' API KEYS)
 // =========================================================================
-async function generateEmbedding(text: string) {
-    if (!process.env.GEMINI_API_KEY) return null;
+async function generateEmbedding(text: string, key: string | null) {
+    const apiKey = key || process.env.GEMINI_API_KEY; // Fallback to sys key if user has none (Safety net)
+    if (!apiKey) return null;
     try {
-        const embedUrl = `https://generativelanguage.googleapis.com/v1beta/models/embedding-001:embedContent?key=${process.env.GEMINI_API_KEY}`;
+        const embedUrl = `https://generativelanguage.googleapis.com/v1beta/models/embedding-001:embedContent?key=${apiKey}`;
         const res = await fetch(embedUrl, {
             method: "POST", headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ content: { parts: [{ text: text }] } }) // Strict Format
+            body: JSON.stringify({ content: { parts: [{ text: text }] } }) 
         });
         const data = await res.json();
         return res.ok ? data.embedding.values : null;
-    } catch (e) {
-        return null;
-    }
+    } catch (e) { return null; }
 }
 
-async function callGemini(model: string, prompt: string) {
-    if (!process.env.GEMINI_API_KEY) throw new Error("GEMINI_API_KEY missing");
-    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${process.env.GEMINI_API_KEY}`, {
+async function callGemini(model: string, prompt: string, key: string | null) {
+    const apiKey = key || process.env.GEMINI_API_KEY;
+    if (!apiKey) throw new Error("API_KEY missing");
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: prompt }] }] })
     });
@@ -79,10 +78,11 @@ async function callGemini(model: string, prompt: string) {
     return data.candidates[0].content.parts[0].text;
 }
 
-async function callOpenAI(model: string, prompt: string) {
-    if (!process.env.OPENAI_API_KEY) throw new Error("OPENAI_API_KEY missing");
+async function callOpenAI(model: string, prompt: string, key: string | null) {
+    const apiKey = key || process.env.OPENAI_API_KEY;
+    if (!apiKey) throw new Error("API_KEY missing");
     const res = await fetch("https://api.openai.com/v1/chat/completions", {
-        method: "POST", headers: { "Content-Type": "application/json", "Authorization": `Bearer ${process.env.OPENAI_API_KEY}` },
+        method: "POST", headers: { "Content-Type": "application/json", "Authorization": `Bearer ${apiKey}` },
         body: JSON.stringify({ model: model, messages: [{ role: "user", content: prompt }] })
     });
     const data = await res.json();
@@ -90,10 +90,11 @@ async function callOpenAI(model: string, prompt: string) {
     return data.choices[0].message.content;
 }
 
-async function callClaude(model: string, prompt: string) {
-    if (!process.env.ANTHROPIC_API_KEY) throw new Error("ANTHROPIC_API_KEY missing");
+async function callClaude(model: string, prompt: string, key: string | null) {
+    const apiKey = key || process.env.ANTHROPIC_API_KEY;
+    if (!apiKey) throw new Error("API_KEY missing");
     const res = await fetch("https://api.anthropic.com/v1/messages", {
-        method: "POST", headers: { "Content-Type": "application/json", "x-api-key": process.env.ANTHROPIC_API_KEY, "anthropic-version": "2023-06-01" },
+        method: "POST", headers: { "Content-Type": "application/json", "x-api-key": apiKey, "anthropic-version": "2023-06-01" },
         body: JSON.stringify({ model: model, max_tokens: 1024, messages: [{ role: "user", content: prompt }] })
     });
     const data = await res.json();
@@ -124,7 +125,10 @@ export async function POST(req: Request) {
         if (message.type !== "text") return NextResponse.json({ success: true });
 
         chatId = message.from; 
-        const userText = message.text.body;
+        let rawUserText = message.text.body;
+        // 🛡️ COST CONTROL: Cut message if it's suspiciously long (over 1000 chars)
+        const userText = rawUserText.length > 1000 ? rawUserText.substring(0, 1000) + "..." : rawUserText;
+        
         phoneNumberId = value.metadata.phone_number_id; 
 
         // 2. Spam / Rate Limiting Check
@@ -133,7 +137,7 @@ export async function POST(req: Request) {
         if (now - lastMessageTime < COOLDOWN_MS) return NextResponse.json({ success: true });
         rateLimitMap.set(chatId, now);
 
-        // 3. 🚀 CRITICAL FIX: Find the EXACT Customer config using Phone Number ID
+        // 3. 🚀 CRITICAL FIX: Find Customer config using Phone Number ID
         const { data: config, error: configErr } = await supabase
             .from("user_configs")
             .select("*")
@@ -147,6 +151,7 @@ export async function POST(req: Request) {
         whatsappToken = config.whatsapp_token;
         const systemPrompt = config.system_prompt || "You are a helpful AI assistant on WhatsApp.";
         const userEmail = config.email;
+        const userApiKey = config.user_api_key; // 🚀 The BYOK!
         
         // 🔒 GET STRICT AI PROVIDER FROM DB
         let rawProvider = (config.ai_provider || config.selected_model || "openai").toLowerCase();
@@ -157,38 +162,40 @@ export async function POST(req: Request) {
         else if (rawProvider.includes("claude") || rawProvider.includes("anthropic")) provider = "anthropic";
         else if (rawProvider.includes("gemini") || rawProvider.includes("google")) provider = "google";
 
-        // 4. Token & Plan Verification - FIXED: Professional Message
-        if (!config.is_unlimited && (config.tokens_used >= config.tokens_allocated)) {
+        // ==========================================
+        // 🛑 THE GATEKEEPER (Expiry & Limits Check)
+        // ==========================================
+        const isUnlimited = config.is_unlimited || config.plan_name === "max" || config.plan_name === "ultra_max";
+        const messagesUsed = config.messages_used_this_month || 0;
+        const monthlyLimit = config.monthly_message_limit || 1000;
+        
+        // Expiry Date Logic
+        const expiryDate = new Date(config.plan_expiry_date);
+        const isExpired = config.plan_expiry_date ? (new Date() > expiryDate) : false;
+
+        if (isExpired || (!isUnlimited && messagesUsed >= monthlyLimit)) {
+            const limitMsg = isExpired 
+                ? "Your ClawLink platform subscription has expired. Please renew your plan at dashboard." 
+                : "Your monthly message limit has been reached. Please upgrade your plan.";
+                
             await fetch(`https://graph.facebook.com/v18.0/${phoneNumberId}/messages`, {
                 method: "POST", headers: { "Content-Type": "application/json", "Authorization": `Bearer ${whatsappToken}` },
-                body: JSON.stringify({ messaging_product: "whatsapp", to: chatId, text: { body: "Thank you for reaching out! Our automated assistant is currently offline for scheduled maintenance. A human support agent will review your message and reply shortly." } })
+                body: JSON.stringify({ messaging_product: "whatsapp", to: chatId, text: { body: `[System Notice]\n${limitMsg}` } })
             });
-
-            if (sendEmail) {
-               const alertHtml = `
-                 <div style="font-family: monospace; background: #0A0A0B; color: #fff; padding: 30px; border-radius: 10px; border: 1px solid #ef4444;">
-                   <h2 style="color: #ef4444;">⚠️ ACTION REQUIRED: WHATSAPP BOT PAUSED</h2>
-                   <p>Your ClawLink AI Agent on WhatsApp Cloud has reached its resource limit.</p>
-                   <br/><a href="https://clawlink.com/dashboard" style="background: #ef4444; color: #fff; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Recharge & Resume Bot</a>
-                 </div>
-               `;
-               await sendEmail(userEmail, "URGENT: Your WhatsApp Bot is Paused", alertHtml);
-            }
             return NextResponse.json({ success: true });
         }
 
+        // ==========================================
         // 5. 🚀 RAG KNOWLEDGE FETCH (Vector DB)
+        // ==========================================
         let customKnowledge = "";
         try {
-            const queryVector = await generateEmbedding(userText);
+            // Using User's Key for RAG if they have Google Key, else fallback to sys
+            const queryVector = await generateEmbedding(userText, provider === "google" ? userApiKey : null);
             if (queryVector) {
                 const { data: matchedDocs } = await supabase.rpc("match_knowledge", {
-                    query_embedding: queryVector,
-                    match_threshold: 0.65,
-                    match_count: 3,
-                    p_user_email: userEmail
+                    query_embedding: queryVector, match_threshold: 0.65, match_count: 3, p_user_email: userEmail
                 });
-                
                 if (matchedDocs && matchedDocs.length > 0) {
                     customKnowledge = matchedDocs.map((doc: any) => doc.content).join("\n\n");
                 }
@@ -216,23 +223,30 @@ export async function POST(req: Request) {
             email: userEmail, platform: "whatsapp", platform_chat_id: chatId, customer_name: customerName, sender_type: "user", message: userText 
         });
 
-        // 8. 🔒 THE SMART ROUTER (Omni vs Normal) - FIXED: Professional Fallback Message
+        // ==========================================
+        // 8. 🔒 THE SMART ROUTER (Omni vs Normal & FALLBACK)
+        // ==========================================
         let aiResponse = "I apologize, but I am experiencing an unusually high volume of requests right now. I have notified our human support team, and they will get back to you shortly.";
         let wasSuccessful = false;
 
+        // 💡 SMART COST SAVING RULE: If message is very short (<40 chars), force cheap model!
+        let forceCheapFallback = false;
+        if (userText.length < 40) forceCheapFallback = true;
+        // Or if they have used >85% of their limit, force cheap model to make plan last longer!
+        if (!isUnlimited && (messagesUsed / monthlyLimit) > 0.85) forceCheapFallback = true;
+
         if (provider === "omni") {
             // 🚀 ROUTE TO VIP OMNI ENGINE
-            console.log("🚦 Routing request to OmniAgent Nexus Engine...");
             const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://clawlink-six.vercel.app";
-            
             try {
                 const omniRes = await fetch(`${baseUrl}/api/omni`, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
+                    method: "POST", headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
                         prompt: userText,
                         systemPrompt: `System Instructions: ${systemPrompt}\n\nCompany Knowledge:\n${customKnowledge ? customKnowledge : "None."}`,
-                        history: pastChats ? pastChats.reverse().map(chat => ({ role: chat.sender_type === "bot" ? "assistant" : "user", content: chat.message })) : []
+                        history: pastChats ? pastChats.reverse().map(chat => ({ role: chat.sender_type === "bot" ? "assistant" : "user", content: chat.message })) : [],
+                        apiKey: userApiKey, // Give Omni the BYOK
+                        forceCheap: forceCheapFallback // Tell Omni to be cheap if needed
                     })
                 });
 
@@ -243,35 +257,45 @@ export async function POST(req: Request) {
                         wasSuccessful = true;
                     }
                 }
-            } catch (err) {
-                console.error("❌ Omni Engine call failed:", err);
-            }
+            } catch (err) {}
         } else {
             // 🚗 ROUTE TO NORMAL INTRA-PROVIDER ENGINE
-            console.log(`🚦 Routing request to Normal Engine: ${provider}...`);
-            const chain = AI_CHAINS[provider] || AI_CHAINS["openai"];
+            let chain = AI_CHAINS[provider] || AI_CHAINS["openai"];
+            
+            // Apply Smart Routing
+            if (forceCheapFallback && chain.length > 1) {
+                // If cheap fallback required, re-order chain to try the cheapest (last) model first
+                chain = [...chain].reverse(); 
+            }
+
             for (const modelName of chain) {
                 try {
-                    if (provider === "openai") aiResponse = await callOpenAI(modelName, fullContext);
-                    else if (provider === "anthropic") aiResponse = await callClaude(modelName, fullContext);
-                    else aiResponse = await callGemini(modelName, fullContext);
+                    // Send User's API Key to the Callers
+                    if (provider === "openai") aiResponse = await callOpenAI(modelName, fullContext, userApiKey);
+                    else if (provider === "anthropic") aiResponse = await callClaude(modelName, fullContext, userApiKey);
+                    else aiResponse = await callGemini(modelName, fullContext, userApiKey);
                     
                     wasSuccessful = true;
-                    break; 
+                    break; // Stop loop if successful
                 } catch (err: any) {
-                    console.error(`[WhatsApp AI Error] ${modelName} failed:`, err.message);
+                    console.error(`[WhatsApp API] ${modelName} failed:`, err.message);
                 }
             }
         }
 
+        // ==========================================
         // 9. CHARGE TOKENS & SAVE AI RESPONSE
+        // ==========================================
         if (wasSuccessful) {
+            // Increment Monthly Limit Counter
+            await supabase.from("user_configs").update({ messages_used_this_month: messagesUsed + 1 }).eq("email", userEmail);
+            
             if (!config.is_unlimited) {
-                await supabase.from("user_configs").update({ tokens_used: config.tokens_used + 1 }).eq("email", userEmail);
+                 await supabase.from("user_configs").update({ tokens_used: config.tokens_used + 1 }).eq("email", userEmail);
             }
         }
         
-        // Save Response (Bot's reply OR the fail-safe message) to DB
+        // Save Response to CRM
         await supabase.from("chat_history").insert({ 
             email: userEmail, platform: "whatsapp", platform_chat_id: chatId, customer_name: customerName, sender_type: "bot", message: aiResponse 
         });
