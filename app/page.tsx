@@ -20,7 +20,7 @@ const MODEL_DETAILS: Record<string, { name: string; starter: number; pro: number
 const MAX_PLAN_PRICE = 89;
 const OMNI_PRICING   = { monthly: 79, yearly: 790 };
 
-/* ─── Icons — ORIGINAL UNTOUCHED ────────────────────────────── */
+/* ─── Icons — FIXED INLINE SVGS FOR BETTER VISIBILITY ────────────────────────────── */
 const OpenAI_Icon  = () => <Image src="/logos/openai.svg"  alt="OpenAI"  width={26} height={26} className="transform-gpu" />;
 const Claude_Icon  = () => <Image src="/logos/claude.svg"  alt="Claude"  width={26} height={26} className="transform-gpu" />;
 const Gemini_Icon  = () => <Image src="/logos/gemini.svg"  alt="Gemini"  width={26} height={26} className="transform-gpu" />;
@@ -50,10 +50,19 @@ const Omni_Icon = () => (
   </svg>
 );
 
-const Telegram_Icon = ({ size = 26 }: { size?: number }) =>
-  <Image src="/logos/Telegram.svg" alt="Telegram" width={size} height={size} className="transform-gpu" />;
-const WhatsApp_Icon = ({ size = 26 }: { size?: number }) =>
-  <Image src="/logos/WhatsApp.svg" alt="WhatsApp" width={size} height={size} className="transform-gpu" />;
+const Telegram_Icon = ({ size = 26 }: { size?: number }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="transform-gpu">
+    <path d="M12 24c6.627 0 12-5.373 12-12S18.627 0 12 0 0 5.373 0 12s5.373 12 12 12z" fill="#2AABEE"/>
+    <path d="M5.425 11.871L16.48 7.61c.526-.196 1.006.124.819.86l-1.892 8.92c-.167.755-.615.939-1.242.593L10.73 15.45l-1.657 1.588c-.183.183-.338.338-.692.338l.245-3.528 6.425-5.8c.28-.249-.06-.388-.435-.138L6.68 12.89l-3.417-1.066c-.744-.233-.759-.745.155-1.103z" fill="#fff"/>
+  </svg>
+);
+
+const WhatsApp_Icon = ({ size = 26 }: { size?: number }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="transform-gpu">
+    <path d="M12.004 0C5.376 0 .004 5.373.004 12c0 2.12.552 4.116 1.528 5.864L0 24l6.296-1.508c1.7.884 3.64 1.396 5.708 1.396 6.628 0 12-5.373 12-12S18.632 0 12.004 0z" fill="#25D366"/>
+    <path d="M19.16 16.544c-.312.884-1.504 1.636-2.584 1.832-.82.152-1.888.24-5.384-1.208-4.224-1.744-6.952-6.044-7.16-6.32-.208-.276-1.708-2.268-1.708-4.324 0-2.056 1.072-3.072 1.452-3.484.38-.412.828-.516 1.104-.516.276 0 .552.004.8.016.256.012.604-.1 1.02.908.432 1.04 1.052 2.556 1.144 2.748.092.192.152.416.016.696-.136.28-.208.452-.416.696-.208.244-.436.528-.624.712-.208.208-.424.432-.18.804.244.372 1.088 1.748 2.332 2.86 1.6 1.432 2.94 1.872 3.324 2.064.384.192.608.164.84-.108.232-.272 1.004-1.168 1.276-1.568.272-.4.544-.332.892-.204.348.128 2.204 1.04 2.58 1.232.376.192.624.288.716.448.092.16.092.932-.22 1.816z" fill="#fff"/>
+  </svg>
+);
 
 const Discord_Icon = () => (
   <svg viewBox="0 0 24 24" width="22" height="22" fill="#5865F2" className="transform-gpu">
@@ -278,14 +287,12 @@ export default function Home() {
       const options = {
         key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID, amount: order.amount, currency: order.currency,
         name: "ClawLink Premium",
-        // 🛠️ FIX: Safe toUpperCase mapping
         description: `Plan: ${selectedTier?.toUpperCase()} | Model: ${activeModel === "omni" ? "OmniAgent Nexus" : MODEL_DETAILS[activeModel]?.name}`,
         order_id: order.id,
         handler: async () => {
           try {
             const cfgRes = await fetch("/api/config", {
               method: "POST", headers: { "Content-Type": "application/json" },
-              // 🛠️ FIX: Explicitly passing billingCycle for backend logic
               body: JSON.stringify({ 
                 email: session?.user?.email, 
                 selectedModel: selectedModelForDB, 
@@ -310,7 +317,6 @@ export default function Home() {
   };
 
   const openLiveBotHandler = () => {
-    // 🛠️ FIX: Respecting botLink if it exists for WhatsApp
     if (activeChannel === "whatsapp") {
       window.open(botLink || "https://web.whatsapp.com", "_blank");
     } else { window.open(botLink || "https://web.telegram.org", "_blank"); }
@@ -404,11 +410,11 @@ export default function Home() {
         .blue-glow:hover{box-shadow:0 0 44px rgba(37,99,235,.62)}
       `}}/>
 
-      {/* Ambient glows */}
+      {/* Ambient glows - OPACITY INCREASED FOR BETTER VISIBILITY */}
       <div className="fixed top-[-20%] right-[-8%] w-[800px] h-[800px] rounded-full pointer-events-none z-0"
-           style={{background:"radial-gradient(circle,rgba(249,115,22,0.09) 0%,transparent 65%)",transform:"translateZ(0)"}}/>
+           style={{background:"radial-gradient(circle,rgba(249,115,22,0.18) 0%,transparent 65%)",transform:"translateZ(0)"}}/>
       <div className="fixed bottom-[-20%] left-[-8%] w-[800px] h-[800px] rounded-full pointer-events-none z-0"
-           style={{background:"radial-gradient(circle,rgba(99,102,241,0.07) 0%,transparent 65%)",transform:"translateZ(0)"}}/>
+           style={{background:"radial-gradient(circle,rgba(99,102,241,0.15) 0%,transparent 65%)",transform:"translateZ(0)"}}/>
 
       {/* ══ NAV ══ */}
       <nav id="clnav"
@@ -468,7 +474,7 @@ export default function Home() {
           Under 30 Seconds
         </h1>
 
-        <p className="anim-sub text-[#444] text-[15px] max-w-[460px] mb-8 leading-[1.8]">
+        <p className="anim-sub text-gray-300 text-[15px] max-w-[460px] mb-8 leading-[1.8]">
           Avoid all technical complexity — one-click deploy your own 24/7 active OpenClaw instance. No code. No servers. Just results.
         </p>
 
@@ -478,7 +484,7 @@ export default function Home() {
                   boxShadow:"0 0 60px rgba(249,115,22,0.06),0 32px 64px rgba(0,0,0,0.5)"}}>
 
           {/* MODEL label */}
-          <p className="text-[9px] font-bold tracking-[.15em] uppercase text-[#333] mb-3 text-left">
+          <p className="text-[9px] font-bold tracking-[.15em] uppercase text-gray-400 mb-3 text-left">
             Choose your AI model
           </p>
 
@@ -573,7 +579,7 @@ export default function Home() {
           </div>
 
           {/* CHANNEL label */}
-          <p className="text-[9px] font-bold tracking-[.15em] uppercase text-[#333] mb-3 text-left">
+          <p className="text-[9px] font-bold tracking-[.15em] uppercase text-gray-400 mb-3 text-left">
             Select your channel
           </p>
 
@@ -590,11 +596,10 @@ export default function Home() {
                   : "",
                 isTokenSaved && activeChannel!=="telegram" ? "opacity-25 pointer-events-none" : "",
               ].join(" ")}>
-              <div className="w-[22px] h-[22px] rounded-full flex items-center justify-center shrink-0 bg-[#2aabee]">
-                <Telegram_Icon size={14}/>
+              <div className="w-[22px] h-[22px] rounded-full flex items-center justify-center shrink-0">
+                <Telegram_Icon size={22}/>
               </div>
               <div className="flex flex-col min-w-0 max-sm:items-center max-sm:w-full">
-                {/* 🛠️ FIXED: Text color set to text-gray-800 */}
                 <span className="ptx-name text-gray-800">Telegram</span>
               </div>
             </button>
@@ -609,18 +614,17 @@ export default function Home() {
                   : "",
                 isTokenSaved && activeChannel!=="whatsapp" ? "opacity-25 pointer-events-none" : "",
               ].join(" ")}>
-              <div className="w-[22px] h-[22px] rounded-full flex items-center justify-center shrink-0 bg-[#25d366]">
-                <WhatsApp_Icon size={14}/>
+              <div className="w-[22px] h-[22px] rounded-full flex items-center justify-center shrink-0">
+                <WhatsApp_Icon size={22}/>
               </div>
               <div className="flex flex-col min-w-0 max-sm:items-center max-sm:w-full">
-                {/* 🛠️ FIXED: Text color set to text-gray-800 */}
                 <span className="ptx-name text-gray-800">WhatsApp</span>
               </div>
             </button>
 
             {/* Discord soon */}
             <div className={[pillBase, isTokenSaved?"opacity-20":"opacity-35", "cursor-not-allowed pointer-events-none"].join(" ")}>
-              <div className="w-[22px] h-[22px] rounded-full flex items-center justify-center shrink-0 bg-[#5865f2]">
+              <div className="w-[22px] h-[22px] rounded-full flex items-center justify-center shrink-0">
                 <Discord_Icon/>
               </div>
               <div className="flex flex-col min-w-0 max-sm:items-center max-sm:w-full">
@@ -677,10 +681,10 @@ export default function Home() {
             ) : status === "unauthenticated" ? (
               <motion.div key="login" initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} transition={{duration:.18}}>
                 <button onClick={()=>signIn("google")}
-                  className={`w-full bg-white text-[#3a3a3a] py-4 rounded-[1.75rem] flex items-center justify-center gap-3 text-[17px] font-bold shadow-xl ${btn} hover:scale-[1.02] hover:shadow-[0_0_32px_rgba(255,255,255,0.25)]`}>
+                  className={`w-full bg-white text-gray-800 py-4 rounded-[1.75rem] flex items-center justify-center gap-3 text-[17px] font-bold shadow-xl ${btn} hover:scale-[1.02] hover:shadow-[0_0_32px_rgba(255,255,255,0.25)]`}>
                   <Google_Icon/> Login via Google & Deploy
                 </button>
-                <p className="mt-4 text-[13px] text-gray-500 text-center leading-relaxed">
+                <p className="mt-4 text-[13px] text-gray-400 text-center leading-relaxed">
                   Link your channels to proceed.{" "}
                   <span className="text-[#34A853] font-semibold">Limited servers — only 7 left.</span>
                 </p>
@@ -695,11 +699,11 @@ export default function Home() {
                     <img src={session?.user?.image||""} className="w-9 h-9 rounded-full border border-white/20 shrink-0" alt="av"/>
                     <div className="min-w-0">
                       <p className="text-[13px] font-bold text-white leading-none truncate">{session?.user?.name}</p>
-                      <p className="text-[10px] text-[#2a2a2a] font-mono mt-[3px] truncate">{session?.user?.email}</p>
+                      <p className="text-[10px] text-gray-400 font-mono mt-[3px] truncate">{session?.user?.email}</p>
                     </div>
                   </div>
                   <button onClick={()=>signOut()}
-                    className={`flex items-center gap-1 text-[10px] font-bold uppercase tracking-widest text-gray-600 hover:text-red-400 shrink-0 ml-2 ${btn}`}>
+                    className={`flex items-center gap-1 text-[10px] font-bold uppercase tracking-widest text-gray-400 hover:text-red-400 shrink-0 ml-2 ${btn}`}>
                     <LogOut className="w-3.5 h-3.5"/>
                     <span className="hidden sm:inline">Logout</span>
                   </button>
@@ -727,7 +731,7 @@ export default function Home() {
             <div key={n} className="flex flex-col items-center py-5 px-2 transition-colors duration-200 hover:bg-white/[0.04]"
               style={{background:"rgba(255,255,255,0.022)",borderRight:"1px solid rgba(255,255,255,0.06)"}}>
               <span className="text-[1.9rem] font-black leading-none grad-text">{n}</span>
-              <span className="text-[10px] text-[#333] mt-1 text-center leading-snug">{l}</span>
+              <span className="text-[10px] text-gray-400 mt-1 text-center leading-snug">{l}</span>
             </div>
           ))}
         </div>
@@ -740,7 +744,7 @@ export default function Home() {
           <div className="sr-up text-center mb-16">
             <p className="text-[9.5px] font-bold tracking-[.15em] uppercase text-orange-500 mb-2">How It Works</p>
             <h2 className="text-[clamp(1.8rem,3.5vw,2.8rem)] font-black tracking-[-0.035em] text-white mb-3">4 steps to go live</h2>
-            <p className="text-[#3a3a3a] text-[14px] max-w-[440px] mx-auto leading-relaxed">Zero to live AI agent in 60 seconds. No tech expertise needed.</p>
+            <p className="text-gray-300 text-[14px] max-w-[440px] mx-auto leading-relaxed">Zero to live AI agent in 60 seconds. No tech expertise needed.</p>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 relative">
             <div className="hidden md:block absolute top-8 left-[12%] right-[12%] h-px"
@@ -760,7 +764,7 @@ export default function Home() {
                 </div>
                 <div className="text-[20px] mb-2">{e}</div>
                 <div className="text-[13px] font-bold text-white mb-2">{t}</div>
-                <div className="text-[11.5px] text-[#3a3a3a] leading-relaxed">{d}</div>
+                <div className="text-[11.5px] text-gray-400 leading-relaxed">{d}</div>
               </div>
             ))}
           </div>
@@ -774,7 +778,7 @@ export default function Home() {
           <div className="sr-up text-center mb-14">
             <p className="text-[9.5px] font-bold tracking-[.15em] uppercase text-orange-500 mb-2">Features</p>
             <h2 className="text-[clamp(1.8rem,3.5vw,2.8rem)] font-black tracking-[-0.035em] text-white mb-3">Enterprise power, zero complexity</h2>
-            <p className="text-[#3a3a3a] text-[14px] max-w-[460px] mx-auto leading-relaxed">Built in, battle-tested, ready on day one.</p>
+            <p className="text-gray-300 text-[14px] max-w-[460px] mx-auto leading-relaxed">Built in, battle-tested, ready on day one.</p>
           </div>
 
           {/* Row 1: 2+1+1 */}
@@ -788,7 +792,7 @@ export default function Home() {
                 <div className="w-[44px] h-[44px] rounded-[13px] flex items-center justify-center mb-5 text-[20px] transition-transform duration-250 hover:scale-110 hover:rotate-[-3deg]"
                   style={{background:bg}}>{e}</div>
                 <h3 className="text-[14px] font-bold text-white mb-2">{t}</h3>
-                <p className="text-[12px] text-[#3a3a3a] leading-[1.75] mb-3">{d}</p>
+                <p className="text-[12px] text-gray-400 leading-[1.75] mb-3">{d}</p>
                 <span className="inline-flex px-3 py-1 rounded-full text-[9px] font-bold text-orange-400 uppercase tracking-wider"
                   style={{background:"rgba(249,115,22,0.07)",border:"1px solid rgba(249,115,22,0.18)"}}>{tag}</span>
               </div>
@@ -805,7 +809,7 @@ export default function Home() {
                 <div className="w-[44px] h-[44px] rounded-[13px] flex items-center justify-center mb-5 text-[20px] transition-transform duration-250 hover:scale-110 hover:rotate-[-3deg]"
                   style={{background:bg}}>{e}</div>
                 <h3 className="text-[14px] font-bold text-white mb-2">{t}</h3>
-                <p className="text-[12px] text-[#3a3a3a] leading-[1.75] mb-3">{d}</p>
+                <p className="text-[12px] text-gray-400 leading-[1.75] mb-3">{d}</p>
                 <span className="inline-flex px-3 py-1 rounded-full text-[9px] font-bold text-orange-400 uppercase tracking-wider"
                   style={{background:"rgba(249,115,22,0.07)",border:"1px solid rgba(249,115,22,0.18)"}}>{tag}</span>
               </div>
@@ -823,7 +827,7 @@ export default function Home() {
                 <div className="w-[44px] h-[44px] rounded-[13px] flex items-center justify-center mb-5 text-[20px] transition-transform duration-250 hover:scale-110 hover:rotate-[-3deg]"
                   style={{background:bg}}>{e}</div>
                 <h3 className="text-[14px] font-bold text-white mb-2">{t}</h3>
-                <p className="text-[12px] text-[#3a3a3a] leading-[1.75] mb-3">{d}</p>
+                <p className="text-[12px] text-gray-400 leading-[1.75] mb-3">{d}</p>
                 <span className="inline-flex px-3 py-1 rounded-full text-[9px] font-bold text-orange-400 uppercase tracking-wider"
                   style={{background:"rgba(249,115,22,0.07)",border:"1px solid rgba(249,115,22,0.18)"}}>{tag}</span>
               </div>
@@ -842,7 +846,7 @@ export default function Home() {
           </div>
           <div className="grid grid-cols-1 md:grid-cols-[1.55fr_1fr] gap-5">
             <div className="sr-left rounded-[18px] overflow-hidden" style={{border:"1px solid rgba(255,255,255,0.07)"}}>
-              <div className="px-5 py-4 text-[9px] font-bold uppercase tracking-widest text-[#2a2a2a]"
+              <div className="px-5 py-4 text-[9px] font-bold uppercase tracking-widest text-gray-400"
                 style={{borderBottom:"1px solid rgba(255,255,255,0.05)",background:"rgba(255,255,255,0.02)"}}>
                 Traditional Setup — Step by Step
               </div>
@@ -854,15 +858,15 @@ export default function Home() {
               ].map(([l,t])=>(
                 <div key={l} className="flex justify-between items-center px-5 py-3.5 transition-colors duration-150 hover:bg-white/[0.015]"
                   style={{borderBottom:"1px solid rgba(255,255,255,0.04)"}}>
-                  <span className="text-[12.5px] text-[#555]">{l}</span>
-                  <span className="text-[9.5px] text-[#333] bg-white/[0.05] px-2.5 py-1 rounded-md whitespace-nowrap ml-3">{t}</span>
+                  <span className="text-[12.5px] text-gray-400">{l}</span>
+                  <span className="text-[9.5px] text-gray-300 bg-white/[0.05] px-2.5 py-1 rounded-md whitespace-nowrap ml-3">{t}</span>
                 </div>
               ))}
               <div className="flex justify-between px-5 py-4 font-black text-[13px]"
                 style={{background:"rgba(255,255,255,0.02)",borderTop:"1px solid rgba(255,255,255,0.07)"}}>
                 <span className="text-white">Total Time</span><span className="text-red-400">60 MINUTES</span>
               </div>
-              <p className="text-[11px] text-[#1e1e1e] px-5 py-3 text-right italic">
+              <p className="text-[11px] text-gray-500 px-5 py-3 text-right italic">
                 * Non-technical users: multiply by 10.
               </p>
             </div>
@@ -872,7 +876,7 @@ export default function Home() {
               <p className="text-[9.5px] font-bold tracking-[.15em] uppercase text-orange-500 mb-3">With ClawLink</p>
               <p className="font-black leading-none mb-1 text-[3.4rem] grad-text" style={{letterSpacing:"-.04em"}}>ClawLink</p>
               <p className="text-[2.6rem] font-black text-white leading-none mb-5" style={{letterSpacing:"-.03em"}}>&lt;30 sec</p>
-              <p className="text-[12px] text-[#3a3a3a] max-w-[220px] leading-[1.85]">
+              <p className="text-[12px] text-gray-400 max-w-[220px] leading-[1.85]">
                 Pick a model, connect your channel, deploy. All infrastructure handled for you.
               </p>
               <button onClick={()=>document.getElementById("features")?.scrollIntoView({behavior:"smooth"})}
@@ -911,7 +915,7 @@ export default function Home() {
           style={{background:"linear-gradient(135deg,#FFA87A,#F97316)"}}>
           Get Started Free →
         </button>
-        <div className="flex flex-col md:flex-row justify-between items-center gap-4 text-[11px] text-[#1e1e1e] pt-8"
+        <div className="flex flex-col md:flex-row justify-between items-center gap-4 text-[11px] text-gray-500 pt-8"
           style={{borderTop:"1px solid rgba(255,255,255,0.06)"}}>
           <span>© 2026 ClawLink Inc. All rights reserved.</span>
           <span className="hidden md:block uppercase tracking-widest text-[10px]">© 2026 CLAWLINK INC. GLOBAL AI SAAS INFRASTRUCTURE.</span>
@@ -947,11 +951,11 @@ export default function Home() {
                 </div>
                 <h2 className="text-[1.3rem] font-bold text-white">Contact Support</h2>
               </div>
-              <p className="text-[13px] text-gray-500 mb-6">Our team is available 24/7.</p>
+              <p className="text-[13px] text-gray-400 mb-6">Our team is available 24/7.</p>
               <div className="space-y-3">
                 {[
-                  {icon:<Mail className="w-4 h-4 text-orange-400"/>,title:"Direct Email",content:<a href="mailto:support@clawlink.com" className="text-blue-400 hover:text-blue-300 text-[13px] font-mono">support@clawlink.com</a>},
-                  {icon:<Shield className="w-4 h-4 text-green-400"/>,title:"Enterprise SLAs",content:<p className="text-[12px] text-gray-500 mt-1 leading-relaxed">Pro and Max tier users get priority &lt;1hr guaranteed response.</p>},
+                  {icon:<Mail className="w-4 h-4 text-orange-400"/>,title:"Direct Email",content:<a href="mailto:clawlink.help@gmail.com" className="text-blue-400 hover:text-blue-300 text-[13px] font-mono">clawlink.help@gmail.com</a>},
+                  {icon:<Shield className="w-4 h-4 text-green-400"/>,title:"Enterprise SLAs",content:<p className="text-[12px] text-gray-400 mt-1 leading-relaxed">Pro and Max tier users get priority &lt;1hr guaranteed response.</p>},
                 ].map(({icon,title,content},i)=>(
                   <div key={i} className="p-5 rounded-2xl" style={{background:"rgba(255,255,255,0.03)",border:"1px solid rgba(255,255,255,0.06)"}}>
                     <div className="flex items-center gap-2 mb-1">{icon}<span className="text-[13px] font-bold text-white">{title}</span></div>
@@ -998,7 +1002,7 @@ export default function Home() {
 
                 {activeChannel==="telegram" ? (
                   <>
-                    <ol className="space-y-3 text-[13px] text-gray-500 list-decimal pl-5 mb-6 leading-relaxed">
+                    <ol className="space-y-3 text-[13px] text-gray-400 list-decimal pl-5 mb-6 leading-relaxed">
                       <li>Open Telegram → search <strong className="text-white">@BotFather</strong></li>
                       <li>Send <code className="rounded px-2 py-0.5 text-white font-mono text-[11px]" style={{background:"rgba(255,255,255,0.07)"}}>/newbot</code></li>
                       <li>Set <strong className="text-white">Name</strong> and <strong className="text-white">Username</strong></li>
@@ -1011,7 +1015,7 @@ export default function Home() {
                       <ExternalLink className="w-3.5 h-3.5"/> Open @BotFather Directly
                     </a>
                     <div className="p-5 rounded-2xl" style={{background:"rgba(255,255,255,0.03)",border:"1px solid rgba(255,255,255,0.07)"}}>
-                      <label className="block text-[9px] font-bold uppercase tracking-widest text-gray-500 mb-3">API Access Token</label>
+                      <label className="block text-[9px] font-bold uppercase tracking-widest text-gray-400 mb-3">API Access Token</label>
                       <input type="password" value={telegramToken} onChange={e=>setTelegramToken(e.target.value)}
                         placeholder="Enter Verification Token…"
                         className="w-full px-4 py-3.5 rounded-xl text-[13px] text-white font-mono mb-5 outline-none"
@@ -1027,7 +1031,7 @@ export default function Home() {
                   </>
                 ) : (
                   <>
-                    <ol className="space-y-2.5 text-[12px] text-gray-500 list-decimal pl-5 mb-5 leading-relaxed">
+                    <ol className="space-y-2.5 text-[12px] text-gray-400 list-decimal pl-5 mb-5 leading-relaxed">
                       <li>Log in to <strong className="text-white">Meta Developer Console</strong></li>
                       <li>Create <strong className="text-white">Business App</strong> → activate <strong className="text-white">WhatsApp Module</strong></li>
                       <li>Register & verify phone in <strong className="text-white">API Setup</strong></li>
@@ -1043,8 +1047,8 @@ export default function Home() {
                       ].map(({label,val})=>(
                         <div key={label} className="mb-4 last:mb-0">
                           <div className="flex justify-between items-center mb-1">
-                            <span className="text-[9px] font-bold uppercase tracking-widest text-gray-500">{label}</span>
-                            <button onClick={()=>copyToClipboard(val)} className={`text-gray-500 hover:text-white ${btn}`}>
+                            <span className="text-[9px] font-bold uppercase tracking-widest text-gray-400">{label}</span>
+                            <button onClick={()=>copyToClipboard(val)} className={`text-gray-400 hover:text-white ${btn}`}>
                               <Copy className="w-3.5 h-3.5"/>
                             </button>
                           </div>
@@ -1054,14 +1058,14 @@ export default function Home() {
                       ))}
                     </div>
                     <div className="p-5 rounded-2xl" style={{background:"rgba(255,255,255,0.03)",border:"1px solid rgba(255,255,255,0.07)"}}>
-                      <label className="block text-[9px] font-bold uppercase tracking-widest text-gray-500 mb-3">Phone Number ID</label>
+                      <label className="block text-[9px] font-bold uppercase tracking-widest text-gray-400 mb-3">Phone Number ID</label>
                       <input type="text" value={waPhoneId} onChange={e=>setWaPhoneId(e.target.value)}
                         placeholder="e.g. 1044727838716942"
                         className="w-full px-4 py-3.5 rounded-xl text-[13px] text-white font-mono mb-4 outline-none"
                         style={{background:"#07070A",border:"1px solid rgba(255,255,255,0.09)"}}
                         onFocus={e=>(e.target.style.borderColor="rgba(37,211,102,0.5)")}
                         onBlur={e =>(e.target.style.borderColor="rgba(255,255,255,0.09)")}/>
-                      <label className="block text-[9px] font-bold uppercase tracking-widest text-gray-500 mb-3">Permanent API Token</label>
+                      <label className="block text-[9px] font-bold uppercase tracking-widest text-gray-400 mb-3">Permanent API Token</label>
                       <input type="password" value={telegramToken} onChange={e=>setTelegramToken(e.target.value)}
                         placeholder="EAABwzL…"
                         className="w-full px-4 py-3.5 rounded-xl text-[13px] text-white font-mono mb-5 outline-none"
@@ -1096,7 +1100,7 @@ export default function Home() {
                         {activeChannel==="telegram"?"BotFather":"Meta Developer"}
                         <CheckCircle2 className="w-3 h-3 text-blue-400"/>
                       </p>
-                      <p className="text-gray-500 text-[9px] font-mono">
+                      <p className="text-gray-400 text-[9px] font-mono">
                         {activeChannel==="telegram"?"Verified System Bot":"API Configuration"}
                       </p>
                     </div>
@@ -1161,7 +1165,7 @@ export default function Home() {
               <h2 className="text-[1.7rem] font-black uppercase tracking-tight mb-3 text-white">
                 {activeModel==="omni" ? "OmniAgent Enterprise Plans" : "Select Your Deployment Plan"}
               </h2>
-              <p className="text-gray-500 text-[13px] mb-8 max-w-xl mx-auto leading-relaxed">
+              <p className="text-gray-400 text-[13px] mb-8 max-w-xl mx-auto leading-relaxed">
                 {activeModel==="omni"
                   ? "OmniAgent includes 3x AI Fallback (GPT, Claude, Gemini) for 0% downtime."
                   : "Select a tier to securely initialize your AI engine."}
@@ -1181,7 +1185,7 @@ export default function Home() {
                       {badge&&<div className="absolute -top-3 left-1/2 -translate-x-1/2 text-white text-[9px] font-bold uppercase px-3 py-1 rounded-full tracking-widest" style={{background:accent}}>{badge}</div>}
                       <h3 className="font-bold uppercase text-[11px] tracking-widest mb-2" style={{color:accent}}>{label}</h3>
                       <div className="text-[2rem] font-black text-white mb-2">{currencySymbol}{getCurrentPrice(tier)}</div>
-                      <p className="text-[12px] text-gray-500 leading-relaxed">{desc}</p>
+                      <p className="text-[12px] text-gray-400 leading-relaxed">{desc}</p>
                     </div>
                   ))}
                 </div>
@@ -1200,7 +1204,7 @@ export default function Home() {
                       {badge&&<div className="absolute -top-3 left-1/2 -translate-x-1/2 text-white text-[9px] font-bold uppercase px-3 py-1 rounded-full tracking-widest bg-blue-600">{badge}</div>}
                       <h3 className={`font-bold uppercase text-[11px] tracking-widest mb-2 ${color}`}>{label}</h3>
                       <div className="text-[1.9rem] font-black text-white mb-2">{currencySymbol}{getCurrentPrice(tier)}</div>
-                      <p className="text-[12px] text-gray-500 leading-relaxed">{desc}</p>
+                      <p className="text-[12px] text-gray-400 leading-relaxed">{desc}</p>
                     </div>
                   ))}
                 </div>
@@ -1238,7 +1242,7 @@ export default function Home() {
                     <CheckCircle2 className="w-5 h-5 text-green-400"/>
                   </div>
                   <h4 className="text-white font-bold text-[15px] mb-1">Submitted!</h4>
-                  <p className="text-[11px] text-gray-500">Our team will review shortly.</p>
+                  <p className="text-[11px] text-gray-400">Our team will review shortly.</p>
                 </div>
               ) : (
                 <>
@@ -1248,7 +1252,7 @@ export default function Home() {
                     </div>
                     <div>
                       <h4 className="text-white font-bold text-[13px]">ClawLink Support</h4>
-                      <p className="text-[10px] text-gray-500">Standard SLA per tier.</p>
+                      <p className="text-[10px] text-gray-400">Standard SLA per tier.</p>
                     </div>
                   </div>
                   <div className="space-y-3">
@@ -1278,6 +1282,36 @@ export default function Home() {
           {isHelpOpen ? <X className="w-6 h-6"/> : <MessageCircle className="w-6 h-6"/>}
         </motion.button>
       </div>
+
+      {/* Scroll reveal init */}
+      <script dangerouslySetInnerHTML={{__html:`
+        (function(){
+          var io=new IntersectionObserver(function(e){
+            e.forEach(function(x){if(x.isIntersecting)x.target.classList.add('sr-vis');});
+          },{threshold:0.08,rootMargin:'0px 0px -30px 0px'});
+          document.querySelectorAll('.sr-up,.sr-left,.sr-rght').forEach(function(el){io.observe(el);});
+          var fio=new IntersectionObserver(function(entries){
+            entries.forEach(function(e){
+              if(e.isIntersecting){
+                var cards=e.target.querySelectorAll('.fi-card');
+                cards.forEach(function(c,i){
+                  c.style.transition='opacity .6s '+(.05+i*.09)+'s cubic-bezier(.16,1,.3,1),transform .6s '+(.05+i*.09)+'s cubic-bezier(.16,1,.3,1),background .22s';
+                  c.style.opacity='1';c.style.transform='none';
+                });
+                fio.unobserve(e.target);
+              }
+            });
+          },{threshold:0.05});
+          document.querySelectorAll('.fi-card').forEach(function(el){el.style.opacity='0';el.style.transform='translateY(18px)';});
+          document.querySelectorAll('section,div[class*="sec"]').forEach(function(g){
+            if(g.querySelector('.fi-card'))fio.observe(g);
+          });
+          window.addEventListener('scroll',function(){
+            var nav=document.getElementById('clnav');
+            if(nav)nav.style.background=window.scrollY>40?'rgba(7,7,10,0.96)':'rgba(7,7,10,0.72)';
+          },{passive:true});
+        })();
+      `}}/>
     </div>
   );
 }
