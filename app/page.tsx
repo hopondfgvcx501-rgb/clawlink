@@ -113,22 +113,21 @@ const GuideStep = ({ step, title, desc, delay }: { step: string; title: string; 
   </motion.div>
 );
 
-/* ─── Marquee — ORIGINAL UNTOUCHED ──────────────────────────── */
+/* ─── Marquee — FIXED INFINITE SCROLL & VISIBILITY ──────────────────────────── */
 const MarqueeRow = ({ items, reverse = false }: { items: string[]; reverse?: boolean }) => (
-  <div className="flex whitespace-nowrap overflow-hidden py-2">
+  <div className="flex whitespace-nowrap overflow-hidden py-2.5 w-full">
     <motion.div
-      className="flex gap-5 will-change-transform"
+      className="flex gap-5 will-change-transform w-max"
       style={{ transform: "translateZ(0)" }}
       animate={{ x: reverse ? ["-50%", "0%"] : ["0%", "-50%"] }}
-      transition={{ ease: "linear", duration: 32, repeat: Infinity }}
+      transition={{ ease: "linear", duration: 45, repeat: Infinity }}
     >
-      {[...items, ...items].map((item, i) => (
+      {[...items, ...items, ...items, ...items].map((item, i) => (
         <span key={i}
-          className="inline-flex items-center gap-2 text-[11px] text-gray-500
-            bg-white/[0.03] px-4 py-2 rounded-full border border-white/[0.055]
-            whitespace-nowrap hover:border-orange-500/30 hover:text-gray-300
+          className="inline-flex items-center gap-2.5 text-[12px] text-gray-300 font-medium
+            bg-white/[0.04] px-5 py-2.5 rounded-full border border-white/[0.08]
+            whitespace-nowrap hover:border-orange-500/50 hover:text-white hover:bg-white/[0.08]
             transition-colors duration-200">
-          <span className="w-1.5 h-1.5 rounded-full bg-orange-500/60 shrink-0"/>
           {item}
         </span>
       ))}
@@ -893,14 +892,14 @@ export default function Home() {
       <section className="relative z-10 py-24 overflow-hidden"
         style={{background:"#07070A",borderTop:"1px solid rgba(255,255,255,0.04)"}}>
         <div className="sr-up text-center mb-14 px-4">
-          <p className="text-[9.5px] font-bold tracking-[.15em] uppercase text-orange-500 mb-2">Use Cases</p>
+          <p className="text-[9.5px] font-bold tracking-[.15em] uppercase text-orange-500 mb-2">50+ Use Cases</p>
           <h2 className="text-[clamp(2rem,5vw,3.6rem)] font-black tracking-[-0.04em] text-white">Thousands of Use Cases</h2>
           <p className="text-orange-400/60 font-serif italic text-[14px] mt-2">Your agent handles complex tasks around the clock.</p>
         </div>
-        <div className="flex flex-col gap-3 relative">
+        <div className="flex flex-col gap-3 relative w-full">
           {[row1,row2,row3,row4,row5].map((r,i)=><MarqueeRow key={i} items={r} reverse={i%2===1}/>)}
           <div className="absolute inset-0 pointer-events-none"
-            style={{background:"linear-gradient(90deg,#07070A 0%,transparent 10%,transparent 90%,#07070A 100%)"}}/>
+            style={{background:"linear-gradient(90deg,#07070A 0%,transparent 15%,transparent 85%,#07070A 100%)"}}/>
         </div>
       </section>
 
