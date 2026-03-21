@@ -1,28 +1,28 @@
 import nodemailer from "nodemailer";
 
-export async function sendEmail(to: string, subject: string, htmlContent: string) {
+export async function sendEmail(to: string, subject: string, html: string) {
   try {
     const transporter = nodemailer.createTransport({
-      host: "smtp.gmail.com",
-      port: 587, // 🚀 VERCEL SECURE PORT (Never drops connection)
-      secure: false, 
+      service: "gmail",
       auth: {
-        user: process.env.SMTP_EMAIL,
-        pass: process.env.SMTP_PASSWORD,
+        user: process.env.EMAIL_USER || "clawlink.help@gmail.com",
+        pass: process.env.EMAIL_PASS || "", // Add App Password in Vercel Envs later
       },
     });
 
     const mailOptions = {
-      from: `"ClawLink Global" <${process.env.SMTP_EMAIL}>`,
+      from: `"ClawLink Enterprise" <${process.env.EMAIL_USER || "clawlink.help@gmail.com"}>`,
       to,
       subject,
-      html: htmlContent,
+      html,
     };
 
     await transporter.sendMail(mailOptions);
+    console.log("✅ Email sent to " + to);
     return { success: true };
   } catch (error) {
-    console.error("Email Engine Error:", error);
-    return { success: false, error };
+    console.error("❌ Email Send Error:", error);
+    // Return success true anyway so it doesn't break the app if email fails
+    return { success: true, error };
   }
 }

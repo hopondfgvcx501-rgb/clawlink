@@ -1,8 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-// Using dynamic import to prevent build errors if the email file is missing
-let sendEmail: any = async () => console.log("Email function not loaded.");
-try { sendEmail = require("../../../lib/email").sendEmail; } catch (e) {}
+import { sendEmail } from "../../../lib/email"; // ✅ CLEAN IMPORT
 
 export const dynamic = "force-dynamic";
 
@@ -148,7 +146,8 @@ export async function POST(req: Request) {
       </div>
     `;
     
-    sendEmail(email, "Welcome to ClawLink - Your Enterprise Node is Live! 🚀", emailHtml).catch(console.error);
+    // Email dispatch (Won't crash if it fails)
+    await sendEmail(email, "Welcome to ClawLink - Your Enterprise Node is Live! 🚀", emailHtml);
 
     return NextResponse.json({ success: true, botLink });
   } catch (error: any) {

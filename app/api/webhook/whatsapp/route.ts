@@ -1,9 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-
-// Using a try-catch for the email import so the build doesn't fail if the file isn't ready
-let sendEmail: any;
-try { sendEmail = require("../../../../lib/email").sendEmail; } catch (e) {}
+import { sendEmail } from "../../../../lib/email"; // ✅ CLEAN IMPORT
 
 export const dynamic = "force-dynamic";
 
