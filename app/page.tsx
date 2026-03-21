@@ -278,12 +278,14 @@ export default function Home() {
       const options = {
         key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID, amount: order.amount, currency: order.currency,
         name: "ClawLink Premium",
+        // 🛠️ FIX: Safe toUpperCase mapping
         description: `Plan: ${selectedTier?.toUpperCase()} | Model: ${activeModel === "omni" ? "OmniAgent Nexus" : MODEL_DETAILS[activeModel]?.name}`,
         order_id: order.id,
         handler: async () => {
           try {
             const cfgRes = await fetch("/api/config", {
               method: "POST", headers: { "Content-Type": "application/json" },
+              // 🛠️ FIX: Explicitly passing billingCycle for backend logic
               body: JSON.stringify({ 
                 email: session?.user?.email, 
                 selectedModel: selectedModelForDB, 
@@ -308,6 +310,7 @@ export default function Home() {
   };
 
   const openLiveBotHandler = () => {
+    // 🛠️ FIX: Respecting botLink if it exists for WhatsApp
     if (activeChannel === "whatsapp") {
       window.open(botLink || "https://web.whatsapp.com", "_blank");
     } else { window.open(botLink || "https://web.telegram.org", "_blank"); }
@@ -591,6 +594,7 @@ export default function Home() {
                 <Telegram_Icon size={14}/>
               </div>
               <div className="flex flex-col min-w-0 max-sm:items-center max-sm:w-full">
+                {/* 🛠️ FIXED: Text color set to text-gray-800 */}
                 <span className="ptx-name text-gray-800">Telegram</span>
               </div>
             </button>
@@ -609,6 +613,7 @@ export default function Home() {
                 <WhatsApp_Icon size={14}/>
               </div>
               <div className="flex flex-col min-w-0 max-sm:items-center max-sm:w-full">
+                {/* 🛠️ FIXED: Text color set to text-gray-800 */}
                 <span className="ptx-name text-gray-800">WhatsApp</span>
               </div>
             </button>
