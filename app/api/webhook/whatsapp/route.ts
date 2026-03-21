@@ -50,13 +50,12 @@ export async function GET(req: Request) {
 }
 
 // =========================================================================
-// 🚀 AI HELPER FUNCTIONS (NOW USING DYNAMIC 'BYOK' API KEYS)
+// 🚀 AI HELPER FUNCTIONS (USING CLAWLINK MASTER KEYS)
 // =========================================================================
-async function generateEmbedding(text: string, key: string | null) {
-    const apiKey = key || process.env.GEMINI_API_KEY; // Fallback to sys key if user has none (Safety net)
-    if (!apiKey) return null;
+async function generateEmbedding(text: string) {
+    if (!process.env.GEMINI_API_KEY) return null;
     try {
-        const embedUrl = `https://generativelanguage.googleapis.com/v1beta/models/embedding-001:embedContent?key=${apiKey}`;
+        const embedUrl = `https://generativelanguage.googleapis.com/v1beta/models/embedding-001:embedContent?key=${process.env.GEMINI_API_KEY}`;
         const res = await fetch(embedUrl, {
             method: "POST", headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ content: { parts: [{ text: text }] } }) 
@@ -66,10 +65,9 @@ async function generateEmbedding(text: string, key: string | null) {
     } catch (e) { return null; }
 }
 
-async function callGemini(model: string, prompt: string, key: string | null) {
-    const apiKey = key || process.env.GEMINI_API_KEY;
-    if (!apiKey) throw new Error("API_KEY missing");
-    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
+async function callGemini(model: string, prompt: string) {
+    if (!process.env.GEMINI_API_KEY) throw new Error("API_KEY missing");
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${process.env.GEMINI_API_KEY}`, {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: prompt }] }] })
     });
@@ -78,11 +76,10 @@ async function callGemini(model: string, prompt: string, key: string | null) {
     return data.candidates[0].content.parts[0].text;
 }
 
-async function callOpenAI(model: string, prompt: string, key: string | null) {
-    const apiKey = key || process.env.OPENAI_API_KEY;
-    if (!apiKey) throw new Error("API_KEY missing");
+async function callOpenAI(model: string, prompt: string) {
+    if (!process.env.OPENAI_API_KEY) throw new Error("API_KEY missing");
     const res = await fetch("https://api.openai.com/v1/chat/completions", {
-        method: "POST", headers: { "Content-Type": "application/json", "Authorization": `Bearer ${apiKey}` },
+        method: "POST", headers: { "Content-Type": "application/json", "Authorization": `Bearer ${process.env.OPENAI_API_KEY}` },
         body: JSON.stringify({ model: model, messages: [{ role: "user", content: prompt }] })
     });
     const data = await res.json();
@@ -90,11 +87,10 @@ async function callOpenAI(model: string, prompt: string, key: string | null) {
     return data.choices[0].message.content;
 }
 
-async function callClaude(model: string, prompt: string, key: string | null) {
-    const apiKey = key || process.env.ANTHROPIC_API_KEY;
-    if (!apiKey) throw new Error("API_KEY missing");
+async function callClaude(model: string, prompt: string) {
+    if (!process.env.ANTHROPIC_API_KEY) throw new Error("API_KEY missing");
     const res = await fetch("https://api.anthropic.com/v1/messages", {
-        method: "POST", headers: { "Content-Type": "application/json", "x-api-key": apiKey, "anthropic-version": "2023-06-01" },
+        method: "POST", headers: { "Content-Type": "application/json", "x-api-key": process.env.ANTHROPIC_API_KEY, "anthropic-version": "2023-06-01" },
         body: JSON.stringify({ model: model, max_tokens: 1024, messages: [{ role: "user", content: prompt }] })
     });
     const data = await res.json();
@@ -151,7 +147,6 @@ export async function POST(req: Request) {
         whatsappToken = config.whatsapp_token;
         const systemPrompt = config.system_prompt || "You are a helpful AI assistant on WhatsApp.";
         const userEmail = config.email;
-        const userApiKey = config.user_api_key; // 🚀 The BYOK!
         
         // 🔒 GET STRICT AI PROVIDER FROM DB
         let rawProvider = (config.ai_provider || config.selected_model || "openai").toLowerCase();
@@ -190,8 +185,7 @@ export async function POST(req: Request) {
         // ==========================================
         let customKnowledge = "";
         try {
-            // Using User's Key for RAG if they have Google Key, else fallback to sys
-            const queryVector = await generateEmbedding(userText, provider === "google" ? userApiKey : null);
+            const queryVector = await generateEmbedding(userText);
             if (queryVector) {
                 const { data: matchedDocs } = await supabase.rpc("match_knowledge", {
                     query_embedding: queryVector, match_threshold: 0.65, match_count: 3, p_user_email: userEmail
@@ -245,7 +239,6 @@ export async function POST(req: Request) {
                         prompt: userText,
                         systemPrompt: `System Instructions: ${systemPrompt}\n\nCompany Knowledge:\n${customKnowledge ? customKnowledge : "None."}`,
                         history: pastChats ? pastChats.reverse().map(chat => ({ role: chat.sender_type === "bot" ? "assistant" : "user", content: chat.message })) : [],
-                        apiKey: userApiKey, // Give Omni the BYOK
                         forceCheap: forceCheapFallback // Tell Omni to be cheap if needed
                     })
                 });
@@ -270,10 +263,9 @@ export async function POST(req: Request) {
 
             for (const modelName of chain) {
                 try {
-                    // Send User's API Key to the Callers
-                    if (provider === "openai") aiResponse = await callOpenAI(modelName, fullContext, userApiKey);
-                    else if (provider === "anthropic") aiResponse = await callClaude(modelName, fullContext, userApiKey);
-                    else aiResponse = await callGemini(modelName, fullContext, userApiKey);
+                    if (provider === "openai") aiResponse = await callOpenAI(modelName, fullContext);
+                    else if (provider === "anthropic") aiResponse = await callClaude(modelName, fullContext);
+                    else aiResponse = await callGemini(modelName, fullContext);
                     
                     wasSuccessful = true;
                     break; // Stop loop if successful
@@ -289,10 +281,6 @@ export async function POST(req: Request) {
         if (wasSuccessful) {
             // Increment Monthly Limit Counter
             await supabase.from("user_configs").update({ messages_used_this_month: messagesUsed + 1 }).eq("email", userEmail);
-            
-            if (!config.is_unlimited) {
-                 await supabase.from("user_configs").update({ tokens_used: config.tokens_used + 1 }).eq("email", userEmail);
-            }
         }
         
         // Save Response to CRM

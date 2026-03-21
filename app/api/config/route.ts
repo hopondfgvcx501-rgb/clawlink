@@ -14,7 +14,7 @@ export async function POST(req: Request) {
   try {
     const body = await req.json();
     
-    // 🚀 MASTER DESTRUCTURING (Includes BYOK Key & Billing Cycle)
+    // 🚀 MASTER DESTRUCTURING (BYOK Removed, pure SaaS flow)
     const { 
         email, 
         selectedModel, 
@@ -22,7 +22,6 @@ export async function POST(req: Request) {
         telegramToken, 
         waPhoneId, 
         waPhoneNumber, // Used for Smart Redirect
-        userApiKey,    // 🚀 BYOK (Bring Your Own Key)
         plan, 
         billingCycle   // 🚀 "Monthly" or "Yearly"
     } = body;
@@ -46,7 +45,6 @@ export async function POST(req: Request) {
     if (plan === "plus") monthlyLimit = 2000;
     else if (plan === "pro") monthlyLimit = 8000;
     else if (plan === "ultra_max") monthlyLimit = 25000;
-    // 🛠️ FIXED: Replaced 'activeModel' with 'selectedModel' to clear the Red Error
     else if (plan === "pro_plus" || plan === "max_elite" || selectedModel === "multi_model") monthlyLimit = 50000;
     else monthlyLimit = 1000; // Safe default
 
@@ -65,7 +63,6 @@ export async function POST(req: Request) {
         // AI Settings
         ai_model: selectedModel,
         ai_provider: providerToSave, 
-        user_api_key: userApiKey || null, // 🚀 SECURELY STORE BYOK KEY
         
         // Channel Settings
         telegram_token: selectedChannel === "telegram" ? telegramToken : null,
@@ -91,7 +88,6 @@ export async function POST(req: Request) {
     }
 
     // 💸 3. RECORD BILLING HISTORY FOR DASHBOARD
-    // A safe fallback logic to record approximate amount if needed
     let amount = "29.00"; 
     if (plan === "pro") amount = "49.00";
     if (plan === "ultra_max") amount = "99.00";
@@ -142,7 +138,7 @@ export async function POST(req: Request) {
           <p style="margin: 5px 0; color: #aaa;"><strong>Channel:</strong> <span style="color: #fff; text-transform: capitalize;">${selectedChannel}</span></p>
         </div>
 
-        <p style="color: #cccccc; font-size: 16px; line-height: 1.6;">You can monitor usage, update your BYOK API Key, and manage your RAG database directly from your dashboard.</p>
+        <p style="color: #cccccc; font-size: 16px; line-height: 1.6;">You can monitor usage, view your limits, and manage your RAG database directly from your dashboard.</p>
         <br/>
         ${botLink ? `<a href="${botLink}" style="background: #22c55e; color: #000000; padding: 12px 24px; text-decoration: none; font-weight: bold; border-radius: 8px; margin-right: 10px; display: inline-block;">Open Live Bot</a>` : ''}
         <a href="https://clawlink.com/dashboard" style="background: #ffffff; color: #000000; padding: 12px 24px; text-decoration: none; font-weight: bold; border-radius: 8px; display: inline-block; margin-top: 10px;">Access CRM Dashboard</a>
