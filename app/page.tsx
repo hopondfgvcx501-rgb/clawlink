@@ -155,17 +155,66 @@ export default function Home() {
   const [helpStatus,         setHelpStatus]         = useState<"idle"|"sending"|"sent">("idle");
   const [isSupportModalOpen, setIsSupportModalOpen] = useState(false);
 
-  /* ── ALL ORIGINAL HANDLERS — FIXED CRASH BUGS ── */
+  /* ── 🚀 FIXED: MOVED INTERSECTION OBSERVER SCRIPT TO USEEFFECT ── */
   useEffect(() => {
     setIsMounted(true);
-    try {
-      const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
-      if (tz === "Asia/Calcutta" || tz === "Asia/Kolkata") { setCurrency("INR"); setCurrencySymbol("₹"); }
-    } catch {}
+    
+    // Load Razorpay
     const s = document.createElement("script");
     s.src = "https://checkout.razorpay.com/v1/checkout.js";
     s.async = true;
     document.body.appendChild(s);
+
+    try {
+      const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      if (tz === "Asia/Calcutta" || tz === "Asia/Kolkata") { setCurrency("INR"); setCurrencySymbol("₹"); }
+    } catch {}
+
+    // SCROLL ANIMATIONS OBSERVER (Replaces injected script)
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach((e) => {
+        if (e.isIntersecting) e.target.classList.add('sr-vis');
+      });
+    }, { threshold: 0.08, rootMargin: '0px 0px -30px 0px' });
+
+    // Wait a brief moment to ensure DOM is ready
+    setTimeout(() => {
+      document.querySelectorAll('.sr-up, .sr-left, .sr-rght').forEach((el) => io.observe(el));
+
+      const fio = new IntersectionObserver((entries) => {
+        entries.forEach((e) => {
+          if (e.isIntersecting) {
+            const cards = e.target.querySelectorAll('.fi-card');
+            cards.forEach((c: any, i: number) => {
+              c.style.transition = 'opacity .6s ' + (0.05 + i * 0.09) + 's cubic-bezier(.16,1,.3,1), transform .6s ' + (0.05 + i * 0.09) + 's cubic-bezier(.16,1,.3,1), background .22s';
+              c.style.opacity = '1';
+              c.style.transform = 'none';
+            });
+            fio.unobserve(e.target);
+          }
+        });
+      }, { threshold: 0.05 });
+
+      document.querySelectorAll('.fi-card').forEach((el: any) => {
+        el.style.opacity = '0';
+        el.style.transform = 'translateY(18px)';
+      });
+
+      document.querySelectorAll('section, div[class*="sec"]').forEach((g) => {
+        if (g.querySelector('.fi-card')) fio.observe(g);
+      });
+    }, 100); // Small delay to let React render classes
+
+    const handleScroll = () => {
+      const nav = document.getElementById('clnav');
+      if (nav) nav.style.background = window.scrollY > 40 ? 'rgba(7,7,10,0.96)' : 'rgba(7,7,10,0.72)';
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+
+    return () => {
+      io.disconnect();
+      window.removeEventListener('scroll', handleScroll);
+    };
   }, []);
 
   const handleOpenIntegration = (ch: string) => {
@@ -229,14 +278,12 @@ export default function Home() {
       const options = {
         key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID, amount: order.amount, currency: order.currency,
         name: "ClawLink Premium",
-        // 🛠️ FIX: Safe toUpperCase mapping
         description: `Plan: ${selectedTier?.toUpperCase()} | Model: ${activeModel === "omni" ? "OmniAgent Nexus" : MODEL_DETAILS[activeModel]?.name}`,
         order_id: order.id,
         handler: async () => {
           try {
             const cfgRes = await fetch("/api/config", {
               method: "POST", headers: { "Content-Type": "application/json" },
-              // 🛠️ FIX: Explicitly passing billingCycle for backend logic
               body: JSON.stringify({ 
                 email: session?.user?.email, 
                 selectedModel: selectedModelForDB, 
@@ -261,7 +308,6 @@ export default function Home() {
   };
 
   const openLiveBotHandler = () => {
-    // 🛠️ FIX: Respecting botLink if it exists for WhatsApp
     if (activeChannel === "whatsapp") {
       window.open(botLink || "https://web.whatsapp.com", "_blank");
     } else { window.open(botLink || "https://web.telegram.org", "_blank"); }
@@ -1227,36 +1273,6 @@ export default function Home() {
           {isHelpOpen ? <X className="w-6 h-6"/> : <MessageCircle className="w-6 h-6"/>}
         </motion.button>
       </div>
-
-      {/* Scroll reveal init */}
-      <script dangerouslySetInnerHTML={{__html:`
-        (function(){
-          var io=new IntersectionObserver(function(e){
-            e.forEach(function(x){if(x.isIntersecting)x.target.classList.add('sr-vis');});
-          },{threshold:0.08,rootMargin:'0px 0px -30px 0px'});
-          document.querySelectorAll('.sr-up,.sr-left,.sr-rght').forEach(function(el){io.observe(el);});
-          var fio=new IntersectionObserver(function(entries){
-            entries.forEach(function(e){
-              if(e.isIntersecting){
-                var cards=e.target.querySelectorAll('.fi-card');
-                cards.forEach(function(c,i){
-                  c.style.transition='opacity .6s '+(.05+i*.09)+'s cubic-bezier(.16,1,.3,1),transform .6s '+(.05+i*.09)+'s cubic-bezier(.16,1,.3,1),background .22s';
-                  c.style.opacity='1';c.style.transform='none';
-                });
-                fio.unobserve(e.target);
-              }
-            });
-          },{threshold:0.05});
-          document.querySelectorAll('.fi-card').forEach(function(el){el.style.opacity='0';el.style.transform='translateY(18px)';});
-          document.querySelectorAll('section,div[class*="sec"]').forEach(function(g){
-            if(g.querySelector('.fi-card'))fio.observe(g);
-          });
-          window.addEventListener('scroll',function(){
-            var nav=document.getElementById('clnav');
-            if(nav)nav.style.background=window.scrollY>40?'rgba(7,7,10,0.96)':'rgba(7,7,10,0.72)';
-          },{passive:true});
-        })();
-      `}}/>
     </div>
   );
 }
