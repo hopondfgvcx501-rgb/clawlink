@@ -1,41 +1,47 @@
-import React from "react";
+"use client";
 
-export const metadata = {
-  title: "Terms & Conditions | ClawLink AI",
-  description: "Terms and conditions for using ClawLink Global AI SaaS Infrastructure.",
-};
+import { ArrowLeft, FileText } from "lucide-react";
+import { useRouter } from "next/navigation";
 
-export default function TermsPage() {
+export default function TermsOfService() {
+  const router = useRouter();
+
   return (
-    <div className="min-h-screen bg-[#0A0A0B] text-gray-300 py-20 px-6 font-sans">
-      <div className="max-w-4xl mx-auto bg-[#111] p-10 md:p-16 rounded-3xl border border-white/10 shadow-2xl">
-        <h1 className="text-4xl font-black text-white mb-8 tracking-tight">Terms & Conditions</h1>
-        <p className="mb-6 text-sm text-gray-500 font-mono">Last Updated: March 2026</p>
-        
-        <div className="space-y-8 text-sm leading-relaxed">
+    <div className="min-h-screen bg-[#07070A] text-gray-300 font-sans p-6 md:p-12">
+      <div className="max-w-3xl mx-auto mt-10">
+        <button 
+          onClick={() => router.push('/')}
+          className="flex items-center gap-2 text-sm text-gray-500 hover:text-white transition-colors mb-10"
+        >
+          <ArrowLeft className="w-4 h-4" /> Back to Home
+        </button>
+
+        <h1 className="text-3xl md:text-5xl font-black text-white mb-4 tracking-tight flex items-center gap-4">
+          <FileText className="w-10 h-10 text-orange-500" />
+          Terms of Service
+        </h1>
+        <p className="text-gray-500 text-sm mb-12">Last Updated: March 2026</p>
+
+        <div className="space-y-8 text-sm leading-relaxed text-gray-400">
           <section>
             <h2 className="text-xl font-bold text-white mb-3">1. Acceptance of Terms</h2>
-            <p>By accessing and using ClawLink ("the Platform"), you agree to be bound by these Terms and Conditions. If you do not agree with any part of these terms, you are prohibited from using the Platform and its API services.</p>
+            <p>By accessing or using ClawLink's Enterprise AI Infrastructure, you agree to be bound by these Terms of Service. If you disagree with any part of the terms, you may not access the service.</p>
           </section>
 
           <section>
-            <h2 className="text-xl font-bold text-white mb-3">2. Service Description</h2>
-            <p>ClawLink provides AI-powered routing, chatbot deployment, and SaaS infrastructure via Telegram and Meta (WhatsApp) Cloud. The platform acts as an intermediary utilizing LLMs (Large Language Models) such as GPT, Claude, and Gemini.</p>
+            <h2 className="text-xl font-bold text-white mb-3">2. API Usage & Fair Use Policy</h2>
+            <p>While our Premium tiers offer unlimited infrastructure usage, fair use policies apply to prevent network abuse or DDoS vectors. We reserve the right to throttle traffic that threatens the stability of our routing matrix.</p>
           </section>
 
           <section>
-            <h2 className="text-xl font-bold text-white mb-3">3. Fair Usage Policy (FUP)</h2>
-            <p>Users subscribing to "Omni Max" or "Unlimited" plans are subject to our Fair Usage Policy to prevent server abuse and automated botnet attacks. ClawLink reserves the right to throttle or suspend API access if usage anomalies are detected.</p>
+            <h2 className="text-xl font-bold text-white mb-3">3. Service Uptime (SLA)</h2>
+            <p>ClawLink's OmniAgent architecture guarantees a 99.99% uptime by utilizing a 3x Fallback Matrix. However, we are not liable for downtime caused by upstream providers (OpenAI, Anthropic, Google, Meta, or Telegram).</p>
           </section>
 
           <section>
-            <h2 className="text-xl font-bold text-white mb-3">4. Limitation of Liability</h2>
-            <p>ClawLink shall not be held liable for any direct, indirect, incidental, or consequential damages resulting from AI hallucinations, API downtime, or Meta/Telegram server restrictions.</p>
+            <h2 className="text-xl font-bold text-white mb-3">4. Refunds & Cancellations</h2>
+            <p>Subscription plans are billed proactively. Refunds for unused portions of a billing cycle are subject to review by our support team at <strong className="text-blue-400">clawlink.help@gmail.com</strong>.</p>
           </section>
-        </div>
-        
-        <div className="mt-16 pt-8 border-t border-white/10 text-center">
-          <a href="/" className="text-blue-400 hover:text-white transition-colors font-bold uppercase tracking-widest text-xs">← Return to Home</a>
         </div>
       </div>
     </div>
