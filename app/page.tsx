@@ -15,7 +15,7 @@ import Image from "next/image";
 const MODEL_DETAILS: Record<string, { name: string; starter: number; pro: number }> = {
   gemini:    { name: "Gemini 3 Flash", starter: 1.2, pro: 19 },
   "gpt-5.2": { name: "GPT-5.2",        starter: 19,  pro: 39 },
-  claude:    { name: "Opus 4.6",        starter: 29,  pro: 59 },
+  claude:    { name: "Opus 4.6",       starter: 29,  pro: 59 },
 };
 const MAX_PLAN_PRICE = 89;
 const OMNI_PRICING   = { monthly: 79, yearly: 790 };
@@ -133,7 +133,7 @@ export default function Home() {
   const { data: session, status } = useSession();
   const router = useRouter();
 
-  const [isMounted,           setIsMounted]           = useState(false);
+  const [isMounted,            setIsMounted]            = useState(false);
   const [isTelegramModalOpen, setIsTelegramModalOpen] = useState(false);
   const [telegramToken,       setTelegramToken]       = useState("");
   const [waPhoneId,           setWaPhoneId]           = useState("");
@@ -155,7 +155,7 @@ export default function Home() {
   const [helpStatus,         setHelpStatus]         = useState<"idle"|"sending"|"sent">("idle");
   const [isSupportModalOpen, setIsSupportModalOpen] = useState(false);
 
-  /* ── ALL ORIGINAL HANDLERS — UNTOUCHED ── */
+  /* ── ALL ORIGINAL HANDLERS — FIXED CRASH BUGS ── */
   useEffect(() => {
     setIsMounted(true);
     try {
@@ -218,22 +218,34 @@ export default function Home() {
     try {
       const exactPaise = Math.round(finalPrice * 100);
       const selectedModelForDB = activeModel === "omni" ? "multi_model" : activeModel;
+      
       const res = await fetch("/api/razorpay", {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ amount: exactPaise, currency, email: session?.user?.email || "user@clawlink.com", planName: selectedTier, selectedModel: selectedModelForDB }),
       });
       const order = await res.json();
       if (order.error) { alert("Order Error: " + order.error); setIsDeploying(false); return; }
+      
       const options = {
         key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID, amount: order.amount, currency: order.currency,
         name: "ClawLink Premium",
-        description: `Plan: ${selectedTier.toUpperCase()} | Model: ${activeModel === "omni" ? "OmniAgent Nexus" : MODEL_DETAILS[activeModel]?.name}`,
+        // 🛠️ FIX: Safe toUpperCase mapping
+        description: `Plan: ${selectedTier?.toUpperCase()} | Model: ${activeModel === "omni" ? "OmniAgent Nexus" : MODEL_DETAILS[activeModel]?.name}`,
         order_id: order.id,
         handler: async () => {
           try {
             const cfgRes = await fetch("/api/config", {
               method: "POST", headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ email: session?.user?.email, selectedModel: selectedModelForDB, selectedChannel: activeChannel, telegramToken, phoneId: waPhoneId, plan: selectedTier }),
+              // 🛠️ FIX: Explicitly passing billingCycle for backend logic
+              body: JSON.stringify({ 
+                email: session?.user?.email, 
+                selectedModel: selectedModelForDB, 
+                selectedChannel: activeChannel, 
+                telegramToken, 
+                waPhoneId, 
+                plan: selectedTier,
+                billingCycle: selectedTier === "yearly" ? "Yearly" : "Monthly" 
+              }),
             });
             const cfg = await cfgRes.json();
             if (cfg.success && cfg.botLink) { setBotLink(cfg.botLink); setShowPricingPopup(false); }
@@ -249,10 +261,12 @@ export default function Home() {
   };
 
   const openLiveBotHandler = () => {
+    // 🛠️ FIX: Respecting botLink if it exists for WhatsApp
     if (activeChannel === "whatsapp") {
-      window.open(/iPhone|iPad|iPod|Android/i.test(navigator.userAgent) ? "https://api.whatsapp.com/send" : "https://web.whatsapp.com", "_blank");
+      window.open(botLink || "https://web.whatsapp.com", "_blank");
     } else { window.open(botLink || "https://web.telegram.org", "_blank"); }
   };
+  
   const copyToClipboard = (t: string) => { navigator.clipboard.writeText(t); alert("Copied!"); };
 
   /* ── Marquee rows — ORIGINAL UNTOUCHED ── */
@@ -268,18 +282,13 @@ export default function Home() {
   const btn = "transition-all duration-150 ease-out active:scale-[0.96] transform-gpu";
 
   /* ─── Pill CSS helpers ─── */
-  // Desktop: landscape rect (row layout, short height)
-  // Mobile: portrait rect (column layout, icon top + name bottom)
   const pillBase = [
     "bg-white border-2 border-transparent cursor-pointer overflow-hidden",
     "transition-all duration-150 ease-out active:scale-[0.96]",
-    // Desktop: horizontal rectangle
     "h-[48px] rounded-[12px] flex flex-row items-center gap-2 px-3",
     "shadow-[0_2px_8px_rgba(0,0,0,0.12)]",
     "hover:shadow-[0_8px_20px_rgba(0,0,0,0.22)] hover:-translate-y-[2px]",
-    // Mobile: portrait rectangle (icon top, name bottom)
     "sm:flex-row sm:h-[48px] sm:px-3",
-    // On very small screens override to column
     "max-sm:flex-col max-sm:h-[58px] max-sm:px-[3px] max-sm:py-[7px] max-sm:gap-[3px] max-sm:justify-center max-sm:items-center",
     "max-sm:rounded-[10px] max-sm:shadow-[0_2px_6px_rgba(0,0,0,0.10)]",
   ].join(" ");
