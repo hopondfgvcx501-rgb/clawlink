@@ -50,7 +50,7 @@ export async function GET(req: Request) {
     const { data, error } = await supabase
       .from("knowledge_base")
       .select("id, content, created_at")
-      .eq("email", email) 
+      .eq("user_email", email) // 🚀 FIXED: matches Supabase column
       .order("created_at", { ascending: false });
 
     if (error) throw error;
@@ -83,7 +83,7 @@ export async function POST(req: Request) {
 
     // Store in Supabase
     const { error } = await supabase.from("knowledge_base").insert({
-      email: email, 
+      user_email: email, // 🚀 FIXED: matches Supabase column
       content: text,
       embedding: vector,
     });
