@@ -17,7 +17,6 @@ export default function Dashboard() {
   const { data: session, status } = useSession();
   const router = useRouter();
   
-  // Core States
   const [userData, setUserData] = useState<any>(null);
   const [billingHistory, setBillingHistory] = useState<any[]>([]);
   const [stats, setStats] = useState<any>(null); 
@@ -25,11 +24,9 @@ export default function Dashboard() {
   const [showAppBanner, setShowAppBanner] = useState(true);
   const [copiedScript, setCopiedScript] = useState(false); 
   
-  // Persona States
   const [systemPrompt, setSystemPrompt] = useState("");
   const [isSavingPrompt, setIsSavingPrompt] = useState(false);
 
-  // RAG Knowledge Base States
   const [knowledgeText, setKnowledgeText] = useState("");
   const [isInjecting, setIsInjecting] = useState(false);
   const [knowledgeItems, setKnowledgeItems] = useState<any[]>([]);
@@ -131,34 +128,64 @@ export default function Dashboard() {
     }
   };
 
+  // 🚀 FIXED: PROFESSIONAL HTML INVOICE PRINTING WITH CLAWLINK LOGO
   const handleDownloadInvoice = (invoice: any) => {
-    const receiptContent = `
-=========================================
-    CLAWLINK INC. - OFFICIAL RECEIPT
-=========================================
-Invoice ID    : ${invoice.razorpay_order_id || invoice.id}
-Date          : ${new Date(invoice.created_at).toLocaleString()}
-Customer      : ${invoice.email}
-
------------------------------------------
-Plan Subscribed: ${invoice.plan_name?.toUpperCase() || 'UNKNOWN'}
-Total Amount   : ${invoice.amount} ${invoice.currency?.toUpperCase() || 'USD'}
-Payment Status : ${invoice.status?.toUpperCase() || 'PAID'}
------------------------------------------
-
-Thank you for choosing ClawLink Enterprise AI.
-=========================================
+    const invoiceHtml = `
+      <html>
+        <head>
+          <title>Invoice #${invoice.razorpay_order_id || invoice.id}</title>
+          <style>
+            body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #07070A; color: #E8E8EC; padding: 40px; }
+            .container { max-width: 650px; margin: 0 auto; border: 1px solid rgba(255,255,255,0.1); padding: 40px; border-radius: 20px; background: #111113; box-shadow: 0 10px 40px rgba(0,0,0,0.5); }
+            .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 24px; margin-bottom: 24px; }
+            .total { font-size: 36px; font-weight: 900; color: #f97316; }
+            .details p { margin: 10px 0; color: #9ca3af; font-size: 14px; }
+            .details strong { color: #f3f4f6; }
+            .footer { text-align: center; margin-top: 40px; color: #6b7280; font-size: 12px; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <svg width="150" height="26" viewBox="0 0 152 26" fill="none">
+                <path d="M22 3C18 .5 10 .5 7 4.5S3.5 18 7 22.5 18 26 22 23" stroke="#fff" stroke-width="4.5" stroke-linecap="round" fill="none"/>
+                <line x1="7.5" y1="3" x2="14.5" y2="11.5" stroke="#f97316" stroke-width="2.2" stroke-linecap="round"/>
+                <line x1="12.5" y1="1.5" x2="19.5" y2="10" stroke="#f97316" stroke-width="2.2" stroke-linecap="round"/>
+                <line x1="17.5" y1="2.5" x2="24" y2="10.5" stroke="#f97316" stroke-width="2" stroke-linecap="round"/>
+                <text x="30" y="18" font-family="sans-serif" font-size="14.5" font-weight="800" letter-spacing="1.4" fill="#fff">LAWLINK</text>
+                <text x="116" y="18" font-family="sans-serif" font-size="9.5" font-weight="700" letter-spacing=".7" fill="#f97316">.COM</text>
+              </svg>
+              <div style="text-align:right">
+                <h2 style="margin:0;font-size:26px;font-weight:900;color:#fff;letter-spacing:1px;">INVOICE</h2>
+                <p style="margin:6px 0 0;color:#6b7280;font-size:12px;font-family:monospace;">#${invoice.razorpay_order_id || invoice.id}</p>
+              </div>
+            </div>
+            <div class="details">
+              <p><strong>Billed To:</strong> ${invoice.email}</p>
+              <p><strong>Date Issued:</strong> ${new Date(invoice.created_at).toLocaleString()}</p>
+              <p><strong>Plan Subscribed:</strong> <span style="text-transform:uppercase;background:rgba(255,255,255,0.05);padding:4px 8px;border-radius:6px;border:1px solid rgba(255,255,255,0.1);">${invoice.plan_name?.toUpperCase() || 'UNKNOWN'}</span></p>
+              <p><strong>Payment Status:</strong> <span style="color:#22c55e;font-weight:bold;letter-spacing:1px;">${invoice.status?.toUpperCase() || 'PAID'}</span></p>
+            </div>
+            <div style="margin-top: 40px; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 24px; display: flex; justify-content: space-between; align-items: flex-end;">
+              <div>
+                <p style="margin:0;color:#9ca3af;font-size:12px;margin-bottom:4px;text-transform:uppercase;letter-spacing:1px;">Total Amount Paid</p>
+                <p style="margin:0;color:#6b7280;font-size:11px;">Includes all applicable taxes</p>
+              </div>
+              <span class="total">${invoice.amount} ${invoice.currency?.toUpperCase() || 'USD'}</span>
+            </div>
+            <div class="footer">
+              <p>Thank you for choosing ClawLink Enterprise AI.</p>
+              <p>This is a computer-generated document and requires no signature.</p>
+            </div>
+          </div>
+          <script>window.onload = () => { setTimeout(() => window.print(), 500); }</script>
+        </body>
+      </html>
     `;
 
-    const blob = new Blob([receiptContent], { type: "text/plain" });
+    const blob = new Blob([invoiceHtml], { type: "text/html" });
     const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `ClawLink_Receipt_${invoice.razorpay_order_id || 'Latest'}.txt`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+    window.open(url, "_blank");
   };
 
   const webChatScript = `<script src="https://clawlink-six.vercel.app/api/widget?id=${session?.user?.email}" defer></script>`;
@@ -178,14 +205,12 @@ Thank you for choosing ClawLink Enterprise AI.
     );
   }
 
-  // UI Logic Calculations
   const currentPlan = userData?.plan?.toLowerCase() || "starter";
   const isPremium = currentPlan === "pro" || currentPlan === "max" || currentPlan === "monthly" || currentPlan === "yearly";
   const showTokens = !isPremium; 
   const usagePercentage = isPremium ? 100 : Math.min(((stats?.tokensUsed || 0) / (stats?.tokensAllocated || 1)) * 100, 100);
   const totalMsgs = (stats?.platformStats?.whatsapp || 0) + (stats?.platformStats?.telegram || 0) + (stats?.platformStats?.web || 0);
 
-  // Omni-Powered Identity Verification
   const dbValues = [
     stats?.activeModel, stats?.ai_provider, stats?.selectedModel,
     userData?.selected_model, userData?.selectedModel, userData?.ai_provider, userData?.ai_model
@@ -204,6 +229,7 @@ Thank you for choosing ClawLink Enterprise AI.
   const isTelegramLive = !!userData?.telegram_token || !!userData?.telegramActive;
   const isWhatsappLive = !!userData?.whatsapp_token || !!userData?.whatsapp_phone_id || !!userData?.whatsappActive;
 
+  // 🚀 FIXED: ULTRA SMART WHATSAPP APP REDIRECT
   const handleOpenLiveBot = async () => {
     if (isTelegramLive && userData?.telegram_token) {
       try {
@@ -218,28 +244,30 @@ Thank you for choosing ClawLink Enterprise AI.
       }
       window.open(`https://t.me/${userData?.tg_username || ""}`, "_blank"); 
     } else if (isWhatsappLive) {
+      // Forces Native App opening via WA API deep link
       if (userData?.whatsapp_number) {
-        window.open(`https://wa.me/${userData.whatsapp_number.replace(/\D/g, '')}`, "_blank");
+        window.open(`https://api.whatsapp.com/send?phone=${userData.whatsapp_number.replace(/\D/g, '')}`, "_blank");
       } else {
-        window.open("https://web.whatsapp.com", "_blank"); 
+        window.open("https://api.whatsapp.com/", "_blank"); 
       }
     } else {
       router.push(`/widget?email=${session?.user?.email}`); 
     }
   };
 
+  // 🚀 ULTRA FAST BTN CLASS
+  const btn = "transition-all duration-[120ms] ease-out active:scale-[0.93] transform-gpu will-change-transform";
+
   return (
     <div className="w-full min-h-screen bg-[#07070A] text-[#E8E8EC] font-sans relative selection:bg-orange-500/30 overflow-y-auto custom-scrollbar flex flex-col">
       
-      {/* 🚀 FIXED: CINEMATIC SUNSET GLOW EFFECT (Matched with Landing Page) */}
       <div className="fixed top-[-20%] right-[-8%] w-[800px] h-[800px] rounded-full pointer-events-none z-0" style={{background:"radial-gradient(circle,rgba(249,115,22,0.18) 0%,transparent 65%)",transform:"translateZ(0)"}}/>
       <div className="fixed bottom-[-20%] left-[-8%] w-[800px] h-[800px] rounded-full pointer-events-none z-0" style={{background:"radial-gradient(circle,rgba(99,102,241,0.15) 0%,transparent 65%)",transform:"translateZ(0)"}}/>
 
-      {/* HEADER WITH ORIGINAL LANDING PAGE LOGO & BUTTON */}
-      <header className="flex items-center justify-between p-6 md:p-8 border-b border-white/5 bg-[#07070A]/70 backdrop-blur-xl sticky top-0 z-30">
+      <header className="flex items-center justify-between p-6 md:p-8 border-b border-white/5 bg-[#07070A]/70 backdrop-blur-xl sticky top-0 z-30 transition-all duration-300">
         <div className="flex items-center gap-6">
-          {/* Premium logo: C + LAWLINK.COM */}
-          <svg width="130" height="22" viewBox="0 0 152 26" fill="none" className="shrink-0 cursor-pointer" onClick={() => router.push("/")}>
+          {/* 🚀 FIXED: CLEAN CLAWLINK.COM LOGO (Orange and White Only) */}
+          <svg width="130" height="22" viewBox="0 0 152 26" fill="none" className="shrink-0 cursor-pointer transition-transform hover:scale-105" onClick={() => router.push("/")}>
             <defs>
               <linearGradient id="cg" x1="0" y1="0" x2="0" y2="26" gradientUnits="userSpaceOnUse">
                 <stop stopColor="#fff"/><stop offset="1" stopColor="rgba(255,255,255,.65)"/>
@@ -261,10 +289,8 @@ Thank you for choosing ClawLink Enterprise AI.
         </div>
 
         <div className="flex items-center gap-4">
-          <button 
-            onClick={handleOpenLiveBot}
-            className="hidden sm:flex items-center gap-2 bg-white text-black hover:bg-gray-100 px-5 py-2.5 rounded-full font-black text-[11px] uppercase tracking-widest shadow-[0_0_20px_rgba(255,255,255,0.15)] transition-all duration-150 ease-out active:scale-[0.96] hover:scale-[1.03]"
-          >
+          <button onClick={handleOpenLiveBot}
+            className={`hidden sm:flex items-center gap-2 bg-white text-black hover:bg-gray-100 px-5 py-2.5 rounded-full font-black text-[11px] uppercase tracking-widest shadow-[0_0_20px_rgba(255,255,255,0.15)] ${btn}`}>
             <Bot className="w-4 h-4" /> OPEN YOUR LIVE AGENT <ExternalLink className="w-3 h-3 ml-1" />
           </button>
           <div className="hidden md:flex items-center bg-[#1A1A1A] border border-white/10 rounded-full px-4 py-2">
@@ -274,15 +300,12 @@ Thank you for choosing ClawLink Enterprise AI.
         </div>
       </header>
 
-      {/* DASHBOARD CONTENT */}
       <div className="p-6 md:p-8 space-y-8 max-w-7xl mx-auto w-full relative z-10 flex-1">
         
         <AnimatePresence>
           {showAppBanner && (
-            <motion.div 
-              initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} 
-              className="bg-gradient-to-r from-blue-600/20 to-purple-600/20 border border-blue-500/30 rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-lg"
-            >
+            <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} transition={{duration:0.2}}
+              className="bg-gradient-to-r from-blue-600/20 to-purple-600/20 border border-blue-500/30 rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-lg">
               <div className="flex items-center gap-3 text-blue-200 text-sm font-medium">
                 <Smartphone className="w-5 h-5 text-blue-400 flex-shrink-0" />
                 <p>For the optimal experience, click <strong className="text-white">"Add to Home Screen"</strong> in your browser menu to install the ClawLink Web App.</p>
@@ -292,10 +315,7 @@ Thank you for choosing ClawLink Enterprise AI.
           )}
         </AnimatePresence>
 
-        {/* OVERVIEW: PLAN, MODEL & CHANNELS */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          
-          {/* PLAN CARD */}
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25, ease: "easeOut" }} className="bg-[#111113] border border-white/5 p-6 rounded-[1.5rem] shadow-xl flex justify-between items-center relative overflow-hidden group hover:border-white/10 transition-colors">
             <div className="absolute top-0 left-0 w-32 h-32 bg-blue-500/5 rounded-full blur-3xl group-hover:bg-blue-500/10 transition-colors"></div>
             <div className="relative z-10">
@@ -314,7 +334,6 @@ Thank you for choosing ClawLink Enterprise AI.
             </div>
           </motion.div>
 
-          {/* AI MODEL CARD */}
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25, delay: 0.1, ease: "easeOut" }} className="bg-[#111113] border border-white/5 p-6 rounded-[1.5rem] shadow-xl flex justify-between items-center relative overflow-hidden group hover:border-white/10 transition-colors">
             <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/5 rounded-full blur-3xl group-hover:bg-purple-500/10 transition-colors"></div>
             <div className="relative z-10">
@@ -336,7 +355,6 @@ Thank you for choosing ClawLink Enterprise AI.
             </div>
           </motion.div>
 
-          {/* LIVE CHANNELS CARD */}
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25, delay: 0.2, ease: "easeOut" }} className="bg-[#111113] border border-white/5 p-6 rounded-[1.5rem] shadow-xl flex justify-between items-center relative overflow-hidden group hover:border-white/10 transition-colors">
             <div className="absolute top-0 right-0 w-32 h-32 bg-green-500/5 rounded-full blur-3xl group-hover:bg-green-500/10 transition-colors"></div>
             <div className="relative z-10 w-full">
@@ -363,10 +381,8 @@ Thank you for choosing ClawLink Enterprise AI.
               <Radio className="w-6 h-6"/>
             </div>
           </motion.div>
-
         </div>
 
-        {/* 🚀 NEW: WEBCHAT DEPLOYMENT WIDGET SECTION */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25, delay: 0.3, ease: "easeOut" }} className="bg-gradient-to-r from-[#111113] to-[#0a0a0c] border border-pink-500/20 p-6 md:p-8 rounded-[1.5rem] shadow-[0_0_30px_rgba(236,72,153,0.05)] relative overflow-hidden flex flex-col lg:flex-row items-center justify-between gap-6">
           <div className="absolute top-0 left-0 w-64 h-64 bg-pink-500/5 rounded-full blur-3xl pointer-events-none"></div>
           
@@ -381,16 +397,12 @@ Thank you for choosing ClawLink Enterprise AI.
             <pre className="w-full bg-[#07070A] border border-white/10 p-4 rounded-xl text-xs text-pink-400 font-mono overflow-x-auto custom-scrollbar">
               {webChatScript}
             </pre>
-            <button 
-              onClick={copyScript} 
-              className="absolute top-2 right-2 p-2 bg-[#1A1A1A] hover:bg-[#222] border border-white/10 rounded-lg transition-all"
-            >
+            <button onClick={copyScript} className={`absolute top-2 right-2 p-2 bg-[#1A1A1A] hover:bg-[#222] border border-white/10 rounded-lg ${btn}`}>
               {copiedScript ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4 text-gray-400" />}
             </button>
           </div>
         </motion.div>
 
-        {/* DATA ANALYTICS: METRICS CARDS */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25, delay: 0.4, ease: "easeOut" }} className="bg-[#111113] border border-white/5 p-6 rounded-[1.5rem] shadow-xl relative overflow-hidden group hover:border-white/10 transition-colors">
             <div className="absolute top-0 right-0 w-32 h-32 bg-orange-500/5 rounded-full blur-3xl group-hover:bg-orange-500/10 transition-colors"></div>
@@ -432,7 +444,6 @@ Thank you for choosing ClawLink Enterprise AI.
           </motion.div>
         </div>
 
-        {/* DATA ANALYTICS: CHARTS & ROUTING */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.3, delay: 0.7, ease: "easeOut" }} className="lg:col-span-2 bg-[#111113] border border-white/5 p-6 md:p-8 rounded-[1.5rem] shadow-xl">
             <h3 className="text-sm font-bold uppercase tracking-widest text-gray-500 mb-8">AI Traffic (Last 7 Days)</h3>
@@ -483,7 +494,6 @@ Thank you for choosing ClawLink Enterprise AI.
           </motion.div>
         </div>
 
-        {/* AI SETTINGS (PROMPT & RAG) */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.9, ease: "easeOut" }} className="bg-[#111113] border border-white/5 rounded-[1.5rem] p-8 shadow-2xl relative flex flex-col">
@@ -491,7 +501,7 @@ Thank you for choosing ClawLink Enterprise AI.
             <p className="text-sm text-gray-400 mb-6">Define exactly how your AI agent should behave, speak, and respond to users.</p>
             <textarea rows={6} value={systemPrompt} onChange={(e) => setSystemPrompt(e.target.value)} placeholder="e.g., You are a friendly customer support agent for ClawLink..." className="flex-1 w-full bg-[#07070A] border border-white/10 rounded-xl p-4 text-sm text-gray-200 focus:border-orange-500 focus:shadow-[0_0_15px_rgba(249,115,22,0.15)] focus:outline-none transition-all resize-none mb-6 font-mono custom-scrollbar" />
             <div className="flex justify-end mt-auto">
-              <button onClick={handleSavePrompt} disabled={isSavingPrompt} className="bg-white text-black px-8 py-3.5 rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-gray-200 transition-transform hover:scale-[1.02] shadow-[0_0_20px_rgba(255,255,255,0.1)] disabled:opacity-50 disabled:scale-100">
+              <button onClick={handleSavePrompt} disabled={isSavingPrompt} className={`bg-white text-black px-8 py-3.5 rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-gray-200 shadow-[0_0_20px_rgba(255,255,255,0.1)] disabled:opacity-50 disabled:scale-100 ${btn}`}>
                 {isSavingPrompt ? "Saving..." : <><Save className="w-4 h-4"/> Save Persona</>}
               </button>
             </div>
@@ -504,7 +514,7 @@ Thank you for choosing ClawLink Enterprise AI.
             <textarea rows={4} value={knowledgeText} onChange={(e) => setKnowledgeText(e.target.value)} placeholder="Paste your business information here..." className="w-full bg-[#07070A] border border-green-500/30 rounded-xl p-4 text-sm text-green-100 focus:border-green-400 focus:shadow-[0_0_15px_rgba(34,197,94,0.2)] focus:outline-none transition-all resize-none mb-4 font-mono placeholder:text-green-900/50 relative z-10 custom-scrollbar" />
             <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6 relative z-10">
               <p className="text-[10px] text-gray-500 font-mono flex items-center gap-1"><Database className="w-3 h-3"/> Encrypted in Vector DB</p>
-              <button onClick={handleInjectKnowledge} disabled={isInjecting || !knowledgeText.trim()} className="bg-green-500 text-black px-6 py-3 rounded-xl text-xs font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-green-400 transition-transform hover:scale-[1.02] shadow-[0_0_20px_rgba(34,197,94,0.2)] disabled:opacity-50 disabled:scale-100">
+              <button onClick={handleInjectKnowledge} disabled={isInjecting || !knowledgeText.trim()} className={`bg-green-500 text-black px-6 py-3 rounded-xl text-xs font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-green-400 shadow-[0_0_20px_rgba(34,197,94,0.2)] disabled:opacity-50 disabled:scale-100 ${btn}`}>
                 {isInjecting ? "Injecting..." : <><Zap className="w-4 h-4"/> Inject Knowledge</>}
               </button>
             </div>
@@ -557,7 +567,7 @@ Thank you for choosing ClawLink Enterprise AI.
                       <td className="p-5 font-bold text-white uppercase">{invoice.plan_name}</td>
                       <td className="p-5">{invoice.amount} {invoice.currency}</td>
                       <td className="p-5"><span className="bg-green-500/10 border border-green-500/20 text-green-400 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider">{invoice.status}</span></td>
-                      <td className="p-5 pr-8 text-right"><button onClick={() => handleDownloadInvoice(invoice)} className="text-gray-500 group-hover:text-white flex items-center justify-end gap-2 ml-auto text-xs font-bold uppercase tracking-widest transition-colors"><Download className="w-4 h-4"/> PDF</button></td>
+                      <td className="p-5 pr-8 text-right"><button onClick={() => handleDownloadInvoice(invoice)} className={`text-gray-500 hover:text-white flex items-center justify-end gap-2 ml-auto text-xs font-bold uppercase tracking-widest ${btn}`}><Download className="w-4 h-4"/> PDF</button></td>
                     </tr>
                   ))}
                 </tbody>

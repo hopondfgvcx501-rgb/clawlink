@@ -323,11 +323,13 @@ export default function Home() {
       const order = await res.json();
       if (order.error) { alert("Order Error: " + order.error); setIsDeploying(false); return; }
       
+      // 🚀 FIXED: RAZORPAY POPUP LOGO NOW USES OFFICIAL ORANGE SVG BASE64
+      const clawLinkLogoBase64 = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxNTIgMjYiPjxwYXRoIGQ9Ik0yMiAzQzE4IC41IDEwIC41IDcgNC41UzMuNSAxOCA3IDIyLjUgMTggMjYgMjIgMjMiIHN0cm9rZT0iI2ZmZiIgc3Ryb2tlLXdpZHRoPSI0LjUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgZmlsbD0ibm9uZSIvPjxsaW5lIHgxPSI3LjUiIHkxPSIzIiB4Mj0iMTQuNSIgeTI9IjExLjUiIHN0cm9rZT0iI2Y5NzMxNiIgc3Ryb2tlLXdpZHRoPSIyLjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPjxsaW5lIHgxPSIxMi41IiB5MT0iMS41IiB4Mj0iMTkuNSIgeTI9IjEwIiBzdHJva2U9IiNmOTczMTYiIHN0cm9rZS13aWR0aD0iMi4yIiBzdHJva2UtbGluZWNhcD0icm91bmQiLz48bGluZSB4MT0iMTcuNSIgeTE9IjIuNSIgeDI9IjI0IiB5Mj0iMTAuNSIgc3Ryb2tlPSIjZjk3MzE2IiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPjx0ZXh0IHg9IjMwIiB5PSIxOCIgZm9udC1mYW1pbHk9InNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMTQuNSIgZm9udC13ZWlnaHQ9IjgwMCIgbGV0dGVyLXNwYWNpbmc9IjEuNCIgZmlsbD0iI2ZmZiI+TEFXTElOSzwvdGV4dD48dGV4dCB4PSIxMTYiIHk9IjE4IiBmb250LWZhbWlseT0ic2Fucy1zZXJpZiIgZm9udC1zaXplPSI5LjUiIGZvbnQtd2VpZ2h0PSI3MDAiIGxldHRlci1zcGFjaW5nPSIuNyIgZmlsbD0iI2Y5NzMxNiI+LkNPTTwvdGV4dD48L3N2Zz4=";
+
       const options = {
         key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID, amount: order.amount, currency: order.currency,
-        // 🚀 FIXED: RAZORPAY POPUP LOGO MATCHES MAIN LOGO
         name: "ClawLink Premium",
-        image: "https://clawlink-six.vercel.app/favicon.ico", 
+        image: clawLinkLogoBase64, 
         description: `Plan: ${selectedTier?.toUpperCase()} | Model: ${activeModel === "omni" ? "OmniAgent Nexus" : MODEL_DETAILS[activeModel]?.name}`,
         order_id: order.id,
         handler: async () => {
@@ -349,16 +351,16 @@ export default function Home() {
     } catch { alert("Gateway init failed."); setIsDeploying(false); }
   };
 
-  // 🚀 FIXED: ULTRA SMART WHATSAPP APP REDIRECT
+  // 🚀 FIXED: ULTRA SMART WHATSAPP APP REDIRECT (Native Phone/Desktop App)
   const openLiveBotHandler = () => {
     if (activeChannel === "whatsapp") {
-      // Direct WA.ME link ensures native WhatsApp app opens on both Mobile and Desktop
       if (waPhoneNumber) { 
-        window.open(`https://wa.me/${waPhoneNumber.replace(/\D/g, '')}`, "_blank"); 
+        // This forces Native WhatsApp App to open instead of Web browser on both Phone & Desktop!
+        window.open(`https://api.whatsapp.com/send?phone=${waPhoneNumber.replace(/\D/g, '')}`, "_blank"); 
       } else if (botLink && botLink.includes('wa.me')) { 
-        window.open(botLink, "_blank"); 
+        window.open(botLink.replace('wa.me/', 'api.whatsapp.com/send?phone='), "_blank"); 
       } else { 
-        window.open("https://web.whatsapp.com", "_blank"); 
+        window.open("https://api.whatsapp.com/", "_blank"); 
       }
     } else { 
       window.open(botLink || "https://t.me/BotFather", "_blank"); 
@@ -979,6 +981,13 @@ export default function Home() {
                       <li>Set Webhook URL under <strong className="text-white">Configuration</strong></li>
                       <li>Enter Callback URL + Verify Token below</li>
                     </ol>
+                    <div className="flex gap-3 mb-6">
+                      <a href="https://developers.facebook.com/apps/" target="_blank" rel="noopener noreferrer"
+                        className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-[12px] font-bold w-fit ${btn} hover:scale-[1.03] text-[#25D366]`}
+                        style={{background:"rgba(37,211,102,0.08)",border:"1px solid rgba(37,211,102,0.2)"}}>
+                        <ExternalLink className="w-3.5 h-3.5"/> Open Meta Developer Console
+                      </a>
+                    </div>
                     <div className="p-5 rounded-2xl" style={{background:"rgba(255,255,255,0.03)",border:"1px solid rgba(255,255,255,0.07)"}}>
                       <label className="block text-[9px] font-bold uppercase tracking-widest text-gray-400 mb-3">Phone Number ID</label>
                       <input type="text" value={waPhoneId} onChange={e=>setWaPhoneId(e.target.value)} placeholder="e.g. 1044727838716942"
@@ -1077,7 +1086,7 @@ export default function Home() {
                 </button>
               )}
               
-              {/* 🚀 FIXED: RAZORPAY POPUP LOGO */}
+              {/* 🚀 FIXED: RAZORPAY POPUP LOGO (Orange and White "C" Clawlink Logo) */}
               <div className="flex justify-center mb-6">
                 <svg width="130" height="22" viewBox="0 0 152 26" fill="none">
                   <defs>
