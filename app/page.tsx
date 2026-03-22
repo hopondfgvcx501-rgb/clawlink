@@ -315,15 +315,19 @@ export default function Home() {
     try {
       const exactPaise = Math.round(finalPrice * 100);
       const selectedModelForDB = activeModel === "omni" ? "multi_model" : activeModel;
+      
       const res = await fetch("/api/razorpay", {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ amount: exactPaise, currency, email: session?.user?.email || "user@clawlink.com", planName: selectedTier, selectedModel: selectedModelForDB }),
       });
       const order = await res.json();
       if (order.error) { alert("Order Error: " + order.error); setIsDeploying(false); return; }
+      
       const options = {
         key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID, amount: order.amount, currency: order.currency,
+        // 🚀 FIXED: RAZORPAY POPUP LOGO MATCHES MAIN LOGO
         name: "ClawLink Premium",
+        image: "https://clawlink-six.vercel.app/favicon.ico", 
         description: `Plan: ${selectedTier?.toUpperCase()} | Model: ${activeModel === "omni" ? "OmniAgent Nexus" : MODEL_DETAILS[activeModel]?.name}`,
         order_id: order.id,
         handler: async () => {
@@ -345,12 +349,20 @@ export default function Home() {
     } catch { alert("Gateway init failed."); setIsDeploying(false); }
   };
 
+  // 🚀 FIXED: ULTRA SMART WHATSAPP APP REDIRECT
   const openLiveBotHandler = () => {
     if (activeChannel === "whatsapp") {
-      if (waPhoneNumber) { window.open(`https://wa.me/${waPhoneNumber.replace(/\D/g, '')}`, "_blank"); }
-      else if (botLink && botLink.includes('wa.me')) { window.open(botLink, "_blank"); }
-      else { window.open("https://web.whatsapp.com", "_blank"); }
-    } else { window.open(botLink || "https://t.me/BotFather", "_blank"); }
+      // Direct WA.ME link ensures native WhatsApp app opens on both Mobile and Desktop
+      if (waPhoneNumber) { 
+        window.open(`https://wa.me/${waPhoneNumber.replace(/\D/g, '')}`, "_blank"); 
+      } else if (botLink && botLink.includes('wa.me')) { 
+        window.open(botLink, "_blank"); 
+      } else { 
+        window.open("https://web.whatsapp.com", "_blank"); 
+      }
+    } else { 
+      window.open(botLink || "https://t.me/BotFather", "_blank"); 
+    }
   };
 
   const copyToClipboard = (t: string) => { navigator.clipboard.writeText(t); alert("Copied!"); };
@@ -470,24 +482,9 @@ export default function Home() {
         }
         .fi-card:hover::after{background:linear-gradient(90deg,transparent,rgba(249,115,22,.85) 50%,transparent)}
 
-        /* ── SKELETON SHIMMER ── */
-        @keyframes skshimmer{0%{background-position:200% center}100%{background-position:-200% center}}
-
         /* ── PULSE RING on badge dot ── */
         @keyframes pring{0%{box-shadow:0 0 0 0 rgba(249,115,22,.5)}100%{box-shadow:0 0 0 10px rgba(249,115,22,0)}}
         .pulse-ring{animation:pring 2s ease-out infinite}
-
-        /* ── TOOLTIP FADE ── */
-        .tipwrap{position:relative}
-        .tipbox{
-          position:absolute;bottom:115%;left:50%;transform:translateX(-50%) translateY(6px);
-          background:rgba(255,255,255,.09);backdrop-filter:blur(10px);
-          border:1px solid rgba(255,255,255,.14);padding:5px 12px;
-          border-radius:8px;font-size:11px;white-space:nowrap;
-          opacity:0;pointer-events:none;
-          transition:opacity .18s,transform .18s cubic-bezier(.16,1,.3,1);
-        }
-        .tipwrap:hover .tipbox{opacity:1;transform:translateX(-50%) translateY(0)}
 
         /* ── SCALE HOVER on stat cards ── */
         .stat-hover{transition:transform .22s cubic-bezier(.16,1,.3,1)}
@@ -497,7 +494,7 @@ export default function Home() {
         .icon-lift{transition:transform .2s cubic-bezier(.34,1.56,.64,1)}
         .icon-lift:hover{transform:scale(1.12) rotate(-4deg)}
 
-        /* typography helpers (unchanged) */
+        /* typography helpers */
         .ptx-name{font-size:11px;font-weight:900;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
         .ptx-sub {font-size:7.5px;font-weight:700;opacity:.8;white-space:nowrap}
         .ptx-soon{font-size:7.5px;font-weight:700;color:#3b82f6;text-transform:uppercase}
@@ -512,12 +509,11 @@ export default function Home() {
         .blue-glow:hover{box-shadow:0 0 48px rgba(37,99,235,.72)}
       `}}/>
 
-      {/* ── AMBIENT GLOWS ── */}
+      {/* Ambient glows */}
       <div className="fixed top-[-20%] right-[-8%] w-[800px] h-[800px] rounded-full pointer-events-none z-0 float-a"
            style={{background:"radial-gradient(circle,rgba(249,115,22,0.18) 0%,transparent 65%)",transform:"translateZ(0)"}}/>
       <div className="fixed bottom-[-20%] left-[-8%] w-[800px] h-[800px] rounded-full pointer-events-none z-0 float-b"
            style={{background:"radial-gradient(circle,rgba(99,102,241,0.15) 0%,transparent 65%)",transform:"translateZ(0)"}}/>
-      {/* Extra float orb — hero center */}
       <div className="fixed top-[30%] left-[40%] w-[500px] h-[500px] rounded-full pointer-events-none z-0 float-c"
            style={{background:"radial-gradient(circle,rgba(168,85,247,0.07) 0%,transparent 70%)"}}/>
 
@@ -527,6 +523,7 @@ export default function Home() {
         style={{backdropFilter:"blur(12px)",WebkitBackdropFilter:"blur(12px)",
                 background:"rgba(7,7,10,0.4)",borderBottom:"1px solid rgba(255,255,255,0.055)"}}>
 
+        {/* 🚀 FIXED: WHITE & ORANGE CLAWLINK.COM LOGO */}
         <svg width="130" height="22" viewBox="0 0 152 26" fill="none" className="shrink-0 cursor-pointer transition-transform hover:scale-105" onClick={() => router.push("/")}>
           <defs>
             <linearGradient id="cg" x1="0" y1="0" x2="0" y2="26" gradientUnits="userSpaceOnUse">
@@ -552,7 +549,6 @@ export default function Home() {
               </button>
             </div>
           )}
-          {/* Nav CTA — Spring Click */}
           <button data-spring onClick={()=>setIsSupportModalOpen(true)}
             className={`flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-gray-500 hover:text-white ${btn}`}>
             <MessageSquare className="w-3.5 h-3.5"/>
@@ -565,32 +561,26 @@ export default function Home() {
       {/* ══ HERO ══ */}
       <section id="hero" className="relative z-10 min-h-screen flex flex-col items-center justify-center pt-20 pb-16 px-4 text-center">
 
-        {/* Badge — Fade Down */}
         <div className="anim-badge inline-flex items-center gap-2 mb-6 px-5 py-2 rounded-full text-[10px] font-bold tracking-[.1em] text-orange-400 shadow-[0_0_15px_rgba(249,115,22,0.2)]"
           style={{background:"rgba(249,115,22,0.09)",border:"1px solid rgba(249,115,22,0.26)"}}>
-          {/* Pulse Ring on dot */}
           <span className="w-1.5 h-1.5 rounded-full bg-orange-400 bpulse pulse-ring"/>
           LIVE NOW &nbsp;·&nbsp; 30-SECOND DEPLOY
         </div>
 
-        {/* Headline — Blur Fade Up */}
         <h1 className="anim-h1 text-[clamp(2.4rem,6.5vw,5rem)] font-black leading-[1.03] tracking-[-0.04em] mb-4 text-white">
           Deploy <span className="grad-text">OpenClaw</span><br/>Under 30 Seconds
         </h1>
 
-        {/* Sub — Blur Fade Up */}
         <p className="anim-sub text-gray-300 text-[15px] max-w-[460px] mb-8 leading-[1.8]">
           Avoid all technical complexity — one-click deploy your own 24/7 active OpenClaw instance. No code. No servers. Just results.
         </p>
 
-        {/* ── SELECTOR CARD — 3D Tilt + Shimmer ── */}
         <div className="anim-card card-shimmer tilt-el relative w-full max-w-[700px] rounded-[22px] p-5 md:p-7 mb-7 overflow-hidden"
           style={{background:"rgba(255,255,255,0.028)",border:"1px solid rgba(255,255,255,0.07)",
                   boxShadow:"0 0 60px rgba(249,115,22,0.06),0 32px 64px rgba(0,0,0,0.5)"}}>
 
           <p className="text-[9px] font-bold tracking-[.15em] uppercase text-gray-400 mb-3 text-left">Choose your AI model</p>
           <div className="grid grid-cols-5 gap-[6px] mb-5">
-            {/* Model pills — Spring Click */}
             <button data-spring onClick={()=>{ if(!isTokenSaved){ setActiveModel("gpt-5.2"); }}} disabled={isTokenSaved && activeModel!=="gpt-5.2"}
               className={[pillBase, modelActive("gpt-5.2") ? "!border-blue-500 shadow-[0_0_0_3px_rgba(59,130,246,0.2),0_2px_8px_rgba(0,0,0,0.12)]" : "", isTokenSaved && activeModel!=="gpt-5.2" ? "opacity-25 pointer-events-none" : ""].join(" ")}>
               <div className="w-[22px] h-[22px] rounded-[5px] flex items-center justify-center shrink-0 bg-[#f0fdf4]"><OpenAI_Icon/></div>
@@ -660,7 +650,6 @@ export default function Home() {
                 style={{background:"rgba(34,197,94,0.06)",border:"1px solid rgba(34,197,94,0.2)"}}>
                 <p className="text-[15px] font-bold text-white mb-4">🚀 Your Bot is Live!</p>
                 <div className="flex flex-col sm:flex-row justify-center gap-3">
-                  {/* Ripple + Spring on success buttons */}
                   <button data-ripple data-spring onClick={openLiveBotHandler}
                     className={`relative overflow-hidden bg-white text-black font-black uppercase tracking-widest px-7 py-3.5 rounded-xl text-sm ${btn} hover:scale-[1.03] shadow-[0_0_20px_rgba(255,255,255,0.2)]`}>
                     <span className="mt">Open Live Bot</span>
@@ -675,7 +664,6 @@ export default function Home() {
 
             ) : status === "unauthenticated" ? (
               <motion.div key="login" initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} transition={{duration:.12}}>
-                {/* Google Login — Ripple + Spring */}
                 <button data-ripple data-spring onClick={()=>signIn("google")}
                   className={`relative overflow-hidden w-full bg-white text-gray-800 py-4 rounded-[1.75rem] flex items-center justify-center gap-3 text-[17px] font-bold shadow-[0_0_32px_rgba(255,255,255,0.15)] ${btn} hover:scale-[1.03]`}>
                   <Google_Icon/> Login via Google & Deploy
@@ -705,13 +693,11 @@ export default function Home() {
                 </div>
 
                 {!isTokenSaved ? (
-                  /* Connect Channel — Ripple + Spring */
                   <button data-ripple data-spring onClick={()=>handleOpenIntegration(activeChannel)}
                     className={`relative overflow-hidden w-full bg-white text-black font-black py-4 rounded-2xl text-[14px] uppercase tracking-widest shadow-[0_0_32px_rgba(255,255,255,0.15)] ${btn} hover:scale-[1.03]`}>
                     Connect {activeChannel === "telegram" ? "Telegram" : activeChannel === "whatsapp" ? "WhatsApp" : activeChannel} →
                   </button>
                 ) : (
-                  /* Deploy — Ripple + Spring + Magnetic */
                   <button data-ripple data-spring onClick={()=>handleOpenPricing(activeChannel)}
                     className={`mag-el relative overflow-hidden w-full font-black py-4 rounded-2xl text-[14px] uppercase tracking-widest flex items-center justify-center gap-2 ${btn} hover:scale-[1.03] bg-gradient-to-r from-blue-600 to-purple-600 text-white blue-glow`}>
                     <Zap className="w-5 h-5 shrink-0"/>
@@ -723,7 +709,6 @@ export default function Home() {
           </AnimatePresence>
         </div>
 
-        {/* Stats — Fade Up + Scale Hover */}
         <div className="anim-stats grid grid-cols-3 w-full max-w-[580px] border border-white/[0.07] rounded-[18px] overflow-hidden">
           {[["30s","Deploy time"],["5+","AI models"],["24/7","Always active"]].map(([n,l])=>(
             <div key={n} className="stat-hover flex flex-col items-center py-5 px-2 transition-colors duration-150 hover:bg-white/[0.04]"
@@ -736,8 +721,7 @@ export default function Home() {
       </section>
 
       {/* ══ HOW IT WORKS ══ */}
-      <section className="relative z-10 py-24 px-4 md:px-8"
-        style={{borderTop:"1px solid rgba(255,255,255,0.04)"}}>
+      <section className="relative z-10 py-24 px-4 md:px-8" style={{borderTop:"1px solid rgba(255,255,255,0.04)"}}>
         <div className="max-w-[1100px] mx-auto">
           <div className="sr-up text-center mb-16">
             <p className="text-[9.5px] font-bold tracking-[.15em] uppercase text-orange-500 mb-2">How It Works</p>
@@ -745,16 +729,14 @@ export default function Home() {
             <p className="text-gray-300 text-[14px] max-w-[440px] mx-auto leading-relaxed">Zero to live AI agent in 30 seconds. No tech expertise needed.</p>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 relative">
-            <div className="hidden md:block absolute top-8 left-[12%] right-[12%] h-px"
-              style={{background:"linear-gradient(90deg,transparent,rgba(249,115,22,.25) 30%,rgba(249,115,22,.25) 70%,transparent)"}}/>
+            <div className="hidden md:block absolute top-8 left-[12%] right-[12%] h-px" style={{background:"linear-gradient(90deg,transparent,rgba(249,115,22,.25) 30%,rgba(249,115,22,.25) 70%,transparent)"}}/>
             {[
               {n:"01",e:"🔑",t:"Login with Google",    d:"One tap. No passwords, no friction."},
               {n:"02",e:"🤖",t:"Choose Model & Channel",d:"Pick AI model + Telegram or WhatsApp."},
               {n:"03",e:"✅",t:"Token Verify",          d:"Paste token. Verified & secured instantly."},
               {n:"04",e:"🚀",t:"Go Live",               d:"Enterprise infra spins up. 24/7, zero maintenance."},
             ].map(({n,e,t,d},i)=>(
-              <div key={n} className={`sr-up flex flex-col items-center text-center px-3 relative z-10`}>
-                {/* Step circle — Lift Hover */}
+              <div key={n} className={`sr-up sd${i+1} flex flex-col items-center text-center px-3 relative z-10`}>
                 <div className="icon-lift w-[60px] h-[60px] rounded-full flex items-center justify-center font-black text-[18px] text-orange-500 mb-4 z-10"
                   style={{background:"#07070A",border:"1.5px solid rgba(249,115,22,0.22)",transition:"all .2s"}}
                   onMouseEnter={e2=>{(e2.target as HTMLElement).style.background="rgba(249,115,22,0.08)";(e2.target as HTMLElement).style.boxShadow="0 0 28px rgba(249,115,22,0.2)"}}
@@ -771,8 +753,7 @@ export default function Home() {
       </section>
 
       {/* ══ FEATURES ══ */}
-      <section className="relative z-10 py-24 px-4 md:px-8"
-        style={{background:"#0A0A0D",borderTop:"1px solid rgba(255,255,255,0.04)"}}>
+      <section className="relative z-10 py-24 px-4 md:px-8" style={{background:"#0A0A0D",borderTop:"1px solid rgba(255,255,255,0.04)"}}>
         <div className="max-w-[1200px] mx-auto">
           <div className="sr-up text-center mb-14">
             <p className="text-[9.5px] font-bold tracking-[.15em] uppercase text-orange-500 mb-2">Features</p>
@@ -787,13 +768,10 @@ export default function Home() {
               {bg:"rgba(234,179,8,.09)", e:"📢",t:"Broadcast Engine",         d:"Blast targeted promos to thousands instantly. Zero extra cost.",tag:"Mass Outreach"},
             ].map(({bg,e,t,d,tag})=>(
               <div key={t} className="fi-card bg-[#0A0A0D] p-6 md:p-8 hover:bg-[#0F0F14] transition-colors duration-150">
-                {/* Icon — Lift Hover */}
-                <div className="icon-lift w-[44px] h-[44px] rounded-[13px] flex items-center justify-center mb-5 text-[20px]"
-                  style={{background:bg}}>{e}</div>
+                <div className="icon-lift w-[44px] h-[44px] rounded-[13px] flex items-center justify-center mb-5 text-[20px]" style={{background:bg}}>{e}</div>
                 <h3 className="text-[14px] font-bold text-white mb-2">{t}</h3>
                 <p className="text-[12px] text-gray-400 leading-[1.75] mb-3">{d}</p>
-                <span className="inline-flex px-3 py-1 rounded-full text-[9px] font-bold text-orange-400 uppercase tracking-wider"
-                  style={{background:"rgba(249,115,22,0.07)",border:"1px solid rgba(249,115,22,0.18)"}}>{tag}</span>
+                <span className="inline-flex px-3 py-1 rounded-full text-[9px] font-bold text-orange-400 uppercase tracking-wider" style={{background:"rgba(249,115,22,0.07)",border:"1px solid rgba(249,115,22,0.18)"}}>{tag}</span>
               </div>
             ))}
           </div>
@@ -804,12 +782,10 @@ export default function Home() {
               {bg:"rgba(0,191,255,.09)", e:"🧠",t:"OmniAgent — 3x AI Fallback", d:"Routes between GPT-5.2, Claude Opus, and Gemini Flash in real-time. 0% downtime. Llama 4 coming as 4th fallback.",tag:"0% Downtime"},
             ].map(({bg,e,t,d,tag})=>(
               <div key={t} className="fi-card bg-[#0A0A0D] p-6 md:p-8 hover:bg-[#0F0F14] transition-colors duration-150">
-                <div className="icon-lift w-[44px] h-[44px] rounded-[13px] flex items-center justify-center mb-5 text-[20px]"
-                  style={{background:bg}}>{e}</div>
+                <div className="icon-lift w-[44px] h-[44px] rounded-[13px] flex items-center justify-center mb-5 text-[20px]" style={{background:bg}}>{e}</div>
                 <h3 className="text-[14px] font-bold text-white mb-2">{t}</h3>
                 <p className="text-[12px] text-gray-400 leading-[1.75] mb-3">{d}</p>
-                <span className="inline-flex px-3 py-1 rounded-full text-[9px] font-bold text-orange-400 uppercase tracking-wider"
-                  style={{background:"rgba(249,115,22,0.07)",border:"1px solid rgba(249,115,22,0.18)"}}>{tag}</span>
+                <span className="inline-flex px-3 py-1 rounded-full text-[9px] font-bold text-orange-400 uppercase tracking-wider" style={{background:"rgba(249,115,22,0.07)",border:"1px solid rgba(249,115,22,0.18)"}}>{tag}</span>
               </div>
             ))}
           </div>
@@ -821,12 +797,10 @@ export default function Home() {
               {bg:"rgba(16,185,129,.09)",e:"🔒",t:"Enterprise Security", d:"AES-256 encryption. SOC 2 compliant. Zero data retention on our servers.",tag:"AES-256"},
             ].map(({bg,e,t,d,tag})=>(
               <div key={t} className="fi-card bg-[#0A0A0D] p-6 md:p-8 hover:bg-[#0F0F14] transition-colors duration-150">
-                <div className="icon-lift w-[44px] h-[44px] rounded-[13px] flex items-center justify-center mb-5 text-[20px]"
-                  style={{background:bg}}>{e}</div>
+                <div className="icon-lift w-[44px] h-[44px] rounded-[13px] flex items-center justify-center mb-5 text-[20px]" style={{background:bg}}>{e}</div>
                 <h3 className="text-[14px] font-bold text-white mb-2">{t}</h3>
                 <p className="text-[12px] text-gray-400 leading-[1.75] mb-3">{d}</p>
-                <span className="inline-flex px-3 py-1 rounded-full text-[9px] font-bold text-orange-400 uppercase tracking-wider"
-                  style={{background:"rgba(249,115,22,0.07)",border:"1px solid rgba(249,115,22,0.18)"}}>{tag}</span>
+                <span className="inline-flex px-3 py-1 rounded-full text-[9px] font-bold text-orange-400 uppercase tracking-wider" style={{background:"rgba(249,115,22,0.07)",border:"1px solid rgba(249,115,22,0.18)"}}>{tag}</span>
               </div>
             ))}
           </div>
@@ -834,8 +808,7 @@ export default function Home() {
       </section>
 
       {/* ══ COMPARISON ══ */}
-      <section id="features" className="relative z-10 py-24 px-4 md:px-8"
-        style={{background:"#0D0D10",borderTop:"1px solid rgba(255,255,255,0.04)"}}>
+      <section id="features" className="relative z-10 py-24 px-4 md:px-8" style={{background:"#0D0D10",borderTop:"1px solid rgba(255,255,255,0.04)"}}>
         <div className="max-w-[1100px] mx-auto">
           <div className="sr-up text-center mb-14">
             <p className="text-[9.5px] font-bold tracking-[.15em] uppercase text-orange-500 mb-2">Comparison</p>
@@ -843,8 +816,7 @@ export default function Home() {
           </div>
           <div className="grid grid-cols-1 md:grid-cols-[1.55fr_1fr] gap-5">
             <div className="sr-left rounded-[18px] overflow-hidden" style={{border:"1px solid rgba(255,255,255,0.07)"}}>
-              <div className="px-5 py-4 text-[9px] font-bold uppercase tracking-widest text-gray-400"
-                style={{borderBottom:"1px solid rgba(255,255,255,0.05)",background:"rgba(255,255,255,0.02)"}}>
+              <div className="px-5 py-4 text-[9px] font-bold uppercase tracking-widest text-gray-400" style={{borderBottom:"1px solid rgba(255,255,255,0.05)",background:"rgba(255,255,255,0.02)"}}>
                 Traditional Setup — Step by Step
               </div>
               {[
@@ -853,28 +825,22 @@ export default function Home() {
                 ["Installing OpenClaw","7 min"],["Setting up OpenClaw","10 min"],
                 ["Connecting to AI provider","4 min"],["Pairing with Telegram","4 min"],
               ].map(([l,t])=>(
-                <div key={l} className="flex justify-between items-center px-5 py-3.5 transition-colors duration-150 hover:bg-white/[0.015]"
-                  style={{borderBottom:"1px solid rgba(255,255,255,0.04)"}}>
+                <div key={l} className="flex justify-between items-center px-5 py-3.5 transition-colors duration-150 hover:bg-white/[0.015]" style={{borderBottom:"1px solid rgba(255,255,255,0.04)"}}>
                   <span className="text-[12.5px] text-gray-400">{l}</span>
                   <span className="text-[9.5px] text-gray-300 bg-white/[0.05] px-2.5 py-1 rounded-md whitespace-nowrap ml-3">{t}</span>
                 </div>
               ))}
-              <div className="flex justify-between px-5 py-4 font-black text-[13px]"
-                style={{background:"rgba(255,255,255,0.02)",borderTop:"1px solid rgba(255,255,255,0.07)"}}>
+              <div className="flex justify-between px-5 py-4 font-black text-[13px]" style={{background:"rgba(255,255,255,0.02)",borderTop:"1px solid rgba(255,255,255,0.07)"}}>
                 <span className="text-white">Total Time</span><span className="text-red-400">60 MINUTES</span>
               </div>
               <p className="text-[11px] text-gray-500 px-5 py-3 text-right italic">* Non-technical users: multiply by 10.</p>
             </div>
 
-            <div className="sr-rght rounded-[18px] flex flex-col items-center justify-center text-center p-10 relative overflow-hidden"
-              style={{border:"1px solid rgba(249,115,22,0.22)",background:"linear-gradient(160deg,rgba(249,115,22,0.07),transparent 55%)"}}>
+            <div className="sr-rght rounded-[18px] flex flex-col items-center justify-center text-center p-10 relative overflow-hidden" style={{border:"1px solid rgba(249,115,22,0.22)",background:"linear-gradient(160deg,rgba(249,115,22,0.07),transparent 55%)"}}>
               <p className="text-[9.5px] font-bold tracking-[.15em] uppercase text-orange-500 mb-3">With ClawLink</p>
               <p className="font-black leading-none mb-1 text-[3.4rem] grad-text" style={{letterSpacing:"-.04em"}}>ClawLink</p>
               <p className="text-[2.6rem] font-black text-white leading-none mb-5" style={{letterSpacing:"-.03em"}}>&lt;30 sec</p>
-              <p className="text-[12px] text-gray-400 max-w-[220px] leading-[1.85]">
-                Pick a model, connect your channel, deploy. All infrastructure handled for you.
-              </p>
-              {/* Magnetic + Ripple + Spring CTA */}
+              <p className="text-[12px] text-gray-400 max-w-[220px] leading-[1.85]">Pick a model, connect your channel, deploy. All infrastructure handled for you.</p>
               <button data-ripple data-spring onClick={()=>document.getElementById("hero")?.scrollIntoView({behavior:"smooth"})}
                 className={`mag-el relative overflow-hidden mt-7 px-8 py-3.5 rounded-[12px] text-[13px] font-black text-white uppercase tracking-wider ${btn} hover:scale-[1.05] orange-glow`}
                 style={{background:"linear-gradient(135deg,#f97316,#ea6a00)"}}>
@@ -886,8 +852,7 @@ export default function Home() {
       </section>
 
       {/* ══ MARQUEE ══ */}
-      <section className="relative z-10 py-24 overflow-hidden"
-        style={{background:"#07070A",borderTop:"1px solid rgba(255,255,255,0.04)"}}>
+      <section className="relative z-10 py-24 overflow-hidden" style={{background:"#07070A",borderTop:"1px solid rgba(255,255,255,0.04)"}}>
         <div className="sr-up text-center mb-14 px-4">
           <p className="text-[9.5px] font-bold tracking-[.15em] uppercase text-orange-500 mb-2">50+ Use Cases</p>
           <h2 className="text-[clamp(2rem,5vw,3.6rem)] font-black tracking-[-0.04em] text-white">Thousands of Use Cases</h2>
@@ -895,25 +860,19 @@ export default function Home() {
         </div>
         <div className="flex flex-col gap-3 relative w-full">
           {[row1,row2,row3,row4,row5].map((r,i)=><MarqueeRow key={i} items={r} reverse={i%2===1}/>)}
-          <div className="absolute inset-0 pointer-events-none"
-            style={{background:"linear-gradient(90deg,#07070A 0%,transparent 15%,transparent 85%,#07070A 100%)"}}/>
+          <div className="absolute inset-0 pointer-events-none" style={{background:"linear-gradient(90deg,#07070A 0%,transparent 15%,transparent 85%,#07070A 100%)"}}/>
         </div>
       </section>
 
       {/* ══ FOOTER ══ */}
-      <footer className="relative z-10 pt-24 pb-12 px-6 md:px-14"
-        style={{background:"#040405",borderTop:"1px solid rgba(255,255,255,0.05)"}}>
-        <h2 className="sr-up text-[clamp(2.2rem,5vw,4rem)] font-black tracking-[-0.04em] mb-6 text-white"
-          style={{fontFamily:"Georgia,serif",lineHeight:1.06}}>Deploy. Automate. Relax.</h2>
-        {/* Footer CTA — Magnetic + Ripple + Spring */}
-        <button data-ripple data-spring
-          onClick={()=>document.getElementById("hero")?.scrollIntoView({behavior:"smooth"})}
+      <footer className="relative z-10 pt-24 pb-12 px-6 md:px-14" style={{background:"#040405",borderTop:"1px solid rgba(255,255,255,0.05)"}}>
+        <h2 className="sr-up text-[clamp(2.2rem,5vw,4rem)] font-black tracking-[-0.04em] mb-6 text-white" style={{fontFamily:"Georgia,serif",lineHeight:1.06}}>Deploy. Automate. Relax.</h2>
+        <button data-ripple data-spring onClick={()=>document.getElementById("hero")?.scrollIntoView({behavior:"smooth"})}
           className={`mag-el sr-up relative overflow-hidden px-10 py-4 rounded-[13px] text-[14px] font-black text-black mb-20 uppercase tracking-wider ${btn} hover:scale-[1.05] orange-glow`}
           style={{background:"linear-gradient(135deg,#FFA87A,#F97316)"}}>
           <span className="mt">Get Started Free →</span>
         </button>
-        <div className="flex flex-col md:flex-row justify-between items-center gap-4 text-[11px] text-gray-500 pt-8"
-          style={{borderTop:"1px solid rgba(255,255,255,0.06)"}}>
+        <div className="flex flex-col md:flex-row justify-between items-center gap-4 text-[11px] text-gray-500 pt-8" style={{borderTop:"1px solid rgba(255,255,255,0.06)"}}>
           <span>© 2026 ClawLink Inc. All rights reserved.</span>
           <span className="hidden md:block uppercase tracking-widest text-[10px]">© 2026 CLAWLINK INC. GLOBAL AI SAAS INFRASTRUCTURE.</span>
           <div className="flex flex-wrap justify-center gap-4 md:gap-6">
@@ -925,23 +884,19 @@ export default function Home() {
       </footer>
 
       {/* ══ MODALS ══ */}
-      {/* Contact Support */}
       <AnimatePresence>
         {isSupportModalOpen && (
           <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-[16px] p-4">
             <motion.div initial={{opacity:0,scale:.96,y:12}} animate={{opacity:1,scale:1,y:0}} exit={{opacity:0,scale:.96,y:12}} transition={{duration:.12,ease:"easeOut"}}
               className="w-full max-w-md p-7 rounded-[1.75rem] relative"
               style={{background:"#0F0F12",border:"1px solid rgba(255,255,255,0.09)",boxShadow:"0 0 80px rgba(0,0,0,0.8)"}}>
-              <div className="absolute top-0 left-[20%] right-[20%] h-px"
-                style={{background:"linear-gradient(90deg,transparent,rgba(249,115,22,0.4),transparent)"}}/>
+              <div className="absolute top-0 left-[20%] right-[20%] h-px" style={{background:"linear-gradient(90deg,transparent,rgba(249,115,22,0.4),transparent)"}}/>
               <button data-spring onClick={()=>setIsSupportModalOpen(false)}
-                className={`absolute top-5 right-5 p-2 rounded-full text-gray-500 hover:text-white ${btn}`}
-                style={{background:"rgba(255,255,255,0.05)"}}>
+                className={`absolute top-5 right-5 p-2 rounded-full text-gray-500 hover:text-white ${btn}`} style={{background:"rgba(255,255,255,0.05)"}}>
                 <X className="w-4 h-4"/>
               </button>
               <div className="flex items-center gap-3 mb-2">
-                <div className="w-10 h-10 rounded-full flex items-center justify-center"
-                  style={{background:"rgba(59,130,246,0.1)",border:"1px solid rgba(59,130,246,0.2)"}}>
+                <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{background:"rgba(59,130,246,0.1)",border:"1px solid rgba(59,130,246,0.2)"}}>
                   <MessageSquare className="w-5 h-5 text-blue-400"/>
                 </div>
                 <h2 className="text-[1.3rem] font-bold text-white">Contact Support</h2>
@@ -967,30 +922,23 @@ export default function Home() {
         )}
       </AnimatePresence>
 
-      {/* Integration Setup Modal */}
       <AnimatePresence>
         {isTelegramModalOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-[16px] p-4">
             <motion.div initial={{opacity:0,scale:.96,y:12}} animate={{opacity:1,scale:1,y:0}} exit={{opacity:0,scale:.96,y:12}} transition={{duration:.12,ease:"easeOut"}}
               className="w-full max-w-[1000px] flex flex-col md:flex-row overflow-hidden rounded-3xl relative"
               style={{background:"#0F0F12",border:"1px solid rgba(255,255,255,0.09)",boxShadow:"0 0 100px rgba(0,0,0,0.9)",maxHeight:"92vh"}}>
-              <div className="absolute top-0 left-[20%] right-[20%] h-px"
-                style={{background:"linear-gradient(90deg,transparent,rgba(249,115,22,0.4),transparent)"}}/>
-              <button data-spring onClick={()=>setIsTelegramModalOpen(false)}
-                className={`absolute top-4 right-4 z-20 p-2 rounded-full text-gray-500 hover:text-white ${btn}`}
-                style={{background:"rgba(255,255,255,0.05)"}}>
+              <div className="absolute top-0 left-[20%] right-[20%] h-px" style={{background:"linear-gradient(90deg,transparent,rgba(249,115,22,0.4),transparent)"}}/>
+              <button data-spring onClick={()=>setIsTelegramModalOpen(false)} className={`absolute top-4 right-4 z-20 p-2 rounded-full text-gray-500 hover:text-white ${btn}`} style={{background:"rgba(255,255,255,0.05)"}}>
                 <X className="w-4 h-4"/>
               </button>
 
               <div className="w-full md:w-1/2 p-7 md:p-10 flex flex-col justify-start overflow-y-auto nsb">
                 <div className="flex items-center gap-4 mb-6">
-                  <div className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0"
-                    style={{background:"rgba(255,255,255,0.05)",border:"1px solid rgba(255,255,255,0.09)"}}>
+                  <div className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0" style={{background:"rgba(255,255,255,0.05)",border:"1px solid rgba(255,255,255,0.09)"}}>
                     {activeChannel==="telegram" ? <Telegram_Icon size={26}/> : <WhatsApp_Icon size={26}/>}
                   </div>
-                  <h2 className="text-[1.3rem] font-bold text-white">
-                    Connect {activeChannel==="telegram"?"Telegram":"WhatsApp"}
-                  </h2>
+                  <h2 className="text-[1.3rem] font-bold text-white">Connect {activeChannel==="telegram"?"Telegram":"WhatsApp"}</h2>
                 </div>
 
                 {activeChannel==="telegram" ? (
@@ -1009,8 +957,7 @@ export default function Home() {
                     </a>
                     <div className="p-5 rounded-2xl" style={{background:"rgba(255,255,255,0.03)",border:"1px solid rgba(255,255,255,0.07)"}}>
                       <label className="block text-[9px] font-bold uppercase tracking-widest text-gray-400 mb-3">API Access Token</label>
-                      <input type="password" value={telegramToken} onChange={e=>setTelegramToken(e.target.value)}
-                        placeholder="Enter Verification Token…"
+                      <input type="password" value={telegramToken} onChange={e=>setTelegramToken(e.target.value)} placeholder="Enter Verification Token…"
                         className="w-full px-4 py-3.5 rounded-xl text-[13px] text-white font-mono mb-5 outline-none transition-colors duration-150"
                         style={{background:"#07070A",border:"1px solid rgba(255,255,255,0.09)"}}
                         onFocus={e=>(e.target.style.borderColor="rgba(249,115,22,0.5)")}
@@ -1034,22 +981,19 @@ export default function Home() {
                     </ol>
                     <div className="p-5 rounded-2xl" style={{background:"rgba(255,255,255,0.03)",border:"1px solid rgba(255,255,255,0.07)"}}>
                       <label className="block text-[9px] font-bold uppercase tracking-widest text-gray-400 mb-3">Phone Number ID</label>
-                      <input type="text" value={waPhoneId} onChange={e=>setWaPhoneId(e.target.value)}
-                        placeholder="e.g. 1044727838716942"
+                      <input type="text" value={waPhoneId} onChange={e=>setWaPhoneId(e.target.value)} placeholder="e.g. 1044727838716942"
                         className="w-full px-4 py-3.5 rounded-xl text-[13px] text-white font-mono mb-4 outline-none transition-colors duration-150"
                         style={{background:"#07070A",border:"1px solid rgba(255,255,255,0.09)"}}
                         onFocus={e=>(e.target.style.borderColor="rgba(37,211,102,0.5)")}
                         onBlur={e =>(e.target.style.borderColor="rgba(255,255,255,0.09)")}/>
                       <label className="block text-[9px] font-bold uppercase tracking-widest text-gray-400 mb-3">WhatsApp Number (For Direct Open)</label>
-                      <input type="text" value={waPhoneNumber} onChange={e=>setWaPhoneNumber(e.target.value)}
-                        placeholder="+1 234 567 890"
+                      <input type="text" value={waPhoneNumber} onChange={e=>setWaPhoneNumber(e.target.value)} placeholder="+1 234 567 890"
                         className="w-full px-4 py-3.5 rounded-xl text-[13px] text-white font-mono mb-4 outline-none transition-colors duration-150"
                         style={{background:"#07070A",border:"1px solid rgba(255,255,255,0.09)"}}
                         onFocus={e=>(e.target.style.borderColor="rgba(37,211,102,0.5)")}
                         onBlur={e =>(e.target.style.borderColor="rgba(255,255,255,0.09)")}/>
                       <label className="block text-[9px] font-bold uppercase tracking-widest text-gray-400 mb-3">Permanent API Token</label>
-                      <input type="password" value={telegramToken} onChange={e=>setTelegramToken(e.target.value)}
-                        placeholder="EAABwzL…"
+                      <input type="password" value={telegramToken} onChange={e=>setTelegramToken(e.target.value)} placeholder="EAABwzL…"
                         className="w-full px-4 py-3.5 rounded-xl text-[13px] text-white font-mono mb-5 outline-none transition-colors duration-150"
                         style={{background:"#07070A",border:"1px solid rgba(255,255,255,0.09)"}}
                         onFocus={e=>(e.target.style.borderColor="rgba(37,211,102,0.5)")}
@@ -1064,15 +1008,12 @@ export default function Home() {
                 )}
               </div>
 
-              <div className="hidden md:flex md:w-1/2 items-center justify-center p-10 relative"
-                style={{background:"rgba(0,0,0,0.3)",borderLeft:"1px solid rgba(255,255,255,0.05)"}}>
-                <div className="w-[290px] h-[560px] rounded-[2.6rem] flex flex-col relative overflow-hidden"
-                  style={{border:"6px solid #1A1A1A",background:"#07070A",boxShadow:"0 0 60px rgba(0,0,0,0.7)"}}>
+              <div className="hidden md:flex md:w-1/2 items-center justify-center p-10 relative" style={{background:"rgba(0,0,0,0.3)",borderLeft:"1px solid rgba(255,255,255,0.05)"}}>
+                <div className="w-[290px] h-[560px] rounded-[2.6rem] flex flex-col relative overflow-hidden" style={{border:"6px solid #1A1A1A",background:"#07070A",boxShadow:"0 0 60px rgba(0,0,0,0.7)"}}>
                   <div className="absolute top-0 inset-x-0 h-6 rounded-b-3xl z-20 flex justify-center items-end pb-1" style={{background:"#1A1A1A"}}>
                     <div className="w-10 h-1.5 rounded-full bg-black/50"/>
                   </div>
-                  <div className="p-4 pt-8 flex items-center gap-3 z-10"
-                    style={{background:"rgba(15,15,18,0.95)",backdropFilter:"blur(12px)",borderBottom:"1px solid rgba(255,255,255,0.05)"}}>
+                  <div className="p-4 pt-8 flex items-center gap-3 z-10" style={{background:"rgba(15,15,18,0.95)",backdropFilter:"blur(12px)",borderBottom:"1px solid rgba(255,255,255,0.05)"}}>
                     <div className={`w-9 h-9 rounded-full flex items-center justify-center ${activeChannel==="telegram"?"bg-[#2AABEE]":"bg-[#25D366]"}`}>
                       {activeChannel==="telegram"?<Telegram_Icon size={20}/>:<WhatsApp_Icon size={20}/>}
                     </div>
@@ -1081,9 +1022,7 @@ export default function Home() {
                         {activeChannel==="telegram"?"BotFather":"Meta Developer"}
                         <CheckCircle2 className="w-3 h-3 text-blue-400"/>
                       </p>
-                      <p className="text-gray-400 text-[9px] font-mono">
-                        {activeChannel==="telegram"?"Verified System Bot":"API Configuration"}
-                      </p>
+                      <p className="text-gray-400 text-[9px] font-mono">{activeChannel==="telegram"?"Verified System Bot":"API Configuration"}</p>
                     </div>
                   </div>
                   <div className="p-4 pt-5 flex-1 flex flex-col justify-end space-y-2.5 overflow-y-auto nsb">
@@ -1109,8 +1048,7 @@ export default function Home() {
                         <GuideStep delay={.4} step="4" title="Link Webhook" desc="Enter Webhook URL & Verify Token."/>
                         <GuideStep delay={.5} step="5" title="Subscribe" desc="Enable 'messages' webhook subscription."/>
                         <motion.div initial={{opacity:0,scale:.9}} animate={{opacity:1,scale:1}} transition={{delay:.6,duration:.18}}
-                          className="mt-3 p-3 rounded-xl text-center mx-auto w-[90%]"
-                          style={{background:"rgba(37,211,102,0.08)",border:"1px solid rgba(37,211,102,0.22)"}}>
+                          className="mt-3 p-3 rounded-xl text-center mx-auto w-[90%]" style={{background:"rgba(37,211,102,0.08)",border:"1px solid rgba(37,211,102,0.22)"}}>
                           <span className="text-[#25D366] font-bold text-[11px] flex items-center justify-center gap-2">
                             <Zap className="w-3 h-3"/> Infrastructure Linked
                           </span>
@@ -1126,22 +1064,37 @@ export default function Home() {
         )}
       </AnimatePresence>
 
-      {/* Pricing Popup */}
       <AnimatePresence>
         {showPricingPopup && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-[16px] p-4">
             <motion.div initial={{opacity:0,y:12,scale:.96}} animate={{opacity:1,y:0,scale:1}} exit={{opacity:0,y:12,scale:.96}} transition={{duration:.12,ease:"easeOut"}}
               className="w-full max-w-4xl p-7 md:p-10 rounded-[1.75rem] text-center relative overflow-y-auto nsb"
               style={{background:"#0F0F12",border:"1px solid rgba(255,255,255,0.09)",boxShadow:"0 0 100px rgba(0,0,0,0.9)",maxHeight:"92vh"}}>
-              <div className="absolute top-0 left-[20%] right-[20%] h-px"
-                style={{background:"linear-gradient(90deg,transparent,rgba(249,115,22,0.4),transparent)"}}/>
+              <div className="absolute top-0 left-[20%] right-[20%] h-px" style={{background:"linear-gradient(90deg,transparent,rgba(249,115,22,0.4),transparent)"}}/>
               {!isDeploying && (
-                <button data-spring onClick={()=>setShowPricingPopup(false)}
-                  className={`absolute top-5 right-5 p-2 rounded-full text-gray-500 hover:text-white ${btn}`}
-                  style={{background:"rgba(255,255,255,0.05)"}}>
+                <button data-spring onClick={()=>setShowPricingPopup(false)} className={`absolute top-5 right-5 p-2 rounded-full text-gray-500 hover:text-white ${btn}`} style={{background:"rgba(255,255,255,0.05)"}}>
                   <X className="w-4 h-4"/>
                 </button>
               )}
+              
+              {/* 🚀 FIXED: RAZORPAY POPUP LOGO */}
+              <div className="flex justify-center mb-6">
+                <svg width="130" height="22" viewBox="0 0 152 26" fill="none">
+                  <defs>
+                    <linearGradient id="cgp" x1="0" y1="0" x2="0" y2="26" gradientUnits="userSpaceOnUse">
+                      <stop stopColor="#fff"/><stop offset="1" stopColor="rgba(255,255,255,.65)"/>
+                    </linearGradient>
+                  </defs>
+                  <path d="M22 3C18 .5 10 .5 7 4.5S3.5 18 7 22.5 18 26 22 23" stroke="rgba(255,255,255,.1)" strokeWidth="8" strokeLinecap="round" fill="none"/>
+                  <path d="M22 3C18 .5 10 .5 7 4.5S3.5 18 7 22.5 18 26 22 23" stroke="url(#cgp)" strokeWidth="4.5" strokeLinecap="round" fill="none"/>
+                  <line x1="7.5" y1="3" x2="14.5" y2="11.5" stroke="#f97316" strokeWidth="2.2" strokeLinecap="round"/>
+                  <line x1="12.5" y1="1.5" x2="19.5" y2="10" stroke="#f97316" strokeWidth="2.2" strokeLinecap="round"/>
+                  <line x1="17.5" y1="2.5" x2="24" y2="10.5" stroke="#f97316" strokeWidth="2" strokeLinecap="round"/>
+                  <text x="30" y="18" fontFamily="-apple-system,BlinkMacSystemFont,sans-serif" fontSize="14.5" fontWeight="800" letterSpacing="1.4" fill="#fff">LAWLINK</text>
+                  <text x="116" y="18" fontFamily="-apple-system,BlinkMacSystemFont,sans-serif" fontSize="9.5" fontWeight="700" letterSpacing=".7" fill="#f97316">.COM</text>
+                </svg>
+              </div>
+
               <h2 className="text-[1.7rem] font-black uppercase tracking-tight mb-3 text-white">
                 {activeModel==="omni" ? "OmniAgent Enterprise Plans" : "Select Your Deployment Plan"}
               </h2>
@@ -1190,7 +1143,6 @@ export default function Home() {
                 </div>
               )}
 
-              {/* Pay button — Ripple + Spring */}
               <button data-ripple data-spring onClick={triggerRazorpayPayment} disabled={isDeploying||!selectedTier}
                 className={`relative overflow-hidden w-full max-w-sm mx-auto font-black py-4 rounded-xl uppercase tracking-widest flex justify-center items-center gap-2 transition-all duration-150 ${btn}
                   ${!selectedTier?"cursor-not-allowed opacity-40 bg-gray-800 text-gray-500"
@@ -1204,33 +1156,23 @@ export default function Home() {
         )}
       </AnimatePresence>
 
-      {/* Help Chat Bubble */}
       <div className="fixed bottom-6 right-6 z-[60] flex flex-col items-end">
         <AnimatePresence>
           {isHelpOpen && (
-            <motion.div initial={{opacity:0,y:14,scale:.92}} animate={{opacity:1,y:0,scale:1}}
-              exit={{opacity:0,y:14,scale:.92}} transition={{duration:.12,ease:"easeOut"}}
-              className="w-72 md:w-80 p-5 rounded-2xl mb-3 relative"
-              style={{background:"#0F0F12",border:"1px solid rgba(255,255,255,0.09)",boxShadow:"0 0 48px rgba(0,0,0,0.8)"}}>
-              <div className="absolute top-0 left-[15%] right-[15%] h-px"
-                style={{background:"linear-gradient(90deg,transparent,rgba(249,115,22,0.35),transparent)"}}/>
-              <button data-spring onClick={()=>setIsHelpOpen(false)} className={`absolute top-3.5 right-3.5 text-gray-500 hover:text-white ${btn}`}>
-                <X className="w-4 h-4"/>
-              </button>
+            <motion.div initial={{opacity:0,y:14,scale:.92}} animate={{opacity:1,y:0,scale:1}} exit={{opacity:0,y:14,scale:.92}} transition={{duration:.12,ease:"easeOut"}}
+              className="w-72 md:w-80 p-5 rounded-2xl mb-3 relative" style={{background:"#0F0F12",border:"1px solid rgba(255,255,255,0.09)",boxShadow:"0 0 48px rgba(0,0,0,0.8)"}}>
+              <div className="absolute top-0 left-[15%] right-[15%] h-px" style={{background:"linear-gradient(90deg,transparent,rgba(249,115,22,0.35),transparent)"}}/>
+              <button data-spring onClick={()=>setIsHelpOpen(false)} className={`absolute top-3.5 right-3.5 text-gray-500 hover:text-white ${btn}`}><X className="w-4 h-4"/></button>
               {helpStatus==="sent" ? (
                 <div className="py-8 text-center flex flex-col items-center">
-                  <div className="w-11 h-11 rounded-full flex items-center justify-center mb-3" style={{background:"rgba(34,197,94,0.12)"}}>
-                    <CheckCircle2 className="w-5 h-5 text-green-400"/>
-                  </div>
+                  <div className="w-11 h-11 rounded-full flex items-center justify-center mb-3" style={{background:"rgba(34,197,94,0.12)"}}><CheckCircle2 className="w-5 h-5 text-green-400"/></div>
                   <h4 className="text-white font-bold text-[15px] mb-1">Submitted!</h4>
                   <p className="text-[11px] text-gray-400">Our team will review shortly.</p>
                 </div>
               ) : (
                 <>
                   <div className="flex items-center gap-3 mb-4 pb-4" style={{borderBottom:"1px solid rgba(255,255,255,0.06)"}}>
-                    <div className="w-9 h-9 rounded-full flex items-center justify-center" style={{background:"rgba(59,130,246,0.12)"}}>
-                      <MessageSquare className="w-4 h-4 text-blue-400"/>
-                    </div>
+                    <div className="w-9 h-9 rounded-full flex items-center justify-center" style={{background:"rgba(59,130,246,0.12)"}}><MessageSquare className="w-4 h-4 text-blue-400"/></div>
                     <div>
                       <h4 className="text-white font-bold text-[13px]">ClawLink Support</h4>
                       <p className="text-[10px] text-gray-400">Standard SLA per tier.</p>
@@ -1240,13 +1182,11 @@ export default function Home() {
                     <input type="email" placeholder="Your email" value={helpEmail} onChange={e=>setHelpEmail(e.target.value)}
                       className="w-full px-3 py-2.5 rounded-xl text-[12px] text-white outline-none transition-colors duration-150"
                       style={{background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.07)"}}
-                      onFocus={e=>(e.target.style.borderColor="rgba(59,130,246,0.5)")}
-                      onBlur={e =>(e.target.style.borderColor="rgba(255,255,255,0.07)")}/>
+                      onFocus={e=>(e.target.style.borderColor="rgba(59,130,246,0.5)")} onBlur={e =>(e.target.style.borderColor="rgba(255,255,255,0.07)")}/>
                     <textarea placeholder="How can we help?" rows={3} value={helpMessage} onChange={e=>setHelpMessage(e.target.value)}
                       className="w-full px-3 py-2.5 rounded-xl text-[12px] text-white outline-none resize-none transition-colors duration-150"
                       style={{background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.07)"}}
-                      onFocus={e=>(e.target.style.borderColor="rgba(59,130,246,0.5)")}
-                      onBlur={e =>(e.target.style.borderColor="rgba(255,255,255,0.07)")}/>
+                      onFocus={e=>(e.target.style.borderColor="rgba(59,130,246,0.5)")} onBlur={e =>(e.target.style.borderColor="rgba(255,255,255,0.07)")}/>
                     <button data-ripple data-spring onClick={handleSendHelpRequest} disabled={helpStatus==="sending"}
                       className={`relative overflow-hidden w-full bg-blue-600 hover:bg-blue-500 text-white font-bold text-[12px] py-2.5 rounded-xl flex items-center justify-center gap-2 ${btn}`}>
                       {helpStatus==="sending"?"Sending…":<><Send className="w-3 h-3"/>Send Message</>}
@@ -1257,7 +1197,6 @@ export default function Home() {
             </motion.div>
           )}
         </AnimatePresence>
-        {/* FAB — Spring via Framer (unchanged) */}
         <motion.button whileHover={{scale:1.1}} whileTap={{scale:.9}} onClick={()=>setIsHelpOpen(!isHelpOpen)}
           className="w-14 h-14 text-white rounded-full flex items-center justify-center transition-all duration-150 transform-gpu"
           style={{background:"linear-gradient(135deg,#3B82F6,#7C3AED)",boxShadow:"0 0 28px rgba(59,130,246,0.5)"}}>
