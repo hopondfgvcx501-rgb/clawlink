@@ -113,7 +113,7 @@ const GuideStep = ({ step, title, desc, delay }: { step: string; title: string; 
   </motion.div>
 );
 
-/* ─── Marquee — FIXED INFINITE SCROLL & VISIBILITY ──────────────────────────── */
+/* ─── Marquee — FIXED INFINITE SCROLL ──────────────────────────── */
 const MarqueeRow = ({ items, reverse = false }: { items: string[]; reverse?: boolean }) => (
   <div className="flex whitespace-nowrap overflow-hidden py-2.5 w-full">
     <motion.div
@@ -128,6 +128,7 @@ const MarqueeRow = ({ items, reverse = false }: { items: string[]; reverse?: boo
             bg-white/[0.04] px-5 py-2.5 rounded-full border border-white/[0.08]
             whitespace-nowrap hover:border-orange-500/50 hover:text-white hover:bg-white/[0.08]
             transition-colors duration-200">
+          <span className="w-1.5 h-1.5 rounded-full bg-orange-500/80 shrink-0"/>
           {item}
         </span>
       ))}
@@ -137,7 +138,6 @@ const MarqueeRow = ({ items, reverse = false }: { items: string[]; reverse?: boo
 
 /* ═══════════════════════════════════════════════════════════════ */
 export default function Home() {
-  /* ── ALL ORIGINAL STATE — UNTOUCHED ── */
   const { data: session, status } = useSession();
   const router = useRouter();
 
@@ -145,6 +145,7 @@ export default function Home() {
   const [isTelegramModalOpen, setIsTelegramModalOpen] = useState(false);
   const [telegramToken,       setTelegramToken]       = useState("");
   const [waPhoneId,           setWaPhoneId]           = useState("");
+  const [waPhoneNumber,       setWaPhoneNumber]       = useState(""); // 🚀 NEW: State for phone number
   const [isTokenSaved,        setIsTokenSaved]        = useState(false);
   const [isVerifying,         setIsVerifying]         = useState(false);
   const [showPricingPopup,    setShowPricingPopup]    = useState(false);
@@ -163,11 +164,9 @@ export default function Home() {
   const [helpStatus,         setHelpStatus]         = useState<"idle"|"sending"|"sent">("idle");
   const [isSupportModalOpen, setIsSupportModalOpen] = useState(false);
 
-  /* ── 🚀 FIXED: MOVED INTERSECTION OBSERVER SCRIPT TO USEEFFECT ── */
   useEffect(() => {
     setIsMounted(true);
     
-    // Load Razorpay
     const s = document.createElement("script");
     s.src = "https://checkout.razorpay.com/v1/checkout.js";
     s.async = true;
@@ -178,14 +177,12 @@ export default function Home() {
       if (tz === "Asia/Calcutta" || tz === "Asia/Kolkata") { setCurrency("INR"); setCurrencySymbol("₹"); }
     } catch {}
 
-    // SCROLL ANIMATIONS OBSERVER (Replaces injected script)
     const io = new IntersectionObserver((entries) => {
       entries.forEach((e) => {
         if (e.isIntersecting) e.target.classList.add('sr-vis');
       });
     }, { threshold: 0.08, rootMargin: '0px 0px -30px 0px' });
 
-    // Wait a brief moment to ensure DOM is ready
     setTimeout(() => {
       document.querySelectorAll('.sr-up, .sr-left, .sr-rght').forEach((el) => io.observe(el));
 
@@ -194,7 +191,7 @@ export default function Home() {
           if (e.isIntersecting) {
             const cards = e.target.querySelectorAll('.fi-card');
             cards.forEach((c: any, i: number) => {
-              c.style.transition = 'opacity .6s ' + (0.05 + i * 0.09) + 's cubic-bezier(.16,1,.3,1), transform .6s ' + (0.05 + i * 0.09) + 's cubic-bezier(.16,1,.3,1), background .22s';
+              c.style.transition = 'opacity .4s ' + (0.02 + i * 0.05) + 's cubic-bezier(.16,1,.3,1), transform .4s ' + (0.02 + i * 0.05) + 's cubic-bezier(.16,1,.3,1), background .15s';
               c.style.opacity = '1';
               c.style.transform = 'none';
             });
@@ -211,7 +208,7 @@ export default function Home() {
       document.querySelectorAll('section, div[class*="sec"]').forEach((g) => {
         if (g.querySelector('.fi-card')) fio.observe(g);
       });
-    }, 100); // Small delay to let React render classes
+    }, 100);
 
     const handleScroll = () => {
       const nav = document.getElementById('clnav');
@@ -235,14 +232,14 @@ export default function Home() {
     if (activeChannel === "telegram" && !telegramToken.trim()) {
       alert("Please enter a valid Telegram API Token."); return;
     }
-    if (activeChannel === "whatsapp" && (!telegramToken.trim() || !waPhoneId.trim())) {
-      alert("Please enter BOTH your Permanent API Token and Phone Number ID."); return;
+    if (activeChannel === "whatsapp" && (!telegramToken.trim() || !waPhoneId.trim() || !waPhoneNumber.trim())) {
+      alert("Please enter API Token, Phone Number ID AND your WhatsApp Number."); return;
     }
     setIsVerifying(true);
     try {
       const res = await fetch("/api/verify-token", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ channel: activeChannel, token: telegramToken, phoneId: waPhoneId }),
+        body: JSON.stringify({ channel: activeChannel, token: telegramToken, phoneId: waPhoneId, phoneNumber: waPhoneNumber }),
       });
       const data = await res.json();
       if (data.success) { setIsTokenSaved(true); setIsTelegramModalOpen(false); }
@@ -298,6 +295,7 @@ export default function Home() {
                 selectedChannel: activeChannel, 
                 telegramToken, 
                 waPhoneId, 
+                waPhoneNumber, // 🚀 NEW: Passed to Backend for smart redirect
                 plan: selectedTier,
                 billingCycle: selectedTier === "yearly" ? "Yearly" : "Monthly" 
               }),
@@ -315,15 +313,17 @@ export default function Home() {
     } catch { alert("Gateway init failed."); setIsDeploying(false); }
   };
 
+  // 🚀 FIXED: ULTRA SMART REDIRECT LOGIC FOR WHATSAPP/TELEGRAM
   const openLiveBotHandler = () => {
-    if (activeChannel === "whatsapp") {
-      window.open(botLink || "https://web.whatsapp.com", "_blank");
-    } else { window.open(botLink || "https://web.telegram.org", "_blank"); }
+    if (activeChannel === "whatsapp" && waPhoneNumber) {
+      window.open(`https://wa.me/${waPhoneNumber.replace(/\D/g, '')}`, "_blank");
+    } else { 
+      window.open(botLink || "https://web.telegram.org", "_blank"); 
+    }
   };
   
   const copyToClipboard = (t: string) => { navigator.clipboard.writeText(t); alert("Copied!"); };
 
-  /* ── Marquee rows — ORIGINAL UNTOUCHED ── */
   const row1 = ["📅 Productivity & Meetings","📄 Write contracts & NDAs","📊 Create presentations","🔄 Negotiate refunds","🛒 Shopping & Research","👥 Team & Monitoring"];
   const row2 = ["📅 Schedule meetings","💼 Finance, Tax & Payroll","💰 Do your taxes with AI","🎯 Screen & prioritize leads","🧾 Track expenses","👔 Write job descriptions"];
   const row3 = ["✉️ Email & Documents","📨 Read & summarize emails","🧮 Run payroll calculations","🏷️ Find coupons automatically","📈 Track OKRs & KPIs","📰 Monitor smart alerts"];
@@ -332,10 +332,8 @@ export default function Home() {
 
   if (!isMounted) return null;
 
-  /* ─── Design tokens ─── */
   const btn = "transition-all duration-150 ease-out active:scale-[0.96] transform-gpu";
 
-  /* ─── Pill CSS helpers ─── */
   const pillBase = [
     "bg-white border-2 border-transparent cursor-pointer overflow-hidden",
     "transition-all duration-150 ease-out active:scale-[0.96]",
@@ -350,7 +348,6 @@ export default function Home() {
   const modelActive  = (id: string) => activeModel === id && !( isTokenSaved && activeModel !== id);
   const chanActive   = (id: string) => activeChannel === id && !(isTokenSaved && activeChannel !== id);
 
-  /* ──────────────────────────────────────────────────────────── */
   return (
     <div className="bg-[#07070A] min-h-screen text-[#E8E8EC] font-sans selection:bg-orange-500/30 overflow-x-hidden">
 
@@ -358,11 +355,9 @@ export default function Home() {
         *{box-sizing:border-box;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
         .nsb::-webkit-scrollbar{display:none}.nsb{-ms-overflow-style:none;scrollbar-width:none}
 
-        /* Badge pulse */
         @keyframes bpulse{0%,100%{opacity:1}50%{opacity:.18}}
         .bpulse{animation:bpulse 1.8s ease-in-out infinite}
 
-        /* Hero entrance */
         @keyframes hsd{from{opacity:0;transform:translateY(-14px)}to{opacity:1;transform:translateY(0)}}
         @keyframes hsu{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
         .anim-badge{animation:hsd .8s cubic-bezier(.16,1,.3,1) both}
@@ -371,25 +366,21 @@ export default function Home() {
         .anim-card {animation:hsu .8s .26s cubic-bezier(.16,1,.3,1) both}
         .anim-stats{animation:hsu .8s .38s cubic-bezier(.16,1,.3,1) both}
 
-        /* Scroll reveal */
-        .sr-up  {opacity:0;transform:translateY(32px);transition:opacity .75s cubic-bezier(.16,1,.3,1),transform .75s cubic-bezier(.16,1,.3,1)}
-        .sr-left{opacity:0;transform:translateX(-28px);transition:opacity .75s cubic-bezier(.16,1,.3,1),transform .75s cubic-bezier(.16,1,.3,1)}
-        .sr-rght{opacity:0;transform:translateX(28px);transition:opacity .75s cubic-bezier(.16,1,.3,1),transform .75s cubic-bezier(.16,1,.3,1)}
+        .sr-up  {opacity:0;transform:translateY(32px);transition:opacity .5s cubic-bezier(.16,1,.3,1),transform .5s cubic-bezier(.16,1,.3,1)}
+        .sr-left{opacity:0;transform:translateX(-28px);transition:opacity .5s cubic-bezier(.16,1,.3,1),transform .5s cubic-bezier(.16,1,.3,1)}
+        .sr-rght{opacity:0;transform:translateX(28px);transition:opacity .5s cubic-bezier(.16,1,.3,1),transform .5s cubic-bezier(.16,1,.3,1)}
         .sr-vis {opacity:1!important;transform:none!important}
-        .sd1{transition-delay:.07s}.sd2{transition-delay:.14s}.sd3{transition-delay:.21s}.sd4{transition-delay:.28s}
+        .sd1{transition-delay:.05s}.sd2{transition-delay:.10s}.sd3{transition-delay:.15s}.sd4{transition-delay:.20s}
 
-        /* Card shimmer line */
         .card-shimmer::before{content:'';position:absolute;top:0;left:15%;right:15%;height:1px;
           background:linear-gradient(90deg,transparent,rgba(249,115,22,.55),transparent)}
 
-        /* Feature card hover top glow */
         .fi-card{position:relative;overflow:hidden}
         .fi-card::after{content:'';position:absolute;top:0;left:0;right:0;height:2px;
           background:linear-gradient(90deg,transparent,rgba(249,115,22,0),transparent);
-          transition:background .3s}
-        .fi-card:hover::after{background:linear-gradient(90deg,transparent,rgba(249,115,22,.55) 50%,transparent)}
+          transition:background .2s}
+        .fi-card:hover::after{background:linear-gradient(90deg,transparent,rgba(249,115,22,.65) 50%,transparent)}
 
-        /* Pill text — mobile center, desktop left */
         .ptx-name{font-size:11px;font-weight:900;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
         .ptx-sub {font-size:7.5px;font-weight:700;opacity:.8;white-space:nowrap}
         .ptx-soon{font-size:7.5px;font-weight:700;color:#3b82f6;text-transform:uppercase}
@@ -398,18 +389,16 @@ export default function Home() {
           .ptx-sub,.ptx-soon{font-size:6.5px;text-align:center;width:100%}
         }
 
-        /* Gradient text */
         .grad-text{background:linear-gradient(135deg,#f97316 30%,#fb923c);
           -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
 
-        /* Glow buttons */
-        .orange-glow{box-shadow:0 0 28px rgba(249,115,22,.38)}
-        .orange-glow:hover{box-shadow:0 0 44px rgba(249,115,22,.55)}
-        .blue-glow  {box-shadow:0 0 28px rgba(37,99,235,.42)}
-        .blue-glow:hover{box-shadow:0 0 44px rgba(37,99,235,.62)}
+        .orange-glow{box-shadow:0 0 28px rgba(249,115,22,.48)}
+        .orange-glow:hover{box-shadow:0 0 48px rgba(249,115,22,.65)}
+        .blue-glow  {box-shadow:0 0 28px rgba(37,99,235,.52)}
+        .blue-glow:hover{box-shadow:0 0 48px rgba(37,99,235,.72)}
       `}}/>
 
-      {/* Ambient glows - OPACITY INCREASED FOR BETTER VISIBILITY */}
+      {/* Ambient glows */}
       <div className="fixed top-[-20%] right-[-8%] w-[800px] h-[800px] rounded-full pointer-events-none z-0"
            style={{background:"radial-gradient(circle,rgba(249,115,22,0.18) 0%,transparent 65%)",transform:"translateZ(0)"}}/>
       <div className="fixed bottom-[-20%] left-[-8%] w-[800px] h-[800px] rounded-full pointer-events-none z-0"
@@ -421,8 +410,8 @@ export default function Home() {
         style={{backdropFilter:"blur(28px)",WebkitBackdropFilter:"blur(28px)",
                 background:"rgba(7,7,10,0.72)",borderBottom:"1px solid rgba(255,255,255,0.055)"}}>
 
-        {/* Premium logo: C + LAWLINK.COM */}
-        <svg width="152" height="26" viewBox="0 0 152 26" fill="none">
+        {/* 🚀 FIXED: UNIVERSAL CLAWLINK SVG LOGO */}
+        <svg width="130" height="22" viewBox="0 0 152 26" fill="none" className="shrink-0 cursor-pointer" onClick={() => router.push("/")}>
           <defs>
             <linearGradient id="cg" x1="0" y1="0" x2="0" y2="26" gradientUnits="userSpaceOnUse">
               <stop stopColor="#fff"/><stop offset="1" stopColor="rgba(255,255,255,.65)"/>
@@ -457,16 +446,14 @@ export default function Home() {
       </nav>
 
       {/* ══ HERO ══ */}
-      <section className="relative z-10 min-h-screen flex flex-col items-center justify-center pt-20 pb-16 px-4 text-center">
+      <section id="hero" className="relative z-10 min-h-screen flex flex-col items-center justify-center pt-20 pb-16 px-4 text-center">
 
-        {/* Badge */}
         <div className="anim-badge inline-flex items-center gap-2 mb-6 px-5 py-2 rounded-full text-[10px] font-bold tracking-[.1em] text-orange-400"
           style={{background:"rgba(249,115,22,0.09)",border:"1px solid rgba(249,115,22,0.26)"}}>
           <span className="w-1.5 h-1.5 rounded-full bg-orange-400 bpulse"/>
           LIVE NOW &nbsp;·&nbsp; 30-SECOND DEPLOY
         </div>
 
-        {/* H1 */}
         <h1 className="anim-h1 text-[clamp(2.4rem,6.5vw,5rem)] font-black leading-[1.03] tracking-[-0.04em] mb-4 text-white">
           Deploy{" "}
           <span className="grad-text">OpenClaw</span><br/>
@@ -482,182 +469,70 @@ export default function Home() {
           style={{background:"rgba(255,255,255,0.028)",border:"1px solid rgba(255,255,255,0.07)",
                   boxShadow:"0 0 60px rgba(249,115,22,0.06),0 32px 64px rgba(0,0,0,0.5)"}}>
 
-          {/* MODEL label */}
-          <p className="text-[9px] font-bold tracking-[.15em] uppercase text-gray-400 mb-3 text-left">
-            Choose your AI model
-          </p>
-
-          {/* MODEL grid — 5 col */}
+          <p className="text-[9px] font-bold tracking-[.15em] uppercase text-gray-400 mb-3 text-left">Choose your AI model</p>
           <div className="grid grid-cols-5 gap-[6px] mb-5">
-
-            {/* GPT-5.2 */}
-            <button
-              onClick={()=>{ if(!isTokenSaved){ setActiveModel("gpt-5.2"); }}}
-              disabled={isTokenSaved && activeModel!=="gpt-5.2"}
-              className={[pillBase,
-                modelActive("gpt-5.2")
-                  ? "!border-blue-500 shadow-[0_0_0_3px_rgba(59,130,246,0.2),0_2px_8px_rgba(0,0,0,0.12)]"
-                  : "",
-                isTokenSaved && activeModel!=="gpt-5.2" ? "opacity-25 pointer-events-none" : "",
-              ].join(" ")}>
-              <div className="w-[22px] h-[22px] rounded-[5px] flex items-center justify-center shrink-0 bg-[#f0fdf4]">
-                <OpenAI_Icon/>
-              </div>
-              <div className="flex flex-col min-w-0 max-sm:items-center max-sm:w-full">
-                <span className="ptx-name" style={{color:"#10a37f"}}>GPT-5.2</span>
-              </div>
+            <button onClick={()=>{ if(!isTokenSaved){ setActiveModel("gpt-5.2"); }}} disabled={isTokenSaved && activeModel!=="gpt-5.2"}
+              className={[pillBase, modelActive("gpt-5.2") ? "!border-blue-500 shadow-[0_0_0_3px_rgba(59,130,246,0.2),0_2px_8px_rgba(0,0,0,0.12)]" : "", isTokenSaved && activeModel!=="gpt-5.2" ? "opacity-25 pointer-events-none" : ""].join(" ")}>
+              <div className="w-[22px] h-[22px] rounded-[5px] flex items-center justify-center shrink-0 bg-[#f0fdf4]"><OpenAI_Icon/></div>
+              <div className="flex flex-col min-w-0 max-sm:items-center max-sm:w-full"><span className="ptx-name" style={{color:"#10a37f"}}>GPT-5.2</span></div>
             </button>
 
-            {/* Claude */}
-            <button
-              onClick={()=>{ if(!isTokenSaved){ setActiveModel("claude"); }}}
-              disabled={isTokenSaved && activeModel!=="claude"}
-              className={[pillBase,
-                modelActive("claude")
-                  ? "!border-blue-500 shadow-[0_0_0_3px_rgba(59,130,246,0.2),0_2px_8px_rgba(0,0,0,0.12)]"
-                  : "",
-                isTokenSaved && activeModel!=="claude" ? "opacity-25 pointer-events-none" : "",
-              ].join(" ")}>
-              <div className="w-[22px] h-[22px] rounded-[5px] flex items-center justify-center shrink-0 bg-[#fdf5f2]">
-                <Claude_Icon/>
-              </div>
-              <div className="flex flex-col min-w-0 max-sm:items-center max-sm:w-full">
-                <span className="ptx-name" style={{color:"#d97757"}}>Claude</span>
-                <span className="ptx-sub" style={{color:"#d97757"}}>Opus 4.6</span>
-              </div>
+            <button onClick={()=>{ if(!isTokenSaved){ setActiveModel("claude"); }}} disabled={isTokenSaved && activeModel!=="claude"}
+              className={[pillBase, modelActive("claude") ? "!border-blue-500 shadow-[0_0_0_3px_rgba(59,130,246,0.2),0_2px_8px_rgba(0,0,0,0.12)]" : "", isTokenSaved && activeModel!=="claude" ? "opacity-25 pointer-events-none" : ""].join(" ")}>
+              <div className="w-[22px] h-[22px] rounded-[5px] flex items-center justify-center shrink-0 bg-[#fdf5f2]"><Claude_Icon/></div>
+              <div className="flex flex-col min-w-0 max-sm:items-center max-sm:w-full"><span className="ptx-name" style={{color:"#d97757"}}>Claude</span><span className="ptx-sub" style={{color:"#d97757"}}>Opus 4.6</span></div>
             </button>
 
-            {/* Gemini */}
-            <button
-              onClick={()=>{ if(!isTokenSaved){ setActiveModel("gemini"); }}}
-              disabled={isTokenSaved && activeModel!=="gemini"}
-              className={[pillBase,
-                modelActive("gemini")
-                  ? "!border-blue-500 shadow-[0_0_0_3px_rgba(59,130,246,0.2),0_2px_8px_rgba(0,0,0,0.12)]"
-                  : "",
-                isTokenSaved && activeModel!=="gemini" ? "opacity-25 pointer-events-none" : "",
-              ].join(" ")}>
-              <div className="w-[22px] h-[22px] rounded-[5px] flex items-center justify-center shrink-0 bg-[#eff2ff]">
-                <Gemini_Icon/>
-              </div>
-              <div className="flex flex-col min-w-0 max-sm:items-center max-sm:w-full">
-                <span className="ptx-name" style={{color:"#648af5"}}>Gemini</span>
-                <span className="ptx-sub" style={{color:"#648af5"}}>3 Flash</span>
-              </div>
+            <button onClick={()=>{ if(!isTokenSaved){ setActiveModel("gemini"); }}} disabled={isTokenSaved && activeModel!=="gemini"}
+              className={[pillBase, modelActive("gemini") ? "!border-blue-500 shadow-[0_0_0_3px_rgba(59,130,246,0.2),0_2px_8px_rgba(0,0,0,0.12)]" : "", isTokenSaved && activeModel!=="gemini" ? "opacity-25 pointer-events-none" : ""].join(" ")}>
+              <div className="w-[22px] h-[22px] rounded-[5px] flex items-center justify-center shrink-0 bg-[#eff2ff]"><Gemini_Icon/></div>
+              <div className="flex flex-col min-w-0 max-sm:items-center max-sm:w-full"><span className="ptx-name" style={{color:"#648af5"}}>Gemini</span><span className="ptx-sub" style={{color:"#648af5"}}>3 Flash</span></div>
             </button>
 
-            {/* OmniAgent */}
-            <button
-              onClick={()=>{ if(!isTokenSaved){ setActiveModel("omni"); }}}
-              disabled={isTokenSaved && activeModel!=="omni"}
-              className={[pillBase,
-                modelActive("omni")
-                  ? "!border-[#00bfff] shadow-[0_0_0_3px_rgba(0,191,255,0.2),0_2px_8px_rgba(0,0,0,0.12)]"
-                  : "",
-                isTokenSaved && activeModel!=="omni" ? "opacity-25 pointer-events-none" : "",
-              ].join(" ")}>
-              <div className="w-[22px] h-[22px] rounded-[5px] flex items-center justify-center shrink-0 bg-[#e8f9ff]">
-                <Omni_Icon/>
-              </div>
-              <div className="flex flex-col min-w-0 max-sm:items-center max-sm:w-full">
-                <span className="ptx-name" style={{color:"#0369a1",fontSize:"9.5px"}}>OmniAgent</span>
-                <span className="ptx-sub" style={{color:"#00bfff"}}>Nexus</span>
-              </div>
+            <button onClick={()=>{ if(!isTokenSaved){ setActiveModel("omni"); }}} disabled={isTokenSaved && activeModel!=="omni"}
+              className={[pillBase, modelActive("omni") ? "!border-[#00bfff] shadow-[0_0_0_3px_rgba(0,191,255,0.2),0_2px_8px_rgba(0,0,0,0.12)]" : "", isTokenSaved && activeModel!=="omni" ? "opacity-25 pointer-events-none" : ""].join(" ")}>
+              <div className="w-[22px] h-[22px] rounded-[5px] flex items-center justify-center shrink-0 bg-[#e8f9ff]"><Omni_Icon/></div>
+              <div className="flex flex-col min-w-0 max-sm:items-center max-sm:w-full"><span className="ptx-name" style={{color:"#0369a1",fontSize:"9.5px"}}>OmniAgent</span><span className="ptx-sub" style={{color:"#00bfff"}}>Nexus</span></div>
             </button>
 
-            {/* Llama 4 soon */}
             <div className={[pillBase, "opacity-30 cursor-not-allowed pointer-events-none"].join(" ")}>
-              <div className="w-[22px] h-[22px] rounded-[5px] flex items-center justify-center shrink-0 bg-gray-100">
-                <Llama_Icon/>
-              </div>
-              <div className="flex flex-col min-w-0 max-sm:items-center max-sm:w-full">
-                <span className="ptx-name text-gray-600">Llama 4</span>
-                <span className="ptx-soon" style={{animation:"bpulse 1.8s ease-in-out infinite"}}>SOON</span>
-              </div>
+              <div className="w-[22px] h-[22px] rounded-[5px] flex items-center justify-center shrink-0 bg-gray-100"><Llama_Icon/></div>
+              <div className="flex flex-col min-w-0 max-sm:items-center max-sm:w-full"><span className="ptx-name text-gray-600">Llama 4</span><span className="ptx-soon" style={{animation:"bpulse 1.8s ease-in-out infinite"}}>SOON</span></div>
             </div>
           </div>
 
-          {/* CHANNEL label */}
-          <p className="text-[9px] font-bold tracking-[.15em] uppercase text-gray-400 mb-3 text-left">
-            Select your channel
-          </p>
-
-          {/* CHANNEL grid — 5 col */}
+          <p className="text-[9px] font-bold tracking-[.15em] uppercase text-gray-400 mb-3 text-left">Select your channel</p>
           <div className="grid grid-cols-5 gap-[6px] mb-5">
-
-            {/* Telegram */}
-            <button
-              onClick={()=>!isTokenSaved && setActiveChannel("telegram")}
-              disabled={isTokenSaved && activeChannel!=="telegram"}
-              className={[pillBase,
-                chanActive("telegram")
-                  ? "!border-[#2aabee] shadow-[0_0_0_3px_rgba(42,171,238,0.2),0_2px_8px_rgba(0,0,0,0.12)]"
-                  : "",
-                isTokenSaved && activeChannel!=="telegram" ? "opacity-25 pointer-events-none" : "",
-              ].join(" ")}>
-              <div className="w-[22px] h-[22px] rounded-full flex items-center justify-center shrink-0">
-                <Telegram_Icon size={22}/>
-              </div>
-              <div className="flex flex-col min-w-0 max-sm:items-center max-sm:w-full">
-                <span className="ptx-name text-gray-800">Telegram</span>
-              </div>
+            <button onClick={()=>!isTokenSaved && setActiveChannel("telegram")} disabled={isTokenSaved && activeChannel!=="telegram"}
+              className={[pillBase, chanActive("telegram") ? "!border-[#2aabee] shadow-[0_0_0_3px_rgba(42,171,238,0.2),0_2px_8px_rgba(0,0,0,0.12)]" : "", isTokenSaved && activeChannel!=="telegram" ? "opacity-25 pointer-events-none" : ""].join(" ")}>
+              <div className="w-[22px] h-[22px] rounded-full flex items-center justify-center shrink-0"><Telegram_Icon size={22}/></div>
+              <div className="flex flex-col min-w-0 max-sm:items-center max-sm:w-full"><span className="ptx-name text-gray-800">Telegram</span></div>
             </button>
 
-            {/* WhatsApp */}
-            <button
-              onClick={()=>!isTokenSaved && setActiveChannel("whatsapp")}
-              disabled={isTokenSaved && activeChannel!=="whatsapp"}
-              className={[pillBase,
-                chanActive("whatsapp")
-                  ? "!border-[#25d366] shadow-[0_0_0_3px_rgba(37,211,102,0.2),0_2px_8px_rgba(0,0,0,0.12)]"
-                  : "",
-                isTokenSaved && activeChannel!=="whatsapp" ? "opacity-25 pointer-events-none" : "",
-              ].join(" ")}>
-              <div className="w-[22px] h-[22px] rounded-full flex items-center justify-center shrink-0">
-                <WhatsApp_Icon size={22}/>
-              </div>
-              <div className="flex flex-col min-w-0 max-sm:items-center max-sm:w-full">
-                <span className="ptx-name text-gray-800">WhatsApp</span>
-              </div>
+            <button onClick={()=>!isTokenSaved && setActiveChannel("whatsapp")} disabled={isTokenSaved && activeChannel!=="whatsapp"}
+              className={[pillBase, chanActive("whatsapp") ? "!border-[#25d366] shadow-[0_0_0_3px_rgba(37,211,102,0.2),0_2px_8px_rgba(0,0,0,0.12)]" : "", isTokenSaved && activeChannel!=="whatsapp" ? "opacity-25 pointer-events-none" : ""].join(" ")}>
+              <div className="w-[22px] h-[22px] rounded-full flex items-center justify-center shrink-0"><WhatsApp_Icon size={22}/></div>
+              <div className="flex flex-col min-w-0 max-sm:items-center max-sm:w-full"><span className="ptx-name text-gray-800">WhatsApp</span></div>
             </button>
 
-            {/* Discord soon */}
             <div className={[pillBase, isTokenSaved?"opacity-20":"opacity-35", "cursor-not-allowed pointer-events-none"].join(" ")}>
-              <div className="w-[22px] h-[22px] rounded-full flex items-center justify-center shrink-0">
-                <Discord_Icon/>
-              </div>
-              <div className="flex flex-col min-w-0 max-sm:items-center max-sm:w-full">
-                <span className="ptx-name text-gray-700">Discord</span>
-                <span className="ptx-soon">SOON</span>
-              </div>
+              <div className="w-[22px] h-[22px] rounded-full flex items-center justify-center shrink-0"><Discord_Icon/></div>
+              <div className="flex flex-col min-w-0 max-sm:items-center max-sm:w-full"><span className="ptx-name text-gray-700">Discord</span><span className="ptx-soon">SOON</span></div>
             </div>
 
-            {/* Instagram soon */}
             <div className={[pillBase, isTokenSaved?"opacity-20":"opacity-35", "cursor-not-allowed pointer-events-none"].join(" ")}>
-              <div className="w-[22px] h-[22px] rounded-full flex items-center justify-center shrink-0" style={{background:"linear-gradient(135deg,#f09433,#bc1888)"}}>
-                <Instagram_Icon/>
-              </div>
-              <div className="flex flex-col min-w-0 max-sm:items-center max-sm:w-full">
-                <span className="ptx-name text-gray-700">Instagram</span>
-                <span className="ptx-soon">SOON</span>
-              </div>
+              <div className="w-[22px] h-[22px] rounded-full flex items-center justify-center shrink-0" style={{background:"linear-gradient(135deg,#f09433,#bc1888)"}}><Instagram_Icon/></div>
+              <div className="flex flex-col min-w-0 max-sm:items-center max-sm:w-full"><span className="ptx-name text-gray-700">Instagram</span><span className="ptx-soon">SOON</span></div>
             </div>
 
-            {/* Slack soon */}
             <div className={[pillBase, isTokenSaved?"opacity-20":"opacity-35", "cursor-not-allowed pointer-events-none"].join(" ")}>
               <div className="w-[22px] h-[22px] rounded-full flex items-center justify-center shrink-0 bg-[#4a154b]">
-                <svg viewBox="0 0 24 24" width="13" height="13" fill="white">
-                  <path d="M5.04 15.44a2.52 2.52 0 01-5.04 0 2.52 2.52 0 012.52-2.52h2.52v2.52zm1.26 0a2.52 2.52 0 015.04 0v6.3a2.52 2.52 0 01-5.04 0v-6.3zM8.56 5.04a2.52 2.52 0 010-5.04 2.52 2.52 0 012.52 2.52v2.52H8.56zm0 1.26a2.52 2.52 0 010 5.04H2.26a2.52 2.52 0 010-5.04h6.3z"/>
-                </svg>
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="white"><path d="M5.04 15.44a2.52 2.52 0 01-5.04 0 2.52 2.52 0 012.52-2.52h2.52v2.52zm1.26 0a2.52 2.52 0 015.04 0v6.3a2.52 2.52 0 01-5.04 0v-6.3zM8.56 5.04a2.52 2.52 0 010-5.04 2.52 2.52 0 012.52 2.52v2.52H8.56zm0 1.26a2.52 2.52 0 010 5.04H2.26a2.52 2.52 0 010-5.04h6.3z"/></svg>
               </div>
-              <div className="flex flex-col min-w-0 max-sm:items-center max-sm:w-full">
-                <span className="ptx-name text-gray-700">Slack</span>
-                <span className="ptx-soon">SOON</span>
-              </div>
+              <div className="flex flex-col min-w-0 max-sm:items-center max-sm:w-full"><span className="ptx-name text-gray-700">Slack</span><span className="ptx-soon">SOON</span></div>
             </div>
           </div>
 
-          {/* CTA Area — ORIGINAL LOGIC */}
           <AnimatePresence mode="wait">
             {botLink ? (
               <motion.div key="success" initial={{opacity:0,y:8}} animate={{opacity:1,y:0}} exit={{opacity:0}} transition={{duration:.18}}
@@ -666,7 +541,7 @@ export default function Home() {
                 <p className="text-[15px] font-bold text-white mb-4">🚀 Your Bot is Live!</p>
                 <div className="flex flex-col sm:flex-row justify-center gap-3">
                   <button onClick={openLiveBotHandler}
-                    className={`bg-white text-black font-bold px-7 py-3.5 rounded-xl text-sm ${btn} hover:scale-[1.02] shadow-lg`}>
+                    className={`bg-white text-black font-black uppercase tracking-widest px-7 py-3.5 rounded-xl text-sm ${btn} hover:scale-[1.02] shadow-[0_0_20px_rgba(255,255,255,0.2)]`}>
                     Open Live Bot
                   </button>
                   <button onClick={()=>router.push("/dashboard")}
@@ -680,7 +555,7 @@ export default function Home() {
             ) : status === "unauthenticated" ? (
               <motion.div key="login" initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} transition={{duration:.18}}>
                 <button onClick={()=>signIn("google")}
-                  className={`w-full bg-white text-gray-800 py-4 rounded-[1.75rem] flex items-center justify-center gap-3 text-[17px] font-bold shadow-xl ${btn} hover:scale-[1.02] hover:shadow-[0_0_32px_rgba(255,255,255,0.25)]`}>
+                  className={`w-full bg-white text-gray-800 py-4 rounded-[1.75rem] flex items-center justify-center gap-3 text-[17px] font-bold shadow-[0_0_32px_rgba(255,255,255,0.15)] ${btn} hover:scale-[1.02]`}>
                   <Google_Icon/> Login via Google & Deploy
                 </button>
                 <p className="mt-4 text-[13px] text-gray-400 text-center leading-relaxed">
@@ -691,7 +566,6 @@ export default function Home() {
 
             ) : (
               <motion.div key="action" initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} transition={{duration:.18}} className="flex flex-col gap-3">
-                {/* User pill */}
                 <div className="flex items-center justify-between px-4 py-3 rounded-2xl"
                   style={{background:"rgba(0,0,0,0.45)",border:"1px solid rgba(255,255,255,0.07)"}}>
                   <div className="flex items-center gap-3 min-w-0">
@@ -710,12 +584,12 @@ export default function Home() {
 
                 {!isTokenSaved ? (
                   <button onClick={()=>handleOpenIntegration(activeChannel)}
-                    className={`w-full bg-white text-black font-black py-4 rounded-2xl text-[14px] uppercase tracking-widest shadow-xl ${btn} hover:scale-[1.02] hover:shadow-[0_0_32px_rgba(255,255,255,0.25)]`}>
+                    className={`w-full bg-white text-black font-black py-4 rounded-2xl text-[14px] uppercase tracking-widest shadow-[0_0_32px_rgba(255,255,255,0.15)] ${btn} hover:scale-[1.02]`}>
                     Connect {activeChannel === "telegram" ? "Telegram" : activeChannel === "whatsapp" ? "WhatsApp" : activeChannel} →
                   </button>
                 ) : (
                   <button onClick={()=>handleOpenPricing(activeChannel)}
-                    className={`w-full font-black py-4 rounded-2xl text-[14px] uppercase tracking-widest flex items-center justify-center gap-2 ${btn} hover:scale-[1.02] bg-blue-600 hover:bg-blue-500 text-white blue-glow`}>
+                    className={`w-full font-black py-4 rounded-2xl text-[14px] uppercase tracking-widest flex items-center justify-center gap-2 ${btn} hover:scale-[1.02] bg-gradient-to-r from-blue-600 to-purple-600 text-white blue-glow`}>
                     <Zap className="w-5 h-5"/> Deploy Your AI Agent Now
                   </button>
                 )}
@@ -724,7 +598,6 @@ export default function Home() {
           </AnimatePresence>
         </div>
 
-        {/* Stats */}
         <div className="anim-stats grid grid-cols-3 w-full max-w-[580px] border border-white/[0.07] rounded-[18px] overflow-hidden">
           {[["30s","Deploy time"],["5+","AI models"],["24/7","Always active"]].map(([n,l])=>(
             <div key={n} className="flex flex-col items-center py-5 px-2 transition-colors duration-200 hover:bg-white/[0.04]"
@@ -780,7 +653,6 @@ export default function Home() {
             <p className="text-gray-300 text-[14px] max-w-[460px] mx-auto leading-relaxed">Built in, battle-tested, ready on day one.</p>
           </div>
 
-          {/* Row 1: 2+1+1 */}
           <div className="grid grid-cols-1 md:grid-cols-[2fr_1fr_1fr] gap-[1px] rounded-t-[20px] overflow-hidden bg-white/[0.05] border border-white/[0.06] border-b-0">
             {[
               {bg:"rgba(59,130,246,.09)", e:"🌐",t:"Omnichannel Deployment",  d:"Deploy across Telegram, WhatsApp, and your website simultaneously. Switch channels in seconds.",tag:"Multi-platform"},
@@ -798,7 +670,6 @@ export default function Home() {
             ))}
           </div>
 
-          {/* Row 2: 1+2 */}
           <div className="grid grid-cols-1 md:grid-cols-[1fr_2fr] gap-[1px] bg-white/[0.05] border border-white/[0.06] border-t-0 border-b-0">
             {[
               {bg:"rgba(34,197,94,.09)", e:"🗃️",t:"Enterprise RAG Memory",      d:"Inject catalog, FAQs, brand voice into Vector DB. Your agent knows your business inside out.",tag:"Vector DB"},
@@ -815,7 +686,6 @@ export default function Home() {
             ))}
           </div>
 
-          {/* Row 3: 3 equal */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-[1px] rounded-b-[20px] overflow-hidden bg-white/[0.05] border border-white/[0.06] border-t-0">
             {[
               {bg:"rgba(249,115,22,.09)",e:"⚡",t:"AI Interceptor",      d:"Check orders, book slots, trigger webhooks, update CRMs — fully autonomous.",tag:"API Triggers"},
@@ -878,7 +748,7 @@ export default function Home() {
               <p className="text-[12px] text-gray-400 max-w-[220px] leading-[1.85]">
                 Pick a model, connect your channel, deploy. All infrastructure handled for you.
               </p>
-              <button onClick={()=>document.getElementById("features")?.scrollIntoView({behavior:"smooth"})}
+              <button onClick={()=>document.getElementById("hero")?.scrollIntoView({behavior:"smooth"})}
                 className={`mt-7 px-8 py-3.5 rounded-[12px] text-[13px] font-black text-white uppercase tracking-wider ${btn} hover:scale-[1.04] orange-glow`}
                 style={{background:"linear-gradient(135deg,#f97316,#ea6a00)"}}>
                 Start Free Now →
@@ -909,7 +779,7 @@ export default function Home() {
         <h2 className="sr-up text-[clamp(2.2rem,5vw,4rem)] font-black tracking-[-0.04em] mb-6 text-white"
           style={{fontFamily:"Georgia,serif",lineHeight:1.06}}>Deploy. Automate. Relax.</h2>
         <button
-          onClick={()=>document.getElementById("features")?.scrollIntoView({behavior:"smooth"})}
+          onClick={()=>document.getElementById("hero")?.scrollIntoView({behavior:"smooth"})}
           className={`sr-up px-10 py-4 rounded-[13px] text-[14px] font-black text-black mb-20 uppercase tracking-wider ${btn} hover:scale-[1.04] orange-glow`}
           style={{background:"linear-gradient(135deg,#FFA87A,#F97316)"}}>
           Get Started Free →
@@ -926,8 +796,7 @@ export default function Home() {
         </div>
       </footer>
 
-      {/* ══ MODALS — ALL ORIGINAL LOGIC UNTOUCHED ══ */}
-
+      {/* ══ MODALS ══ */}
       {/* Contact Support */}
       <AnimatePresence>
         {isSupportModalOpen && (
@@ -987,7 +856,6 @@ export default function Home() {
                 <X className="w-4 h-4"/>
               </button>
 
-              {/* Left pane */}
               <div className="w-full md:w-1/2 p-7 md:p-10 flex flex-col justify-start overflow-y-auto nsb">
                 <div className="flex items-center gap-4 mb-6">
                   <div className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0"
@@ -1037,25 +905,9 @@ export default function Home() {
                       <li><strong className="text-white">System Users</strong> → generate <strong className="text-white">Permanent Access Token</strong></li>
                       <li>Set Webhook URL under <strong className="text-white">Configuration</strong></li>
                       <li>Enter Callback URL + Verify Token below</li>
-                      <li>Subscribe to <strong className="text-white">messages</strong> webhook events</li>
                     </ol>
-                    <div className="p-4 rounded-2xl mb-4" style={{background:"rgba(255,255,255,0.03)",border:"1px solid rgba(37,211,102,0.18)"}}>
-                      {[
-                        {label:"Webhook Callback URL",val:"https://clawlink-six.vercel.app/api/webhook/whatsapp"},
-                        {label:"Verify Token",val:"ClawLinkMeta2026"},
-                      ].map(({label,val})=>(
-                        <div key={label} className="mb-4 last:mb-0">
-                          <div className="flex justify-between items-center mb-1">
-                            <span className="text-[9px] font-bold uppercase tracking-widest text-gray-400">{label}</span>
-                            <button onClick={()=>copyToClipboard(val)} className={`text-gray-400 hover:text-white ${btn}`}>
-                              <Copy className="w-3.5 h-3.5"/>
-                            </button>
-                          </div>
-                          <code className="block text-[#25D366] text-[11px] px-3 py-2 rounded-lg select-all break-all"
-                            style={{background:"#07070A",border:"1px solid rgba(255,255,255,0.06)"}}>{val}</code>
-                        </div>
-                      ))}
-                    </div>
+                    
+                    {/* 🚀 FIXED: Added WhatsApp Phone Number Input */}
                     <div className="p-5 rounded-2xl" style={{background:"rgba(255,255,255,0.03)",border:"1px solid rgba(255,255,255,0.07)"}}>
                       <label className="block text-[9px] font-bold uppercase tracking-widest text-gray-400 mb-3">Phone Number ID</label>
                       <input type="text" value={waPhoneId} onChange={e=>setWaPhoneId(e.target.value)}
@@ -1064,6 +916,15 @@ export default function Home() {
                         style={{background:"#07070A",border:"1px solid rgba(255,255,255,0.09)"}}
                         onFocus={e=>(e.target.style.borderColor="rgba(37,211,102,0.5)")}
                         onBlur={e =>(e.target.style.borderColor="rgba(255,255,255,0.09)")}/>
+                      
+                      <label className="block text-[9px] font-bold uppercase tracking-widest text-gray-400 mb-3">WhatsApp Number (For Direct Open)</label>
+                      <input type="text" value={waPhoneNumber} onChange={e=>setWaPhoneNumber(e.target.value)}
+                        placeholder="+1 234 567 890"
+                        className="w-full px-4 py-3.5 rounded-xl text-[13px] text-white font-mono mb-4 outline-none"
+                        style={{background:"#07070A",border:"1px solid rgba(255,255,255,0.09)"}}
+                        onFocus={e=>(e.target.style.borderColor="rgba(37,211,102,0.5)")}
+                        onBlur={e =>(e.target.style.borderColor="rgba(255,255,255,0.09)")}/>
+
                       <label className="block text-[9px] font-bold uppercase tracking-widest text-gray-400 mb-3">Permanent API Token</label>
                       <input type="password" value={telegramToken} onChange={e=>setTelegramToken(e.target.value)}
                         placeholder="EAABwzL…"
@@ -1071,6 +932,7 @@ export default function Home() {
                         style={{background:"#07070A",border:"1px solid rgba(255,255,255,0.09)"}}
                         onFocus={e=>(e.target.style.borderColor="rgba(37,211,102,0.5)")}
                         onBlur={e =>(e.target.style.borderColor="rgba(255,255,255,0.09)")}/>
+                      
                       <button onClick={handleSaveToken} disabled={isVerifying}
                         className={`w-full font-black py-4 rounded-xl text-[13px] uppercase tracking-widest ${btn} hover:scale-[1.02] disabled:opacity-50 disabled:pointer-events-none`}
                         style={{background:isVerifying?"rgba(255,255,255,0.1)":"#fff",color:isVerifying?"#666":"#000"}}>
@@ -1081,7 +943,6 @@ export default function Home() {
                 )}
               </div>
 
-              {/* Right pane — phone mockup — ORIGINAL UNTOUCHED */}
               <div className="hidden md:flex md:w-1/2 items-center justify-center p-10 relative"
                 style={{background:"rgba(0,0,0,0.3)",borderLeft:"1px solid rgba(255,255,255,0.05)"}}>
                 <div className="w-[290px] h-[560px] rounded-[2.6rem] flex flex-col relative overflow-hidden"
@@ -1222,7 +1083,6 @@ export default function Home() {
         )}
       </AnimatePresence>
 
-      {/* Floating Help */}
       <div className="fixed bottom-6 right-6 z-[60] flex flex-col items-end">
         <AnimatePresence>
           {isHelpOpen && (
@@ -1281,36 +1141,6 @@ export default function Home() {
           {isHelpOpen ? <X className="w-6 h-6"/> : <MessageCircle className="w-6 h-6"/>}
         </motion.button>
       </div>
-
-      {/* Scroll reveal init */}
-      <script dangerouslySetInnerHTML={{__html:`
-        (function(){
-          var io=new IntersectionObserver(function(e){
-            e.forEach(function(x){if(x.isIntersecting)x.target.classList.add('sr-vis');});
-          },{threshold:0.08,rootMargin:'0px 0px -30px 0px'});
-          document.querySelectorAll('.sr-up,.sr-left,.sr-rght').forEach(function(el){io.observe(el);});
-          var fio=new IntersectionObserver(function(entries){
-            entries.forEach(function(e){
-              if(e.isIntersecting){
-                var cards=e.target.querySelectorAll('.fi-card');
-                cards.forEach(function(c,i){
-                  c.style.transition='opacity .6s '+(.05+i*.09)+'s cubic-bezier(.16,1,.3,1),transform .6s '+(.05+i*.09)+'s cubic-bezier(.16,1,.3,1),background .22s';
-                  c.style.opacity='1';c.style.transform='none';
-                });
-                fio.unobserve(e.target);
-              }
-            });
-          },{threshold:0.05});
-          document.querySelectorAll('.fi-card').forEach(function(el){el.style.opacity='0';el.style.transform='translateY(18px)';});
-          document.querySelectorAll('section,div[class*="sec"]').forEach(function(g){
-            if(g.querySelector('.fi-card'))fio.observe(g);
-          });
-          window.addEventListener('scroll',function(){
-            var nav=document.getElementById('clnav');
-            if(nav)nav.style.background=window.scrollY>40?'rgba(7,7,10,0.96)':'rgba(7,7,10,0.72)';
-          },{passive:true});
-        })();
-      `}}/>
     </div>
   );
 }
