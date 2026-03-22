@@ -20,7 +20,7 @@ const MODEL_DETAILS: Record<string, { name: string; starter: number; pro: number
 const MAX_PLAN_PRICE = 89;
 const OMNI_PRICING   = { monthly: 79, yearly: 790 };
 
-/* ─── Icons — FIXED INLINE SVGS FOR BETTER VISIBILITY ────────────────────────────── */
+/* ─── Icons — FIXED INLINE SVGS FOR BETTER VISIBILITY ────────── */
 const OpenAI_Icon  = () => <Image src="/logos/openai.svg"  alt="OpenAI"  width={26} height={26} className="transform-gpu" />;
 const Claude_Icon  = () => <Image src="/logos/claude.svg"  alt="Claude"  width={26} height={26} className="transform-gpu" />;
 const Gemini_Icon  = () => <Image src="/logos/gemini.svg"  alt="Gemini"  width={26} height={26} className="transform-gpu" />;
@@ -110,7 +110,7 @@ export default function Home() {
   const [isTelegramModalOpen, setIsTelegramModalOpen] = useState(false);
   const [telegramToken,       setTelegramToken]       = useState("");
   const [waPhoneId,           setWaPhoneId]           = useState("");
-  const [waPhoneNumber,       setWaPhoneNumber]       = useState(""); // 🚀 Used for Direct WhatsApp App Redirect
+  const [waPhoneNumber,       setWaPhoneNumber]       = useState("");
   const [isTokenSaved,        setIsTokenSaved]        = useState(false);
   const [isVerifying,         setIsVerifying]         = useState(false);
   const [showPricingPopup,    setShowPricingPopup]    = useState(false);
@@ -142,19 +142,20 @@ export default function Home() {
       if (tz === "Asia/Calcutta" || tz === "Asia/Kolkata") { setCurrency("INR"); setCurrencySymbol("₹"); }
     } catch {}
 
-    // ULTRA FAST OBSERVERS
+    // ── SCROLL REVEAL ──────────────────────────────────────────
     const io = new IntersectionObserver((entries) => {
       entries.forEach((e) => { if (e.isIntersecting) e.target.classList.add('sr-vis'); });
     }, { threshold: 0.05, rootMargin: '0px 0px -20px 0px' });
 
     setTimeout(() => {
       document.querySelectorAll('.sr-up, .sr-left, .sr-rght').forEach((el) => io.observe(el));
+
+      // ULTRA FAST STAGGER REVEAL for fi-card
       const fio = new IntersectionObserver((entries) => {
         entries.forEach((e) => {
           if (e.isIntersecting) {
             const cards = e.target.querySelectorAll('.fi-card');
             cards.forEach((c: any, i: number) => {
-              // 🚀 Ultra Fast Stagger Reveal
               c.style.transition = 'opacity .25s ' + (0.02 + i * 0.05) + 's cubic-bezier(.16,1,.3,1), transform .25s ' + (0.02 + i * 0.05) + 's cubic-bezier(.16,1,.3,1)';
               c.style.opacity = '1';
               c.style.transform = 'none';
@@ -174,15 +175,93 @@ export default function Home() {
       });
     }, 50);
 
+    // ── NAV FROSTED GLASS ──────────────────────────────────────
     const handleScroll = () => {
       const nav = document.getElementById('clnav');
       if (nav) nav.style.background = window.scrollY > 30 ? 'rgba(7,7,10,0.92)' : 'rgba(7,7,10,0.4)';
     };
     window.addEventListener('scroll', handleScroll, { passive: true });
 
+    // ── CURSOR GLOW FOLLOW ─────────────────────────────────────
+    const cg = document.createElement('div');
+    cg.className = 'cg-dot';
+    document.body.appendChild(cg);
+    let mx2 = 0, my2 = 0, cgx = 0, cgy = 0;
+    const onMM = (e: MouseEvent) => { mx2 = e.clientX; my2 = e.clientY; };
+    document.addEventListener('mousemove', onMM, { passive: true });
+    let cgRaf: number;
+    const animCG = () => {
+      cgx += (mx2 - cgx) * 0.09;
+      cgy += (my2 - cgy) * 0.09;
+      cg.style.left = cgx + 'px';
+      cg.style.top  = cgy + 'px';
+      cgRaf = requestAnimationFrame(animCG);
+    };
+    cgRaf = requestAnimationFrame(animCG);
+
+    // ── RIPPLE EFFECT on [data-ripple] ─────────────────────────
+    const onRippleClick = (e: MouseEvent) => {
+      const t = e.currentTarget as HTMLElement;
+      const r = t.getBoundingClientRect();
+      const d = document.createElement('span');
+      d.className = 'rpl-wave';
+      const sz = Math.max(r.width, r.height) * 2.4;
+      d.style.cssText = `width:${sz}px;height:${sz}px;left:${e.clientX - r.left - sz / 2}px;top:${e.clientY - r.top - sz / 2}px;position:absolute`;
+      t.appendChild(d);
+      setTimeout(() => d.remove(), 650);
+    };
+    document.querySelectorAll('[data-ripple]').forEach(el => {
+      el.addEventListener('click', onRippleClick as EventListener);
+    });
+
+    // ── SPRING CLICK on [data-spring] ──────────────────────────
+    const onSpringClick = (e: Event) => {
+      const t = e.currentTarget as HTMLElement;
+      t.classList.remove('spr-play');
+      void t.offsetWidth;
+      t.classList.add('spr-play');
+      setTimeout(() => t.classList.remove('spr-play'), 420);
+    };
+    document.querySelectorAll('[data-spring]').forEach(el => {
+      el.addEventListener('click', onSpringClick);
+    });
+
+    // ── 3D PARALLAX TILT on .tilt-el ──────────────────────────
+    document.querySelectorAll('.tilt-el').forEach(el => {
+      const e2 = el as HTMLElement;
+      e2.addEventListener('mousemove', (ev: any) => {
+        const r  = e2.getBoundingClientRect();
+        const x  = (ev.clientX - r.left) / r.width  - 0.5;
+        const y  = (ev.clientY - r.top)  / r.height - 0.5;
+        e2.style.transform = `perspective(900px) rotateY(${x * 7}deg) rotateX(${-y * 7}deg)`;
+      });
+      e2.addEventListener('mouseleave', () => {
+        e2.style.transform = 'perspective(900px) rotateY(0deg) rotateX(0deg)';
+      });
+    });
+
+    // ── MAGNETIC BUTTON on .mag-el ─────────────────────────────
+    document.querySelectorAll('.mag-el').forEach(el => {
+      const span = el.querySelector('.mt');
+      if (!span) return;
+      const e2 = el as HTMLElement;
+      e2.addEventListener('mousemove', (ev: any) => {
+        const r = e2.getBoundingClientRect();
+        const x = (ev.clientX - r.left - r.width  / 2) * 0.28;
+        const y = (ev.clientY - r.top  - r.height / 2) * 0.28;
+        (span as HTMLElement).style.transform = `translate(${x}px,${y}px)`;
+      });
+      e2.addEventListener('mouseleave', () => {
+        (span as HTMLElement).style.transform = 'translate(0,0)';
+      });
+    });
+
     return () => {
       io.disconnect();
       window.removeEventListener('scroll', handleScroll);
+      document.removeEventListener('mousemove', onMM);
+      cancelAnimationFrame(cgRaf);
+      if (cg.parentNode) cg.parentNode.removeChild(cg);
     };
   }, []);
 
@@ -236,14 +315,12 @@ export default function Home() {
     try {
       const exactPaise = Math.round(finalPrice * 100);
       const selectedModelForDB = activeModel === "omni" ? "multi_model" : activeModel;
-      
       const res = await fetch("/api/razorpay", {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ amount: exactPaise, currency, email: session?.user?.email || "user@clawlink.com", planName: selectedTier, selectedModel: selectedModelForDB }),
       });
       const order = await res.json();
       if (order.error) { alert("Order Error: " + order.error); setIsDeploying(false); return; }
-      
       const options = {
         key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID, amount: order.amount, currency: order.currency,
         name: "ClawLink Premium",
@@ -253,16 +330,7 @@ export default function Home() {
           try {
             const cfgRes = await fetch("/api/config", {
               method: "POST", headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ 
-                email: session?.user?.email, 
-                selectedModel: selectedModelForDB, 
-                selectedChannel: activeChannel, 
-                telegramToken, 
-                waPhoneId, 
-                waPhoneNumber, // Passed to Backend
-                plan: selectedTier,
-                billingCycle: selectedTier === "yearly" ? "Yearly" : "Monthly" 
-              }),
+              body: JSON.stringify({ email: session?.user?.email, selectedModel: selectedModelForDB, selectedChannel: activeChannel, telegramToken, waPhoneId, waPhoneNumber, plan: selectedTier, billingCycle: selectedTier === "yearly" ? "Yearly" : "Monthly" }),
             });
             const cfg = await cfgRes.json();
             if (cfg.success && cfg.botLink) { setBotLink(cfg.botLink); setShowPricingPopup(false); }
@@ -277,23 +345,14 @@ export default function Home() {
     } catch { alert("Gateway init failed."); setIsDeploying(false); }
   };
 
-  // 🚀 ULTRA SMART WHATSAPP APP REDIRECT
   const openLiveBotHandler = () => {
     if (activeChannel === "whatsapp") {
-      // 100% Hacker-Proof: Uses native wa.me redirect for mobile/desktop apps
-      if (waPhoneNumber) {
-        window.open(`https://wa.me/${waPhoneNumber.replace(/\D/g, '')}`, "_blank");
-      } else if (botLink && botLink.includes('wa.me')) {
-        window.open(botLink, "_blank");
-      } else {
-        window.open("https://web.whatsapp.com", "_blank"); 
-      }
-    } else { 
-      // Telegram auto-opens native app via t.me
-      window.open(botLink || "https://t.me/BotFather", "_blank"); 
-    }
+      if (waPhoneNumber) { window.open(`https://wa.me/${waPhoneNumber.replace(/\D/g, '')}`, "_blank"); }
+      else if (botLink && botLink.includes('wa.me')) { window.open(botLink, "_blank"); }
+      else { window.open("https://web.whatsapp.com", "_blank"); }
+    } else { window.open(botLink || "https://t.me/BotFather", "_blank"); }
   };
-  
+
   const copyToClipboard = (t: string) => { navigator.clipboard.writeText(t); alert("Copied!"); };
 
   const row1 = ["📅 Productivity & Meetings","📄 Write contracts & NDAs","📊 Create presentations","🔄 Negotiate refunds","🛒 Shopping & Research","👥 Team & Monitoring"];
@@ -304,7 +363,7 @@ export default function Home() {
 
   if (!isMounted) return null;
 
-  // 🚀 ULTRA FAST BTN CLASS (Squish Tap & Instant Response)
+  // 🚀 ULTRA FAST BTN CLASS — Spring + GPU accelerated
   const btn = "transition-all duration-[120ms] ease-out active:scale-[0.93] transform-gpu will-change-transform";
 
   const pillBase = [
@@ -318,8 +377,8 @@ export default function Home() {
     "max-sm:rounded-[10px] max-sm:shadow-[0_2px_6px_rgba(0,0,0,0.10)]",
   ].join(" ");
 
-  const modelActive  = (id: string) => activeModel === id && !( isTokenSaved && activeModel !== id);
-  const chanActive   = (id: string) => activeChannel === id && !(isTokenSaved && activeChannel !== id);
+  const modelActive = (id: string) => activeModel === id && !(isTokenSaved && activeModel !== id);
+  const chanActive  = (id: string) => activeChannel === id && !(isTokenSaved && activeChannel !== id);
 
   return (
     <div className="bg-[#07070A] min-h-screen text-[#E8E8EC] font-sans selection:bg-orange-500/30 overflow-x-hidden">
@@ -328,32 +387,117 @@ export default function Home() {
         *{box-sizing:border-box;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
         .nsb::-webkit-scrollbar{display:none}.nsb{-ms-overflow-style:none;scrollbar-width:none}
 
+        /* ── BADGE PULSE ── */
         @keyframes bpulse{0%,100%{opacity:1}50%{opacity:.18}}
         .bpulse{animation:bpulse 1.8s ease-in-out infinite}
 
-        /* 🚀 ULTRA FAST ENTRANCE ANIMATIONS */
+        /* ── HERO ENTRANCE — Blur Fade In ── */
         @keyframes hsd{from{opacity:0;transform:translateY(-14px)}to{opacity:1;transform:translateY(0)}}
         @keyframes hsu{from{opacity:0;transform:translateY(20px);filter:blur(8px)}to{opacity:1;transform:translateY(0);filter:blur(0)}}
-        .anim-badge{animation:hsd .35s cubic-bezier(.16,1,.3,1) both}
-        .anim-h1   {animation:hsu .35s .05s cubic-bezier(.16,1,.3,1) both}
-        .anim-sub  {animation:hsu .35s .1s cubic-bezier(.16,1,.3,1) both}
-        .anim-card {animation:hsu .35s .15s cubic-bezier(.16,1,.3,1) both}
-        .anim-stats{animation:hsu .35s .2s cubic-bezier(.16,1,.3,1) both}
+        .anim-badge{animation:hsd .32s cubic-bezier(.16,1,.3,1) both}
+        .anim-h1   {animation:hsu .38s .06s cubic-bezier(.16,1,.3,1) both}
+        .anim-sub  {animation:hsu .38s .12s cubic-bezier(.16,1,.3,1) both}
+        .anim-card {animation:hsu .38s .18s cubic-bezier(.16,1,.3,1) both}
+        .anim-stats{animation:hsu .38s .24s cubic-bezier(.16,1,.3,1) both}
 
-        .sr-up  {opacity:0;transform:translateY(20px);transition:opacity .35s cubic-bezier(.16,1,.3,1),transform .35s cubic-bezier(.16,1,.3,1)}
-        .sr-left{opacity:0;transform:translateX(-20px);transition:opacity .35s cubic-bezier(.16,1,.3,1),transform .35s cubic-bezier(.16,1,.3,1)}
-        .sr-rght{opacity:0;transform:translateX(20px);transition:opacity .35s cubic-bezier(.16,1,.3,1),transform .35s cubic-bezier(.16,1,.3,1)}
+        /* ── SCROLL REVEAL — Fade Up ── */
+        .sr-up  {opacity:0;transform:translateY(20px);transition:opacity .32s cubic-bezier(.16,1,.3,1),transform .32s cubic-bezier(.16,1,.3,1)}
+        .sr-left{opacity:0;transform:translateX(-20px);transition:opacity .32s cubic-bezier(.16,1,.3,1),transform .32s cubic-bezier(.16,1,.3,1)}
+        .sr-rght{opacity:0;transform:translateX(20px);transition:opacity .32s cubic-bezier(.16,1,.3,1),transform .32s cubic-bezier(.16,1,.3,1)}
         .sr-vis {opacity:1!important;transform:none!important}
 
-        .card-shimmer::before{content:'';position:absolute;top:0;left:15%;right:15%;height:1px;
-          background:linear-gradient(90deg,transparent,rgba(249,115,22,.55),transparent)}
+        /* ── CURSOR GLOW FOLLOW ── */
+        .cg-dot{
+          position:fixed;width:380px;height:380px;border-radius:50%;
+          pointer-events:none;z-index:1;
+          background:radial-gradient(circle,rgba(249,115,22,0.055) 0%,transparent 65%);
+          transform:translate(-50%,-50%);will-change:left,top;
+        }
 
+        /* ── RIPPLE EFFECT ── */
+        .rpl-wave{
+          position:absolute;border-radius:50%;
+          background:rgba(0,0,0,0.13);transform:scale(0);
+          animation:rplA .6s linear forwards;pointer-events:none;
+        }
+        @keyframes rplA{to{transform:scale(7);opacity:0}}
+
+        /* ── SPRING CLICK — cubic-bezier overshoot ── */
+        @keyframes spr{
+          0%  {transform:scale(1)}
+          30% {transform:scale(.85)}
+          65% {transform:scale(1.07)}
+          82% {transform:scale(.97)}
+          100%{transform:scale(1)}
+        }
+        .spr-play{animation:spr .4s cubic-bezier(.34,1.56,.64,1)!important}
+
+        /* ── 3D PARALLAX TILT ── */
+        .tilt-el{will-change:transform;transition:transform .08s ease-out}
+
+        /* ── MAGNETIC BUTTON TEXT SPAN ── */
+        .mt{display:block;transition:transform .22s cubic-bezier(.34,1.56,.64,1);pointer-events:none}
+
+        /* ── GRADIENT TEXT SHIFT ── */
+        @keyframes grs{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
+        .grad-text{
+          background:linear-gradient(135deg,#f97316 0%,#fb923c 35%,#fbbf24 60%,#f97316 100%)!important;
+          background-size:250% 250%!important;
+          animation:grs 2.8s ease infinite!important;
+          -webkit-background-clip:text!important;
+          -webkit-text-fill-color:transparent!important;
+          background-clip:text!important;
+        }
+
+        /* ── FLOAT — background orbs ── */
+        @keyframes fo1{0%,100%{transform:translateY(0) translateX(0)}50%{transform:translateY(-26px) translateX(12px)}}
+        @keyframes fo2{0%,100%{transform:translateY(0) translateX(0)}50%{transform:translateY(20px) translateX(-16px)}}
+        @keyframes fo3{0%,100%{transform:translateY(0)}50%{transform:translateY(-18px)}}
+        .float-a{animation:fo1 7s ease-in-out infinite}
+        .float-b{animation:fo2 9s ease-in-out infinite 1.5s}
+        .float-c{animation:fo3 6s ease-in-out infinite 3s}
+
+        /* ── SHIMMER on feature cards ── */
+        .card-shimmer::before{
+          content:'';position:absolute;top:0;left:15%;right:15%;height:1px;
+          background:linear-gradient(90deg,transparent,rgba(249,115,22,.55),transparent)
+        }
         .fi-card{position:relative;overflow:hidden}
-        .fi-card::after{content:'';position:absolute;top:0;left:0;right:0;height:2px;
+        .fi-card::after{
+          content:'';position:absolute;top:0;left:0;right:0;height:2px;
           background:linear-gradient(90deg,transparent,rgba(249,115,22,0),transparent);
-          transition:background .15s}
+          transition:background .15s
+        }
         .fi-card:hover::after{background:linear-gradient(90deg,transparent,rgba(249,115,22,.85) 50%,transparent)}
 
+        /* ── SKELETON SHIMMER ── */
+        @keyframes skshimmer{0%{background-position:200% center}100%{background-position:-200% center}}
+
+        /* ── PULSE RING on badge dot ── */
+        @keyframes pring{0%{box-shadow:0 0 0 0 rgba(249,115,22,.5)}100%{box-shadow:0 0 0 10px rgba(249,115,22,0)}}
+        .pulse-ring{animation:pring 2s ease-out infinite}
+
+        /* ── TOOLTIP FADE ── */
+        .tipwrap{position:relative}
+        .tipbox{
+          position:absolute;bottom:115%;left:50%;transform:translateX(-50%) translateY(6px);
+          background:rgba(255,255,255,.09);backdrop-filter:blur(10px);
+          border:1px solid rgba(255,255,255,.14);padding:5px 12px;
+          border-radius:8px;font-size:11px;white-space:nowrap;
+          opacity:0;pointer-events:none;
+          transition:opacity .18s,transform .18s cubic-bezier(.16,1,.3,1);
+        }
+        .tipwrap:hover .tipbox{opacity:1;transform:translateX(-50%) translateY(0)}
+
+        /* ── SCALE HOVER on stat cards ── */
+        .stat-hover{transition:transform .22s cubic-bezier(.16,1,.3,1)}
+        .stat-hover:hover{transform:scale(1.04)}
+
+        /* ── LIFT HOVER on feature icons ── */
+        .icon-lift{transition:transform .2s cubic-bezier(.34,1.56,.64,1)}
+        .icon-lift:hover{transform:scale(1.12) rotate(-4deg)}
+
+        /* typography helpers (unchanged) */
         .ptx-name{font-size:11px;font-weight:900;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
         .ptx-sub {font-size:7.5px;font-weight:700;opacity:.8;white-space:nowrap}
         .ptx-soon{font-size:7.5px;font-weight:700;color:#3b82f6;text-transform:uppercase}
@@ -362,20 +506,20 @@ export default function Home() {
           .ptx-sub,.ptx-soon{font-size:6.5px;text-align:center;width:100%}
         }
 
-        .grad-text{background:linear-gradient(135deg,#f97316 30%,#fb923c);
-          -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
-
         .orange-glow{box-shadow:0 0 28px rgba(249,115,22,.48)}
         .orange-glow:hover{box-shadow:0 0 48px rgba(249,115,22,.65)}
         .blue-glow  {box-shadow:0 0 28px rgba(37,99,235,.52)}
         .blue-glow:hover{box-shadow:0 0 48px rgba(37,99,235,.72)}
       `}}/>
 
-      {/* Ambient glows */}
-      <div className="fixed top-[-20%] right-[-8%] w-[800px] h-[800px] rounded-full pointer-events-none z-0"
+      {/* ── AMBIENT GLOWS ── */}
+      <div className="fixed top-[-20%] right-[-8%] w-[800px] h-[800px] rounded-full pointer-events-none z-0 float-a"
            style={{background:"radial-gradient(circle,rgba(249,115,22,0.18) 0%,transparent 65%)",transform:"translateZ(0)"}}/>
-      <div className="fixed bottom-[-20%] left-[-8%] w-[800px] h-[800px] rounded-full pointer-events-none z-0"
+      <div className="fixed bottom-[-20%] left-[-8%] w-[800px] h-[800px] rounded-full pointer-events-none z-0 float-b"
            style={{background:"radial-gradient(circle,rgba(99,102,241,0.15) 0%,transparent 65%)",transform:"translateZ(0)"}}/>
+      {/* Extra float orb — hero center */}
+      <div className="fixed top-[30%] left-[40%] w-[500px] h-[500px] rounded-full pointer-events-none z-0 float-c"
+           style={{background:"radial-gradient(circle,rgba(168,85,247,0.07) 0%,transparent 70%)"}}/>
 
       {/* ══ NAV ══ */}
       <nav id="clnav"
@@ -383,7 +527,6 @@ export default function Home() {
         style={{backdropFilter:"blur(12px)",WebkitBackdropFilter:"blur(12px)",
                 background:"rgba(7,7,10,0.4)",borderBottom:"1px solid rgba(255,255,255,0.055)"}}>
 
-        {/* 🚀 FIXED: CLEAN CLAWLINK.COM LOGO (No blue!) */}
         <svg width="130" height="22" viewBox="0 0 152 26" fill="none" className="shrink-0 cursor-pointer transition-transform hover:scale-105" onClick={() => router.push("/")}>
           <defs>
             <linearGradient id="cg" x1="0" y1="0" x2="0" y2="26" gradientUnits="userSpaceOnUse">
@@ -409,7 +552,8 @@ export default function Home() {
               </button>
             </div>
           )}
-          <button onClick={()=>setIsSupportModalOpen(true)}
+          {/* Nav CTA — Spring Click */}
+          <button data-spring onClick={()=>setIsSupportModalOpen(true)}
             className={`flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-gray-500 hover:text-white ${btn}`}>
             <MessageSquare className="w-3.5 h-3.5"/>
             <span className="hidden sm:inline">Contact Support</span>
@@ -421,46 +565,51 @@ export default function Home() {
       {/* ══ HERO ══ */}
       <section id="hero" className="relative z-10 min-h-screen flex flex-col items-center justify-center pt-20 pb-16 px-4 text-center">
 
+        {/* Badge — Fade Down */}
         <div className="anim-badge inline-flex items-center gap-2 mb-6 px-5 py-2 rounded-full text-[10px] font-bold tracking-[.1em] text-orange-400 shadow-[0_0_15px_rgba(249,115,22,0.2)]"
           style={{background:"rgba(249,115,22,0.09)",border:"1px solid rgba(249,115,22,0.26)"}}>
-          <span className="w-1.5 h-1.5 rounded-full bg-orange-400 bpulse"/>
+          {/* Pulse Ring on dot */}
+          <span className="w-1.5 h-1.5 rounded-full bg-orange-400 bpulse pulse-ring"/>
           LIVE NOW &nbsp;·&nbsp; 30-SECOND DEPLOY
         </div>
 
+        {/* Headline — Blur Fade Up */}
         <h1 className="anim-h1 text-[clamp(2.4rem,6.5vw,5rem)] font-black leading-[1.03] tracking-[-0.04em] mb-4 text-white">
           Deploy <span className="grad-text">OpenClaw</span><br/>Under 30 Seconds
         </h1>
 
+        {/* Sub — Blur Fade Up */}
         <p className="anim-sub text-gray-300 text-[15px] max-w-[460px] mb-8 leading-[1.8]">
           Avoid all technical complexity — one-click deploy your own 24/7 active OpenClaw instance. No code. No servers. Just results.
         </p>
 
-        {/* ── SELECTOR CARD ── */}
-        <div className="anim-card card-shimmer relative w-full max-w-[700px] rounded-[22px] p-5 md:p-7 mb-7 overflow-hidden"
+        {/* ── SELECTOR CARD — 3D Tilt + Shimmer ── */}
+        <div className="anim-card card-shimmer tilt-el relative w-full max-w-[700px] rounded-[22px] p-5 md:p-7 mb-7 overflow-hidden"
           style={{background:"rgba(255,255,255,0.028)",border:"1px solid rgba(255,255,255,0.07)",
                   boxShadow:"0 0 60px rgba(249,115,22,0.06),0 32px 64px rgba(0,0,0,0.5)"}}>
 
           <p className="text-[9px] font-bold tracking-[.15em] uppercase text-gray-400 mb-3 text-left">Choose your AI model</p>
           <div className="grid grid-cols-5 gap-[6px] mb-5">
-            <button onClick={()=>{ if(!isTokenSaved){ setActiveModel("gpt-5.2"); }}} disabled={isTokenSaved && activeModel!=="gpt-5.2"}
+            {/* Model pills — Spring Click */}
+            <button data-spring onClick={()=>{ if(!isTokenSaved){ setActiveModel("gpt-5.2"); }}} disabled={isTokenSaved && activeModel!=="gpt-5.2"}
               className={[pillBase, modelActive("gpt-5.2") ? "!border-blue-500 shadow-[0_0_0_3px_rgba(59,130,246,0.2),0_2px_8px_rgba(0,0,0,0.12)]" : "", isTokenSaved && activeModel!=="gpt-5.2" ? "opacity-25 pointer-events-none" : ""].join(" ")}>
               <div className="w-[22px] h-[22px] rounded-[5px] flex items-center justify-center shrink-0 bg-[#f0fdf4]"><OpenAI_Icon/></div>
               <div className="flex flex-col min-w-0 max-sm:items-center max-sm:w-full"><span className="ptx-name" style={{color:"#10a37f"}}>GPT-5.2</span></div>
             </button>
 
-            <button onClick={()=>{ if(!isTokenSaved){ setActiveModel("claude"); }}} disabled={isTokenSaved && activeModel!=="claude"}
+            <button data-spring onClick={()=>{ if(!isTokenSaved){ setActiveModel("claude"); }}} disabled={isTokenSaved && activeModel!=="claude"}
               className={[pillBase, modelActive("claude") ? "!border-blue-500 shadow-[0_0_0_3px_rgba(59,130,246,0.2),0_2px_8px_rgba(0,0,0,0.12)]" : "", isTokenSaved && activeModel!=="claude" ? "opacity-25 pointer-events-none" : ""].join(" ")}>
               <div className="w-[22px] h-[22px] rounded-[5px] flex items-center justify-center shrink-0 bg-[#fdf5f2]"><Claude_Icon/></div>
               <div className="flex flex-col min-w-0 max-sm:items-center max-sm:w-full"><span className="ptx-name" style={{color:"#d97757"}}>Claude</span><span className="ptx-sub" style={{color:"#d97757"}}>Opus 4.6</span></div>
             </button>
 
-            <button onClick={()=>{ if(!isTokenSaved){ setActiveModel("gemini"); }}} disabled={isTokenSaved && activeModel!=="gemini"}
+            <button data-spring onClick={()=>{ if(!isTokenSaved){ setActiveModel("gemini"); }}} disabled={isTokenSaved && activeModel!=="gemini"}
               className={[pillBase, modelActive("gemini") ? "!border-blue-500 shadow-[0_0_0_3px_rgba(59,130,246,0.2),0_2px_8px_rgba(0,0,0,0.12)]" : "", isTokenSaved && activeModel!=="gemini" ? "opacity-25 pointer-events-none" : ""].join(" ")}>
               <div className="w-[22px] h-[22px] rounded-[5px] flex items-center justify-center shrink-0 bg-[#eff2ff]"><Gemini_Icon/></div>
               <div className="flex flex-col min-w-0 max-sm:items-center max-sm:w-full"><span className="ptx-name" style={{color:"#648af5"}}>Gemini</span><span className="ptx-sub" style={{color:"#648af5"}}>3 Flash</span></div>
             </button>
 
-            <button onClick={()=>{ if(!isTokenSaved){ setActiveModel("omni"); }}} disabled={isTokenSaved && activeModel!=="omni"}
+            <button data-spring onClick={()=>{ if(!isTokenSaved){ setActiveModel("omni"); }}} disabled={isTokenSaved && activeModel!=="omni"}
               className={[pillBase, modelActive("omni") ? "!border-[#00bfff] shadow-[0_0_0_3px_rgba(0,191,255,0.2),0_2px_8px_rgba(0,0,0,0.12)]" : "", isTokenSaved && activeModel!=="omni" ? "opacity-25 pointer-events-none" : ""].join(" ")}>
               <div className="w-[22px] h-[22px] rounded-[5px] flex items-center justify-center shrink-0 bg-[#e8f9ff]"><Omni_Icon/></div>
               <div className="flex flex-col min-w-0 max-sm:items-center max-sm:w-full"><span className="ptx-name" style={{color:"#0369a1",fontSize:"9.5px"}}>OmniAgent</span><span className="ptx-sub" style={{color:"#00bfff"}}>Nexus</span></div>
@@ -474,13 +623,13 @@ export default function Home() {
 
           <p className="text-[9px] font-bold tracking-[.15em] uppercase text-gray-400 mb-3 text-left">Select your channel</p>
           <div className="grid grid-cols-5 gap-[6px] mb-5">
-            <button onClick={()=>!isTokenSaved && setActiveChannel("telegram")} disabled={isTokenSaved && activeChannel!=="telegram"}
+            <button data-spring onClick={()=>!isTokenSaved && setActiveChannel("telegram")} disabled={isTokenSaved && activeChannel!=="telegram"}
               className={[pillBase, chanActive("telegram") ? "!border-[#2aabee] shadow-[0_0_0_3px_rgba(42,171,238,0.2),0_2px_8px_rgba(0,0,0,0.12)]" : "", isTokenSaved && activeChannel!=="telegram" ? "opacity-25 pointer-events-none" : ""].join(" ")}>
               <div className="w-[22px] h-[22px] rounded-full flex items-center justify-center shrink-0"><Telegram_Icon size={22}/></div>
               <div className="flex flex-col min-w-0 max-sm:items-center max-sm:w-full"><span className="ptx-name text-gray-800">Telegram</span></div>
             </button>
 
-            <button onClick={()=>!isTokenSaved && setActiveChannel("whatsapp")} disabled={isTokenSaved && activeChannel!=="whatsapp"}
+            <button data-spring onClick={()=>!isTokenSaved && setActiveChannel("whatsapp")} disabled={isTokenSaved && activeChannel!=="whatsapp"}
               className={[pillBase, chanActive("whatsapp") ? "!border-[#25d366] shadow-[0_0_0_3px_rgba(37,211,102,0.2),0_2px_8px_rgba(0,0,0,0.12)]" : "", isTokenSaved && activeChannel!=="whatsapp" ? "opacity-25 pointer-events-none" : ""].join(" ")}>
               <div className="w-[22px] h-[22px] rounded-full flex items-center justify-center shrink-0"><WhatsApp_Icon size={22}/></div>
               <div className="flex flex-col min-w-0 max-sm:items-center max-sm:w-full"><span className="ptx-name text-gray-800">WhatsApp</span></div>
@@ -511,11 +660,12 @@ export default function Home() {
                 style={{background:"rgba(34,197,94,0.06)",border:"1px solid rgba(34,197,94,0.2)"}}>
                 <p className="text-[15px] font-bold text-white mb-4">🚀 Your Bot is Live!</p>
                 <div className="flex flex-col sm:flex-row justify-center gap-3">
-                  <button onClick={openLiveBotHandler}
-                    className={`bg-white text-black font-black uppercase tracking-widest px-7 py-3.5 rounded-xl text-sm ${btn} hover:scale-[1.03] shadow-[0_0_20px_rgba(255,255,255,0.2)]`}>
-                    Open Live Bot
+                  {/* Ripple + Spring on success buttons */}
+                  <button data-ripple data-spring onClick={openLiveBotHandler}
+                    className={`relative overflow-hidden bg-white text-black font-black uppercase tracking-widest px-7 py-3.5 rounded-xl text-sm ${btn} hover:scale-[1.03] shadow-[0_0_20px_rgba(255,255,255,0.2)]`}>
+                    <span className="mt">Open Live Bot</span>
                   </button>
-                  <button onClick={()=>router.push("/dashboard")}
+                  <button data-spring onClick={()=>router.push("/dashboard")}
                     className={`flex items-center justify-center gap-2 text-white font-bold px-7 py-3.5 rounded-xl text-sm ${btn} hover:scale-[1.03]`}
                     style={{background:"rgba(255,255,255,0.06)",border:"1px solid rgba(255,255,255,0.12)"}}>
                     <Activity className="w-4 h-4"/> Live Dashboard
@@ -525,8 +675,9 @@ export default function Home() {
 
             ) : status === "unauthenticated" ? (
               <motion.div key="login" initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} transition={{duration:.12}}>
-                <button onClick={()=>signIn("google")}
-                  className={`w-full bg-white text-gray-800 py-4 rounded-[1.75rem] flex items-center justify-center gap-3 text-[17px] font-bold shadow-[0_0_32px_rgba(255,255,255,0.15)] ${btn} hover:scale-[1.03]`}>
+                {/* Google Login — Ripple + Spring */}
+                <button data-ripple data-spring onClick={()=>signIn("google")}
+                  className={`relative overflow-hidden w-full bg-white text-gray-800 py-4 rounded-[1.75rem] flex items-center justify-center gap-3 text-[17px] font-bold shadow-[0_0_32px_rgba(255,255,255,0.15)] ${btn} hover:scale-[1.03]`}>
                   <Google_Icon/> Login via Google & Deploy
                 </button>
                 <p className="mt-4 text-[13px] text-gray-400 text-center leading-relaxed">
@@ -546,7 +697,7 @@ export default function Home() {
                       <p className="text-[10px] text-gray-400 font-mono mt-[3px] truncate">{session?.user?.email}</p>
                     </div>
                   </div>
-                  <button onClick={()=>signOut()}
+                  <button data-spring onClick={()=>signOut()}
                     className={`flex items-center gap-1 text-[10px] font-bold uppercase tracking-widest text-gray-400 hover:text-red-400 shrink-0 ml-2 ${btn}`}>
                     <LogOut className="w-3.5 h-3.5"/>
                     <span className="hidden sm:inline">Logout</span>
@@ -554,14 +705,17 @@ export default function Home() {
                 </div>
 
                 {!isTokenSaved ? (
-                  <button onClick={()=>handleOpenIntegration(activeChannel)}
-                    className={`w-full bg-white text-black font-black py-4 rounded-2xl text-[14px] uppercase tracking-widest shadow-[0_0_32px_rgba(255,255,255,0.15)] ${btn} hover:scale-[1.03]`}>
+                  /* Connect Channel — Ripple + Spring */
+                  <button data-ripple data-spring onClick={()=>handleOpenIntegration(activeChannel)}
+                    className={`relative overflow-hidden w-full bg-white text-black font-black py-4 rounded-2xl text-[14px] uppercase tracking-widest shadow-[0_0_32px_rgba(255,255,255,0.15)] ${btn} hover:scale-[1.03]`}>
                     Connect {activeChannel === "telegram" ? "Telegram" : activeChannel === "whatsapp" ? "WhatsApp" : activeChannel} →
                   </button>
                 ) : (
-                  <button onClick={()=>handleOpenPricing(activeChannel)}
-                    className={`w-full font-black py-4 rounded-2xl text-[14px] uppercase tracking-widest flex items-center justify-center gap-2 ${btn} hover:scale-[1.03] bg-gradient-to-r from-blue-600 to-purple-600 text-white blue-glow`}>
-                    <Zap className="w-5 h-5"/> Deploy Your AI Agent Now
+                  /* Deploy — Ripple + Spring + Magnetic */
+                  <button data-ripple data-spring onClick={()=>handleOpenPricing(activeChannel)}
+                    className={`mag-el relative overflow-hidden w-full font-black py-4 rounded-2xl text-[14px] uppercase tracking-widest flex items-center justify-center gap-2 ${btn} hover:scale-[1.03] bg-gradient-to-r from-blue-600 to-purple-600 text-white blue-glow`}>
+                    <Zap className="w-5 h-5 shrink-0"/>
+                    <span className="mt">Deploy Your AI Agent Now</span>
                   </button>
                 )}
               </motion.div>
@@ -569,9 +723,10 @@ export default function Home() {
           </AnimatePresence>
         </div>
 
+        {/* Stats — Fade Up + Scale Hover */}
         <div className="anim-stats grid grid-cols-3 w-full max-w-[580px] border border-white/[0.07] rounded-[18px] overflow-hidden">
           {[["30s","Deploy time"],["5+","AI models"],["24/7","Always active"]].map(([n,l])=>(
-            <div key={n} className="flex flex-col items-center py-5 px-2 transition-colors duration-150 hover:bg-white/[0.04]"
+            <div key={n} className="stat-hover flex flex-col items-center py-5 px-2 transition-colors duration-150 hover:bg-white/[0.04]"
               style={{background:"rgba(255,255,255,0.022)",borderRight:"1px solid rgba(255,255,255,0.06)"}}>
               <span className="text-[1.9rem] font-black leading-none grad-text">{n}</span>
               <span className="text-[10px] text-gray-400 mt-1 text-center leading-snug">{l}</span>
@@ -598,8 +753,9 @@ export default function Home() {
               {n:"03",e:"✅",t:"Token Verify",          d:"Paste token. Verified & secured instantly."},
               {n:"04",e:"🚀",t:"Go Live",               d:"Enterprise infra spins up. 24/7, zero maintenance."},
             ].map(({n,e,t,d},i)=>(
-              <div key={n} className={`sr-up sd${i+1} flex flex-col items-center text-center px-3 relative z-10`}>
-                <div className="w-[60px] h-[60px] rounded-full flex items-center justify-center font-black text-[18px] text-orange-500 mb-4 z-10"
+              <div key={n} className={`sr-up flex flex-col items-center text-center px-3 relative z-10`}>
+                {/* Step circle — Lift Hover */}
+                <div className="icon-lift w-[60px] h-[60px] rounded-full flex items-center justify-center font-black text-[18px] text-orange-500 mb-4 z-10"
                   style={{background:"#07070A",border:"1.5px solid rgba(249,115,22,0.22)",transition:"all .2s"}}
                   onMouseEnter={e2=>{(e2.target as HTMLElement).style.background="rgba(249,115,22,0.08)";(e2.target as HTMLElement).style.boxShadow="0 0 28px rgba(249,115,22,0.2)"}}
                   onMouseLeave={e2=>{(e2.target as HTMLElement).style.background="#07070A";(e2.target as HTMLElement).style.boxShadow="none"}}>
@@ -629,9 +785,10 @@ export default function Home() {
               {bg:"rgba(59,130,246,.09)", e:"🌐",t:"Omnichannel Deployment",  d:"Deploy across Telegram, WhatsApp, and your website simultaneously. Switch channels in seconds.",tag:"Multi-platform"},
               {bg:"rgba(168,85,247,.09)",e:"🎙️",t:"Voice Intelligence",      d:"Whisper AI transcribes voice notes and replies naturally in real-time.",tag:"Whisper AI"},
               {bg:"rgba(234,179,8,.09)", e:"📢",t:"Broadcast Engine",         d:"Blast targeted promos to thousands instantly. Zero extra cost.",tag:"Mass Outreach"},
-            ].map(({bg,e,t,d,tag},i)=>(
-              <div key={t} className={`sr-up sd${i+1} fi-card bg-[#0A0A0D] p-6 md:p-8 hover:bg-[#0F0F14] transition-colors duration-150`}>
-                <div className="w-[44px] h-[44px] rounded-[13px] flex items-center justify-center mb-5 text-[20px] transition-transform duration-200 hover:scale-110 hover:rotate-[-3deg]"
+            ].map(({bg,e,t,d,tag})=>(
+              <div key={t} className="fi-card bg-[#0A0A0D] p-6 md:p-8 hover:bg-[#0F0F14] transition-colors duration-150">
+                {/* Icon — Lift Hover */}
+                <div className="icon-lift w-[44px] h-[44px] rounded-[13px] flex items-center justify-center mb-5 text-[20px]"
                   style={{background:bg}}>{e}</div>
                 <h3 className="text-[14px] font-bold text-white mb-2">{t}</h3>
                 <p className="text-[12px] text-gray-400 leading-[1.75] mb-3">{d}</p>
@@ -645,9 +802,9 @@ export default function Home() {
             {[
               {bg:"rgba(34,197,94,.09)", e:"🗃️",t:"Enterprise RAG Memory",      d:"Inject catalog, FAQs, brand voice into Vector DB. Your agent knows your business inside out.",tag:"Vector DB"},
               {bg:"rgba(0,191,255,.09)", e:"🧠",t:"OmniAgent — 3x AI Fallback", d:"Routes between GPT-5.2, Claude Opus, and Gemini Flash in real-time. 0% downtime. Llama 4 coming as 4th fallback.",tag:"0% Downtime"},
-            ].map(({bg,e,t,d,tag},i)=>(
-              <div key={t} className={`sr-up sd${i+1} fi-card bg-[#0A0A0D] p-6 md:p-8 hover:bg-[#0F0F14] transition-colors duration-150`}>
-                <div className="w-[44px] h-[44px] rounded-[13px] flex items-center justify-center mb-5 text-[20px] transition-transform duration-200 hover:scale-110 hover:rotate-[-3deg]"
+            ].map(({bg,e,t,d,tag})=>(
+              <div key={t} className="fi-card bg-[#0A0A0D] p-6 md:p-8 hover:bg-[#0F0F14] transition-colors duration-150">
+                <div className="icon-lift w-[44px] h-[44px] rounded-[13px] flex items-center justify-center mb-5 text-[20px]"
                   style={{background:bg}}>{e}</div>
                 <h3 className="text-[14px] font-bold text-white mb-2">{t}</h3>
                 <p className="text-[12px] text-gray-400 leading-[1.75] mb-3">{d}</p>
@@ -662,9 +819,9 @@ export default function Home() {
               {bg:"rgba(249,115,22,.09)",e:"⚡",t:"AI Interceptor",      d:"Check orders, book slots, trigger webhooks, update CRMs — fully autonomous.",tag:"API Triggers"},
               {bg:"rgba(236,72,153,.09)",e:"💬",t:"Live CRM & Handoff",  d:"Monitor all conversations. One click to take over from AI seamlessly.",tag:"Real-time CRM"},
               {bg:"rgba(16,185,129,.09)",e:"🔒",t:"Enterprise Security", d:"AES-256 encryption. SOC 2 compliant. Zero data retention on our servers.",tag:"AES-256"},
-            ].map(({bg,e,t,d,tag},i)=>(
-              <div key={t} className={`sr-up sd${i+1} fi-card bg-[#0A0A0D] p-6 md:p-8 hover:bg-[#0F0F14] transition-colors duration-150`}>
-                <div className="w-[44px] h-[44px] rounded-[13px] flex items-center justify-center mb-5 text-[20px] transition-transform duration-200 hover:scale-110 hover:rotate-[-3deg]"
+            ].map(({bg,e,t,d,tag})=>(
+              <div key={t} className="fi-card bg-[#0A0A0D] p-6 md:p-8 hover:bg-[#0F0F14] transition-colors duration-150">
+                <div className="icon-lift w-[44px] h-[44px] rounded-[13px] flex items-center justify-center mb-5 text-[20px]"
                   style={{background:bg}}>{e}</div>
                 <h3 className="text-[14px] font-bold text-white mb-2">{t}</h3>
                 <p className="text-[12px] text-gray-400 leading-[1.75] mb-3">{d}</p>
@@ -706,12 +863,10 @@ export default function Home() {
                 style={{background:"rgba(255,255,255,0.02)",borderTop:"1px solid rgba(255,255,255,0.07)"}}>
                 <span className="text-white">Total Time</span><span className="text-red-400">60 MINUTES</span>
               </div>
-              <p className="text-[11px] text-gray-500 px-5 py-3 text-right italic">
-                * Non-technical users: multiply by 10.
-              </p>
+              <p className="text-[11px] text-gray-500 px-5 py-3 text-right italic">* Non-technical users: multiply by 10.</p>
             </div>
 
-            <div className="sr-right rounded-[18px] flex flex-col items-center justify-center text-center p-10 relative overflow-hidden"
+            <div className="sr-rght rounded-[18px] flex flex-col items-center justify-center text-center p-10 relative overflow-hidden"
               style={{border:"1px solid rgba(249,115,22,0.22)",background:"linear-gradient(160deg,rgba(249,115,22,0.07),transparent 55%)"}}>
               <p className="text-[9.5px] font-bold tracking-[.15em] uppercase text-orange-500 mb-3">With ClawLink</p>
               <p className="font-black leading-none mb-1 text-[3.4rem] grad-text" style={{letterSpacing:"-.04em"}}>ClawLink</p>
@@ -719,10 +874,11 @@ export default function Home() {
               <p className="text-[12px] text-gray-400 max-w-[220px] leading-[1.85]">
                 Pick a model, connect your channel, deploy. All infrastructure handled for you.
               </p>
-              <button onClick={()=>document.getElementById("hero")?.scrollIntoView({behavior:"smooth"})}
-                className={`mt-7 px-8 py-3.5 rounded-[12px] text-[13px] font-black text-white uppercase tracking-wider ${btn} hover:scale-[1.05] orange-glow`}
+              {/* Magnetic + Ripple + Spring CTA */}
+              <button data-ripple data-spring onClick={()=>document.getElementById("hero")?.scrollIntoView({behavior:"smooth"})}
+                className={`mag-el relative overflow-hidden mt-7 px-8 py-3.5 rounded-[12px] text-[13px] font-black text-white uppercase tracking-wider ${btn} hover:scale-[1.05] orange-glow`}
                 style={{background:"linear-gradient(135deg,#f97316,#ea6a00)"}}>
-                Start Free Now →
+                <span className="mt">Start Free Now →</span>
               </button>
             </div>
           </div>
@@ -749,11 +905,12 @@ export default function Home() {
         style={{background:"#040405",borderTop:"1px solid rgba(255,255,255,0.05)"}}>
         <h2 className="sr-up text-[clamp(2.2rem,5vw,4rem)] font-black tracking-[-0.04em] mb-6 text-white"
           style={{fontFamily:"Georgia,serif",lineHeight:1.06}}>Deploy. Automate. Relax.</h2>
-        <button
+        {/* Footer CTA — Magnetic + Ripple + Spring */}
+        <button data-ripple data-spring
           onClick={()=>document.getElementById("hero")?.scrollIntoView({behavior:"smooth"})}
-          className={`sr-up px-10 py-4 rounded-[13px] text-[14px] font-black text-black mb-20 uppercase tracking-wider ${btn} hover:scale-[1.05] orange-glow`}
+          className={`mag-el sr-up relative overflow-hidden px-10 py-4 rounded-[13px] text-[14px] font-black text-black mb-20 uppercase tracking-wider ${btn} hover:scale-[1.05] orange-glow`}
           style={{background:"linear-gradient(135deg,#FFA87A,#F97316)"}}>
-          Get Started Free →
+          <span className="mt">Get Started Free →</span>
         </button>
         <div className="flex flex-col md:flex-row justify-between items-center gap-4 text-[11px] text-gray-500 pt-8"
           style={{borderTop:"1px solid rgba(255,255,255,0.06)"}}>
@@ -777,7 +934,7 @@ export default function Home() {
               style={{background:"#0F0F12",border:"1px solid rgba(255,255,255,0.09)",boxShadow:"0 0 80px rgba(0,0,0,0.8)"}}>
               <div className="absolute top-0 left-[20%] right-[20%] h-px"
                 style={{background:"linear-gradient(90deg,transparent,rgba(249,115,22,0.4),transparent)"}}/>
-              <button onClick={()=>setIsSupportModalOpen(false)}
+              <button data-spring onClick={()=>setIsSupportModalOpen(false)}
                 className={`absolute top-5 right-5 p-2 rounded-full text-gray-500 hover:text-white ${btn}`}
                 style={{background:"rgba(255,255,255,0.05)"}}>
                 <X className="w-4 h-4"/>
@@ -801,8 +958,8 @@ export default function Home() {
                   </div>
                 ))}
               </div>
-              <button onClick={()=>setIsSupportModalOpen(false)}
-                className={`w-full mt-6 bg-white text-black font-bold py-3.5 rounded-xl text-[13px] uppercase tracking-widest ${btn} hover:bg-gray-100`}>
+              <button data-ripple data-spring onClick={()=>setIsSupportModalOpen(false)}
+                className={`relative overflow-hidden w-full mt-6 bg-white text-black font-bold py-3.5 rounded-xl text-[13px] uppercase tracking-widest ${btn} hover:bg-gray-100`}>
                 Close
               </button>
             </motion.div>
@@ -819,7 +976,7 @@ export default function Home() {
               style={{background:"#0F0F12",border:"1px solid rgba(255,255,255,0.09)",boxShadow:"0 0 100px rgba(0,0,0,0.9)",maxHeight:"92vh"}}>
               <div className="absolute top-0 left-[20%] right-[20%] h-px"
                 style={{background:"linear-gradient(90deg,transparent,rgba(249,115,22,0.4),transparent)"}}/>
-              <button onClick={()=>setIsTelegramModalOpen(false)}
+              <button data-spring onClick={()=>setIsTelegramModalOpen(false)}
                 className={`absolute top-4 right-4 z-20 p-2 rounded-full text-gray-500 hover:text-white ${btn}`}
                 style={{background:"rgba(255,255,255,0.05)"}}>
                 <X className="w-4 h-4"/>
@@ -858,8 +1015,8 @@ export default function Home() {
                         style={{background:"#07070A",border:"1px solid rgba(255,255,255,0.09)"}}
                         onFocus={e=>(e.target.style.borderColor="rgba(249,115,22,0.5)")}
                         onBlur={e =>(e.target.style.borderColor="rgba(255,255,255,0.09)")}/>
-                      <button onClick={handleSaveToken} disabled={isVerifying}
-                        className={`w-full font-black py-4 rounded-xl text-[13px] uppercase tracking-widest ${btn} hover:scale-[1.02] disabled:opacity-50 disabled:pointer-events-none`}
+                      <button data-ripple data-spring onClick={handleSaveToken} disabled={isVerifying}
+                        className={`relative overflow-hidden w-full font-black py-4 rounded-xl text-[13px] uppercase tracking-widest ${btn} hover:scale-[1.02] disabled:opacity-50 disabled:pointer-events-none`}
                         style={{background:isVerifying?"rgba(255,255,255,0.1)":"#fff",color:isVerifying?"#666":"#000"}}>
                         {isVerifying?"Verifying…":"Verify & Save Token"}
                       </button>
@@ -875,7 +1032,6 @@ export default function Home() {
                       <li>Set Webhook URL under <strong className="text-white">Configuration</strong></li>
                       <li>Enter Callback URL + Verify Token below</li>
                     </ol>
-                    
                     <div className="p-5 rounded-2xl" style={{background:"rgba(255,255,255,0.03)",border:"1px solid rgba(255,255,255,0.07)"}}>
                       <label className="block text-[9px] font-bold uppercase tracking-widest text-gray-400 mb-3">Phone Number ID</label>
                       <input type="text" value={waPhoneId} onChange={e=>setWaPhoneId(e.target.value)}
@@ -884,7 +1040,6 @@ export default function Home() {
                         style={{background:"#07070A",border:"1px solid rgba(255,255,255,0.09)"}}
                         onFocus={e=>(e.target.style.borderColor="rgba(37,211,102,0.5)")}
                         onBlur={e =>(e.target.style.borderColor="rgba(255,255,255,0.09)")}/>
-                      
                       <label className="block text-[9px] font-bold uppercase tracking-widest text-gray-400 mb-3">WhatsApp Number (For Direct Open)</label>
                       <input type="text" value={waPhoneNumber} onChange={e=>setWaPhoneNumber(e.target.value)}
                         placeholder="+1 234 567 890"
@@ -892,7 +1047,6 @@ export default function Home() {
                         style={{background:"#07070A",border:"1px solid rgba(255,255,255,0.09)"}}
                         onFocus={e=>(e.target.style.borderColor="rgba(37,211,102,0.5)")}
                         onBlur={e =>(e.target.style.borderColor="rgba(255,255,255,0.09)")}/>
-
                       <label className="block text-[9px] font-bold uppercase tracking-widest text-gray-400 mb-3">Permanent API Token</label>
                       <input type="password" value={telegramToken} onChange={e=>setTelegramToken(e.target.value)}
                         placeholder="EAABwzL…"
@@ -900,9 +1054,8 @@ export default function Home() {
                         style={{background:"#07070A",border:"1px solid rgba(255,255,255,0.09)"}}
                         onFocus={e=>(e.target.style.borderColor="rgba(37,211,102,0.5)")}
                         onBlur={e =>(e.target.style.borderColor="rgba(255,255,255,0.09)")}/>
-                      
-                      <button onClick={handleSaveToken} disabled={isVerifying}
-                        className={`w-full font-black py-4 rounded-xl text-[13px] uppercase tracking-widest ${btn} hover:scale-[1.02] disabled:opacity-50 disabled:pointer-events-none`}
+                      <button data-ripple data-spring onClick={handleSaveToken} disabled={isVerifying}
+                        className={`relative overflow-hidden w-full font-black py-4 rounded-xl text-[13px] uppercase tracking-widest ${btn} hover:scale-[1.02] disabled:opacity-50 disabled:pointer-events-none`}
                         style={{background:isVerifying?"rgba(255,255,255,0.1)":"#fff",color:isVerifying?"#666":"#000"}}>
                         {isVerifying?"Verifying…":"Verify & Save"}
                       </button>
@@ -983,7 +1136,7 @@ export default function Home() {
               <div className="absolute top-0 left-[20%] right-[20%] h-px"
                 style={{background:"linear-gradient(90deg,transparent,rgba(249,115,22,0.4),transparent)"}}/>
               {!isDeploying && (
-                <button onClick={()=>setShowPricingPopup(false)}
+                <button data-spring onClick={()=>setShowPricingPopup(false)}
                   className={`absolute top-5 right-5 p-2 rounded-full text-gray-500 hover:text-white ${btn}`}
                   style={{background:"rgba(255,255,255,0.05)"}}>
                   <X className="w-4 h-4"/>
@@ -1004,7 +1157,7 @@ export default function Home() {
                     {tier:"monthly" as const,accent:"#00BFFF",label:"Monthly Enterprise",badge:null,desc:"3x Smart AI Fallback. Billed monthly."},
                     {tier:"yearly"  as const,accent:"#0052D4",label:"Yearly Enterprise",badge:"Save 16%",desc:"Maximum value for production scale."},
                   ].map(({tier,accent,label,badge,desc})=>(
-                    <div key={tier} onClick={()=>!isDeploying&&setSelectedTier(tier)}
+                    <div key={tier} data-spring onClick={()=>!isDeploying&&setSelectedTier(tier)}
                       className={`relative p-6 rounded-2xl cursor-pointer transition-all duration-150 ${btn} ${selectedTier===tier?"scale-[1.02]":"hover:scale-[1.01]"}`}
                       style={{background:selectedTier===tier?"rgba(255,255,255,0.05)":"rgba(255,255,255,0.02)",
                               border:`1px solid ${selectedTier===tier?accent:"rgba(255,255,255,0.07)"}`,
@@ -1023,7 +1176,7 @@ export default function Home() {
                     {tier:"pro"     as const,accent:"#3B82F6",label:"Professional",color:"text-blue-400",badge:"Popular",desc:"Expanded usage and priority routing."},
                     {tier:"max"     as const,accent:"#F97316",label:"Maximum",color:"text-orange-400",badge:null,desc:"Uncapped limits, highest speeds."},
                   ].map(({tier,accent,label,color,badge,desc})=>(
-                    <div key={tier} onClick={()=>!isDeploying&&setSelectedTier(tier)}
+                    <div key={tier} data-spring onClick={()=>!isDeploying&&setSelectedTier(tier)}
                       className={`relative p-5 rounded-2xl cursor-pointer transition-all duration-150 ${btn} ${selectedTier===tier?"scale-[1.02]":"hover:scale-[1.01]"}`}
                       style={{background:selectedTier===tier?"rgba(255,255,255,0.04)":"rgba(255,255,255,0.02)",
                               border:`1px solid ${selectedTier===tier?accent:"rgba(255,255,255,0.07)"}`,
@@ -1037,8 +1190,9 @@ export default function Home() {
                 </div>
               )}
 
-              <button onClick={triggerRazorpayPayment} disabled={isDeploying||!selectedTier}
-                className={`w-full max-w-sm mx-auto font-black py-4 rounded-xl uppercase tracking-widest flex justify-center items-center gap-2 transition-all duration-150 ${btn}
+              {/* Pay button — Ripple + Spring */}
+              <button data-ripple data-spring onClick={triggerRazorpayPayment} disabled={isDeploying||!selectedTier}
+                className={`relative overflow-hidden w-full max-w-sm mx-auto font-black py-4 rounded-xl uppercase tracking-widest flex justify-center items-center gap-2 transition-all duration-150 ${btn}
                   ${!selectedTier?"cursor-not-allowed opacity-40 bg-gray-800 text-gray-500"
                     :activeModel==="omni"
                       ?"bg-gradient-to-r from-[#0052D4] to-[#00BFFF] text-white hover:scale-[1.02] shadow-[0_0_24px_rgba(0,191,255,0.4)]"
@@ -1050,6 +1204,7 @@ export default function Home() {
         )}
       </AnimatePresence>
 
+      {/* Help Chat Bubble */}
       <div className="fixed bottom-6 right-6 z-[60] flex flex-col items-end">
         <AnimatePresence>
           {isHelpOpen && (
@@ -1059,7 +1214,7 @@ export default function Home() {
               style={{background:"#0F0F12",border:"1px solid rgba(255,255,255,0.09)",boxShadow:"0 0 48px rgba(0,0,0,0.8)"}}>
               <div className="absolute top-0 left-[15%] right-[15%] h-px"
                 style={{background:"linear-gradient(90deg,transparent,rgba(249,115,22,0.35),transparent)"}}/>
-              <button onClick={()=>setIsHelpOpen(false)} className={`absolute top-3.5 right-3.5 text-gray-500 hover:text-white ${btn}`}>
+              <button data-spring onClick={()=>setIsHelpOpen(false)} className={`absolute top-3.5 right-3.5 text-gray-500 hover:text-white ${btn}`}>
                 <X className="w-4 h-4"/>
               </button>
               {helpStatus==="sent" ? (
@@ -1092,8 +1247,8 @@ export default function Home() {
                       style={{background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.07)"}}
                       onFocus={e=>(e.target.style.borderColor="rgba(59,130,246,0.5)")}
                       onBlur={e =>(e.target.style.borderColor="rgba(255,255,255,0.07)")}/>
-                    <button onClick={handleSendHelpRequest} disabled={helpStatus==="sending"}
-                      className={`w-full bg-blue-600 hover:bg-blue-500 text-white font-bold text-[12px] py-2.5 rounded-xl flex items-center justify-center gap-2 ${btn}`}>
+                    <button data-ripple data-spring onClick={handleSendHelpRequest} disabled={helpStatus==="sending"}
+                      className={`relative overflow-hidden w-full bg-blue-600 hover:bg-blue-500 text-white font-bold text-[12px] py-2.5 rounded-xl flex items-center justify-center gap-2 ${btn}`}>
                       {helpStatus==="sending"?"Sending…":<><Send className="w-3 h-3"/>Send Message</>}
                     </button>
                   </div>
@@ -1102,8 +1257,9 @@ export default function Home() {
             </motion.div>
           )}
         </AnimatePresence>
+        {/* FAB — Spring via Framer (unchanged) */}
         <motion.button whileHover={{scale:1.1}} whileTap={{scale:.9}} onClick={()=>setIsHelpOpen(!isHelpOpen)}
-          className={`w-14 h-14 text-white rounded-full flex items-center justify-center transition-all duration-150 transform-gpu`}
+          className="w-14 h-14 text-white rounded-full flex items-center justify-center transition-all duration-150 transform-gpu"
           style={{background:"linear-gradient(135deg,#3B82F6,#7C3AED)",boxShadow:"0 0 28px rgba(59,130,246,0.5)"}}>
           {isHelpOpen ? <X className="w-6 h-6"/> : <MessageCircle className="w-6 h-6"/>}
         </motion.button>
