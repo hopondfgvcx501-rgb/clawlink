@@ -7,14 +7,14 @@ const sendEmail = async (...args: any[]) => console.log("Email disabled");
 export const dynamic = "force-dynamic";
 
 const rateLimitMap = new Map<string, number>();
-const COOLDOWN_MS = 1500; // Telegram cooldown
+const COOLDOWN_MS = 1500; // Ultra-fast Telegram cooldown
 
 // 🚀 INITIALIZE SUPABASE
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-// 🛡️ ENTERPRISE GUARDRAIL
+// 🛡️ ENTERPRISE GUARDRAIL: Strict RAG Enforcement & Human Handoff Protocol
 const ENTERPRISE_GUARDRAIL = `
 CRITICAL INSTRUCTION: You are an Enterprise AI Support Agent. 
 1. ANTI-HALLUCINATION LOCK: You must ONLY use the provided Company Knowledge to answer questions. 
@@ -23,15 +23,8 @@ CRITICAL INSTRUCTION: You are an Enterprise AI Support Agent.
 4. TONE: Be professional, concise, and highly polite. Never argue with the customer.
 `;
 
-// 🚀 ULTRA-SMART PRODUCTION AI CHAINS (Cost Saving Priority)
-const AI_CHAINS: Record<string, string[]> = {
-    "openai": ["gpt-4o-mini", "gpt-4o", "gpt-3.5-turbo"], 
-    "anthropic": ["claude-3-5-sonnet-20240620", "claude-3-sonnet-20240229", "claude-3-opus-20240229"],
-    "google": ["gemini-1.5-flash", "gemini-1.5-flash-8b", "gemini-1.5-pro"]
-};
-
 // =========================================================================
-// 🚀 AI & RAG HELPER FUNCTIONS 
+// 🚀 AI & RAG HELPER FUNCTIONS
 // =========================================================================
 async function generateEmbedding(text: string, key: string | null) {
     const apiKey = key || process.env.GEMINI_API_KEY;
@@ -44,7 +37,9 @@ async function generateEmbedding(text: string, key: string | null) {
         });
         const data = await res.json();
         return res.ok ? data.embedding.values : null;
-    } catch (e) { return null; }
+    } catch (e) {
+        return null;
+    }
 }
 
 async function callGemini(model: string, prompt: string, key: string | null) {
@@ -116,7 +111,9 @@ export async function POST(req: Request) {
     try {
         const body = await req.json();
 
-        if (!body.message || (!body.message.text && !body.message.voice)) return NextResponse.json({ success: true }); 
+        if (!body.message || (!body.message.text && !body.message.voice)) {
+            return NextResponse.json({ success: true }); 
+        }
 
         const chatId = body.message.chat.id.toString();
         const customerName = body.message.from.first_name || "Customer";
@@ -150,7 +147,7 @@ export async function POST(req: Request) {
         const expiryDate = new Date(config.plan_expiry_date);
         const isExpired = config.plan_expiry_date ? (new Date() > expiryDate) : false;
 
-        // 🚀 SMART LIMIT: If limit reached, send polite maintenance message to customer (Hidden from them that limit is over)
+        // 🚀 CUSTOMER-FACING MAINTENANCE MESSAGE (Protects business image)
         if (isExpired || (!isUnlimited && messagesUsed >= monthlyLimit)) {
             const maintenanceMsg = "Hello! Our AI assistant is currently undergoing a brief scheduled maintenance to serve you better. Please leave your query and our human support team will get back to you shortly. Thank you for your patience!";
                 
@@ -184,7 +181,7 @@ export async function POST(req: Request) {
             if (body.message.text === "/start") return NextResponse.json({ success: true });
             
             let rawUserText = body.message.text;
-            // ✂️ LONG MESSAGE CUT (Cost Control)
+            // ✂️ COST CONTROL: Cut message if it's suspiciously long
             userText = rawUserText.length > 800 ? rawUserText.substring(0, 800) + "..." : rawUserText;
             crmLogMessage = userText;
         }
@@ -226,67 +223,70 @@ export async function POST(req: Request) {
         });
 
         // ==========================================
-        // 8. 🔒 THE SMART ROUTER (Cost & Length Based)
+        // 8. 🧠 CLAWLINK PROFIT MAXIMIZER (Hidden Smart Routing)
         // ==========================================
         let aiResponse = "Hello! Our AI assistant is currently undergoing a brief scheduled maintenance. Please leave your query and our human support team will get back to you shortly.";
         let wasSuccessful = false;
 
-        // 🧠 HIDDEN TRICK: Usage & Length Based Downgrade
-        let forceCheapFallback = false;
-        const words = userText.split(" ").length;
+        const words = userText.split(/\s+/).length;
+        const usageRatio = isUnlimited ? 0 : (messagesUsed / monthlyLimit) * 100;
         
-        if (words < 40) forceCheapFallback = true; // Simple queries go to Cheap
-        if (!isUnlimited && (messagesUsed / monthlyLimit) > 0.8) forceCheapFallback = true; // 80% limit cross -> Force Cheap
+        const CHEAP_MODEL = "gemini-1.5-flash";
+        const MEDIUM_MODEL = "gpt-4o-mini";
+        const EXPENSIVE_MODEL = "claude-3-5-sonnet-20240620";
+
+        let targetProvider = "google";
+        let targetModel = CHEAP_MODEL;
 
         if (provider === "omni") {
-            const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://clawlink-six.vercel.app";
-            try {
-                const omniRes = await fetch(`${baseUrl}/api/omni`, {
-                    method: "POST", headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                        prompt: userText,
-                        systemPrompt: `System Instructions: ${systemPrompt}\n\nCompany Knowledge:\n${customKnowledge ? customKnowledge : "None."}`,
-                        history: pastChats ? pastChats.reverse().map(chat => ({ role: chat.sender_type === "bot" ? "assistant" : "user", content: chat.message })) : [],
-                        apiKey: userApiKey, 
-                        forceCheap: forceCheapFallback 
-                    })
-                });
-
-                if (omniRes.ok) {
-                    const omniData = await omniRes.json();
-                    if (omniData.success) {
-                        aiResponse = omniData.reply;
-                        wasSuccessful = true;
-                    }
-                }
-            } catch (err) { console.error("❌ Omni Engine call failed:", err); }
-
-        } else {
-            let chain = AI_CHAINS[provider] || AI_CHAINS["openai"];
-            
-            // If cheap forced or very short, use the first/cheapest model in our updated chains
-            if (forceCheapFallback || words < 40) {
-                chain = [chain[0]]; // e.g., gemini-1.5-flash or gpt-4o-mini
-            } else if (words >= 40 && words < 150) {
-                chain = [chain[1] || chain[0]]; // Medium
+            // Smart Omni Routing
+            if (usageRatio >= 80) {
+                targetProvider = "google"; targetModel = CHEAP_MODEL; // Force Save Mode
+            } else if (usageRatio >= 60) {
+                if (words < 40) { targetProvider = "google"; targetModel = CHEAP_MODEL; }
+                else { targetProvider = "openai"; targetModel = MEDIUM_MODEL; } // Claude Disabled
             } else {
-                chain = [chain[2] || chain[1]]; // Complex
+                if (words < 40) { targetProvider = "google"; targetModel = CHEAP_MODEL; }
+                else if (words < 150) { targetProvider = "openai"; targetModel = MEDIUM_MODEL; }
+                else { targetProvider = "anthropic"; targetModel = EXPENSIVE_MODEL; } // Premium Mode
             }
+        } else {
+            // Strict Provider Routing (Force Save if usage is too high)
+            if (usageRatio >= 80) {
+                targetProvider = "google"; targetModel = CHEAP_MODEL;
+            } else {
+                targetProvider = provider;
+                if (provider === "openai") targetModel = words < 40 ? "gpt-4o-mini" : "gpt-4o";
+                else if (provider === "anthropic") targetModel = words < 40 ? "claude-3-haiku-20240307" : "claude-3-5-sonnet-20240620";
+                else targetModel = "gemini-1.5-flash";
+            }
+        }
 
-            for (const modelName of chain) {
+        // 🔄 ULTRA FAST FALLBACK SYSTEM
+        try {
+            if (targetProvider === "anthropic") aiResponse = await callClaude(targetModel, fullContext, userApiKey);
+            else if (targetProvider === "openai") aiResponse = await callOpenAI(targetModel, fullContext, userApiKey);
+            else aiResponse = await callGemini(targetModel, fullContext, userApiKey);
+            wasSuccessful = true;
+        } catch (err1) {
+            console.error(`[AI Error] ${targetModel} failed. Routing to GPT Mini...`);
+            try {
+                aiResponse = await callOpenAI(MEDIUM_MODEL, fullContext, userApiKey);
+                wasSuccessful = true;
+            } catch (err2) {
+                console.error(`[AI Error] GPT Mini failed. Routing to Gemini Flash...`);
                 try {
-                    if (provider === "openai") aiResponse = await callOpenAI(modelName, fullContext, userApiKey);
-                    else if (provider === "anthropic") aiResponse = await callClaude(modelName, fullContext, userApiKey);
-                    else aiResponse = await callGemini(modelName, fullContext, userApiKey);
-                    
+                    aiResponse = await callGemini(CHEAP_MODEL, fullContext, userApiKey);
                     wasSuccessful = true;
-                    break;
-                } catch (err: any) {
-                    console.error(`[AI Error] ${modelName} failed:`, err.message);
+                } catch (err3) {
+                    console.error(`[AI Error] All providers failed.`);
                 }
             }
         }
 
+        // ==========================================
+        // 9. CHARGE TOKENS & SAVE RESPONSE
+        // ==========================================
         if (wasSuccessful) {
             await supabase.from("user_configs").update({ messages_used_this_month: messagesUsed + 1 }).eq("email", ownerEmail);
             if (!config.is_unlimited) {

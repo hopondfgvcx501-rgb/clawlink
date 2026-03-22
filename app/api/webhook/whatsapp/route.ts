@@ -7,7 +7,7 @@ const sendEmail = async (...args: any[]) => console.log("Email disabled");
 export const dynamic = "force-dynamic";
 
 const rateLimitMap = new Map<string, number>();
-const COOLDOWN_MS = 2000; // 2 seconds spam cooldown
+const COOLDOWN_MS = 2000; // Ultra-fast WhatsApp cooldown
 
 // 🚀 INITIALIZE SUPABASE
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
@@ -22,13 +22,6 @@ CRITICAL INSTRUCTION: You are an Enterprise AI Support Agent.
 3. HUMAN HANDOFF: If the user asks something outside the Knowledge Base, or seems frustrated/angry, reply EXACTLY with: "I apologize, but I don't have that specific information. Let me connect you with a human support agent who can help you right away."
 4. TONE: Be professional, concise, and highly polite. Never argue with the customer.
 `;
-
-// 🚀 ULTRA-SMART PRODUCTION AI CHAINS (Cost Saving Priority)
-const AI_CHAINS: Record<string, string[]> = {
-    "openai": ["gpt-4o-mini", "gpt-4o", "gpt-3.5-turbo"], 
-    "anthropic": ["claude-3-5-sonnet-20240620", "claude-3-sonnet-20240229", "claude-3-opus-20240229"],
-    "google": ["gemini-1.5-flash", "gemini-1.5-flash-8b", "gemini-1.5-pro"]
-};
 
 // =========================================================================
 // 1. GET REQUEST: META WEBHOOK VERIFICATION
@@ -120,7 +113,7 @@ export async function POST(req: Request) {
         chatId = message.from; 
         let rawUserText = message.text.body;
         
-        // ✂️ LONG MESSAGE CUT (Cost Control)
+        // ✂️ COST CONTROL: Cut message if it's suspiciously long
         const userText = rawUserText.length > 800 ? rawUserText.substring(0, 800) + "..." : rawUserText;
         
         phoneNumberId = value.metadata.phone_number_id; 
@@ -161,7 +154,7 @@ export async function POST(req: Request) {
         const expiryDate = new Date(config.plan_expiry_date);
         const isExpired = config.plan_expiry_date ? (new Date() > expiryDate) : false;
 
-        // 🚀 SMART LIMIT: Customer Facing Maintenance Message
+        // 🚀 CUSTOMER-FACING MAINTENANCE MESSAGE
         if (isExpired || (!isUnlimited && messagesUsed >= monthlyLimit)) {
             const maintenanceMsg = "Hello! Our AI assistant is currently undergoing a brief scheduled maintenance to serve you better. Please leave your query and our human support team will get back to you shortly. Thank you for your patience!";
                 
@@ -204,64 +197,70 @@ export async function POST(req: Request) {
         });
 
         // ==========================================
-        // 8. 🔒 THE SMART ROUTER (Cost & Length Based)
+        // 8. 🧠 CLAWLINK PROFIT MAXIMIZER (Hidden Smart Routing)
         // ==========================================
         let aiResponse = "Hello! Our AI assistant is currently undergoing a brief scheduled maintenance. Please leave your query and our human support team will get back to you shortly.";
         let wasSuccessful = false;
 
-        // 🧠 HIDDEN TRICK: Usage & Length Based Downgrade
-        let forceCheapFallback = false;
-        const words = userText.split(" ").length;
+        const words = userText.split(/\s+/).length;
+        const usageRatio = isUnlimited ? 0 : (messagesUsed / monthlyLimit) * 100;
         
-        if (words < 40) forceCheapFallback = true;
-        if (!isUnlimited && (messagesUsed / monthlyLimit) > 0.8) forceCheapFallback = true;
+        const CHEAP_MODEL = "gemini-1.5-flash";
+        const MEDIUM_MODEL = "gpt-4o-mini";
+        const EXPENSIVE_MODEL = "claude-3-5-sonnet-20240620";
+
+        let targetProvider = "google";
+        let targetModel = CHEAP_MODEL;
 
         if (provider === "omni") {
-            const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://clawlink-six.vercel.app";
-            try {
-                const omniRes = await fetch(`${baseUrl}/api/omni`, {
-                    method: "POST", headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                        prompt: userText,
-                        systemPrompt: `System Instructions: ${systemPrompt}\n\nCompany Knowledge:\n${customKnowledge ? customKnowledge : "None."}`,
-                        history: pastChats ? pastChats.reverse().map(chat => ({ role: chat.sender_type === "bot" ? "assistant" : "user", content: chat.message })) : [],
-                        forceCheap: forceCheapFallback 
-                    })
-                });
-
-                if (omniRes.ok) {
-                    const omniData = await omniRes.json();
-                    if (omniData.success) {
-                        aiResponse = omniData.reply;
-                        wasSuccessful = true;
-                    }
-                }
-            } catch (err) {}
-        } else {
-            let chain = AI_CHAINS[provider] || AI_CHAINS["openai"];
-            
-            if (forceCheapFallback || words < 40) {
-                chain = [chain[0]]; 
-            } else if (words >= 40 && words < 150) {
-                chain = [chain[1] || chain[0]]; 
+            // Smart Omni Routing
+            if (usageRatio >= 80) {
+                targetProvider = "google"; targetModel = CHEAP_MODEL; // Force Save Mode
+            } else if (usageRatio >= 60) {
+                if (words < 40) { targetProvider = "google"; targetModel = CHEAP_MODEL; }
+                else { targetProvider = "openai"; targetModel = MEDIUM_MODEL; } // Claude Disabled
             } else {
-                chain = [chain[2] || chain[1]]; 
+                if (words < 40) { targetProvider = "google"; targetModel = CHEAP_MODEL; }
+                else if (words < 150) { targetProvider = "openai"; targetModel = MEDIUM_MODEL; }
+                else { targetProvider = "anthropic"; targetModel = EXPENSIVE_MODEL; } // Premium Mode
             }
+        } else {
+            // Strict Provider Routing (Force Save if usage is too high)
+            if (usageRatio >= 80) {
+                targetProvider = "google"; targetModel = CHEAP_MODEL;
+            } else {
+                targetProvider = provider;
+                if (provider === "openai") targetModel = words < 40 ? "gpt-4o-mini" : "gpt-4o";
+                else if (provider === "anthropic") targetModel = words < 40 ? "claude-3-haiku-20240307" : "claude-3-5-sonnet-20240620";
+                else targetModel = "gemini-1.5-flash";
+            }
+        }
 
-            for (const modelName of chain) {
+        // 🔄 ULTRA FAST FALLBACK SYSTEM
+        try {
+            if (targetProvider === "anthropic") aiResponse = await callClaude(targetModel, fullContext);
+            else if (targetProvider === "openai") aiResponse = await callOpenAI(targetModel, fullContext);
+            else aiResponse = await callGemini(targetModel, fullContext);
+            wasSuccessful = true;
+        } catch (err1) {
+            console.error(`[AI Error] ${targetModel} failed. Routing to GPT Mini...`);
+            try {
+                aiResponse = await callOpenAI(MEDIUM_MODEL, fullContext);
+                wasSuccessful = true;
+            } catch (err2) {
+                console.error(`[AI Error] GPT Mini failed. Routing to Gemini Flash...`);
                 try {
-                    if (provider === "openai") aiResponse = await callOpenAI(modelName, fullContext);
-                    else if (provider === "anthropic") aiResponse = await callClaude(modelName, fullContext);
-                    else aiResponse = await callGemini(modelName, fullContext);
-                    
+                    aiResponse = await callGemini(CHEAP_MODEL, fullContext);
                     wasSuccessful = true;
-                    break; 
-                } catch (err: any) {
-                    console.error(`[WhatsApp API] ${modelName} failed:`, err.message);
+                } catch (err3) {
+                    console.error(`[AI Error] All providers failed.`);
                 }
             }
         }
 
+        // ==========================================
+        // 9. CHARGE TOKENS & SAVE AI RESPONSE
+        // ==========================================
         if (wasSuccessful) {
             await supabase.from("user_configs").update({ messages_used_this_month: messagesUsed + 1 }).eq("email", userEmail);
         }
