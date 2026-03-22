@@ -743,7 +743,7 @@ export default function Home() {
           <div className="sr-up text-center mb-16">
             <p className="text-[9.5px] font-bold tracking-[.15em] uppercase text-orange-500 mb-2">How It Works</p>
             <h2 className="text-[clamp(1.8rem,3.5vw,2.8rem)] font-black tracking-[-0.035em] text-white mb-3">4 steps to go live</h2>
-            <p className="text-gray-300 text-[14px] max-w-[440px] mx-auto leading-relaxed">Zero to live AI agent in 60 seconds. No tech expertise needed.</p>
+            <p className="text-gray-300 text-[14px] max-w-[440px] mx-auto leading-relaxed">Zero to live AI agent in 30 seconds. No tech expertise needed.</p>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 relative">
             <div className="hidden md:block absolute top-8 left-[12%] right-[12%] h-px"

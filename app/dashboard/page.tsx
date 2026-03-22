@@ -23,7 +23,7 @@ export default function Dashboard() {
   const [stats, setStats] = useState<any>(null); 
   const [isLoading, setIsLoading] = useState(true);
   const [showAppBanner, setShowAppBanner] = useState(true);
-  const [copiedScript, setCopiedScript] = useState(false); // 🚀 NEW: For copying webchat
+  const [copiedScript, setCopiedScript] = useState(false); 
   
   // Persona States
   const [systemPrompt, setSystemPrompt] = useState("");
@@ -161,7 +161,6 @@ Thank you for choosing ClawLink Enterprise AI.
     URL.revokeObjectURL(url);
   };
 
-  // 🚀 NEW: Webchat Script Generator
   const webChatScript = `<script src="https://clawlink-six.vercel.app/api/widget?id=${session?.user?.email}" defer></script>`;
 
   const copyScript = () => {
@@ -172,7 +171,7 @@ Thank you for choosing ClawLink Enterprise AI.
 
   if (isLoading || status === "loading") {
     return (
-      <div className="w-full h-screen bg-[#111111] flex flex-col items-center justify-center text-orange-500 font-mono">
+      <div className="w-full h-screen bg-[#07070A] flex flex-col items-center justify-center text-orange-500 font-mono">
         <Activity className="w-10 h-10 animate-spin mb-4" />
         LOADING COMMAND CENTER...
       </div>
@@ -202,11 +201,9 @@ Thank you for choosing ClawLink Enterprise AI.
     return "NOT SET";
   };
 
-  // Live Channels Logic
   const isTelegramLive = !!userData?.telegram_token || !!userData?.telegramActive;
   const isWhatsappLive = !!userData?.whatsapp_token || !!userData?.whatsapp_phone_id || !!userData?.whatsappActive;
 
-  // Ultimate Live Bot Redirect Logic (🚀 FIXED FOR WHATSAPP)
   const handleOpenLiveBot = async () => {
     if (isTelegramLive && userData?.telegram_token) {
       try {
@@ -221,7 +218,6 @@ Thank you for choosing ClawLink Enterprise AI.
       }
       window.open(`https://t.me/${userData?.tg_username || ""}`, "_blank"); 
     } else if (isWhatsappLive) {
-      // 🚀 Fix: Redirects to actual wa.me link if number exists
       if (userData?.whatsapp_number) {
         window.open(`https://wa.me/${userData.whatsapp_number.replace(/\D/g, '')}`, "_blank");
       } else {
@@ -233,33 +229,48 @@ Thank you for choosing ClawLink Enterprise AI.
   };
 
   return (
-    <div className="w-full min-h-screen bg-[#0A0A0B] text-[#EDEDED] font-sans relative selection:bg-orange-500/30 overflow-y-auto custom-scrollbar flex flex-col">
+    <div className="w-full min-h-screen bg-[#07070A] text-[#E8E8EC] font-sans relative selection:bg-orange-500/30 overflow-y-auto custom-scrollbar flex flex-col">
       
-      {/* CINEMATIC SUNSET GLOW EFFECT */}
-      <div className="fixed top-[-10%] right-[0%] w-[600px] h-[500px] bg-orange-600/10 rounded-full blur-[150px] pointer-events-none z-0"></div>
-      <div className="fixed bottom-[-10%] left-[0%] w-[500px] h-[500px] bg-indigo-600/10 rounded-full blur-[150px] pointer-events-none z-0"></div>
+      {/* 🚀 FIXED: CINEMATIC SUNSET GLOW EFFECT (Matched with Landing Page) */}
+      <div className="fixed top-[-20%] right-[-8%] w-[800px] h-[800px] rounded-full pointer-events-none z-0" style={{background:"radial-gradient(circle,rgba(249,115,22,0.18) 0%,transparent 65%)",transform:"translateZ(0)"}}/>
+      <div className="fixed bottom-[-20%] left-[-8%] w-[800px] h-[800px] rounded-full pointer-events-none z-0" style={{background:"radial-gradient(circle,rgba(99,102,241,0.15) 0%,transparent 65%)",transform:"translateZ(0)"}}/>
 
-      {/* HEADER */}
-      <header className="flex items-center justify-between p-6 md:p-8 border-b border-white/5 bg-[#111]/50 backdrop-blur-md sticky top-0 z-30">
-        <div>
-          <h1 className="text-2xl font-serif text-white tracking-tight">Command Center</h1>
-          <p className="text-sm text-gray-400 mt-1">Welcome back, {session?.user?.name?.split(' ')[0] || 'Agent'}. Your AI fleet is active.</p>
+      {/* HEADER WITH ORIGINAL LANDING PAGE LOGO & BUTTON */}
+      <header className="flex items-center justify-between p-6 md:p-8 border-b border-white/5 bg-[#07070A]/70 backdrop-blur-xl sticky top-0 z-30">
+        <div className="flex items-center gap-6">
+          {/* Premium logo: C + LAWLINK.COM */}
+          <svg width="130" height="22" viewBox="0 0 152 26" fill="none" className="shrink-0 cursor-pointer" onClick={() => router.push("/")}>
+            <defs>
+              <linearGradient id="cg" x1="0" y1="0" x2="0" y2="26" gradientUnits="userSpaceOnUse">
+                <stop stopColor="#fff"/><stop offset="1" stopColor="rgba(255,255,255,.65)"/>
+              </linearGradient>
+            </defs>
+            <path d="M22 3C18 .5 10 .5 7 4.5S3.5 18 7 22.5 18 26 22 23" stroke="rgba(255,255,255,.1)" strokeWidth="8" strokeLinecap="round" fill="none"/>
+            <path d="M22 3C18 .5 10 .5 7 4.5S3.5 18 7 22.5 18 26 22 23" stroke="url(#cg)" strokeWidth="4.5" strokeLinecap="round" fill="none"/>
+            <line x1="7.5" y1="3" x2="14.5" y2="11.5" stroke="#f97316" strokeWidth="2.2" strokeLinecap="round"/>
+            <line x1="12.5" y1="1.5" x2="19.5" y2="10" stroke="#f97316" strokeWidth="2.2" strokeLinecap="round"/>
+            <line x1="17.5" y1="2.5" x2="24" y2="10.5" stroke="#f97316" strokeWidth="2" strokeLinecap="round"/>
+            <text x="30" y="18" fontFamily="-apple-system,BlinkMacSystemFont,sans-serif" fontSize="14.5" fontWeight="800" letterSpacing="1.4" fill="#fff">LAWLINK</text>
+            <text x="116" y="18" fontFamily="-apple-system,BlinkMacSystemFont,sans-serif" fontSize="9.5" fontWeight="700" letterSpacing=".7" fill="#f97316">.COM</text>
+          </svg>
+          
+          <div className="hidden md:block border-l border-white/10 pl-6">
+            <h1 className="text-xl font-black text-white tracking-tight leading-none">Command Center</h1>
+            <p className="text-xs text-gray-400 mt-1">Welcome back, {session?.user?.name?.split(' ')[0] || 'Agent'}. Your AI fleet is active.</p>
+          </div>
         </div>
+
         <div className="flex items-center gap-4">
           <button 
             onClick={handleOpenLiveBot}
-            className="hidden sm:flex items-center gap-2 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white px-5 py-2.5 rounded-full font-bold text-xs uppercase tracking-widest shadow-[0_0_20px_rgba(59,130,246,0.3)] transition-all transform hover:scale-105"
+            className="hidden sm:flex items-center gap-2 bg-white text-black hover:bg-gray-100 px-5 py-2.5 rounded-full font-black text-[11px] uppercase tracking-widest shadow-[0_0_20px_rgba(255,255,255,0.15)] transition-all duration-150 ease-out active:scale-[0.96] hover:scale-[1.03]"
           >
-            <Bot className="w-4 h-4" /> DEPLOY LIVE AGENT NOW <ExternalLink className="w-3 h-3 ml-1" />
+            <Bot className="w-4 h-4" /> OPEN YOUR LIVE AGENT <ExternalLink className="w-3 h-3 ml-1" />
           </button>
           <div className="hidden md:flex items-center bg-[#1A1A1A] border border-white/10 rounded-full px-4 py-2">
             <Search className="w-4 h-4 text-gray-500" />
             <input type="text" placeholder="Search chats..." className="bg-transparent border-none outline-none text-sm ml-2 text-white placeholder-gray-600 w-32 font-mono" />
           </div>
-          <button className="relative p-2.5 bg-[#1A1A1A] border border-white/10 rounded-full hover:bg-white/10 transition-colors">
-            <Bell className="w-5 h-5 text-gray-400" />
-            <span className="absolute top-0 right-0 w-2.5 h-2.5 bg-orange-500 rounded-full border-2 border-[#111]"></span>
-          </button>
         </div>
       </header>
 
@@ -285,10 +296,10 @@ Thank you for choosing ClawLink Enterprise AI.
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           
           {/* PLAN CARD */}
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="bg-[#1C1C1E] border border-white/5 p-6 rounded-[1.5rem] shadow-xl flex justify-between items-center relative overflow-hidden group hover:border-white/10 transition-colors">
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25, ease: "easeOut" }} className="bg-[#111113] border border-white/5 p-6 rounded-[1.5rem] shadow-xl flex justify-between items-center relative overflow-hidden group hover:border-white/10 transition-colors">
             <div className="absolute top-0 left-0 w-32 h-32 bg-blue-500/5 rounded-full blur-3xl group-hover:bg-blue-500/10 transition-colors"></div>
             <div className="relative z-10">
-              <h3 className="text-gray-400 text-xs font-bold uppercase tracking-widest mb-1">Current Plan</h3>
+              <h3 className="text-gray-500 text-[10px] font-bold uppercase tracking-widest mb-1">Current Plan</h3>
               <div className="flex flex-col items-start gap-2 mt-2">
                 <p className="text-3xl font-black text-white font-serif uppercase tracking-wide leading-none">{currentPlan}</p>
                 {isPremium && (
@@ -304,10 +315,10 @@ Thank you for choosing ClawLink Enterprise AI.
           </motion.div>
 
           {/* AI MODEL CARD */}
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="bg-[#1C1C1E] border border-white/5 p-6 rounded-[1.5rem] shadow-xl flex justify-between items-center relative overflow-hidden group hover:border-white/10 transition-colors">
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25, delay: 0.1, ease: "easeOut" }} className="bg-[#111113] border border-white/5 p-6 rounded-[1.5rem] shadow-xl flex justify-between items-center relative overflow-hidden group hover:border-white/10 transition-colors">
             <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/5 rounded-full blur-3xl group-hover:bg-purple-500/10 transition-colors"></div>
             <div className="relative z-10">
-              <h3 className="text-gray-400 text-xs font-bold uppercase tracking-widest mb-1">Active AI Brain</h3>
+              <h3 className="text-gray-500 text-[10px] font-bold uppercase tracking-widest mb-1">Active AI Brain</h3>
               <p className="text-2xl font-black text-white font-sans tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-blue-400 mt-2">
                 {getModelDisplayName()}
               </p>
@@ -326,10 +337,10 @@ Thank you for choosing ClawLink Enterprise AI.
           </motion.div>
 
           {/* LIVE CHANNELS CARD */}
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="bg-[#1C1C1E] border border-white/5 p-6 rounded-[1.5rem] shadow-xl flex justify-between items-center relative overflow-hidden group hover:border-white/10 transition-colors">
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25, delay: 0.2, ease: "easeOut" }} className="bg-[#111113] border border-white/5 p-6 rounded-[1.5rem] shadow-xl flex justify-between items-center relative overflow-hidden group hover:border-white/10 transition-colors">
             <div className="absolute top-0 right-0 w-32 h-32 bg-green-500/5 rounded-full blur-3xl group-hover:bg-green-500/10 transition-colors"></div>
             <div className="relative z-10 w-full">
-              <h3 className="text-gray-400 text-xs font-bold uppercase tracking-widest mb-3">Live Channels</h3>
+              <h3 className="text-gray-500 text-[10px] font-bold uppercase tracking-widest mb-3">Live Channels</h3>
               <div className="flex flex-col gap-2">
                 {isWhatsappLive && (
                   <div className="flex items-center gap-2 text-sm font-bold text-white">
@@ -356,7 +367,7 @@ Thank you for choosing ClawLink Enterprise AI.
         </div>
 
         {/* 🚀 NEW: WEBCHAT DEPLOYMENT WIDGET SECTION */}
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }} className="bg-gradient-to-r from-[#1C1C1E] to-[#111] border border-pink-500/20 p-6 md:p-8 rounded-[1.5rem] shadow-[0_0_30px_rgba(236,72,153,0.05)] relative overflow-hidden flex flex-col lg:flex-row items-center justify-between gap-6">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25, delay: 0.3, ease: "easeOut" }} className="bg-gradient-to-r from-[#111113] to-[#0a0a0c] border border-pink-500/20 p-6 md:p-8 rounded-[1.5rem] shadow-[0_0_30px_rgba(236,72,153,0.05)] relative overflow-hidden flex flex-col lg:flex-row items-center justify-between gap-6">
           <div className="absolute top-0 left-0 w-64 h-64 bg-pink-500/5 rounded-full blur-3xl pointer-events-none"></div>
           
           <div className="flex-1 relative z-10">
@@ -367,7 +378,7 @@ Thank you for choosing ClawLink Enterprise AI.
           </div>
 
           <div className="w-full lg:w-1/2 relative z-10 group">
-            <pre className="w-full bg-[#0A0A0B] border border-white/10 p-4 rounded-xl text-xs text-pink-400 font-mono overflow-x-auto custom-scrollbar">
+            <pre className="w-full bg-[#07070A] border border-white/10 p-4 rounded-xl text-xs text-pink-400 font-mono overflow-x-auto custom-scrollbar">
               {webChatScript}
             </pre>
             <button 
@@ -381,7 +392,7 @@ Thank you for choosing ClawLink Enterprise AI.
 
         {/* DATA ANALYTICS: METRICS CARDS */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="bg-[#1C1C1E] border border-white/5 p-6 rounded-[1.5rem] shadow-xl relative overflow-hidden group hover:border-white/10 transition-colors">
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25, delay: 0.4, ease: "easeOut" }} className="bg-[#111113] border border-white/5 p-6 rounded-[1.5rem] shadow-xl relative overflow-hidden group hover:border-white/10 transition-colors">
             <div className="absolute top-0 right-0 w-32 h-32 bg-orange-500/5 rounded-full blur-3xl group-hover:bg-orange-500/10 transition-colors"></div>
             <div className="flex justify-between items-start mb-4 relative z-10">
               <div className="w-10 h-10 rounded-xl bg-orange-500/10 flex items-center justify-center text-orange-500 border border-orange-500/20"><Zap className="w-5 h-5"/></div>
@@ -400,7 +411,7 @@ Thank you for choosing ClawLink Enterprise AI.
             )}
           </motion.div>
 
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="bg-[#1C1C1E] border border-white/5 p-6 rounded-[1.5rem] shadow-xl relative overflow-hidden group hover:border-white/10 transition-colors">
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25, delay: 0.5, ease: "easeOut" }} className="bg-[#111113] border border-white/5 p-6 rounded-[1.5rem] shadow-xl relative overflow-hidden group hover:border-white/10 transition-colors">
             <div className="absolute top-0 right-0 w-32 h-32 bg-green-500/5 rounded-full blur-3xl group-hover:bg-green-500/10 transition-colors"></div>
             <div className="flex justify-between items-start mb-4 relative z-10">
               <div className="w-10 h-10 rounded-xl bg-green-500/10 flex items-center justify-center text-green-500 border border-green-500/20"><Users className="w-5 h-5"/></div>
@@ -410,7 +421,7 @@ Thank you for choosing ClawLink Enterprise AI.
             <p className="text-xs text-green-400 mt-1 flex items-center gap-1 relative z-10"><ArrowUpRight className="w-3 h-3"/> Captured Automatically</p>
           </motion.div>
 
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }} className="bg-[#1C1C1E] border border-white/5 p-6 rounded-[1.5rem] shadow-xl relative overflow-hidden group hover:border-white/10 transition-colors">
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25, delay: 0.6, ease: "easeOut" }} className="bg-[#111113] border border-white/5 p-6 rounded-[1.5rem] shadow-xl relative overflow-hidden group hover:border-white/10 transition-colors">
             <div className="absolute top-0 right-0 w-32 h-32 bg-orange-500/5 rounded-full blur-3xl group-hover:bg-orange-500/10 transition-colors"></div>
             <div className="flex justify-between items-start mb-4 relative z-10">
               <div className="w-10 h-10 rounded-xl bg-orange-500/10 flex items-center justify-center text-orange-500 border border-orange-500/20"><MessageSquare className="w-5 h-5"/></div>
@@ -423,8 +434,8 @@ Thank you for choosing ClawLink Enterprise AI.
 
         {/* DATA ANALYTICS: CHARTS & ROUTING */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.5 }} className="lg:col-span-2 bg-[#1C1C1E] border border-white/5 p-6 md:p-8 rounded-[1.5rem] shadow-xl">
-            <h3 className="text-sm font-bold uppercase tracking-widest text-gray-400 mb-8">AI Traffic (Last 7 Days)</h3>
+          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.3, delay: 0.7, ease: "easeOut" }} className="lg:col-span-2 bg-[#111113] border border-white/5 p-6 md:p-8 rounded-[1.5rem] shadow-xl">
+            <h3 className="text-sm font-bold uppercase tracking-widest text-gray-500 mb-8">AI Traffic (Last 7 Days)</h3>
             <div className="h-[300px] w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={stats?.chartData || []} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
@@ -437,15 +448,15 @@ Thank you for choosing ClawLink Enterprise AI.
                   <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" vertical={false} />
                   <XAxis dataKey="name" stroke="#ffffff50" fontSize={10} tickLine={false} axisLine={false} />
                   <YAxis stroke="#ffffff50" fontSize={10} tickLine={false} axisLine={false} />
-                  <Tooltip contentStyle={{ backgroundColor: '#111', borderColor: '#ffffff20', borderRadius: '12px', fontSize: '12px', color: '#fff' }} itemStyle={{ color: '#f97316', fontWeight: 'bold' }} />
+                  <Tooltip contentStyle={{ backgroundColor: '#07070A', borderColor: '#ffffff20', borderRadius: '12px', fontSize: '12px', color: '#fff' }} itemStyle={{ color: '#f97316', fontWeight: 'bold' }} />
                   <Area type="monotone" dataKey="messages" stroke="#f97316" strokeWidth={3} fillOpacity={1} fill="url(#colorMsgs)" />
                 </AreaChart>
               </ResponsiveContainer>
             </div>
           </motion.div>
 
-          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.6 }} className="bg-[#1C1C1E] border border-white/5 p-6 md:p-8 rounded-[1.5rem] shadow-xl flex flex-col">
-            <h3 className="text-sm font-bold uppercase tracking-widest text-gray-400 mb-8">Platform Routing</h3>
+          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.3, delay: 0.8, ease: "easeOut" }} className="bg-[#111113] border border-white/5 p-6 md:p-8 rounded-[1.5rem] shadow-xl flex flex-col">
+            <h3 className="text-sm font-bold uppercase tracking-widest text-gray-500 mb-8">Platform Routing</h3>
             <div className="flex-1 flex flex-col justify-center gap-8">
               <div>
                 <div className="flex justify-between items-end mb-2">
@@ -475,10 +486,10 @@ Thank you for choosing ClawLink Enterprise AI.
         {/* AI SETTINGS (PROMPT & RAG) */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.7 }} className="bg-[#1C1C1E] border border-white/5 rounded-[1.5rem] p-8 shadow-2xl relative flex flex-col">
-            <h3 className="text-lg font-bold text-white mb-2 tracking-wide flex items-center gap-2">🤖 AI Persona Configuration</h3>
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.9, ease: "easeOut" }} className="bg-[#111113] border border-white/5 rounded-[1.5rem] p-8 shadow-2xl relative flex flex-col">
+            <h3 className="text-lg font-black text-white mb-2 tracking-wide flex items-center gap-2">🤖 AI Persona Configuration</h3>
             <p className="text-sm text-gray-400 mb-6">Define exactly how your AI agent should behave, speak, and respond to users.</p>
-            <textarea rows={6} value={systemPrompt} onChange={(e) => setSystemPrompt(e.target.value)} placeholder="e.g., You are a friendly customer support agent for ClawLink..." className="flex-1 w-full bg-black/50 border border-white/10 rounded-xl p-4 text-sm text-gray-200 focus:border-blue-500 focus:shadow-[0_0_15px_rgba(59,130,246,0.15)] focus:outline-none transition-all resize-none mb-6 font-mono custom-scrollbar" />
+            <textarea rows={6} value={systemPrompt} onChange={(e) => setSystemPrompt(e.target.value)} placeholder="e.g., You are a friendly customer support agent for ClawLink..." className="flex-1 w-full bg-[#07070A] border border-white/10 rounded-xl p-4 text-sm text-gray-200 focus:border-orange-500 focus:shadow-[0_0_15px_rgba(249,115,22,0.15)] focus:outline-none transition-all resize-none mb-6 font-mono custom-scrollbar" />
             <div className="flex justify-end mt-auto">
               <button onClick={handleSavePrompt} disabled={isSavingPrompt} className="bg-white text-black px-8 py-3.5 rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-gray-200 transition-transform hover:scale-[1.02] shadow-[0_0_20px_rgba(255,255,255,0.1)] disabled:opacity-50 disabled:scale-100">
                 {isSavingPrompt ? "Saving..." : <><Save className="w-4 h-4"/> Save Persona</>}
@@ -486,11 +497,11 @@ Thank you for choosing ClawLink Enterprise AI.
             </div>
           </motion.div>
 
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.8 }} className="bg-[#1C1C1E] border border-green-500/20 rounded-[1.5rem] p-8 shadow-[0_0_30px_rgba(34,197,94,0.05)] relative overflow-hidden flex flex-col">
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 1.0, ease: "easeOut" }} className="bg-[#111113] border border-green-500/20 rounded-[1.5rem] p-8 shadow-[0_0_30px_rgba(34,197,94,0.05)] relative overflow-hidden flex flex-col">
             <div className="absolute top-0 right-0 p-6 opacity-10 pointer-events-none"><BrainCircuit className="w-32 h-32 text-green-500" /></div>
-            <h3 className="text-lg font-bold text-green-400 mb-2 tracking-wide flex items-center gap-2 relative z-10">🧠 Custom Knowledge Base (RAG)</h3>
+            <h3 className="text-lg font-black text-green-400 mb-2 tracking-wide flex items-center gap-2 relative z-10">🧠 Custom Knowledge Base (RAG)</h3>
             <p className="text-sm text-gray-400 mb-6 relative z-10">Train your AI with your specific business data. Paste product details, FAQs, or policies below to convert them into vectors.</p>
-            <textarea rows={4} value={knowledgeText} onChange={(e) => setKnowledgeText(e.target.value)} placeholder="Paste your business information here..." className="w-full bg-black/50 border border-green-500/30 rounded-xl p-4 text-sm text-green-100 focus:border-green-400 focus:shadow-[0_0_15px_rgba(34,197,94,0.2)] focus:outline-none transition-all resize-none mb-4 font-mono placeholder:text-green-900/50 relative z-10 custom-scrollbar" />
+            <textarea rows={4} value={knowledgeText} onChange={(e) => setKnowledgeText(e.target.value)} placeholder="Paste your business information here..." className="w-full bg-[#07070A] border border-green-500/30 rounded-xl p-4 text-sm text-green-100 focus:border-green-400 focus:shadow-[0_0_15px_rgba(34,197,94,0.2)] focus:outline-none transition-all resize-none mb-4 font-mono placeholder:text-green-900/50 relative z-10 custom-scrollbar" />
             <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6 relative z-10">
               <p className="text-[10px] text-gray-500 font-mono flex items-center gap-1"><Database className="w-3 h-3"/> Encrypted in Vector DB</p>
               <button onClick={handleInjectKnowledge} disabled={isInjecting || !knowledgeText.trim()} className="bg-green-500 text-black px-6 py-3 rounded-xl text-xs font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-green-400 transition-transform hover:scale-[1.02] shadow-[0_0_20px_rgba(34,197,94,0.2)] disabled:opacity-50 disabled:scale-100">
@@ -502,7 +513,7 @@ Thank you for choosing ClawLink Enterprise AI.
                 <h4 className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-3">Active Memory Blocks</h4>
                 <div className="space-y-2 max-h-[140px] overflow-y-auto custom-scrollbar pr-2">
                   {knowledgeItems.map((item, idx) => (
-                    <div key={item.id} className="bg-black/40 border border-white/5 p-3 rounded-lg flex items-start gap-3 hover:border-green-500/30 transition-colors">
+                    <div key={item.id} className="bg-[#07070A]/80 border border-white/5 p-3 rounded-lg flex items-start gap-3 hover:border-green-500/30 transition-colors">
                       <span className="text-green-500 text-xs mt-0.5 font-mono">[{idx + 1}]</span>
                       <p className="text-xs text-gray-300 font-mono line-clamp-2 leading-relaxed">{item.content}</p>
                     </div>
@@ -515,22 +526,22 @@ Thank you for choosing ClawLink Enterprise AI.
         </div>
 
         {/* BILLING & INVOICES */}
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.9 }} className="bg-[#1C1C1E] border border-white/5 rounded-[1.5rem] overflow-hidden shadow-2xl">
-          <div className="p-6 md:p-8 border-b border-white/5 flex items-center justify-between bg-[#1A1A1A]">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 1.1, ease: "easeOut" }} className="bg-[#111113] border border-white/5 rounded-[1.5rem] overflow-hidden shadow-2xl">
+          <div className="p-6 md:p-8 border-b border-white/5 flex items-center justify-between bg-[#0A0A0C]">
             <div className="flex items-center gap-3">
               <Receipt className="w-5 h-5 text-white" />
-              <h3 className="text-lg font-serif text-white tracking-wide">Billing & Invoices</h3>
+              <h3 className="text-lg font-black text-white tracking-wide">Billing & Invoices</h3>
             </div>
           </div>
           {billingHistory.length === 0 ? (
-            <div className="text-center p-12 bg-black/20">
+            <div className="text-center p-12 bg-[#0A0A0C]/50">
               <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center mx-auto mb-4"><Receipt className="w-5 h-5 text-gray-500"/></div>
               <p className="text-gray-400 text-sm font-medium">No past payments found. Deploy an agent to generate an invoice.</p>
             </div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-left text-sm text-gray-300">
-                <thead className="bg-[#111] text-[10px] uppercase font-bold text-gray-500 tracking-widest border-b border-white/5">
+                <thead className="bg-[#0A0A0C] text-[10px] uppercase font-bold text-gray-500 tracking-widest border-b border-white/5">
                   <tr>
                     <th className="p-5 pl-8">Order Date</th>
                     <th className="p-5">Plan Name</th>

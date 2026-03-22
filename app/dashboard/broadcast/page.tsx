@@ -16,14 +16,34 @@ export default function BroadcastEngine() {
   const [isSending, setIsSending] = useState(false);
   const [channel, setChannel] = useState("whatsapp");
   const [isLoading, setIsLoading] = useState(true);
+  
+  // 🚀 NEW: Store active channel status from DB
+  const [activeChannels, setActiveChannels] = useState({ whatsapp: false, telegram: false });
 
   useEffect(() => {
     if (status === "unauthenticated") router.push("/");
     if (status === "authenticated" && session?.user?.email) {
+      
+      // Fetch Broadcast Stats
       fetch(`/api/broadcast?email=${session.user.email}`)
         .then(res => res.json())
         .then(data => {
           if (data.success) setAudienceCount(data.audienceCount);
+        });
+
+      // 🚀 NEW: Fetch User Config to see which channel is actually connected
+      fetch(`/api/user?email=${session.user.email}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.success && data.data) {
+            const hasWa = data.data.whatsappActive || !!data.data.whatsapp_token;
+            const hasTg = data.data.telegramActive || !!data.data.telegram_token;
+            setActiveChannels({ whatsapp: hasWa, telegram: hasTg });
+            
+            // Set default selected channel to the one they actually have
+            if (hasTg && !hasWa) setChannel("telegram");
+            else if (hasWa && !hasTg) setChannel("whatsapp");
+          }
           setIsLoading(false);
         })
         .catch(() => setIsLoading(false));
@@ -88,18 +108,31 @@ export default function BroadcastEngine() {
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-lg font-bold tracking-widest uppercase text-gray-300">Compose Message</h2>
                 <div className="flex gap-2 bg-black/50 p-1 rounded-xl border border-white/5">
-                  <button 
-                    onClick={() => setChannel("whatsapp")}
-                    className={`px-4 py-2 rounded-lg text-xs font-bold uppercase transition-all ${channel === 'whatsapp' ? 'bg-green-500 text-black' : 'text-gray-500 hover:text-white'}`}
-                  >
-                    WhatsApp
-                  </button>
-                  <button 
-                    onClick={() => setChannel("telegram")}
-                    className={`px-4 py-2 rounded-lg text-xs font-bold uppercase transition-all ${channel === 'telegram' ? 'bg-blue-500 text-white' : 'text-gray-500 hover:text-white'}`}
-                  >
-                    Telegram
-                  </button>
+                  
+                  {/* 🚀 Show WhatsApp ONLY if connected in DB */}
+                  {activeChannels.whatsapp && (
+                    <button 
+                      onClick={() => setChannel("whatsapp")}
+                      className={`px-4 py-2 rounded-lg text-xs font-bold uppercase transition-all ${channel === 'whatsapp' ? 'bg-green-500 text-black' : 'text-gray-500 hover:text-white'}`}
+                    >
+                      WhatsApp
+                    </button>
+                  )}
+
+                  {/* 🚀 Show Telegram ONLY if connected in DB */}
+                  {activeChannels.telegram && (
+                    <button 
+                      onClick={() => setChannel("telegram")}
+                      className={`px-4 py-2 rounded-lg text-xs font-bold uppercase transition-all ${channel === 'telegram' ? 'bg-blue-500 text-white' : 'text-gray-500 hover:text-white'}`}
+                    >
+                      Telegram
+                    </button>
+                  )}
+
+                  {/* Fallback if no channels connected */}
+                  {!activeChannels.whatsapp && !activeChannels.telegram && (
+                    <span className="text-[10px] text-red-400 px-3 py-2 uppercase font-bold tracking-widest">No Channels Connected</span>
+                  )}
                 </div>
               </div>
 
@@ -120,7 +153,7 @@ export default function BroadcastEngine() {
 
               <button 
                 onClick={handleBroadcast}
-                disabled={isSending || !message.trim() || audienceCount === 0}
+                disabled={isSending || !message.trim() || audienceCount === 0 || (!activeChannels.whatsapp && !activeChannels.telegram)}
                 className="w-full bg-gradient-to-r from-pink-500 to-orange-500 hover:from-pink-400 hover:to-orange-400 text-white font-black py-4 rounded-xl uppercase tracking-widest flex items-center justify-center gap-3 shadow-[0_0_30px_rgba(236,72,153,0.3)] transition-transform hover:scale-[1.02] disabled:opacity-50 disabled:scale-100"
               >
                 {isSending ? (
