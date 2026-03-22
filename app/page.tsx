@@ -26,27 +26,17 @@ const Claude_Icon  = () => <Image src="/logos/claude.svg"  alt="Claude"  width={
 const Gemini_Icon  = () => <Image src="/logos/gemini.svg"  alt="Gemini"  width={26} height={26} className="transform-gpu" />;
 
 const Llama_Icon = () => (
-  <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor"
-    strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-800 transform-gpu">
-    <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/>
-    <line x1="4" y1="22" x2="4" y2="15"/>
+  <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-800 transform-gpu">
+    <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/>
   </svg>
 );
 
 const Omni_Icon = () => (
-  <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#00BFFF"
-    strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+  <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#00BFFF" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
     <path d="M12 4.5C10 4.5 8 5.5 7.5 7.5 6 7.5 4.5 8.5 4.5 10.5 4 11.5 4 13 5 14 4.5 15.5 5.5 17 7 17.5 7.5 19 9 20 10.5 20H12"/>
     <path d="M12 4.5C14 4.5 16 5.5 16.5 7.5 18 7.5 19.5 8.5 19.5 10.5 20 11.5 20 13 19 14 19.5 15.5 18.5 17 17 17.5 16.5 19 15 20 13.5 20H12"/>
-    <line x1="12" y1="4.5" x2="12" y2="20"/>
-    <circle cx="8.5" cy="10.5" r="1" fill="#00BFFF" stroke="none"/>
-    <circle cx="15.5" cy="10.5" r="1" fill="#00BFFF" stroke="none"/>
-    <circle cx="7.5" cy="14.5" r="1" fill="#00BFFF" stroke="none"/>
-    <circle cx="16.5" cy="14.5" r="1" fill="#00BFFF" stroke="none"/>
-    <line x1="8.5" y1="10.5" x2="12" y2="12.5" strokeWidth="1" strokeOpacity=".5"/>
-    <line x1="15.5" y1="10.5" x2="12" y2="12.5" strokeWidth="1" strokeOpacity=".5"/>
-    <line x1="7.5" y1="14.5" x2="12" y2="12.5" strokeWidth="1" strokeOpacity=".5"/>
-    <line x1="16.5" y1="14.5" x2="12" y2="12.5" strokeWidth="1" strokeOpacity=".5"/>
+    <line x1="12" y1="4.5" x2="12" y2="20"/><circle cx="8.5" cy="10.5" r="1" fill="#00BFFF" stroke="none"/><circle cx="15.5" cy="10.5" r="1" fill="#00BFFF" stroke="none"/><circle cx="7.5" cy="14.5" r="1" fill="#00BFFF" stroke="none"/><circle cx="16.5" cy="14.5" r="1" fill="#00BFFF" stroke="none"/>
+    <line x1="8.5" y1="10.5" x2="12" y2="12.5" strokeWidth="1" strokeOpacity=".5"/><line x1="15.5" y1="10.5" x2="12" y2="12.5" strokeWidth="1" strokeOpacity=".5"/><line x1="7.5" y1="14.5" x2="12" y2="12.5" strokeWidth="1" strokeOpacity=".5"/><line x1="16.5" y1="14.5" x2="12" y2="12.5" strokeWidth="1" strokeOpacity=".5"/>
   </svg>
 );
 
@@ -65,17 +55,11 @@ const WhatsApp_Icon = ({ size = 26 }: { size?: number }) => (
 );
 
 const Discord_Icon = () => (
-  <svg viewBox="0 0 24 24" width="22" height="22" fill="#5865F2" className="transform-gpu">
-    <path d="M20.3 5.4c-1.6-.7-3.4-1.2-5.2-1.5-.2.4-.4.9-.6 1.3-1.9-.3-3.8-.3-5.7 0-.2-.4-.4-.9-.6-1.3-1.8.3-3.6.8-5.2 1.5-3.3 4.9-4.2 9.7-3.3 14.4 2.2 1.6 4.3 2.6 6.4 3.2.5-.7 1-1.5 1.4-2.3-1.2-.5-2.4-1.1-3.5-1.8.3-.2.6-.4.9-.7 4.6 2.1 9.7 2.1 14.3 0 .3.2.6.5.9.7-1.1.7-2.3 1.3-3.5 1.8.4.8.9 1.6 1.4 2.3 2.1-.6 4.2-1.6 6.4-3.2 1-5.1.1-10-3.2-14.4z"/>
-  </svg>
+  <svg viewBox="0 0 24 24" width="22" height="22" fill="#5865F2" className="transform-gpu"><path d="M20.3 5.4c-1.6-.7-3.4-1.2-5.2-1.5-.2.4-.4.9-.6 1.3-1.9-.3-3.8-.3-5.7 0-.2-.4-.4-.9-.6-1.3-1.8.3-3.6.8-5.2 1.5-3.3 4.9-4.2 9.7-3.3 14.4 2.2 1.6 4.3 2.6 6.4 3.2.5-.7 1-1.5 1.4-2.3-1.2-.5-2.4-1.1-3.5-1.8.3-.2.6-.4.9-.7 4.6 2.1 9.7 2.1 14.3 0 .3.2.6.5.9.7-1.1.7-2.3 1.3-3.5 1.8.4.8.9 1.6 1.4 2.3 2.1-.6 4.2-1.6 6.4-3.2 1-5.1.1-10-3.2-14.4z"/></svg>
 );
 
 const Instagram_Icon = () => (
-  <div className="w-[22px] h-[22px] rounded-lg bg-gradient-to-tr from-[#f09433] via-[#e6683c] to-[#bc1888] flex items-center justify-center">
-    <div className="w-[14px] h-[14px] border-[2px] border-white rounded-[4px] flex items-center justify-center">
-      <div className="w-[5px] h-[5px] bg-white rounded-full"/>
-    </div>
-  </div>
+  <div className="w-[22px] h-[22px] rounded-lg bg-gradient-to-tr from-[#f09433] via-[#e6683c] to-[#bc1888] flex items-center justify-center"><div className="w-[14px] h-[14px] border-[2px] border-white rounded-[4px] flex items-center justify-center"><div className="w-[5px] h-[5px] bg-white rounded-full"/></div></div>
 );
 
 const Google_Icon = () => (
@@ -87,49 +71,30 @@ const Google_Icon = () => (
   </svg>
 );
 
-/* ─── Chat atoms — ORIGINAL UNTOUCHED ───────────────────────── */
+/* ─── Chat atoms ───────────────────────── */
 const ChatBubble = ({ text, delay, isUser }: { text: string; delay: number; isUser?: boolean }) => (
-  <motion.div
-    initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
-    transition={{ delay, duration: 0.18, ease: "easeOut" }}
+  <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay, duration: 0.12, ease: "easeOut" }}
     className={`p-3 rounded-2xl max-w-[85%] text-[11px] shadow-md leading-relaxed transform-gpu
-      ${isUser
-        ? "bg-[#2AABEE] text-white self-end rounded-tr-sm"
-        : "bg-[#1A1A1A] border border-white/5 text-gray-200 self-start rounded-tl-sm"}`}
+      ${isUser ? "bg-[#2AABEE] text-white self-end rounded-tr-sm" : "bg-[#1A1A1A] border border-white/5 text-gray-200 self-start rounded-tl-sm"}`}
   >{text}</motion.div>
 );
 
 const GuideStep = ({ step, title, desc, delay }: { step: string; title: string; desc: string; delay: number }) => (
-  <motion.div
-    initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }}
-    transition={{ delay, duration: 0.18, ease: "easeOut" }}
+  <motion.div initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} transition={{ delay, duration: 0.12, ease: "easeOut" }}
     className="flex gap-3 bg-[#1A1A1A] border border-white/5 p-3 rounded-xl shadow-md w-[90%] self-center mx-auto items-start transform-gpu"
   >
     <div className="w-5 h-5 rounded-full bg-[#25D366]/20 text-[#25D366] flex items-center justify-center font-bold text-[10px] shrink-0 mt-0.5">{step}</div>
-    <div className="flex flex-col">
-      <span className="text-white font-bold mb-1 text-[11px]">{title}</span>
-      <span className="text-gray-400 text-[9px] leading-relaxed">{desc}</span>
-    </div>
+    <div className="flex flex-col"><span className="text-white font-bold mb-1 text-[11px]">{title}</span><span className="text-gray-400 text-[9px] leading-relaxed">{desc}</span></div>
   </motion.div>
 );
 
-/* ─── Marquee — FIXED INFINITE SCROLL ──────────────────────────── */
+/* ─── Marquee ──────────────────────────── */
 const MarqueeRow = ({ items, reverse = false }: { items: string[]; reverse?: boolean }) => (
   <div className="flex whitespace-nowrap overflow-hidden py-2.5 w-full">
-    <motion.div
-      className="flex gap-5 will-change-transform w-max"
-      style={{ transform: "translateZ(0)" }}
-      animate={{ x: reverse ? ["-50%", "0%"] : ["0%", "-50%"] }}
-      transition={{ ease: "linear", duration: 45, repeat: Infinity }}
-    >
+    <motion.div className="flex gap-5 w-max will-change-transform" style={{ transform: "translateZ(0)" }} animate={{ x: reverse ? ["-50%", "0%"] : ["0%", "-50%"] }} transition={{ ease: "linear", duration: 45, repeat: Infinity }}>
       {[...items, ...items, ...items, ...items].map((item, i) => (
-        <span key={i}
-          className="inline-flex items-center gap-2.5 text-[12px] text-gray-300 font-medium
-            bg-white/[0.04] px-5 py-2.5 rounded-full border border-white/[0.08]
-            whitespace-nowrap hover:border-orange-500/50 hover:text-white hover:bg-white/[0.08]
-            transition-colors duration-200">
-          <span className="w-1.5 h-1.5 rounded-full bg-orange-500/80 shrink-0"/>
-          {item}
+        <span key={i} className="inline-flex items-center gap-2.5 text-[12px] text-gray-300 font-medium bg-white/[0.04] px-5 py-2.5 rounded-full border border-white/[0.08] whitespace-nowrap hover:border-orange-500/50 hover:text-white hover:bg-white/[0.08] transition-colors duration-200">
+          <span className="w-1.5 h-1.5 rounded-full bg-orange-500/80 shrink-0"/>{item}
         </span>
       ))}
     </motion.div>
@@ -145,7 +110,7 @@ export default function Home() {
   const [isTelegramModalOpen, setIsTelegramModalOpen] = useState(false);
   const [telegramToken,       setTelegramToken]       = useState("");
   const [waPhoneId,           setWaPhoneId]           = useState("");
-  const [waPhoneNumber,       setWaPhoneNumber]       = useState(""); // 🚀 NEW: State for phone number
+  const [waPhoneNumber,       setWaPhoneNumber]       = useState(""); // 🚀 Used for Direct WhatsApp App Redirect
   const [isTokenSaved,        setIsTokenSaved]        = useState(false);
   const [isVerifying,         setIsVerifying]         = useState(false);
   const [showPricingPopup,    setShowPricingPopup]    = useState(false);
@@ -177,42 +142,41 @@ export default function Home() {
       if (tz === "Asia/Calcutta" || tz === "Asia/Kolkata") { setCurrency("INR"); setCurrencySymbol("₹"); }
     } catch {}
 
+    // ULTRA FAST OBSERVERS
     const io = new IntersectionObserver((entries) => {
-      entries.forEach((e) => {
-        if (e.isIntersecting) e.target.classList.add('sr-vis');
-      });
-    }, { threshold: 0.08, rootMargin: '0px 0px -30px 0px' });
+      entries.forEach((e) => { if (e.isIntersecting) e.target.classList.add('sr-vis'); });
+    }, { threshold: 0.05, rootMargin: '0px 0px -20px 0px' });
 
     setTimeout(() => {
       document.querySelectorAll('.sr-up, .sr-left, .sr-rght').forEach((el) => io.observe(el));
-
       const fio = new IntersectionObserver((entries) => {
         entries.forEach((e) => {
           if (e.isIntersecting) {
             const cards = e.target.querySelectorAll('.fi-card');
             cards.forEach((c: any, i: number) => {
-              c.style.transition = 'opacity .4s ' + (0.02 + i * 0.05) + 's cubic-bezier(.16,1,.3,1), transform .4s ' + (0.02 + i * 0.05) + 's cubic-bezier(.16,1,.3,1), background .15s';
+              // 🚀 Ultra Fast Stagger Reveal
+              c.style.transition = 'opacity .25s ' + (0.02 + i * 0.05) + 's cubic-bezier(.16,1,.3,1), transform .25s ' + (0.02 + i * 0.05) + 's cubic-bezier(.16,1,.3,1)';
               c.style.opacity = '1';
               c.style.transform = 'none';
             });
             fio.unobserve(e.target);
           }
         });
-      }, { threshold: 0.05 });
+      }, { threshold: 0.02 });
 
       document.querySelectorAll('.fi-card').forEach((el: any) => {
         el.style.opacity = '0';
-        el.style.transform = 'translateY(18px)';
+        el.style.transform = 'translateY(12px)';
       });
 
       document.querySelectorAll('section, div[class*="sec"]').forEach((g) => {
         if (g.querySelector('.fi-card')) fio.observe(g);
       });
-    }, 100);
+    }, 50);
 
     const handleScroll = () => {
       const nav = document.getElementById('clnav');
-      if (nav) nav.style.background = window.scrollY > 40 ? 'rgba(7,7,10,0.96)' : 'rgba(7,7,10,0.72)';
+      if (nav) nav.style.background = window.scrollY > 30 ? 'rgba(7,7,10,0.92)' : 'rgba(7,7,10,0.4)';
     };
     window.addEventListener('scroll', handleScroll, { passive: true });
 
@@ -295,7 +259,7 @@ export default function Home() {
                 selectedChannel: activeChannel, 
                 telegramToken, 
                 waPhoneId, 
-                waPhoneNumber, // 🚀 NEW: Passed to Backend for smart redirect
+                waPhoneNumber, // Passed to Backend
                 plan: selectedTier,
                 billingCycle: selectedTier === "yearly" ? "Yearly" : "Monthly" 
               }),
@@ -313,12 +277,20 @@ export default function Home() {
     } catch { alert("Gateway init failed."); setIsDeploying(false); }
   };
 
-  // 🚀 FIXED: ULTRA SMART REDIRECT LOGIC FOR WHATSAPP/TELEGRAM
+  // 🚀 ULTRA SMART WHATSAPP APP REDIRECT
   const openLiveBotHandler = () => {
-    if (activeChannel === "whatsapp" && waPhoneNumber) {
-      window.open(`https://wa.me/${waPhoneNumber.replace(/\D/g, '')}`, "_blank");
+    if (activeChannel === "whatsapp") {
+      // 100% Hacker-Proof: Uses native wa.me redirect for mobile/desktop apps
+      if (waPhoneNumber) {
+        window.open(`https://wa.me/${waPhoneNumber.replace(/\D/g, '')}`, "_blank");
+      } else if (botLink && botLink.includes('wa.me')) {
+        window.open(botLink, "_blank");
+      } else {
+        window.open("https://web.whatsapp.com", "_blank"); 
+      }
     } else { 
-      window.open(botLink || "https://web.telegram.org", "_blank"); 
+      // Telegram auto-opens native app via t.me
+      window.open(botLink || "https://t.me/BotFather", "_blank"); 
     }
   };
   
@@ -332,11 +304,12 @@ export default function Home() {
 
   if (!isMounted) return null;
 
-  const btn = "transition-all duration-150 ease-out active:scale-[0.96] transform-gpu";
+  // 🚀 ULTRA FAST BTN CLASS (Squish Tap & Instant Response)
+  const btn = "transition-all duration-[120ms] ease-out active:scale-[0.93] transform-gpu will-change-transform";
 
   const pillBase = [
     "bg-white border-2 border-transparent cursor-pointer overflow-hidden",
-    "transition-all duration-150 ease-out active:scale-[0.96]",
+    btn,
     "h-[48px] rounded-[12px] flex flex-row items-center gap-2 px-3",
     "shadow-[0_2px_8px_rgba(0,0,0,0.12)]",
     "hover:shadow-[0_8px_20px_rgba(0,0,0,0.22)] hover:-translate-y-[2px]",
@@ -358,19 +331,19 @@ export default function Home() {
         @keyframes bpulse{0%,100%{opacity:1}50%{opacity:.18}}
         .bpulse{animation:bpulse 1.8s ease-in-out infinite}
 
+        /* 🚀 ULTRA FAST ENTRANCE ANIMATIONS */
         @keyframes hsd{from{opacity:0;transform:translateY(-14px)}to{opacity:1;transform:translateY(0)}}
-        @keyframes hsu{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
-        .anim-badge{animation:hsd .8s cubic-bezier(.16,1,.3,1) both}
-        .anim-h1   {animation:hsu .8s .1s cubic-bezier(.16,1,.3,1) both}
-        .anim-sub  {animation:hsu .8s .18s cubic-bezier(.16,1,.3,1) both}
-        .anim-card {animation:hsu .8s .26s cubic-bezier(.16,1,.3,1) both}
-        .anim-stats{animation:hsu .8s .38s cubic-bezier(.16,1,.3,1) both}
+        @keyframes hsu{from{opacity:0;transform:translateY(20px);filter:blur(8px)}to{opacity:1;transform:translateY(0);filter:blur(0)}}
+        .anim-badge{animation:hsd .35s cubic-bezier(.16,1,.3,1) both}
+        .anim-h1   {animation:hsu .35s .05s cubic-bezier(.16,1,.3,1) both}
+        .anim-sub  {animation:hsu .35s .1s cubic-bezier(.16,1,.3,1) both}
+        .anim-card {animation:hsu .35s .15s cubic-bezier(.16,1,.3,1) both}
+        .anim-stats{animation:hsu .35s .2s cubic-bezier(.16,1,.3,1) both}
 
-        .sr-up  {opacity:0;transform:translateY(32px);transition:opacity .5s cubic-bezier(.16,1,.3,1),transform .5s cubic-bezier(.16,1,.3,1)}
-        .sr-left{opacity:0;transform:translateX(-28px);transition:opacity .5s cubic-bezier(.16,1,.3,1),transform .5s cubic-bezier(.16,1,.3,1)}
-        .sr-rght{opacity:0;transform:translateX(28px);transition:opacity .5s cubic-bezier(.16,1,.3,1),transform .5s cubic-bezier(.16,1,.3,1)}
+        .sr-up  {opacity:0;transform:translateY(20px);transition:opacity .35s cubic-bezier(.16,1,.3,1),transform .35s cubic-bezier(.16,1,.3,1)}
+        .sr-left{opacity:0;transform:translateX(-20px);transition:opacity .35s cubic-bezier(.16,1,.3,1),transform .35s cubic-bezier(.16,1,.3,1)}
+        .sr-rght{opacity:0;transform:translateX(20px);transition:opacity .35s cubic-bezier(.16,1,.3,1),transform .35s cubic-bezier(.16,1,.3,1)}
         .sr-vis {opacity:1!important;transform:none!important}
-        .sd1{transition-delay:.05s}.sd2{transition-delay:.10s}.sd3{transition-delay:.15s}.sd4{transition-delay:.20s}
 
         .card-shimmer::before{content:'';position:absolute;top:0;left:15%;right:15%;height:1px;
           background:linear-gradient(90deg,transparent,rgba(249,115,22,.55),transparent)}
@@ -378,8 +351,8 @@ export default function Home() {
         .fi-card{position:relative;overflow:hidden}
         .fi-card::after{content:'';position:absolute;top:0;left:0;right:0;height:2px;
           background:linear-gradient(90deg,transparent,rgba(249,115,22,0),transparent);
-          transition:background .2s}
-        .fi-card:hover::after{background:linear-gradient(90deg,transparent,rgba(249,115,22,.65) 50%,transparent)}
+          transition:background .15s}
+        .fi-card:hover::after{background:linear-gradient(90deg,transparent,rgba(249,115,22,.85) 50%,transparent)}
 
         .ptx-name{font-size:11px;font-weight:900;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
         .ptx-sub {font-size:7.5px;font-weight:700;opacity:.8;white-space:nowrap}
@@ -406,12 +379,12 @@ export default function Home() {
 
       {/* ══ NAV ══ */}
       <nav id="clnav"
-        className="fixed top-0 left-0 right-0 z-[100] h-[56px] flex items-center justify-between px-4 md:px-10"
-        style={{backdropFilter:"blur(28px)",WebkitBackdropFilter:"blur(28px)",
-                background:"rgba(7,7,10,0.72)",borderBottom:"1px solid rgba(255,255,255,0.055)"}}>
+        className="fixed top-0 left-0 right-0 z-[100] h-[56px] flex items-center justify-between px-4 md:px-10 transition-colors duration-200"
+        style={{backdropFilter:"blur(12px)",WebkitBackdropFilter:"blur(12px)",
+                background:"rgba(7,7,10,0.4)",borderBottom:"1px solid rgba(255,255,255,0.055)"}}>
 
-        {/* 🚀 FIXED: UNIVERSAL CLAWLINK SVG LOGO */}
-        <svg width="130" height="22" viewBox="0 0 152 26" fill="none" className="shrink-0 cursor-pointer" onClick={() => router.push("/")}>
+        {/* 🚀 FIXED: CLEAN CLAWLINK.COM LOGO (No blue!) */}
+        <svg width="130" height="22" viewBox="0 0 152 26" fill="none" className="shrink-0 cursor-pointer transition-transform hover:scale-105" onClick={() => router.push("/")}>
           <defs>
             <linearGradient id="cg" x1="0" y1="0" x2="0" y2="26" gradientUnits="userSpaceOnUse">
               <stop stopColor="#fff"/><stop offset="1" stopColor="rgba(255,255,255,.65)"/>
@@ -448,16 +421,14 @@ export default function Home() {
       {/* ══ HERO ══ */}
       <section id="hero" className="relative z-10 min-h-screen flex flex-col items-center justify-center pt-20 pb-16 px-4 text-center">
 
-        <div className="anim-badge inline-flex items-center gap-2 mb-6 px-5 py-2 rounded-full text-[10px] font-bold tracking-[.1em] text-orange-400"
+        <div className="anim-badge inline-flex items-center gap-2 mb-6 px-5 py-2 rounded-full text-[10px] font-bold tracking-[.1em] text-orange-400 shadow-[0_0_15px_rgba(249,115,22,0.2)]"
           style={{background:"rgba(249,115,22,0.09)",border:"1px solid rgba(249,115,22,0.26)"}}>
           <span className="w-1.5 h-1.5 rounded-full bg-orange-400 bpulse"/>
           LIVE NOW &nbsp;·&nbsp; 30-SECOND DEPLOY
         </div>
 
         <h1 className="anim-h1 text-[clamp(2.4rem,6.5vw,5rem)] font-black leading-[1.03] tracking-[-0.04em] mb-4 text-white">
-          Deploy{" "}
-          <span className="grad-text">OpenClaw</span><br/>
-          Under 30 Seconds
+          Deploy <span className="grad-text">OpenClaw</span><br/>Under 30 Seconds
         </h1>
 
         <p className="anim-sub text-gray-300 text-[15px] max-w-[460px] mb-8 leading-[1.8]">
@@ -535,17 +506,17 @@ export default function Home() {
 
           <AnimatePresence mode="wait">
             {botLink ? (
-              <motion.div key="success" initial={{opacity:0,y:8}} animate={{opacity:1,y:0}} exit={{opacity:0}} transition={{duration:.18}}
+              <motion.div key="success" initial={{opacity:0,scale:0.95}} animate={{opacity:1,scale:1}} exit={{opacity:0}} transition={{duration:.12,ease:"easeOut"}}
                 className="rounded-2xl p-5 text-center"
                 style={{background:"rgba(34,197,94,0.06)",border:"1px solid rgba(34,197,94,0.2)"}}>
                 <p className="text-[15px] font-bold text-white mb-4">🚀 Your Bot is Live!</p>
                 <div className="flex flex-col sm:flex-row justify-center gap-3">
                   <button onClick={openLiveBotHandler}
-                    className={`bg-white text-black font-black uppercase tracking-widest px-7 py-3.5 rounded-xl text-sm ${btn} hover:scale-[1.02] shadow-[0_0_20px_rgba(255,255,255,0.2)]`}>
+                    className={`bg-white text-black font-black uppercase tracking-widest px-7 py-3.5 rounded-xl text-sm ${btn} hover:scale-[1.03] shadow-[0_0_20px_rgba(255,255,255,0.2)]`}>
                     Open Live Bot
                   </button>
                   <button onClick={()=>router.push("/dashboard")}
-                    className={`flex items-center justify-center gap-2 text-white font-bold px-7 py-3.5 rounded-xl text-sm ${btn} hover:scale-[1.02]`}
+                    className={`flex items-center justify-center gap-2 text-white font-bold px-7 py-3.5 rounded-xl text-sm ${btn} hover:scale-[1.03]`}
                     style={{background:"rgba(255,255,255,0.06)",border:"1px solid rgba(255,255,255,0.12)"}}>
                     <Activity className="w-4 h-4"/> Live Dashboard
                   </button>
@@ -553,9 +524,9 @@ export default function Home() {
               </motion.div>
 
             ) : status === "unauthenticated" ? (
-              <motion.div key="login" initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} transition={{duration:.18}}>
+              <motion.div key="login" initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} transition={{duration:.12}}>
                 <button onClick={()=>signIn("google")}
-                  className={`w-full bg-white text-gray-800 py-4 rounded-[1.75rem] flex items-center justify-center gap-3 text-[17px] font-bold shadow-[0_0_32px_rgba(255,255,255,0.15)] ${btn} hover:scale-[1.02]`}>
+                  className={`w-full bg-white text-gray-800 py-4 rounded-[1.75rem] flex items-center justify-center gap-3 text-[17px] font-bold shadow-[0_0_32px_rgba(255,255,255,0.15)] ${btn} hover:scale-[1.03]`}>
                   <Google_Icon/> Login via Google & Deploy
                 </button>
                 <p className="mt-4 text-[13px] text-gray-400 text-center leading-relaxed">
@@ -565,7 +536,7 @@ export default function Home() {
               </motion.div>
 
             ) : (
-              <motion.div key="action" initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} transition={{duration:.18}} className="flex flex-col gap-3">
+              <motion.div key="action" initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} transition={{duration:.12}} className="flex flex-col gap-3">
                 <div className="flex items-center justify-between px-4 py-3 rounded-2xl"
                   style={{background:"rgba(0,0,0,0.45)",border:"1px solid rgba(255,255,255,0.07)"}}>
                   <div className="flex items-center gap-3 min-w-0">
@@ -584,12 +555,12 @@ export default function Home() {
 
                 {!isTokenSaved ? (
                   <button onClick={()=>handleOpenIntegration(activeChannel)}
-                    className={`w-full bg-white text-black font-black py-4 rounded-2xl text-[14px] uppercase tracking-widest shadow-[0_0_32px_rgba(255,255,255,0.15)] ${btn} hover:scale-[1.02]`}>
+                    className={`w-full bg-white text-black font-black py-4 rounded-2xl text-[14px] uppercase tracking-widest shadow-[0_0_32px_rgba(255,255,255,0.15)] ${btn} hover:scale-[1.03]`}>
                     Connect {activeChannel === "telegram" ? "Telegram" : activeChannel === "whatsapp" ? "WhatsApp" : activeChannel} →
                   </button>
                 ) : (
                   <button onClick={()=>handleOpenPricing(activeChannel)}
-                    className={`w-full font-black py-4 rounded-2xl text-[14px] uppercase tracking-widest flex items-center justify-center gap-2 ${btn} hover:scale-[1.02] bg-gradient-to-r from-blue-600 to-purple-600 text-white blue-glow`}>
+                    className={`w-full font-black py-4 rounded-2xl text-[14px] uppercase tracking-widest flex items-center justify-center gap-2 ${btn} hover:scale-[1.03] bg-gradient-to-r from-blue-600 to-purple-600 text-white blue-glow`}>
                     <Zap className="w-5 h-5"/> Deploy Your AI Agent Now
                   </button>
                 )}
@@ -600,7 +571,7 @@ export default function Home() {
 
         <div className="anim-stats grid grid-cols-3 w-full max-w-[580px] border border-white/[0.07] rounded-[18px] overflow-hidden">
           {[["30s","Deploy time"],["5+","AI models"],["24/7","Always active"]].map(([n,l])=>(
-            <div key={n} className="flex flex-col items-center py-5 px-2 transition-colors duration-200 hover:bg-white/[0.04]"
+            <div key={n} className="flex flex-col items-center py-5 px-2 transition-colors duration-150 hover:bg-white/[0.04]"
               style={{background:"rgba(255,255,255,0.022)",borderRight:"1px solid rgba(255,255,255,0.06)"}}>
               <span className="text-[1.9rem] font-black leading-none grad-text">{n}</span>
               <span className="text-[10px] text-gray-400 mt-1 text-center leading-snug">{l}</span>
@@ -629,7 +600,7 @@ export default function Home() {
             ].map(({n,e,t,d},i)=>(
               <div key={n} className={`sr-up sd${i+1} flex flex-col items-center text-center px-3 relative z-10`}>
                 <div className="w-[60px] h-[60px] rounded-full flex items-center justify-center font-black text-[18px] text-orange-500 mb-4 z-10"
-                  style={{background:"#07070A",border:"1.5px solid rgba(249,115,22,0.22)",transition:"all .3s"}}
+                  style={{background:"#07070A",border:"1.5px solid rgba(249,115,22,0.22)",transition:"all .2s"}}
                   onMouseEnter={e2=>{(e2.target as HTMLElement).style.background="rgba(249,115,22,0.08)";(e2.target as HTMLElement).style.boxShadow="0 0 28px rgba(249,115,22,0.2)"}}
                   onMouseLeave={e2=>{(e2.target as HTMLElement).style.background="#07070A";(e2.target as HTMLElement).style.boxShadow="none"}}>
                   {n}
@@ -659,8 +630,8 @@ export default function Home() {
               {bg:"rgba(168,85,247,.09)",e:"🎙️",t:"Voice Intelligence",      d:"Whisper AI transcribes voice notes and replies naturally in real-time.",tag:"Whisper AI"},
               {bg:"rgba(234,179,8,.09)", e:"📢",t:"Broadcast Engine",         d:"Blast targeted promos to thousands instantly. Zero extra cost.",tag:"Mass Outreach"},
             ].map(({bg,e,t,d,tag},i)=>(
-              <div key={t} className={`sr-up sd${i+1} fi-card bg-[#0A0A0D] p-6 md:p-8 hover:bg-[#0F0F14] transition-colors duration-200`}>
-                <div className="w-[44px] h-[44px] rounded-[13px] flex items-center justify-center mb-5 text-[20px] transition-transform duration-250 hover:scale-110 hover:rotate-[-3deg]"
+              <div key={t} className={`sr-up sd${i+1} fi-card bg-[#0A0A0D] p-6 md:p-8 hover:bg-[#0F0F14] transition-colors duration-150`}>
+                <div className="w-[44px] h-[44px] rounded-[13px] flex items-center justify-center mb-5 text-[20px] transition-transform duration-200 hover:scale-110 hover:rotate-[-3deg]"
                   style={{background:bg}}>{e}</div>
                 <h3 className="text-[14px] font-bold text-white mb-2">{t}</h3>
                 <p className="text-[12px] text-gray-400 leading-[1.75] mb-3">{d}</p>
@@ -675,8 +646,8 @@ export default function Home() {
               {bg:"rgba(34,197,94,.09)", e:"🗃️",t:"Enterprise RAG Memory",      d:"Inject catalog, FAQs, brand voice into Vector DB. Your agent knows your business inside out.",tag:"Vector DB"},
               {bg:"rgba(0,191,255,.09)", e:"🧠",t:"OmniAgent — 3x AI Fallback", d:"Routes between GPT-5.2, Claude Opus, and Gemini Flash in real-time. 0% downtime. Llama 4 coming as 4th fallback.",tag:"0% Downtime"},
             ].map(({bg,e,t,d,tag},i)=>(
-              <div key={t} className={`sr-up sd${i+1} fi-card bg-[#0A0A0D] p-6 md:p-8 hover:bg-[#0F0F14] transition-colors duration-200`}>
-                <div className="w-[44px] h-[44px] rounded-[13px] flex items-center justify-center mb-5 text-[20px] transition-transform duration-250 hover:scale-110 hover:rotate-[-3deg]"
+              <div key={t} className={`sr-up sd${i+1} fi-card bg-[#0A0A0D] p-6 md:p-8 hover:bg-[#0F0F14] transition-colors duration-150`}>
+                <div className="w-[44px] h-[44px] rounded-[13px] flex items-center justify-center mb-5 text-[20px] transition-transform duration-200 hover:scale-110 hover:rotate-[-3deg]"
                   style={{background:bg}}>{e}</div>
                 <h3 className="text-[14px] font-bold text-white mb-2">{t}</h3>
                 <p className="text-[12px] text-gray-400 leading-[1.75] mb-3">{d}</p>
@@ -692,8 +663,8 @@ export default function Home() {
               {bg:"rgba(236,72,153,.09)",e:"💬",t:"Live CRM & Handoff",  d:"Monitor all conversations. One click to take over from AI seamlessly.",tag:"Real-time CRM"},
               {bg:"rgba(16,185,129,.09)",e:"🔒",t:"Enterprise Security", d:"AES-256 encryption. SOC 2 compliant. Zero data retention on our servers.",tag:"AES-256"},
             ].map(({bg,e,t,d,tag},i)=>(
-              <div key={t} className={`sr-up sd${i+1} fi-card bg-[#0A0A0D] p-6 md:p-8 hover:bg-[#0F0F14] transition-colors duration-200`}>
-                <div className="w-[44px] h-[44px] rounded-[13px] flex items-center justify-center mb-5 text-[20px] transition-transform duration-250 hover:scale-110 hover:rotate-[-3deg]"
+              <div key={t} className={`sr-up sd${i+1} fi-card bg-[#0A0A0D] p-6 md:p-8 hover:bg-[#0F0F14] transition-colors duration-150`}>
+                <div className="w-[44px] h-[44px] rounded-[13px] flex items-center justify-center mb-5 text-[20px] transition-transform duration-200 hover:scale-110 hover:rotate-[-3deg]"
                   style={{background:bg}}>{e}</div>
                 <h3 className="text-[14px] font-bold text-white mb-2">{t}</h3>
                 <p className="text-[12px] text-gray-400 leading-[1.75] mb-3">{d}</p>
@@ -749,7 +720,7 @@ export default function Home() {
                 Pick a model, connect your channel, deploy. All infrastructure handled for you.
               </p>
               <button onClick={()=>document.getElementById("hero")?.scrollIntoView({behavior:"smooth"})}
-                className={`mt-7 px-8 py-3.5 rounded-[12px] text-[13px] font-black text-white uppercase tracking-wider ${btn} hover:scale-[1.04] orange-glow`}
+                className={`mt-7 px-8 py-3.5 rounded-[12px] text-[13px] font-black text-white uppercase tracking-wider ${btn} hover:scale-[1.05] orange-glow`}
                 style={{background:"linear-gradient(135deg,#f97316,#ea6a00)"}}>
                 Start Free Now →
               </button>
@@ -780,7 +751,7 @@ export default function Home() {
           style={{fontFamily:"Georgia,serif",lineHeight:1.06}}>Deploy. Automate. Relax.</h2>
         <button
           onClick={()=>document.getElementById("hero")?.scrollIntoView({behavior:"smooth"})}
-          className={`sr-up px-10 py-4 rounded-[13px] text-[14px] font-black text-black mb-20 uppercase tracking-wider ${btn} hover:scale-[1.04] orange-glow`}
+          className={`sr-up px-10 py-4 rounded-[13px] text-[14px] font-black text-black mb-20 uppercase tracking-wider ${btn} hover:scale-[1.05] orange-glow`}
           style={{background:"linear-gradient(135deg,#FFA87A,#F97316)"}}>
           Get Started Free →
         </button>
@@ -800,9 +771,8 @@ export default function Home() {
       {/* Contact Support */}
       <AnimatePresence>
         {isSupportModalOpen && (
-          <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/90 backdrop-blur-xl p-4">
-            <motion.div initial={{opacity:0,scale:.96,y:8}} animate={{opacity:1,scale:1,y:0}}
-              exit={{opacity:0,scale:.96,y:8}} transition={{duration:.15}}
+          <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-[16px] p-4">
+            <motion.div initial={{opacity:0,scale:.96,y:12}} animate={{opacity:1,scale:1,y:0}} exit={{opacity:0,scale:.96,y:12}} transition={{duration:.12,ease:"easeOut"}}
               className="w-full max-w-md p-7 rounded-[1.75rem] relative"
               style={{background:"#0F0F12",border:"1px solid rgba(255,255,255,0.09)",boxShadow:"0 0 80px rgba(0,0,0,0.8)"}}>
               <div className="absolute top-0 left-[20%] right-[20%] h-px"
@@ -843,9 +813,8 @@ export default function Home() {
       {/* Integration Setup Modal */}
       <AnimatePresence>
         {isTelegramModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/92 backdrop-blur-xl p-4">
-            <motion.div initial={{opacity:0,scale:.96,y:8}} animate={{opacity:1,scale:1,y:0}}
-              exit={{opacity:0,scale:.96,y:8}} transition={{duration:.15}}
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-[16px] p-4">
+            <motion.div initial={{opacity:0,scale:.96,y:12}} animate={{opacity:1,scale:1,y:0}} exit={{opacity:0,scale:.96,y:12}} transition={{duration:.12,ease:"easeOut"}}
               className="w-full max-w-[1000px] flex flex-col md:flex-row overflow-hidden rounded-3xl relative"
               style={{background:"#0F0F12",border:"1px solid rgba(255,255,255,0.09)",boxShadow:"0 0 100px rgba(0,0,0,0.9)",maxHeight:"92vh"}}>
               <div className="absolute top-0 left-[20%] right-[20%] h-px"
@@ -885,7 +854,7 @@ export default function Home() {
                       <label className="block text-[9px] font-bold uppercase tracking-widest text-gray-400 mb-3">API Access Token</label>
                       <input type="password" value={telegramToken} onChange={e=>setTelegramToken(e.target.value)}
                         placeholder="Enter Verification Token…"
-                        className="w-full px-4 py-3.5 rounded-xl text-[13px] text-white font-mono mb-5 outline-none"
+                        className="w-full px-4 py-3.5 rounded-xl text-[13px] text-white font-mono mb-5 outline-none transition-colors duration-150"
                         style={{background:"#07070A",border:"1px solid rgba(255,255,255,0.09)"}}
                         onFocus={e=>(e.target.style.borderColor="rgba(249,115,22,0.5)")}
                         onBlur={e =>(e.target.style.borderColor="rgba(255,255,255,0.09)")}/>
@@ -907,12 +876,11 @@ export default function Home() {
                       <li>Enter Callback URL + Verify Token below</li>
                     </ol>
                     
-                    {/* 🚀 FIXED: Added WhatsApp Phone Number Input */}
                     <div className="p-5 rounded-2xl" style={{background:"rgba(255,255,255,0.03)",border:"1px solid rgba(255,255,255,0.07)"}}>
                       <label className="block text-[9px] font-bold uppercase tracking-widest text-gray-400 mb-3">Phone Number ID</label>
                       <input type="text" value={waPhoneId} onChange={e=>setWaPhoneId(e.target.value)}
                         placeholder="e.g. 1044727838716942"
-                        className="w-full px-4 py-3.5 rounded-xl text-[13px] text-white font-mono mb-4 outline-none"
+                        className="w-full px-4 py-3.5 rounded-xl text-[13px] text-white font-mono mb-4 outline-none transition-colors duration-150"
                         style={{background:"#07070A",border:"1px solid rgba(255,255,255,0.09)"}}
                         onFocus={e=>(e.target.style.borderColor="rgba(37,211,102,0.5)")}
                         onBlur={e =>(e.target.style.borderColor="rgba(255,255,255,0.09)")}/>
@@ -920,7 +888,7 @@ export default function Home() {
                       <label className="block text-[9px] font-bold uppercase tracking-widest text-gray-400 mb-3">WhatsApp Number (For Direct Open)</label>
                       <input type="text" value={waPhoneNumber} onChange={e=>setWaPhoneNumber(e.target.value)}
                         placeholder="+1 234 567 890"
-                        className="w-full px-4 py-3.5 rounded-xl text-[13px] text-white font-mono mb-4 outline-none"
+                        className="w-full px-4 py-3.5 rounded-xl text-[13px] text-white font-mono mb-4 outline-none transition-colors duration-150"
                         style={{background:"#07070A",border:"1px solid rgba(255,255,255,0.09)"}}
                         onFocus={e=>(e.target.style.borderColor="rgba(37,211,102,0.5)")}
                         onBlur={e =>(e.target.style.borderColor="rgba(255,255,255,0.09)")}/>
@@ -928,7 +896,7 @@ export default function Home() {
                       <label className="block text-[9px] font-bold uppercase tracking-widest text-gray-400 mb-3">Permanent API Token</label>
                       <input type="password" value={telegramToken} onChange={e=>setTelegramToken(e.target.value)}
                         placeholder="EAABwzL…"
-                        className="w-full px-4 py-3.5 rounded-xl text-[13px] text-white font-mono mb-5 outline-none"
+                        className="w-full px-4 py-3.5 rounded-xl text-[13px] text-white font-mono mb-5 outline-none transition-colors duration-150"
                         style={{background:"#07070A",border:"1px solid rgba(255,255,255,0.09)"}}
                         onFocus={e=>(e.target.style.borderColor="rgba(37,211,102,0.5)")}
                         onBlur={e =>(e.target.style.borderColor="rgba(255,255,255,0.09)")}/>
@@ -1008,9 +976,8 @@ export default function Home() {
       {/* Pricing Popup */}
       <AnimatePresence>
         {showPricingPopup && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 backdrop-blur-xl p-4">
-            <motion.div initial={{opacity:0,y:10,scale:.97}} animate={{opacity:1,y:0,scale:1}}
-              exit={{opacity:0,y:10,scale:.97}} transition={{duration:.15}}
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-[16px] p-4">
+            <motion.div initial={{opacity:0,y:12,scale:.96}} animate={{opacity:1,y:0,scale:1}} exit={{opacity:0,y:12,scale:.96}} transition={{duration:.12,ease:"easeOut"}}
               className="w-full max-w-4xl p-7 md:p-10 rounded-[1.75rem] text-center relative overflow-y-auto nsb"
               style={{background:"#0F0F12",border:"1px solid rgba(255,255,255,0.09)",boxShadow:"0 0 100px rgba(0,0,0,0.9)",maxHeight:"92vh"}}>
               <div className="absolute top-0 left-[20%] right-[20%] h-px"
@@ -1038,10 +1005,10 @@ export default function Home() {
                     {tier:"yearly"  as const,accent:"#0052D4",label:"Yearly Enterprise",badge:"Save 16%",desc:"Maximum value for production scale."},
                   ].map(({tier,accent,label,badge,desc})=>(
                     <div key={tier} onClick={()=>!isDeploying&&setSelectedTier(tier)}
-                      className={`relative p-6 rounded-2xl cursor-pointer transition-all duration-150 ${btn} ${selectedTier===tier?"scale-[1.03]":"hover:scale-[1.01]"}`}
+                      className={`relative p-6 rounded-2xl cursor-pointer transition-all duration-150 ${btn} ${selectedTier===tier?"scale-[1.02]":"hover:scale-[1.01]"}`}
                       style={{background:selectedTier===tier?"rgba(255,255,255,0.05)":"rgba(255,255,255,0.02)",
                               border:`1px solid ${selectedTier===tier?accent:"rgba(255,255,255,0.07)"}`,
-                              boxShadow:selectedTier===tier?`0 0 24px ${accent}44`:"none"}}>
+                              boxShadow:selectedTier===tier?`0 0 32px ${accent}44`:"none"}}>
                       {badge&&<div className="absolute -top-3 left-1/2 -translate-x-1/2 text-white text-[9px] font-bold uppercase px-3 py-1 rounded-full tracking-widest" style={{background:accent}}>{badge}</div>}
                       <h3 className="font-bold uppercase text-[11px] tracking-widest mb-2" style={{color:accent}}>{label}</h3>
                       <div className="text-[2rem] font-black text-white mb-2">{currencySymbol}{getCurrentPrice(tier)}</div>
@@ -1057,10 +1024,10 @@ export default function Home() {
                     {tier:"max"     as const,accent:"#F97316",label:"Maximum",color:"text-orange-400",badge:null,desc:"Uncapped limits, highest speeds."},
                   ].map(({tier,accent,label,color,badge,desc})=>(
                     <div key={tier} onClick={()=>!isDeploying&&setSelectedTier(tier)}
-                      className={`relative p-5 rounded-2xl cursor-pointer transition-all duration-150 ${btn} ${selectedTier===tier?"scale-[1.03]":"hover:scale-[1.01]"}`}
+                      className={`relative p-5 rounded-2xl cursor-pointer transition-all duration-150 ${btn} ${selectedTier===tier?"scale-[1.02]":"hover:scale-[1.01]"}`}
                       style={{background:selectedTier===tier?"rgba(255,255,255,0.04)":"rgba(255,255,255,0.02)",
                               border:`1px solid ${selectedTier===tier?accent:"rgba(255,255,255,0.07)"}`,
-                              boxShadow:selectedTier===tier?`0 0 20px ${accent}40`:"none"}}>
+                              boxShadow:selectedTier===tier?`0 0 28px ${accent}40`:"none"}}>
                       {badge&&<div className="absolute -top-3 left-1/2 -translate-x-1/2 text-white text-[9px] font-bold uppercase px-3 py-1 rounded-full tracking-widest bg-blue-600">{badge}</div>}
                       <h3 className={`font-bold uppercase text-[11px] tracking-widest mb-2 ${color}`}>{label}</h3>
                       <div className="text-[1.9rem] font-black text-white mb-2">{currencySymbol}{getCurrentPrice(tier)}</div>
@@ -1074,8 +1041,8 @@ export default function Home() {
                 className={`w-full max-w-sm mx-auto font-black py-4 rounded-xl uppercase tracking-widest flex justify-center items-center gap-2 transition-all duration-150 ${btn}
                   ${!selectedTier?"cursor-not-allowed opacity-40 bg-gray-800 text-gray-500"
                     :activeModel==="omni"
-                      ?"bg-gradient-to-r from-[#0052D4] to-[#00BFFF] text-white hover:scale-[1.02]"
-                      :"bg-white text-black hover:bg-gray-100 hover:scale-[1.02]"}`}>
+                      ?"bg-gradient-to-r from-[#0052D4] to-[#00BFFF] text-white hover:scale-[1.02] shadow-[0_0_24px_rgba(0,191,255,0.4)]"
+                      :"bg-white text-black hover:bg-gray-100 hover:scale-[1.02] shadow-[0_0_24px_rgba(255,255,255,0.25)]"}`}>
                 {isDeploying?"Deploying Infrastructure…":!selectedTier?"Select a Tier":`Initialize Payment — ${currencySymbol}${getCurrentPrice()}`}
               </button>
             </motion.div>
@@ -1087,7 +1054,7 @@ export default function Home() {
         <AnimatePresence>
           {isHelpOpen && (
             <motion.div initial={{opacity:0,y:14,scale:.92}} animate={{opacity:1,y:0,scale:1}}
-              exit={{opacity:0,y:14,scale:.92}} transition={{duration:.15}}
+              exit={{opacity:0,y:14,scale:.92}} transition={{duration:.12,ease:"easeOut"}}
               className="w-72 md:w-80 p-5 rounded-2xl mb-3 relative"
               style={{background:"#0F0F12",border:"1px solid rgba(255,255,255,0.09)",boxShadow:"0 0 48px rgba(0,0,0,0.8)"}}>
               <div className="absolute top-0 left-[15%] right-[15%] h-px"
@@ -1116,12 +1083,12 @@ export default function Home() {
                   </div>
                   <div className="space-y-3">
                     <input type="email" placeholder="Your email" value={helpEmail} onChange={e=>setHelpEmail(e.target.value)}
-                      className="w-full px-3 py-2.5 rounded-xl text-[12px] text-white outline-none"
+                      className="w-full px-3 py-2.5 rounded-xl text-[12px] text-white outline-none transition-colors duration-150"
                       style={{background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.07)"}}
                       onFocus={e=>(e.target.style.borderColor="rgba(59,130,246,0.5)")}
                       onBlur={e =>(e.target.style.borderColor="rgba(255,255,255,0.07)")}/>
                     <textarea placeholder="How can we help?" rows={3} value={helpMessage} onChange={e=>setHelpMessage(e.target.value)}
-                      className="w-full px-3 py-2.5 rounded-xl text-[12px] text-white outline-none resize-none"
+                      className="w-full px-3 py-2.5 rounded-xl text-[12px] text-white outline-none resize-none transition-colors duration-150"
                       style={{background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.07)"}}
                       onFocus={e=>(e.target.style.borderColor="rgba(59,130,246,0.5)")}
                       onBlur={e =>(e.target.style.borderColor="rgba(255,255,255,0.07)")}/>
@@ -1136,7 +1103,7 @@ export default function Home() {
           )}
         </AnimatePresence>
         <motion.button whileHover={{scale:1.1}} whileTap={{scale:.9}} onClick={()=>setIsHelpOpen(!isHelpOpen)}
-          className="w-14 h-14 text-white rounded-full flex items-center justify-center"
+          className={`w-14 h-14 text-white rounded-full flex items-center justify-center transition-all duration-150 transform-gpu`}
           style={{background:"linear-gradient(135deg,#3B82F6,#7C3AED)",boxShadow:"0 0 28px rgba(59,130,246,0.5)"}}>
           {isHelpOpen ? <X className="w-6 h-6"/> : <MessageCircle className="w-6 h-6"/>}
         </motion.button>
