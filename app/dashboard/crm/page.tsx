@@ -3,10 +3,16 @@
 import { useSession } from "next-auth/react";
 import { useEffect, useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Send, User, Bot, ShieldAlert, RefreshCw, MessageSquare, Activity, Search, Smartphone, Globe, Clock, ShieldCheck } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@supabase/supabase-js";
 import TopHeader from "@/components/TopHeader"; 
+
+// 🚀 FIXED: Imported 'Users' and 'X' to resolve all VS Code & Vercel Red Errors!
+import { 
+  Send, User, Users, Bot, ShieldAlert, RefreshCw, 
+  MessageSquare, Activity, Search, Smartphone, 
+  Globe, Clock, ShieldCheck, X 
+} from "lucide-react";
 
 // 🚀 INITIALIZE SUPABASE
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
@@ -267,7 +273,7 @@ export default function CRMDashboard() {
               </div>
 
               {/* Chat Input (Manual Reply) */}
-              <div className="p-4 bg-[#0A0A0C] border-t border-white/5 z-20">
+              <div className="p-4 border-t border-white/5 bg-[#0A0A0C] z-20">
                 <div className="relative flex items-end gap-2">
                   <textarea 
                     value={replyText}
