@@ -7,15 +7,15 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-// 🚀 ROBUST GEMINI EMBEDDING FUNCTION (Upgraded to text-embedding-004 with Smart Errors)
+// 🚀 ROBUST GEMINI EMBEDDING FUNCTION (Fixed for Google's Latest 2026 API Update)
 async function generateEmbedding(text: string) {
   if (!process.env.GEMINI_API_KEY) {
     return { error: "GEMINI_API_KEY is missing in Vercel environment variables!" };
   }
 
   try {
-    // 🌟 UPGRADED: Using Google's latest text-embedding-004 model
-    const embedUrl = `https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent?key=${process.env.GEMINI_API_KEY}`;
+    // 🌟 FIXED: Google recently deprecated old models. The NEW official one is 'gemini-embedding-001'
+    const embedUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-embedding-001:embedContent?key=${process.env.GEMINI_API_KEY}`;
     const res = await fetch(embedUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -26,7 +26,7 @@ async function generateEmbedding(text: string) {
     
     const data = await res.json();
     
-    // 🛑 SMART ERROR CATCHER: Capture exact Gemini error (Quota, Invalid Key, etc.)
+    // 🛑 SMART ERROR CATCHER
     if (!res.ok) {
       console.error("Vector API Error Response:", data);
       return { error: data.error?.message || "Google Gemini API rejected the request." };
@@ -70,7 +70,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: false, error: "Missing data payload" }, { status: 400 });
     }
 
-    // Convert text to Vector using the Upgraded Function
+    // Convert text to Vector
     const embedResult = await generateEmbedding(text);
     
     // 🚨 If embedding failed, send the EXACT error to the frontend
@@ -85,7 +85,7 @@ export async function POST(req: Request) {
     const { error } = await supabase.from("knowledge_base").insert({
       user_email: email, 
       content: text,
-      embedding: embedResult.values, // 🚀 The actual numeric vector array
+      embedding: embedResult.values, 
     });
 
     if (error) {
