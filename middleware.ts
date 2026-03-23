@@ -6,18 +6,19 @@ export function middleware(req: NextRequest) {
     const isApi = req.nextUrl.pathname.startsWith('/api/');
     const isWebhook = req.nextUrl.pathname.startsWith('/api/webhook/');
 
-    // 🛑 Block API access from outside domains (except webhooks which come from Meta/Telegram)
+    // 🛑 Block unauthorized API calls, but allow Webhooks (Telegram/WhatsApp meta servers)
     if (isApi && !isWebhook) {
-        // Sirf in domains ko allow karenge
         const allowedOrigins = [
+            'https://clawlink.com',
+            'https://www.clawlink.com',
             'https://clawlinkai.com', 
-            'https://www.clawlinkai.com', 
             'https://clawlink-six.vercel.app', 
             'http://localhost:3000'
         ];
 
         const isAllowed = allowedOrigins.some(allowed => origin.startsWith(allowed));
 
+        // Agar request in authorized domains se nahi aayi, toh block kardo
         if (!origin || !isAllowed) {
             console.warn(`[SECURITY] Blocked unauthorized API access from: ${origin}`);
             return new NextResponse(
