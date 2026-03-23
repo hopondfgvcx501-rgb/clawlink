@@ -7,35 +7,35 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-// 🚀 ROBUST GEMINI EMBEDDING FUNCTION (Safe Version)
+// 🚀 ROBUST GEMINI EMBEDDING FUNCTION (Upgraded to text-embedding-004 with Smart Errors)
 async function generateEmbedding(text: string) {
   if (!process.env.GEMINI_API_KEY) {
-    console.error("CRITICAL: GEMINI_API_KEY is missing in environment variables!");
-    return null;
+    return { error: "GEMINI_API_KEY is missing in Vercel environment variables!" };
   }
 
   try {
-    // FIXED: Using stable embedding-001 with exact Google required payload
-    const embedUrl = `https://generativelanguage.googleapis.com/v1beta/models/embedding-001:embedContent?key=${process.env.GEMINI_API_KEY}`;
+    // 🌟 UPGRADED: Using Google's latest text-embedding-004 model
+    const embedUrl = `https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent?key=${process.env.GEMINI_API_KEY}`;
     const res = await fetch(embedUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        content: { parts: [{ text: text }] } // Strict format
+        content: { parts: [{ text: text }] }
       }),
     });
     
     const data = await res.json();
     
+    // 🛑 SMART ERROR CATCHER: Capture exact Gemini error (Quota, Invalid Key, etc.)
     if (!res.ok) {
       console.error("Vector API Error Response:", data);
-      return null;
+      return { error: data.error?.message || "Google Gemini API rejected the request." };
     }
     
-    return data.embedding.values;
-  } catch (e) {
+    return { values: data.embedding.values };
+  } catch (e: any) {
     console.error("Embedding Try-Catch Error:", e);
-    return null;
+    return { error: e.message || "Network error while connecting to Gemini." };
   }
 }
 
@@ -50,7 +50,7 @@ export async function GET(req: Request) {
     const { data, error } = await supabase
       .from("knowledge_base")
       .select("id, content, created_at")
-      .eq("user_email", email) // 🚀 FIXED: matches Supabase column
+      .eq("user_email", email) 
       .order("created_at", { ascending: false });
 
     if (error) throw error;
@@ -67,25 +67,25 @@ export async function POST(req: Request) {
     const { email, text } = await req.json();
 
     if (!email || !text) {
-      return NextResponse.json({ success: false, error: "Missing data" }, { status: 400 });
+      return NextResponse.json({ success: false, error: "Missing data payload" }, { status: 400 });
     }
 
-    // Convert text to 768-dimensional Vector
-    const vector = await generateEmbedding(text);
+    // Convert text to Vector using the Upgraded Function
+    const embedResult = await generateEmbedding(text);
     
-    if (!vector) {
-      // 🔒 FIXED ERROR MESSAGE: If you see THIS error, it means the code updated successfully!
+    // 🚨 If embedding failed, send the EXACT error to the frontend
+    if (embedResult.error || !embedResult.values) {
       return NextResponse.json({ 
         success: false, 
-        error: "System Overload: Failed to encrypt data into Vector DB. Please verify GEMINI_API_KEY in Vercel." 
+        error: `Gemini API Error: ${embedResult.error}` 
       }, { status: 500 });
     }
 
     // Store in Supabase
     const { error } = await supabase.from("knowledge_base").insert({
-      user_email: email, // 🚀 FIXED: matches Supabase column
+      user_email: email, 
       content: text,
-      embedding: vector,
+      embedding: embedResult.values, // 🚀 The actual numeric vector array
     });
 
     if (error) {
@@ -96,6 +96,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ success: true });
   } catch (error: any) {
     console.error("Knowledge Endpoint Error:", error);
-    return NextResponse.json({ success: false, error: "Failed to save knowledge" }, { status: 500 });
+    return NextResponse.json({ success: false, error: "Failed to save knowledge to database" }, { status: 500 });
   }
 }
