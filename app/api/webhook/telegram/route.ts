@@ -30,14 +30,21 @@ async function generateEmbedding(text: string, key: string | null) {
     const apiKey = key || process.env.GEMINI_API_KEY;
     if (!apiKey) return null;
     try {
-        const embedUrl = `https://generativelanguage.googleapis.com/v1beta/models/embedding-001:embedContent?key=${apiKey}`;
+        // FIXED: Upgraded to Google's active gemini-embedding-001 model
+        const embedUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-embedding-001:embedContent?key=${apiKey}`;
         const res = await fetch(embedUrl, {
             method: "POST", headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ content: { parts: [{ text: text }] } }) 
         });
         const data = await res.json();
-        return res.ok ? data.embedding.values : null;
+        
+        if (!res.ok) {
+            console.error("Telegram Search Embedding Error:", data);
+            return null;
+        }
+        return data.embedding.values;
     } catch (e) {
+        console.error("Telegram Catch Error:", e);
         return null;
     }
 }
