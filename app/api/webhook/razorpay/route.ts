@@ -65,8 +65,8 @@ export async function POST(req: NextRequest) {
             tokensAllocated = 9999999;
         }
 
-        // 🚀 FIXED: DYNAMIC PAYLOAD (Never overwrites existing tokens)
-        const updatePayload: any = {
+        // 🚀 FIXED: DYNAMIC PAYLOAD FOR AGENCY MODEL
+        const payload: any = {
             plan: planName,            
             is_unlimited: isUnlimited, 
             tokens_allocated: tokensAllocated,
@@ -74,20 +74,59 @@ export async function POST(req: NextRequest) {
             ai_provider: aiProvider    
         };
 
-        // If Razorpay passes a new token, add it without erasing others
-        if (notes.telegram_token) updatePayload.telegram_token = notes.telegram_token;
-        if (notes.whatsapp_token) updatePayload.whatsapp_token = notes.whatsapp_token;
-        if (notes.whatsapp_phone_id) updatePayload.whatsapp_phone_id = notes.whatsapp_phone_id;
+        let botIdentifier = null;
+        let botColumn = null;
 
-        // 4. Update EXACT Data in Supabase User Configs
-        const { error: dbError } = await supabase
-          .from("user_configs")
-          .update(updatePayload)
-          .eq("email", userEmail);
+        // Extract tokens from Razorpay notes if present
+        if (notes.telegram_token) {
+            payload.telegram_token = notes.telegram_token;
+            botIdentifier = notes.telegram_token;
+            botColumn = "telegram_token";
+        }
+        if (notes.whatsapp_token) {
+            payload.whatsapp_token = notes.whatsapp_token;
+            botIdentifier = notes.whatsapp_token;
+            botColumn = "whatsapp_token";
+        }
+        if (notes.whatsapp_phone_id) {
+            payload.whatsapp_phone_id = notes.whatsapp_phone_id;
+        }
 
-        if (dbError) {
-            console.error("DB Update Error:", dbError);
-            throw dbError;
+        // 4. AGENCY MODEL LOGIC: Insert new bot OR update specific existing bot
+        if (botIdentifier && botColumn) {
+            // Check if this EXACT bot already exists for this email
+            const { data: existingBot } = await supabase
+                .from("user_configs")
+                .select("id")
+                .eq("email", userEmail)
+                .eq(botColumn, botIdentifier)
+                .limit(1)
+                .single();
+
+            if (existingBot) {
+                // 🔄 RENEWAL: Update ONLY this specific bot
+                const { error: dbError } = await supabase.from("user_configs").update(payload).eq("id", existingBot.id);
+                if (dbError) throw dbError;
+                console.log(`✅ Successfully updated existing bot ID: ${existingBot.id}`);
+            } else {
+                // ✨ NEW PURCHASE: Insert as a BRAND NEW bot row for this email
+                const { error: dbError } = await supabase.from("user_configs").insert({ 
+                    ...payload, 
+                    email: userEmail,
+                    tokens_used: 0,
+                    messages_used_this_month: 0 
+                });
+                if (dbError) throw dbError;
+                console.log(`✅ Successfully created a NEW bot for ${userEmail}`);
+            }
+        } else {
+            // ⚠️ LEGACY FALLBACK: If no specific token was passed from frontend
+            const { error: dbError } = await supabase
+              .from("user_configs")
+              .update(payload)
+              .eq("email", userEmail);
+            if (dbError) throw dbError;
+            console.log(`✅ Legacy update applied for ${userEmail}`);
         }
 
         // 5. 🧾 BONUS: Save to Billing History so Invoices show up in Dashboard!
