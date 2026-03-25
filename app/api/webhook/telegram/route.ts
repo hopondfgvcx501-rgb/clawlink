@@ -110,7 +110,7 @@ async function transcribeAudio(fileId: string, botToken: string, key: string | n
 }
 
 // =========================================================================
-// 🚀 MAIN TELEGRAM WEBHOOK PROCESSOR
+// 🚀 MAIN TELEGRAM WEBHOOK PROCESSOR (AGENCY MODEL ENABLED)
 // =========================================================================
 export async function POST(req: Request) {
     try {
@@ -123,17 +123,31 @@ export async function POST(req: Request) {
         const chatId = body.message.chat.id.toString();
         const customerName = body.message.from.first_name || "Customer";
 
+        // 🚀 FIXED: AGENCY MODEL ROUTING (Identify Bot by Token or Email)
         const { searchParams } = new URL(req.url);
-        // 🚀 FIXED: Strict Lowercase to prevent silent failure
+        const urlToken = searchParams.get("token");
         const rawEmail = searchParams.get("email");
-        if (!rawEmail) return NextResponse.json({ success: true });
-        const ownerEmail = rawEmail.toLowerCase();
 
-        const { data: config } = await supabase.from("user_configs").select("*").eq("email", ownerEmail).single();
+        let configQuery = supabase.from("user_configs").select("*");
+        
+        if (urlToken) {
+            configQuery = configQuery.eq("telegram_token", urlToken);
+        } else if (rawEmail) {
+            configQuery = configQuery.eq("email", rawEmail.toLowerCase());
+        } else {
+            return NextResponse.json({ success: true });
+        }
+
+        // Use limit(1).single() to prevent crashes if multiple rows match email
+        const { data: config } = await configQuery.limit(1).single();
+        
         if (!config || !config.telegram_token) return NextResponse.json({ success: true });
 
+        const ownerEmail = config.email;
+        const configId = config.id; // 💎 UNIQUE ID FOR TRACKING
         const telegramToken = config.telegram_token;
-        // 🚀 FIXED: Multi-Channel Persona Support
+        
+        // Multi-Channel Persona Support
         const systemPrompt = config.system_prompt_telegram || config.system_prompt || "You are a helpful AI assistant.";
         const userApiKey = config.user_api_key; 
         
@@ -145,7 +159,7 @@ export async function POST(req: Request) {
         else if (rawProvider.includes("gemini") || rawProvider.includes("google")) provider = "google";
 
         // ==========================================
-        // 🛑 THE GATEKEEPER (Expiry & Limits Check) 🚀 RELAXED FOR TESTING
+        // 🛑 THE GATEKEEPER (Expiry & Limits Check)
         // ==========================================
         const isUnlimited = config.is_unlimited || config.plan_name === "max" || config.plan_name === "ultra_max" || config.plan_name === "pro";
         const tokensUsed = config.tokens_used || 0;
@@ -154,7 +168,6 @@ export async function POST(req: Request) {
         const expiryDate = new Date(config.plan_expiry_date);
         const isExpired = config.plan_expiry_date ? (new Date() > expiryDate) : false;
 
-        // Block only if not unlimited AND tokens used are greater than allocated
         if (isExpired || (!isUnlimited && tokensUsed >= tokensAllocated)) {
             const maintenanceMsg = "Hello! Our AI assistant is currently undergoing a brief scheduled maintenance to serve you better. Please leave your query and our human support team will get back to you shortly. Thank you for your patience!";
                 
@@ -188,7 +201,6 @@ export async function POST(req: Request) {
             if (body.message.text === "/start") return NextResponse.json({ success: true });
             
             let rawUserText = body.message.text;
-            // ✂️ COST CONTROL: Cut message if it's suspiciously long
             userText = rawUserText.length > 800 ? rawUserText.substring(0, 800) + "..." : rawUserText;
             crmLogMessage = userText;
         }
@@ -246,19 +258,17 @@ export async function POST(req: Request) {
         let targetModel = CHEAP_MODEL;
 
         if (provider === "omni") {
-            // Smart Omni Routing
             if (usageRatio >= 80) {
-                targetProvider = "google"; targetModel = CHEAP_MODEL; // Force Save Mode
+                targetProvider = "google"; targetModel = CHEAP_MODEL; 
             } else if (usageRatio >= 60) {
                 if (words < 40) { targetProvider = "google"; targetModel = CHEAP_MODEL; }
-                else { targetProvider = "openai"; targetModel = MEDIUM_MODEL; } // Claude Disabled
+                else { targetProvider = "openai"; targetModel = MEDIUM_MODEL; } 
             } else {
                 if (words < 40) { targetProvider = "google"; targetModel = CHEAP_MODEL; }
                 else if (words < 150) { targetProvider = "openai"; targetModel = MEDIUM_MODEL; }
-                else { targetProvider = "anthropic"; targetModel = EXPENSIVE_MODEL; } // Premium Mode
+                else { targetProvider = "anthropic"; targetModel = EXPENSIVE_MODEL; } 
             }
         } else {
-            // Strict Provider Routing
             if (usageRatio >= 80) {
                 targetProvider = "google"; targetModel = CHEAP_MODEL;
             } else {
@@ -269,7 +279,6 @@ export async function POST(req: Request) {
             }
         }
 
-        // 🔄 ULTRA FAST FALLBACK SYSTEM
         try {
             if (targetProvider === "anthropic") aiResponse = await callClaude(targetModel, fullContext, userApiKey);
             else if (targetProvider === "openai") aiResponse = await callOpenAI(targetModel, fullContext, userApiKey);
@@ -292,14 +301,15 @@ export async function POST(req: Request) {
         }
 
         // ==========================================
-        // 9. CHARGE TOKENS & SAVE RESPONSE
+        // 9. CHARGE TOKENS & SAVE RESPONSE (ISOLATED TRACKING)
         // ==========================================
         if (wasSuccessful) {
             const updatePayload: any = { messages_used_this_month: (config.messages_used_this_month || 0) + 1 };
             if (!isUnlimited) {
                 updatePayload.tokens_used = tokensUsed + 1;
             }
-            await supabase.from("user_configs").update(updatePayload).eq("email", ownerEmail);
+            // 🚀 FIXED: Update EXACT bot by its unique ID, not by email!
+            await supabase.from("user_configs").update(updatePayload).eq("id", configId);
         }
         
         await supabase.from("chat_history").insert({ 
