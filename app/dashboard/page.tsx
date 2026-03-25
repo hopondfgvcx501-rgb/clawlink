@@ -24,7 +24,13 @@ export default function Dashboard() {
   const [showAppBanner, setShowAppBanner] = useState(true);
   const [copiedScript, setCopiedScript] = useState(false); 
   
-  const [systemPrompt, setSystemPrompt] = useState("");
+  // 🚀 FIXED: Multi-Channel Persona States
+  const [selectedChannel, setSelectedChannel] = useState("widget"); // Default
+  const [channelPrompts, setChannelPrompts] = useState({
+    widget: "",
+    telegram: "",
+    whatsapp: ""
+  });
   const [isSavingPrompt, setIsSavingPrompt] = useState(false);
 
   const [knowledgeText, setKnowledgeText] = useState("");
@@ -42,7 +48,12 @@ export default function Dashboard() {
         .then((data) => {
           if (data.success && data.data) {
             setUserData(data.data);
-            setSystemPrompt(data.data.systemPrompt || "");
+            // Load channel-specific prompts from backend
+            setChannelPrompts({
+              widget: data.data.system_prompt_widget || data.data.system_prompt || "",
+              telegram: data.data.system_prompt_telegram || "",
+              whatsapp: data.data.system_prompt_whatsapp || ""
+            });
           }
         })
         .catch(console.error);
@@ -79,6 +90,10 @@ export default function Dashboard() {
     }
   };
 
+  const handlePromptChange = (e: any) => {
+    setChannelPrompts({ ...channelPrompts, [selectedChannel]: e.target.value });
+  };
+
   const handleSavePrompt = async () => {
     if (!session?.user?.email) return;
     setIsSavingPrompt(true);
@@ -87,11 +102,16 @@ export default function Dashboard() {
       const res = await fetch("/api/user", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: session.user.email, systemPrompt })
+        // Send the specific channel and its prompt
+        body: JSON.stringify({ 
+          email: session.user.email, 
+          systemPrompt: channelPrompts[selectedChannel as keyof typeof channelPrompts],
+          channel: selectedChannel 
+        })
       });
       const data = await res.json();
       if (data.success) {
-        alert("Bot persona updated successfully! The AI will now follow these instructions.");
+        alert(`Bot persona for ${selectedChannel.toUpperCase()} updated successfully!`);
       } else {
         alert("Failed to update persona.");
       }
@@ -128,7 +148,6 @@ export default function Dashboard() {
     }
   };
 
-  // 🚀 FIXED: PROFESSIONAL HTML INVOICE PRINTING WITH CLAWLINK LOGO
   const handleDownloadInvoice = (invoice: any) => {
     const invoiceHtml = `
       <html>
@@ -229,7 +248,6 @@ export default function Dashboard() {
   const isTelegramLive = !!userData?.telegram_token || !!userData?.telegramActive;
   const isWhatsappLive = !!userData?.whatsapp_token || !!userData?.whatsapp_phone_id || !!userData?.whatsappActive;
 
-  // 🚀 FIXED: ULTRA SMART WHATSAPP APP REDIRECT
   const handleOpenLiveBot = async () => {
     if (isTelegramLive && userData?.telegram_token) {
       try {
@@ -244,7 +262,6 @@ export default function Dashboard() {
       }
       window.open(`https://t.me/${userData?.tg_username || ""}`, "_blank"); 
     } else if (isWhatsappLive) {
-      // Forces Native App opening via WA API deep link
       if (userData?.whatsapp_number) {
         window.open(`https://api.whatsapp.com/send?phone=${userData.whatsapp_number.replace(/\D/g, '')}`, "_blank");
       } else {
@@ -255,7 +272,6 @@ export default function Dashboard() {
     }
   };
 
-  // 🚀 ULTRA FAST BTN CLASS
   const btn = "transition-all duration-[120ms] ease-out active:scale-[0.93] transform-gpu will-change-transform";
 
   return (
@@ -266,7 +282,6 @@ export default function Dashboard() {
 
       <header className="flex items-center justify-between p-6 md:p-8 border-b border-white/5 bg-[#07070A]/70 backdrop-blur-xl sticky top-0 z-30 transition-all duration-300">
         <div className="flex items-center gap-6">
-          {/* 🚀 FIXED: CLEAN CLAWLINK.COM LOGO (Orange and White Only) */}
           <svg width="130" height="22" viewBox="0 0 152 26" fill="none" className="shrink-0 cursor-pointer transition-transform hover:scale-105" onClick={() => router.push("/")}>
             <defs>
               <linearGradient id="cg" x1="0" y1="0" x2="0" y2="26" gradientUnits="userSpaceOnUse">
@@ -497,12 +512,20 @@ export default function Dashboard() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.9, ease: "easeOut" }} className="bg-[#111113] border border-white/5 rounded-[1.5rem] p-8 shadow-2xl relative flex flex-col">
-            <h3 className="text-lg font-black text-white mb-2 tracking-wide flex items-center gap-2">🤖 AI Persona Configuration</h3>
-            <p className="text-sm text-gray-400 mb-6">Define exactly how your AI agent should behave, speak, and respond to users.</p>
-            <textarea rows={6} value={systemPrompt} onChange={(e) => setSystemPrompt(e.target.value)} placeholder="e.g., You are a friendly customer support agent for ClawLink..." className="flex-1 w-full bg-[#07070A] border border-white/10 rounded-xl p-4 text-sm text-gray-200 focus:border-orange-500 focus:shadow-[0_0_15px_rgba(249,115,22,0.15)] focus:outline-none transition-all resize-none mb-6 font-mono custom-scrollbar" />
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-lg font-black text-white tracking-wide flex items-center gap-2">🤖 AI Persona Configuration</h3>
+              {/* 🚀 FIXED: Channel Selector Tab */}
+              <div className="flex bg-[#1A1A1A] border border-white/10 rounded-lg p-1">
+                <button onClick={() => setSelectedChannel('widget')} className={`px-3 py-1 text-xs font-bold rounded-md ${selectedChannel === 'widget' ? 'bg-purple-500 text-white' : 'text-gray-500 hover:text-white'}`}>Widget</button>
+                <button onClick={() => setSelectedChannel('telegram')} className={`px-3 py-1 text-xs font-bold rounded-md ${selectedChannel === 'telegram' ? 'bg-blue-400 text-white' : 'text-gray-500 hover:text-white'}`}>Telegram</button>
+                <button onClick={() => setSelectedChannel('whatsapp')} className={`px-3 py-1 text-xs font-bold rounded-md ${selectedChannel === 'whatsapp' ? 'bg-green-500 text-white' : 'text-gray-500 hover:text-white'}`}>WhatsApp</button>
+              </div>
+            </div>
+            <p className="text-sm text-gray-400 mb-6">Define exactly how your AI agent should behave for <span className="text-white font-bold uppercase">{selectedChannel}</span>.</p>
+            <textarea rows={6} value={channelPrompts[selectedChannel as keyof typeof channelPrompts]} onChange={handlePromptChange} placeholder={`e.g., You are a friendly customer support agent for ClawLink on ${selectedChannel}...`} className="flex-1 w-full bg-[#07070A] border border-white/10 rounded-xl p-4 text-sm text-gray-200 focus:border-orange-500 focus:shadow-[0_0_15px_rgba(249,115,22,0.15)] focus:outline-none transition-all resize-none mb-6 font-mono custom-scrollbar" />
             <div className="flex justify-end mt-auto">
               <button onClick={handleSavePrompt} disabled={isSavingPrompt} className={`bg-white text-black px-8 py-3.5 rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-gray-200 shadow-[0_0_20px_rgba(255,255,255,0.1)] disabled:opacity-50 disabled:scale-100 ${btn}`}>
-                {isSavingPrompt ? "Saving..." : <><Save className="w-4 h-4"/> Save Persona</>}
+                {isSavingPrompt ? "Saving..." : <><Save className="w-4 h-4"/> Save {selectedChannel} Persona</>}
               </button>
             </div>
           </motion.div>

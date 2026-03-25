@@ -51,6 +51,10 @@ export async function GET(req: Request) {
       tokensUsed: data.tokens_used || 0,
       isUnlimited: data.is_unlimited || false,
       systemPrompt: data.system_prompt || "",
+      // 🚀 FIXED: Added Multi-Channel Prompts
+      system_prompt_telegram: data.system_prompt_telegram || "",
+      system_prompt_whatsapp: data.system_prompt_whatsapp || "",
+      system_prompt_widget: data.system_prompt_widget || "",
       telegramActive: !!data.telegram_token,
       whatsappActive: !!data.whatsapp_token,
       telegram_token: data.telegram_token,
@@ -110,11 +114,11 @@ export async function POST(req: Request) {
     }
 }
 
-// 3. PUT: Update AI Persona or Settings dynamically 🚀 [ENHANCED FIX]
+// 3. PUT: Update AI Persona or Settings dynamically 🚀 [ENHANCED MULTI-CHANNEL FIX]
 export async function PUT(req: Request) {
   try {
     const body = await req.json();
-    const { email, systemPrompt, selectedModel, selectedChannel } = body;
+    const { email, systemPrompt, selectedModel, selectedChannel, channel } = body;
 
     if (!email) {
       return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
@@ -122,7 +126,20 @@ export async function PUT(req: Request) {
 
     // 🚨 Build update object dynamically based on what frontend sends
     const updateData: any = {};
-    if (systemPrompt !== undefined) updateData.system_prompt = systemPrompt;
+    
+    // 🚀 FIXED: Multi-Channel Persona Router
+    if (systemPrompt !== undefined) {
+      if (channel === 'telegram') {
+        updateData.system_prompt_telegram = systemPrompt;
+      } else if (channel === 'whatsapp') {
+        updateData.system_prompt_whatsapp = systemPrompt;
+      } else if (channel === 'widget') {
+        updateData.system_prompt_widget = systemPrompt;
+      } else {
+        updateData.system_prompt = systemPrompt; // Fallback to master
+      }
+    }
+
     if (selectedChannel !== undefined) updateData.selected_channel = selectedChannel;
     
     if (selectedModel !== undefined) {
@@ -142,9 +159,12 @@ export async function PUT(req: Request) {
       .update(updateData)
       .eq("email", email.toLowerCase());
 
-    if (error) throw error;
+    if (error) {
+      console.error("Supabase Update Error:", error);
+      throw error;
+    }
 
-    return NextResponse.json({ success: true, message: "Data updated successfully" });
+    return NextResponse.json({ success: true, message: `Data updated successfully for ${channel || 'master'}` });
   } catch (error: any) {
     console.error("User Update Error:", error.message);
     return NextResponse.json({ success: false, error: "Internal Server Error" }, { status: 500 });
