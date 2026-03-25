@@ -14,44 +14,7 @@ CRITICAL INSTRUCTION: You are an Enterprise AI Support Agent.
 `;
 
 // ==========================================
-// 🥇 HELPER 1: ANTHROPIC (CLAUDE)
-// ==========================================
-async function callAnthropic(models: string[], history: any[], systemPrompt: string, prompt: string, key: string | null) {
-  const apiKey = key || process.env.ANTHROPIC_API_KEY || "";
-  const finalSystemPrompt = `${ENTERPRISE_GUARDRAIL}\n\n${systemPrompt || "You are a highly advanced AI assistant."}`;
-  for (const model of models) {
-    try {
-      console.log(`🔴 [OMNI-NEXUS] Trying Anthropic Model: ${model}`);
-      const res = await fetch("https://api.anthropic.com/v1/messages", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-api-key": apiKey,
-          "anthropic-version": "2023-06-01"
-        },
-        body: JSON.stringify({
-          model: model,
-          max_tokens: 1024,
-          system: finalSystemPrompt,
-          messages: [...history, { role: "user", content: prompt }]
-        }),
-      });
-
-      if (res.ok) {
-        const data = await res.json();
-        return { success: true, provider: "claude", model: model, reply: data.content[0].text };
-      } else {
-        console.warn(`⚠️ [OMNI-NEXUS] Anthropic ${model} failed with status: ${res.status}`);
-      }
-    } catch (e) {
-      console.warn(`⚠️ [OMNI-NEXUS] Anthropic ${model} network error:`, e);
-    }
-  }
-  return { success: false };
-}
-
-// ==========================================
-// 🥈 HELPER 2: OPENAI (GPT)
+// 🥇 HELPER 1: OPENAI (GPT) - NOW PRIORITY 1
 // ==========================================
 async function callOpenAI(models: string[], systemPrompt: string, history: any[], prompt: string, key: string | null) {
   const apiKey = key || process.env.OPENAI_API_KEY || "";
@@ -91,7 +54,7 @@ async function callOpenAI(models: string[], systemPrompt: string, history: any[]
 }
 
 // ==========================================
-// 🥉 HELPER 3: GOOGLE (GEMINI)
+// 🥈 HELPER 2: GOOGLE (GEMINI) - NOW PRIORITY 2
 // ==========================================
 async function callGemini(models: string[], systemPrompt: string, prompt: string, key: string | null) {
   const geminiKey = key || process.env.GEMINI_API_KEY || "";
@@ -124,6 +87,43 @@ async function callGemini(models: string[], systemPrompt: string, prompt: string
 }
 
 // ==========================================
+// 🥉 HELPER 3: ANTHROPIC (CLAUDE) - NOW PRIORITY 3 (Since no funds)
+// ==========================================
+async function callAnthropic(models: string[], history: any[], systemPrompt: string, prompt: string, key: string | null) {
+  const apiKey = key || process.env.ANTHROPIC_API_KEY || "";
+  const finalSystemPrompt = `${ENTERPRISE_GUARDRAIL}\n\n${systemPrompt || "You are a highly advanced AI assistant."}`;
+  for (const model of models) {
+    try {
+      console.log(`🔴 [OMNI-NEXUS] Trying Anthropic Model: ${model}`);
+      const res = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-key": apiKey,
+          "anthropic-version": "2023-06-01"
+        },
+        body: JSON.stringify({
+          model: model,
+          max_tokens: 1024,
+          system: finalSystemPrompt,
+          messages: [...history, { role: "user", content: prompt }]
+        }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        return { success: true, provider: "claude", model: model, reply: data.content[0].text };
+      } else {
+        console.warn(`⚠️ [OMNI-NEXUS] Anthropic ${model} failed with status: ${res.status}`);
+      }
+    } catch (e) {
+      console.warn(`⚠️ [OMNI-NEXUS] Anthropic ${model} network error:`, e);
+    }
+  }
+  return { success: false };
+}
+
+// ==========================================
 // 🚀 MAIN ENGINE CONTROLLER
 // ==========================================
 export async function POST(req: Request) {
@@ -137,7 +137,6 @@ export async function POST(req: Request) {
 
     console.log(`⚡ [OMNI-NEXUS] Request intercepted. Engaging Deep Fallback Matrix... (ForceCheap: ${forceCheap})`);
 
-    // 🚀 FIXED: REAL PRODUCTION MODELS FOR OMNI
     const geminiModels = ["gemini-1.5-flash", "gemini-1.5-flash-8b", "gemini-1.5-pro"];
     const openAIModels = ["gpt-4o-mini", "gpt-4o", "gpt-3.5-turbo"];
     const claudeModels = ["claude-3-5-sonnet-20240620", "claude-3-sonnet-20240229", "claude-3-haiku-20240307"];
@@ -146,34 +145,25 @@ export async function POST(req: Request) {
     // 🧠 SMART COST-SAVING ROUTE (When forceCheap is true from Webhooks/Widget)
     // ======================================================================
     if (forceCheap) {
-      console.log("💰 [OMNI-NEXUS] Cost-Saving Mode Active. Routing directly to Gemini Flash.");
-      const cheapResult = await callGemini(geminiModels, systemPrompt, prompt, apiKey);
+      console.log("💰 [OMNI-NEXUS] Cost-Saving Mode Active. Routing directly to OpenAI Mini.");
+      const cheapResult = await callOpenAI(["gpt-4o-mini"], systemPrompt, history, prompt, apiKey);
       if (cheapResult.success) {
         console.log(`✅ [OMNI-NEXUS] Success via ${cheapResult.provider} (${cheapResult.model})`);
         return NextResponse.json(cheapResult);
       }
-      // If Gemini fails, fallback to GPT-Mini
-      const backupResult = await callOpenAI(openAIModels, systemPrompt, history, prompt, apiKey);
+      // If GPT fails, fallback to Gemini
+      const backupResult = await callGemini(geminiModels, systemPrompt, prompt, apiKey);
       if (backupResult.success) {
         console.log(`✅ [OMNI-NEXUS] Backup Success via ${backupResult.provider} (${backupResult.model})`);
         return NextResponse.json(backupResult);
       }
     } 
     // ======================================================================
-    // 💎 PREMIUM ROUTE (Normal Flow)
+    // 💎 PREMIUM ROUTE (Normal Flow) - REORDERED
     // ======================================================================
     else {
       // ----------------------------------------------------------------------
-      // PRIORITY 1: CLAUDE (Expensive but Smartest)
-      // ----------------------------------------------------------------------
-      const claudeResult = await callAnthropic(claudeModels, history, systemPrompt, prompt, apiKey);
-      if (claudeResult.success) {
-        console.log(`✅ [OMNI-NEXUS] Success via ${claudeResult.provider} (${claudeResult.model})`);
-        return NextResponse.json(claudeResult);
-      }
-
-      // ----------------------------------------------------------------------
-      // PRIORITY 2: OPENAI (Medium Fallback)
+      // PRIORITY 1: OPENAI (Fastest & Funded)
       // ----------------------------------------------------------------------
       const openAIResult = await callOpenAI(openAIModels, systemPrompt, history, prompt, apiKey);
       if (openAIResult.success) {
@@ -182,12 +172,21 @@ export async function POST(req: Request) {
       }
 
       // ----------------------------------------------------------------------
-      // PRIORITY 3: GEMINI (Last Resort Fallback)
+      // PRIORITY 2: GEMINI (Free & Reliable Fallback)
       // ----------------------------------------------------------------------
       const geminiResult = await callGemini(geminiModels, systemPrompt, prompt, apiKey);
       if (geminiResult.success) {
         console.log(`✅ [OMNI-NEXUS] Success via ${geminiResult.provider} (${geminiResult.model})`);
         return NextResponse.json(geminiResult);
+      }
+
+      // ----------------------------------------------------------------------
+      // PRIORITY 3: CLAUDE (Unfunded Fallback)
+      // ----------------------------------------------------------------------
+      const claudeResult = await callAnthropic(claudeModels, history, systemPrompt, prompt, apiKey);
+      if (claudeResult.success) {
+        console.log(`✅ [OMNI-NEXUS] Success via ${claudeResult.provider} (${claudeResult.model})`);
+        return NextResponse.json(claudeResult);
       }
     }
 
