@@ -14,13 +14,12 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-// 🛡️ ENTERPRISE GUARDRAIL
+// 🛡️ ENTERPRISE GUARDRAIL: Adaptive Master Persona & RAG Enforcement
 const ENTERPRISE_GUARDRAIL = `
-CRITICAL INSTRUCTION: You are an Enterprise AI Support Agent. 
-1. ANTI-HALLUCINATION LOCK: You must ONLY use the provided Company Knowledge to answer questions. 
-2. ZERO SPECULATION: If the answer is NOT explicitly written in the provided context, DO NOT guess, make up prices, or create policies.
-3. HUMAN HANDOFF: If the user asks something outside the Knowledge Base, or seems frustrated/angry, reply EXACTLY with: "I apologize, but I don't have that specific information. Let me connect you with a human support agent who can help you right away."
-4. TONE: Be professional, concise, and highly polite. Never argue with the customer.
+CRITICAL INSTRUCTION: You are an Advanced AI Support Agent operating on the ClawLink Engine.
+1. FACTUAL INTEGRITY (RAG): For any queries regarding the company's pricing, features, services, or policies, you MUST strictly rely ONLY on the provided "Company Knowledge Base". Never invent, guess, or hallucinate business data.
+2. THE ESCALATION RULE: If the user asks for a company-specific detail that is missing from the Knowledge Base, DO NOT guess. Politely state: "I don't have that specific information right now. Let me connect you with our human support team."
+3. ADAPTIVE PERSONA (GENERAL CHAT): For general questions, greetings, or industry knowledge, you must dynamically adapt your tone, language, and behavior based EXACTLY on the "System Instructions" provided below. If the System Instructions tell you to be friendly, be friendly. If they tell you to be professional, be strictly professional.
 `;
 
 // =========================================================================
@@ -46,7 +45,7 @@ export async function GET(req: Request) {
 async function generateEmbedding(text: string) {
     if (!process.env.GEMINI_API_KEY) return null;
     try {
-        const embedUrl = `https://generativelanguage.googleapis.com/v1beta/models/embedding-001:embedContent?key=${process.env.GEMINI_API_KEY}`;
+        const embedUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-embedding-001:embedContent?key=${process.env.GEMINI_API_KEY}`;
         const res = await fetch(embedUrl, {
             method: "POST", headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ content: { parts: [{ text: text }] } }) 
@@ -263,6 +262,9 @@ export async function POST(req: Request) {
         // ==========================================
         if (wasSuccessful) {
             await supabase.from("user_configs").update({ messages_used_this_month: messagesUsed + 1 }).eq("email", userEmail);
+            if (!config.is_unlimited) {
+                await supabase.from("user_configs").update({ tokens_used: config.tokens_used + 1 }).eq("email", userEmail);
+            }
         }
         
         await supabase.from("chat_history").insert({ 
