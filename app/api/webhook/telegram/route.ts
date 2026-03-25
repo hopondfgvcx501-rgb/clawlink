@@ -145,17 +145,17 @@ export async function POST(req: Request) {
         else if (rawProvider.includes("gemini") || rawProvider.includes("google")) provider = "google";
 
         // ==========================================
-        // 🛑 THE GATEKEEPER (Expiry & Limits Check)
+        // 🛑 THE GATEKEEPER (Expiry & Limits Check) 🚀 RELAXED FOR TESTING
         // ==========================================
-        const isUnlimited = config.is_unlimited || config.plan_name === "max" || config.plan_name === "ultra_max";
-        const messagesUsed = config.messages_used_this_month || 0;
-        const monthlyLimit = config.monthly_message_limit || 1000;
+        const isUnlimited = config.is_unlimited || config.plan_name === "max" || config.plan_name === "ultra_max" || config.plan_name === "pro";
+        const tokensUsed = config.tokens_used || 0;
+        const tokensAllocated = config.tokens_allocated || 10000;
         
         const expiryDate = new Date(config.plan_expiry_date);
         const isExpired = config.plan_expiry_date ? (new Date() > expiryDate) : false;
 
-        // 🚀 CUSTOMER-FACING MAINTENANCE MESSAGE
-        if (isExpired || (!isUnlimited && messagesUsed >= monthlyLimit)) {
+        // Block only if not unlimited AND tokens used are greater than allocated
+        if (isExpired || (!isUnlimited && tokensUsed >= tokensAllocated)) {
             const maintenanceMsg = "Hello! Our AI assistant is currently undergoing a brief scheduled maintenance to serve you better. Please leave your query and our human support team will get back to you shortly. Thank you for your patience!";
                 
             await fetch(`https://api.telegram.org/bot${telegramToken}/sendMessage`, {
@@ -236,7 +236,7 @@ export async function POST(req: Request) {
         let wasSuccessful = false;
 
         const words = userText.split(/\s+/).length;
-        const usageRatio = isUnlimited ? 0 : (messagesUsed / monthlyLimit) * 100;
+        const usageRatio = isUnlimited ? 0 : (tokensUsed / tokensAllocated) * 100;
         
         const CHEAP_MODEL = "gemini-1.5-flash";
         const MEDIUM_MODEL = "gpt-4o-mini";
@@ -295,10 +295,11 @@ export async function POST(req: Request) {
         // 9. CHARGE TOKENS & SAVE RESPONSE
         // ==========================================
         if (wasSuccessful) {
-            await supabase.from("user_configs").update({ messages_used_this_month: messagesUsed + 1 }).eq("email", ownerEmail);
-            if (!config.is_unlimited) {
-                await supabase.from("user_configs").update({ tokens_used: config.tokens_used + 1 }).eq("email", ownerEmail);
+            const updatePayload: any = { messages_used_this_month: (config.messages_used_this_month || 0) + 1 };
+            if (!isUnlimited) {
+                updatePayload.tokens_used = tokensUsed + 1;
             }
+            await supabase.from("user_configs").update(updatePayload).eq("email", ownerEmail);
         }
         
         await supabase.from("chat_history").insert({ 
