@@ -4,7 +4,7 @@ import { createClient } from "@supabase/supabase-js";
 export const runtime = "edge";
 export const dynamic = "force-dynamic";
 
-// 🚀 INITIALIZE SUPABASE (Moved to top to prevent Vercel Crash)
+// 🚀 INITIALIZE SUPABASE
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
 const supabase = createClient(supabaseUrl, supabaseKey);
@@ -19,6 +19,15 @@ const corsHeaders = {
 export async function OPTIONS() {
     return new NextResponse(null, { status: 204, headers: corsHeaders });
 }
+
+// 🛡️ ENTERPRISE GUARDRAIL: Strict RAG Enforcement & Human Handoff Protocol
+const ENTERPRISE_GUARDRAIL = `
+CRITICAL INSTRUCTION: You are an Enterprise AI Support Agent. 
+1. ANTI-HALLUCINATION LOCK: You must ONLY use the provided Company Knowledge to answer questions. 
+2. ZERO SPECULATION: If the answer is NOT explicitly written in the provided context, DO NOT guess, make up prices, or create policies.
+3. HUMAN HANDOFF: If the user asks something outside the Knowledge Base, or seems frustrated/angry, reply EXACTLY with: "I apologize, but I don't have that specific information. Let me connect you with a human support agent who can help you right away."
+4. TONE: Be professional, concise, and highly polite. Never argue with the customer.
+`;
 
 // =========================================================================
 // 1. 🌐 GET REQUEST: INJECT WIDGET UI TO USER'S WEBSITE
@@ -154,7 +163,6 @@ export async function GET(req: Request) {
           chatBody.scrollTop = chatBody.scrollHeight;
 
           try {
-            // 🚀 FIXED: Pointing securely to the exact same file's POST method
             const res = await fetch(baseUrl + '/api/widget', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
@@ -181,7 +189,6 @@ export async function GET(req: Request) {
         sendBtn.addEventListener('click', sendMessage);
         input.addEventListener('keypress', (e) => { if (e.key === 'Enter') sendMessage(); });
 
-        // 🎤 VOICE RECORDING LOGIC
         micBtn.addEventListener('click', async () => {
           if (!isRecording) {
             try {
@@ -280,10 +287,10 @@ async function callClaude(model: string, prompt: string) {
 
 async function generateEmbedding(text: string) {
     try {
-        const embedUrl = `https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent?key=${process.env.GEMINI_API_KEY}`;
+        const embedUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-embedding-001:embedContent?key=${process.env.GEMINI_API_KEY}`;
         const res = await fetch(embedUrl, {
             method: "POST", headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ model: "models/text-embedding-004", content: { parts: [{ text: text }] } })
+            body: JSON.stringify({ content: { parts: [{ text: text }] } })
         });
         const data = await res.json();
         return res.ok ? data.embedding.values : null;
@@ -300,7 +307,6 @@ export async function POST(req: Request) {
         let userText = message;
         let crmLogMessage = message;
 
-        // 🎤 PROCESS VOICE IF RECEIVED FROM WIDGET
         if (audio) {
             const transcription = await transcribeAudio(audio);
             if (transcription) {
@@ -315,11 +321,9 @@ export async function POST(req: Request) {
             return NextResponse.json({ success: false, error: "Missing required fields" }, { status: 400, headers: corsHeaders });
         }
 
-        // 1. Fetch User Config & Plan Details
         const { data: config } = await supabase.from("user_configs").select("*").eq("email", email).single();
         if (!config) return NextResponse.json({ success: false, error: "Configuration not found" }, { status: 404, headers: corsHeaders });
 
-        // 🛑 THE GATEKEEPER (Expiry & Limits Check)
         const isUnlimited = config.is_unlimited || config.plan_name === "max" || config.plan_name === "ultra_max";
         const messagesUsed = config.messages_used_this_month || 0;
         const monthlyLimit = config.monthly_message_limit || 1000;
@@ -327,18 +331,15 @@ export async function POST(req: Request) {
         const expiryDate = new Date(config.plan_expiry_date);
         const isExpired = config.plan_expiry_date ? (new Date() > expiryDate) : false;
 
-        // 🚀 CUSTOMER-FACING MAINTENANCE MESSAGE (Protects business image)
         if (isExpired || (!isUnlimited && messagesUsed >= monthlyLimit)) {
             const maintenanceMsg = "Hello! Our AI assistant is currently undergoing a brief scheduled maintenance to serve you better. Please leave your query and our human support team will get back to you shortly. Thank you for your patience!";
             return NextResponse.json({ success: true, reply: maintenanceMsg }, { headers: corsHeaders });
         }
 
-        // ✂️ COST CONTROL: Trim excessively long messages
         if (userText.length > 800) {
             userText = userText.substring(0, 800) + "...";
         }
 
-        // 2. Fetch RAG Knowledge (Vector DB)
         let customKnowledge = "";
         try {
             const queryVector = await generateEmbedding(userText);
@@ -352,7 +353,6 @@ export async function POST(req: Request) {
             }
         } catch (e) {}
 
-        // 3. Fetch Conversation History (From `chat_history` to sync with CRM)
         const { data: pastChats } = await supabase
             .from("chat_history")
             .select("sender_type, message")
@@ -366,11 +366,9 @@ export async function POST(req: Request) {
             memoryHistory = pastChats.reverse().map(chat => `${chat.sender_type.toUpperCase()}: ${chat.message}`).join("\n");
         }
 
-        // 4. Assemble the System Prompt & Full Context
         const systemPrompt = config.system_prompt || "You are a helpful AI assistant.";
-        const fullContext = `System Instructions: ${systemPrompt}\n\nCompany Knowledge Base:\n${customKnowledge ? customKnowledge : "No specific company data found for this query."}\n\nRecent Conversation History:\n${memoryHistory}\n\nUser's New Message: ${userText}`;
+        const fullContext = `${ENTERPRISE_GUARDRAIL}\n\nSystem Instructions: ${systemPrompt}\n\nCompany Knowledge Base:\n${customKnowledge ? customKnowledge : "No specific company data found for this query."}\n\nRecent Conversation History:\n${memoryHistory}\n\nUser's New Message: ${userText}`;
 
-        // 5. 🔒 CRITICAL: Save User Message to CRM using `chat_history`
         await supabase.from("chat_history").insert({ 
             email: email, 
             platform: "web",
@@ -380,7 +378,6 @@ export async function POST(req: Request) {
             message: crmLogMessage 
         });
 
-        // 6. 🧠 CLAWLINK PROFIT MAXIMIZER (Hidden Smart Routing)
         let aiResponse = "I am having trouble connecting to my neural network. Please try again in a moment.";
         let wasSuccessful = false;
         
@@ -402,19 +399,17 @@ export async function POST(req: Request) {
         let targetModel = CHEAP_MODEL;
 
         if (provider === "omni") {
-            // Smart Omni Routing
             if (usageRatio >= 80) {
-                targetProvider = "google"; targetModel = CHEAP_MODEL; // Force Save Mode
+                targetProvider = "google"; targetModel = CHEAP_MODEL; 
             } else if (usageRatio >= 60) {
                 if (words < 40) { targetProvider = "google"; targetModel = CHEAP_MODEL; }
-                else { targetProvider = "openai"; targetModel = MEDIUM_MODEL; } // Claude Disabled
+                else { targetProvider = "openai"; targetModel = MEDIUM_MODEL; }
             } else {
                 if (words < 40) { targetProvider = "google"; targetModel = CHEAP_MODEL; }
                 else if (words < 150) { targetProvider = "openai"; targetModel = MEDIUM_MODEL; }
-                else { targetProvider = "anthropic"; targetModel = EXPENSIVE_MODEL; } // Premium Mode
+                else { targetProvider = "anthropic"; targetModel = EXPENSIVE_MODEL; } 
             }
         } else {
-            // Strict Provider Routing (Force Save if usage is too high)
             if (usageRatio >= 80) {
                 targetProvider = "google"; targetModel = CHEAP_MODEL;
             } else {
@@ -425,7 +420,6 @@ export async function POST(req: Request) {
             }
         }
 
-        // 🔄 ULTRA FAST FALLBACK SYSTEM
         try {
             if (targetProvider === "anthropic") aiResponse = await callClaude(targetModel, fullContext);
             else if (targetProvider === "openai") aiResponse = await callOpenAI(targetModel, fullContext);
@@ -447,7 +441,6 @@ export async function POST(req: Request) {
             }
         }
 
-        // 7. 🔒 CRITICAL: Charge Tokens & Save AI Response to Live CRM
         if (wasSuccessful) {
             await supabase.from("user_configs").update({ messages_used_this_month: messagesUsed + 1 }).eq("email", email);
             if (!config.is_unlimited) {
