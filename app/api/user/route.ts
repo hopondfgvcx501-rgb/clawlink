@@ -10,7 +10,7 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-// 1. GET: Fetch User Stats for Dashboard (STRICT ISOLATION - NO MIXING)
+// 1. GET: Fetch User Stats for Dashboard (SMART FILTERING)
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
@@ -20,47 +20,87 @@ export async function GET(req: Request) {
       return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
     }
 
-    // 🚀 FIXED: Fetch ONLY the most recent active bot for this email. 
-    // No more aggregating or mixing plans/channels!
-    const { data: latestBot, error } = await supabase
+    // Fetch all records for the email
+    const { data, error } = await supabase
       .from("user_configs")
       .select("*")
       .eq("email", email)
-      .order("created_at", { ascending: false }) // Hamesha latest wala bot uthayega
-      .limit(1)
-      .single();
+      .order("created_at", { ascending: false });
 
-    if (error || !latestBot) {
+    if (error || !data || data.length === 0) {
       return NextResponse.json({ success: true, data: null });
     }
 
-    const dbModel = latestBot.selected_model || latestBot.ai_model || "Not Set"; 
-    let dbProvider = latestBot.ai_provider || "openai";
-    
-    if (dbModel.toLowerCase().includes("claude") || dbModel.toLowerCase().includes("anthropic")) dbProvider = "anthropic";
-    else if (dbModel.toLowerCase().includes("gemini") || dbModel.toLowerCase().includes("google")) dbProvider = "google";
+    // 🚀 FILTER THE BUG: Ignore blank/auto-generated onboarding rows. Only check real bots.
+    let validBots = data.filter(bot => 
+        (bot.ai_model && bot.ai_model !== "Not Set") || 
+        bot.telegram_token || 
+        bot.whatsapp_phone_id || 
+        bot.plan === "max" || bot.plan === "pro" || bot.plan === "monthly" || bot.plan === "yearly"
+    );
 
-    // 🚀 PERFECT MATCH: Only shows the exact stats of the targeted bot.
+    // If somehow all are blank, fallback to data[0]
+    if (validBots.length === 0) validBots = [data[0]];
+
+    let highestPlan = "Starter";
+    let bestModel = "Not Set";
+    let bestProvider = "openai";
+    let isUnlimited = false;
+    let totalAllocated = 0;
+    let totalUsed = 0;
+    let activeTelegram = false;
+    let activeWhatsapp = false;
+    let tgToken = null;
+    let waToken = null;
+    let waPhoneId = null;
+
+    // Scan through valid bots to find the true power of this user
+    for (const bot of validBots) {
+        totalAllocated += (bot.tokens_allocated || 0);
+        totalUsed += (bot.tokens_used || 0);
+
+        const bPlan = (bot.plan || "").toLowerCase();
+        if (bPlan === "max" || bPlan === "yearly" || bPlan === "monthly" || bPlan === "ultra-premium" || bot.is_unlimited) {
+            isUnlimited = true;
+            highestPlan = bot.plan;
+        } else if (bPlan === "pro" && highestPlan !== "max" && highestPlan !== "yearly" && highestPlan !== "monthly") {
+            highestPlan = bot.plan;
+        }
+
+        if (bot.ai_model && bot.ai_model !== "Not Set") {
+            if (bestModel === "Not Set" || bot.ai_model === "multi_model") {
+                bestModel = bot.ai_model;
+                bestProvider = bot.ai_provider || "openai";
+            }
+        }
+
+        if (bot.telegram_token) { activeTelegram = true; tgToken = bot.telegram_token; }
+        if (bot.whatsapp_phone_id || bot.whatsapp_token) { activeWhatsapp = true; waToken = bot.whatsapp_token; waPhoneId = bot.whatsapp_phone_id; }
+    }
+
+    if (bestModel.toLowerCase().includes("claude") || bestModel.toLowerCase().includes("anthropic")) bestProvider = "anthropic";
+    else if (bestModel.toLowerCase().includes("gemini") || bestModel.toLowerCase().includes("google")) bestProvider = "google";
+
     const dashboardData = {
-      plan: latestBot.plan || "Starter",
-      provider: dbProvider,
-      model: dbModel,
-      selected_model: dbModel, 
-      selected_channel: latestBot.selected_channel || "web",
-      ai_provider: dbProvider,
-      tokensAllocated: latestBot.tokens_allocated || 0,
-      tokensUsed: latestBot.tokens_used || 0,
-      isUnlimited: latestBot.is_unlimited || false,
-      systemPrompt: latestBot.system_prompt || "",
-      system_prompt_telegram: latestBot.system_prompt_telegram || "",
-      system_prompt_whatsapp: latestBot.system_prompt_whatsapp || "",
-      system_prompt_widget: latestBot.system_prompt_widget || "",
-      telegramActive: !!latestBot.telegram_token,
-      whatsappActive: (!!latestBot.whatsapp_token || !!latestBot.whatsapp_phone_id),
-      telegram_token: latestBot.telegram_token,
-      whatsapp_token: latestBot.whatsapp_token,
-      whatsapp_phone_id: latestBot.whatsapp_phone_id,
-      liveBotLink: latestBot.telegram_token ? "https://t.me/BotFather" : (latestBot.whatsapp_phone_id ? "https://business.facebook.com/wa/manage/" : null)
+      plan: highestPlan,
+      provider: bestProvider,
+      model: bestModel,
+      selected_model: bestModel, 
+      selected_channel: activeTelegram ? "telegram" : (activeWhatsapp ? "whatsapp" : "web"),
+      ai_provider: bestProvider,
+      tokensAllocated: isUnlimited ? 9999999 : totalAllocated,
+      tokensUsed: totalUsed,
+      isUnlimited: isUnlimited,
+      systemPrompt: validBots[0].system_prompt || "",
+      system_prompt_telegram: validBots[0].system_prompt_telegram || "",
+      system_prompt_whatsapp: validBots[0].system_prompt_whatsapp || "",
+      system_prompt_widget: validBots[0].system_prompt_widget || "",
+      telegramActive: activeTelegram,
+      whatsappActive: activeWhatsapp,
+      telegram_token: tgToken,
+      whatsapp_token: waToken,
+      whatsapp_phone_id: waPhoneId,
+      liveBotLink: activeTelegram ? "https://t.me/BotFather" : (activeWhatsapp ? "https://business.facebook.com/wa/manage/" : null)
     };
 
     return NextResponse.json({ success: true, data: dashboardData });
@@ -70,7 +110,7 @@ export async function GET(req: Request) {
   }
 }
 
-// 2. POST: Save User Onboarding Data 
+// 2. POST: Save User Onboarding Data (PREVENT BLANK ROW BUG)
 export async function POST(req: Request) {
     try {
         const body = await req.json();
@@ -85,16 +125,35 @@ export async function POST(req: Request) {
             if (sm.includes("gemini") || sm.includes("google")) aiProvider = "google";
         }
 
-        // New deployment always creates a clean, isolated record.
-        await supabase.from("user_configs").insert({
-            email: email.toLowerCase(),
-            selected_model: selectedModel,
-            selected_channel: selectedChannel,
-            ai_provider: aiProvider,
-            plan: plan || "Starter",
-            tokens_allocated: 10000, 
-            tokens_used: 0
-        });
+        // 🚀 FIXED: Check if user already exists to prevent blank spam rows!
+        const { data: existingUser } = await supabase
+            .from("user_configs")
+            .select("id")
+            .eq("email", email.toLowerCase())
+            .order("created_at", { ascending: false })
+            .limit(1)
+            .single();
+
+        if (existingUser) {
+            // Update the existing latest record instead of creating a useless blank row
+            await supabase.from("user_configs").update({
+                selected_model: selectedModel || undefined,
+                selected_channel: selectedChannel || undefined,
+                ai_provider: selectedModel ? aiProvider : undefined,
+                plan: plan || undefined
+            }).eq("id", existingUser.id);
+        } else {
+            // Only insert if it's a completely brand new user
+            await supabase.from("user_configs").insert({
+                email: email.toLowerCase(),
+                selected_model: selectedModel,
+                selected_channel: selectedChannel,
+                ai_provider: aiProvider,
+                plan: plan || "Starter",
+                tokens_allocated: 10000, 
+                tokens_used: 0
+            });
+        }
 
         return NextResponse.json({ success: true, message: "User config saved perfectly!" });
     } catch (error: any) {
@@ -103,7 +162,7 @@ export async function POST(req: Request) {
     }
 }
 
-// 3. PUT: Update AI Persona dynamically (Multi-Channel Safe)
+// 3. PUT: Update AI Persona dynamically
 export async function PUT(req: Request) {
   try {
     const body = await req.json();
@@ -133,7 +192,6 @@ export async function PUT(req: Request) {
 
     if (Object.keys(updateData).length === 0) return NextResponse.json({ success: true, message: "Nothing to update" });
 
-    // 🚀 ISOLATION FIX: Update ONLY the exact bot row matching the targeted channel
     let query = supabase.from("user_configs").update(updateData).eq("email", email.toLowerCase());
     
     if (targetColumn === "telegram_token") query = query.not("telegram_token", "is", null);
