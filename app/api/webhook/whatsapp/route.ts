@@ -133,9 +133,11 @@ export async function POST(req: Request) {
         }
 
         whatsappToken = config.whatsapp_token;
+        const configId = config.id; // 💎 UNIQUE ID FOR TRACKING
+        const userEmail = config.email;
+
         // 🚀 FIXED: Isolated WhatsApp Persona to prevent multi-channel conflicts
         const systemPrompt = config.system_prompt_whatsapp || config.system_prompt || "You are a helpful AI assistant on WhatsApp.";
-        const userEmail = config.email;
         
         let rawProvider = (config.ai_provider || config.selected_model || "openai").toLowerCase();
         let provider = "openai"; 
@@ -147,15 +149,15 @@ export async function POST(req: Request) {
         // ==========================================
         // 🛑 THE GATEKEEPER (Expiry & Limits Check)
         // ==========================================
-        const isUnlimited = config.is_unlimited || config.plan_name === "max" || config.plan_name === "ultra_max";
-        const messagesUsed = config.messages_used_this_month || 0;
-        const monthlyLimit = config.monthly_message_limit || 1000;
+        const isUnlimited = config.is_unlimited || config.plan_name === "max" || config.plan_name === "ultra_max" || config.plan_name === "pro";
+        const tokensUsed = config.tokens_used || 0;
+        const tokensAllocated = config.tokens_allocated || 10000;
         
         const expiryDate = new Date(config.plan_expiry_date);
         const isExpired = config.plan_expiry_date ? (new Date() > expiryDate) : false;
 
         // 🚀 CUSTOMER-FACING MAINTENANCE MESSAGE
-        if (isExpired || (!isUnlimited && messagesUsed >= monthlyLimit)) {
+        if (isExpired || (!isUnlimited && tokensUsed >= tokensAllocated)) {
             const maintenanceMsg = "Hello! Our AI assistant is currently undergoing a brief scheduled maintenance to serve you better. Please leave your query and our human support team will get back to you shortly. Thank you for your patience!";
                 
             await fetch(`https://graph.facebook.com/v18.0/${phoneNumberId}/messages`, {
@@ -203,7 +205,7 @@ export async function POST(req: Request) {
         let wasSuccessful = false;
 
         const words = userText.split(/\s+/).length;
-        const usageRatio = isUnlimited ? 0 : (messagesUsed / monthlyLimit) * 100;
+        const usageRatio = isUnlimited ? 0 : (tokensUsed / tokensAllocated) * 100;
         
         const CHEAP_MODEL = "gemini-1.5-flash";
         const MEDIUM_MODEL = "gpt-4o-mini";
@@ -225,7 +227,7 @@ export async function POST(req: Request) {
                 else { targetProvider = "anthropic"; targetModel = EXPENSIVE_MODEL; } // Premium Mode
             }
         } else {
-            // Strict Provider Routing (Force Save if usage is too high)
+            // Strict Provider Routing
             if (usageRatio >= 80) {
                 targetProvider = "google"; targetModel = CHEAP_MODEL;
             } else {
@@ -259,13 +261,15 @@ export async function POST(req: Request) {
         }
 
         // ==========================================
-        // 9. CHARGE TOKENS & SAVE AI RESPONSE
+        // 9. CHARGE TOKENS & SAVE AI RESPONSE (ISOLATED TRACKING)
         // ==========================================
         if (wasSuccessful) {
-            await supabase.from("user_configs").update({ messages_used_this_month: messagesUsed + 1 }).eq("email", userEmail);
-            if (!config.is_unlimited) {
-                await supabase.from("user_configs").update({ tokens_used: config.tokens_used + 1 }).eq("email", userEmail);
+            const updatePayload: any = { messages_used_this_month: (config.messages_used_this_month || 0) + 1 };
+            if (!isUnlimited) {
+                updatePayload.tokens_used = tokensUsed + 1;
             }
+            // 🚀 FIXED: Update EXACT bot by its unique ID, not by email!
+            await supabase.from("user_configs").update(updatePayload).eq("id", configId);
         }
         
         await supabase.from("chat_history").insert({ 
