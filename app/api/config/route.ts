@@ -35,26 +35,63 @@ export async function POST(req: Request) {
     else if (selectedModel === "gpt-5.2") providerToSave = "openai";
     else if (selectedModel === "gemini") providerToSave = "google";
 
-    // 1. UPDATE USER CONFIGURATION
-    const { data, error } = await supabase
-      .from("user_configs")
-      .upsert({
-        email: email,
+    // 1. UPDATE OR INSERT USER CONFIGURATION (AGENCY MODEL)
+    const payload: any = {
         ai_model: selectedModel,
-        ai_provider: providerToSave, // 🚦 SAVED CORRECTLY FOR ROUTER
-        telegram_token: selectedChannel === "telegram" ? telegramToken : null,
-        whatsapp_token: selectedChannel === "whatsapp" ? telegramToken : null,
-        whatsapp_phone_id: selectedChannel === "whatsapp" ? waPhoneId : null, 
+        ai_provider: providerToSave,
         tokens_allocated: allocatedTokens, 
         available_tokens: allocatedTokens,
         is_unlimited: isUnlimited,
         plan: plan, 
         plan_status: 'Active',
-        expires_at: expiryDate.toISOString()
-      }, { onConflict: "email" })
-      .select();
+        expires_at: expiryDate.toISOString(),
+        selected_channel: selectedChannel
+    };
 
-    if (error) throw error;
+    let botIdentifier = null;
+    let botColumn = null;
+
+    if (selectedChannel === "telegram" && telegramToken) {
+        payload.telegram_token = telegramToken;
+        botIdentifier = telegramToken;
+        botColumn = "telegram_token";
+    } else if (selectedChannel === "whatsapp" && waPhoneId) {
+        // Assume telegramToken variable holds the WP token from frontend
+        payload.whatsapp_token = telegramToken; 
+        payload.whatsapp_phone_id = waPhoneId;
+        botIdentifier = waPhoneId;
+        botColumn = "whatsapp_phone_id";
+    }
+
+    if (botIdentifier && botColumn) {
+        // Check if this EXACT bot already exists
+        const { data: existingBot } = await supabase
+            .from("user_configs")
+            .select("id")
+            .eq("email", email.toLowerCase())
+            .eq(botColumn, botIdentifier)
+            .limit(1)
+            .single();
+
+        if (existingBot) {
+            // Update existing bot
+            const { error } = await supabase.from("user_configs").update(payload).eq("id", existingBot.id);
+            if (error) throw error;
+        } else {
+            // Insert NEW bot
+            const { error } = await supabase.from("user_configs").insert({
+                ...payload,
+                email: email.toLowerCase(),
+                tokens_used: 0,
+                messages_used_this_month: 0
+            });
+            if (error) throw error;
+        }
+    } else {
+        // Legacy fallback
+        const { error } = await supabase.from("user_configs").update(payload).eq("email", email.toLowerCase());
+        if (error) throw error;
+    }
 
     // 2. RECORD BILLING HISTORY FOR DASHBOARD INVOICES
     let amount = "19.00"; // Fallback
@@ -64,7 +101,7 @@ export async function POST(req: Request) {
     if (plan === "yearly") amount = "790.00"; // Omni Yearly
 
     await supabase.from("billing_history").insert({
-      email: email,
+      email: email.toLowerCase(),
       plan_name: plan,
       amount: amount,
       currency: "USD", 
@@ -81,8 +118,8 @@ export async function POST(req: Request) {
         if (tData.ok) {
           botLink = `https://t.me/${tData.result.username}`;
           
-          // 🚀 AUTO-REGISTER TELEGRAM WEBHOOK
-          const webhookUrl = `https://clawlink-six.vercel.app/api/webhook/telegram?email=${email}`;
+          // 🚀 AUTO-REGISTER TELEGRAM WEBHOOK (WITH TOKEN FOR AGENCY MODEL)
+          const webhookUrl = `https://clawlink-six.vercel.app/api/webhook/telegram?token=${telegramToken}&email=${email}`;
           await fetch(`https://api.telegram.org/bot${telegramToken}/setWebhook?url=${webhookUrl}`);
         }
       } catch (err) {
