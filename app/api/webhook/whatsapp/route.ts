@@ -133,7 +133,8 @@ export async function POST(req: Request) {
         }
 
         whatsappToken = config.whatsapp_token;
-        const systemPrompt = config.system_prompt || "You are a helpful AI assistant on WhatsApp.";
+        // 🚀 FIXED: Isolated WhatsApp Persona to prevent multi-channel conflicts
+        const systemPrompt = config.system_prompt_whatsapp || config.system_prompt || "You are a helpful AI assistant on WhatsApp.";
         const userEmail = config.email;
         
         let rawProvider = (config.ai_provider || config.selected_model || "openai").toLowerCase();
