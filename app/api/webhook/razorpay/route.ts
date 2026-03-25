@@ -1,6 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
-import { supabase } from "@/app/lib/supabase"; // Make sure this path is correct
+import { createClient } from "@supabase/supabase-js"; // 🚀 FIXED: Using direct import for stability
+
+export const dynamic = "force-dynamic";
+
+// 🚀 INITIALIZE SUPABASE
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
+const supabase = createClient(supabaseUrl, supabaseKey);
 
 export async function POST(req: NextRequest) {
   try {
@@ -34,7 +41,7 @@ export async function POST(req: NextRequest) {
       
       // 🚀 MAGIC EXTRACTION: Fetching exactly what user selected from Razorpay Notes
       const notes = paymentEntity.notes || {};
-      const userEmail = notes.email || paymentEntity.email; 
+      const userEmail = (notes.email || paymentEntity.email || "").toLowerCase(); 
       const planName = (notes.plan_name || "Starter").toLowerCase();
       const rawModel = (notes.selected_model || "openai").toLowerCase();
 
@@ -53,21 +60,29 @@ export async function POST(req: NextRequest) {
         if (planName === "pro") {
             isUnlimited = true;
             tokensAllocated = 500000;
-        } else if (planName === "max" || planName === "unlimited") {
+        } else if (planName === "max" || planName === "unlimited" || planName === "ultra-premium") {
             isUnlimited = true;
             tokensAllocated = 9999999;
         }
 
+        // 🚀 FIXED: DYNAMIC PAYLOAD (Never overwrites existing tokens)
+        const updatePayload: any = {
+            plan: planName,            
+            is_unlimited: isUnlimited, 
+            tokens_allocated: tokensAllocated,
+            selected_model: rawModel,  
+            ai_provider: aiProvider    
+        };
+
+        // If Razorpay passes a new token, add it without erasing others
+        if (notes.telegram_token) updatePayload.telegram_token = notes.telegram_token;
+        if (notes.whatsapp_token) updatePayload.whatsapp_token = notes.whatsapp_token;
+        if (notes.whatsapp_phone_id) updatePayload.whatsapp_phone_id = notes.whatsapp_phone_id;
+
         // 4. Update EXACT Data in Supabase User Configs
         const { error: dbError } = await supabase
           .from("user_configs")
-          .update({ 
-            plan: planName,            // So dashboard overview shows correct plan
-            is_unlimited: isUnlimited, 
-            tokens_allocated: tokensAllocated,
-            selected_model: rawModel,  // E.g., 'claude-3-opus'
-            ai_provider: aiProvider    // E.g., 'anthropic'
-          })
+          .update(updatePayload)
           .eq("email", userEmail);
 
         if (dbError) {
