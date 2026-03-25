@@ -124,15 +124,17 @@ export async function POST(req: Request) {
         const customerName = body.message.from.first_name || "Customer";
 
         const { searchParams } = new URL(req.url);
-        const ownerEmail = searchParams.get("email");
-
-        if (!ownerEmail) return NextResponse.json({ success: true });
+        // 🚀 FIXED: Strict Lowercase to prevent silent failure
+        const rawEmail = searchParams.get("email");
+        if (!rawEmail) return NextResponse.json({ success: true });
+        const ownerEmail = rawEmail.toLowerCase();
 
         const { data: config } = await supabase.from("user_configs").select("*").eq("email", ownerEmail).single();
         if (!config || !config.telegram_token) return NextResponse.json({ success: true });
 
         const telegramToken = config.telegram_token;
-        const systemPrompt = config.system_prompt || "You are a helpful AI assistant.";
+        // 🚀 FIXED: Multi-Channel Persona Support
+        const systemPrompt = config.system_prompt_telegram || config.system_prompt || "You are a helpful AI assistant.";
         const userApiKey = config.user_api_key; 
         
         let rawProvider = (config.ai_provider || config.selected_model || "openai").toLowerCase();
@@ -152,7 +154,7 @@ export async function POST(req: Request) {
         const expiryDate = new Date(config.plan_expiry_date);
         const isExpired = config.plan_expiry_date ? (new Date() > expiryDate) : false;
 
-        // 🚀 CUSTOMER-FACING MAINTENANCE MESSAGE (Protects business image)
+        // 🚀 CUSTOMER-FACING MAINTENANCE MESSAGE
         if (isExpired || (!isUnlimited && messagesUsed >= monthlyLimit)) {
             const maintenanceMsg = "Hello! Our AI assistant is currently undergoing a brief scheduled maintenance to serve you better. Please leave your query and our human support team will get back to you shortly. Thank you for your patience!";
                 
@@ -256,7 +258,7 @@ export async function POST(req: Request) {
                 else { targetProvider = "anthropic"; targetModel = EXPENSIVE_MODEL; } // Premium Mode
             }
         } else {
-            // Strict Provider Routing (Force Save if usage is too high)
+            // Strict Provider Routing
             if (usageRatio >= 80) {
                 targetProvider = "google"; targetModel = CHEAP_MODEL;
             } else {
