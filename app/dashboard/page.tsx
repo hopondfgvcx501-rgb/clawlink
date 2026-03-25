@@ -225,7 +225,7 @@ export default function Dashboard() {
   }
 
   const currentPlan = userData?.plan?.toLowerCase() || "starter";
-  const isPremium = currentPlan === "pro" || currentPlan === "max" || currentPlan === "monthly" || currentPlan === "yearly";
+  const isPremium = currentPlan === "pro" || currentPlan === "max" || currentPlan === "monthly" || currentPlan === "yearly" || currentPlan.includes("ultra");
   const showTokens = !isPremium; 
   const usagePercentage = isPremium ? 100 : Math.min(((stats?.tokensUsed || 0) / (stats?.tokensAllocated || 1)) * 100, 100);
   const totalMsgs = (stats?.platformStats?.whatsapp || 0) + (stats?.platformStats?.telegram || 0) + (stats?.platformStats?.web || 0);
@@ -235,12 +235,14 @@ export default function Dashboard() {
     userData?.selected_model, userData?.selectedModel, userData?.ai_provider, userData?.ai_model
   ].filter(Boolean).join(" ").toLowerCase();
 
-  const isOmniActive = dbValues.includes("omni") || dbValues.includes("multi_model") || currentPlan === "monthly" || currentPlan === "yearly";
+  // 🚀 SURGICAL FIX: Omni is ONLY active if the exact model string contains "omni" or "multi_model". 
+  // It NO LONGER forces Omni just because the plan is "Max" or "Yearly".
+  const isOmniActive = dbValues.includes("omni") || dbValues.includes("multi_model");
 
   const getModelDisplayName = () => {
     if (isOmniActive) return "🌌 OmniAgent Nexus";
-    if (dbValues.includes("gemini") || dbValues.includes("google")) return "Gemini 3 (Flash)";
     if (dbValues.includes("claude") || dbValues.includes("anthropic")) return "Claude 3 (Opus 4.6)";
+    if (dbValues.includes("gemini") || dbValues.includes("google")) return "Gemini 3 (Flash)";
     if (dbValues.includes("gpt") || dbValues.includes("openai")) return "GPT-5.2 (Turbo)";
     return "NOT SET";
   };
