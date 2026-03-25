@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
+// 🚨 CRITICAL FIX: No Caching! Always fetch fresh data.
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
@@ -9,7 +10,7 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-// 1. GET: Fetch User Stats for Dashboard (AGENCY AGGREGATOR)
+// 1. GET: Fetch User Stats for Dashboard (STRICT ISOLATION - NO MIXING)
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
@@ -19,56 +20,18 @@ export async function GET(req: Request) {
       return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
     }
 
-    // 🚀 FIXED: Fetch ALL bots for this user. Removed .single() which caused the crash!
-    const { data, error } = await supabase
+    // 🚀 FIXED: Fetch ONLY the most recent active bot for this email. 
+    // No more aggregating or mixing plans/channels!
+    const { data: latestBot, error } = await supabase
       .from("user_configs")
       .select("*")
       .eq("email", email)
-      .order("created_at", { ascending: false });
+      .order("created_at", { ascending: false }) // Hamesha latest wala bot uthayega
+      .limit(1)
+      .single();
 
-    if (error || !data || data.length === 0) {
+    if (error || !latestBot) {
       return NextResponse.json({ success: true, data: null });
-    }
-
-    // 🧠 AGENCY AGGREGATOR: Combine stats from all bots into one Master Dashboard
-    const latestBot = data[0]; 
-    
-    let totalAllocated = 0;
-    let totalUsed = 0;
-    let isUnlimited = false;
-    let hasTelegram = false;
-    let hasWhatsapp = false;
-    let highestPlan = "Starter";
-
-    let tgPrompt = "";
-    let waPrompt = "";
-    let masterPrompt = "";
-
-    // Loop through all purchased bots and sum up their power
-    for (const bot of data) {
-        totalAllocated += (bot.tokens_allocated || 0);
-        totalUsed += (bot.tokens_used || 0);
-        
-        if (bot.is_unlimited || bot.plan === "max" || bot.plan === "pro" || bot.plan === "ultra-premium") {
-            isUnlimited = true;
-        }
-        
-        if (bot.telegram_token) { 
-            hasTelegram = true; 
-            tgPrompt = bot.system_prompt_telegram || bot.system_prompt || ""; 
-        }
-        if (bot.whatsapp_token || bot.whatsapp_phone_id) { 
-            hasWhatsapp = true; 
-            waPrompt = bot.system_prompt_whatsapp || bot.system_prompt || ""; 
-        }
-        
-        // Find the highest tier plan they own
-        const botPlan = (bot.plan || "").toLowerCase();
-        if (botPlan === "max" || botPlan === "ultra-premium") highestPlan = bot.plan;
-        else if (botPlan === "pro" && highestPlan !== "max" && highestPlan !== "ultra-premium") highestPlan = bot.plan;
-        else if (highestPlan === "Starter") highestPlan = bot.plan;
-
-        if (!masterPrompt && bot.system_prompt) masterPrompt = bot.system_prompt;
     }
 
     const dbModel = latestBot.selected_model || latestBot.ai_model || "Not Set"; 
@@ -77,26 +40,27 @@ export async function GET(req: Request) {
     if (dbModel.toLowerCase().includes("claude") || dbModel.toLowerCase().includes("anthropic")) dbProvider = "anthropic";
     else if (dbModel.toLowerCase().includes("gemini") || dbModel.toLowerCase().includes("google")) dbProvider = "google";
 
+    // 🚀 PERFECT MATCH: Only shows the exact stats of the targeted bot.
     const dashboardData = {
-      plan: highestPlan,
+      plan: latestBot.plan || "Starter",
       provider: dbProvider,
       model: dbModel,
       selected_model: dbModel, 
       selected_channel: latestBot.selected_channel || "web",
       ai_provider: dbProvider,
-      tokensAllocated: isUnlimited ? 9999999 : totalAllocated,
-      tokensUsed: totalUsed,
-      isUnlimited: isUnlimited,
-      systemPrompt: masterPrompt || "",
-      system_prompt_telegram: tgPrompt,
-      system_prompt_whatsapp: waPrompt,
+      tokensAllocated: latestBot.tokens_allocated || 0,
+      tokensUsed: latestBot.tokens_used || 0,
+      isUnlimited: latestBot.is_unlimited || false,
+      systemPrompt: latestBot.system_prompt || "",
+      system_prompt_telegram: latestBot.system_prompt_telegram || "",
+      system_prompt_whatsapp: latestBot.system_prompt_whatsapp || "",
       system_prompt_widget: latestBot.system_prompt_widget || "",
-      telegramActive: hasTelegram,
-      whatsappActive: hasWhatsapp,
-      telegram_token: data.find((b: any) => b.telegram_token)?.telegram_token,
-      whatsapp_token: data.find((b: any) => b.whatsapp_token)?.whatsapp_token,
-      whatsapp_phone_id: data.find((b: any) => b.whatsapp_phone_id)?.whatsapp_phone_id,
-      liveBotLink: hasTelegram ? "https://t.me/BotFather" : (hasWhatsapp ? "https://business.facebook.com/wa/manage/" : null)
+      telegramActive: !!latestBot.telegram_token,
+      whatsappActive: (!!latestBot.whatsapp_token || !!latestBot.whatsapp_phone_id),
+      telegram_token: latestBot.telegram_token,
+      whatsapp_token: latestBot.whatsapp_token,
+      whatsapp_phone_id: latestBot.whatsapp_phone_id,
+      liveBotLink: latestBot.telegram_token ? "https://t.me/BotFather" : (latestBot.whatsapp_phone_id ? "https://business.facebook.com/wa/manage/" : null)
     };
 
     return NextResponse.json({ success: true, data: dashboardData });
@@ -121,6 +85,7 @@ export async function POST(req: Request) {
             if (sm.includes("gemini") || sm.includes("google")) aiProvider = "google";
         }
 
+        // New deployment always creates a clean, isolated record.
         await supabase.from("user_configs").insert({
             email: email.toLowerCase(),
             selected_model: selectedModel,
@@ -168,7 +133,7 @@ export async function PUT(req: Request) {
 
     if (Object.keys(updateData).length === 0) return NextResponse.json({ success: true, message: "Nothing to update" });
 
-    // 🚀 FIXED: Only update the specific bot row that matches the channel!
+    // 🚀 ISOLATION FIX: Update ONLY the exact bot row matching the targeted channel
     let query = supabase.from("user_configs").update(updateData).eq("email", email.toLowerCase());
     
     if (targetColumn === "telegram_token") query = query.not("telegram_token", "is", null);
