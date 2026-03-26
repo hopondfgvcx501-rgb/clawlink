@@ -3,7 +3,6 @@ import Razorpay from "razorpay";
 
 export async function POST(req: Request) {
   try {
-    // 🚀 Extracting payload from the frontend (Added notes & planType support)
     const { amount, currency, email, planName, selectedModel, planType, notes: frontendNotes } = await req.json();
 
     if (!email) {
@@ -13,27 +12,24 @@ export async function POST(req: Request) {
     const keyId = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
     const keySecret = process.env.RAZORPAY_KEY_SECRET;
 
-    // 🔒 SAFETY CHECK: Prevent silent crashes if Test/Live keys are missing
     if (!keyId || !keySecret) {
       console.error("❌ [RAZORPAY] API keys missing in environment variables.");
       return NextResponse.json({ error: "Payment Gateway configuration error. Keys missing." }, { status: 500 });
     }
 
-    // Initialize Razorpay engine
     const razorpay = new Razorpay({
       key_id: keyId,
       key_secret: keySecret,
     });
 
-    // 🔒 SAFETY CHECK: Razorpay strictly expects integers in PAISE.
-    const safeAmount = Math.round(amount);
+    // 🔒 SURGICAL FIX 2: Razorpay strictly expects integers in PAISE.
+    // E.g., if amount is 19 (Rupees), safeAmount becomes 1900 (Paise).
+    const safeAmount = Math.round(amount * 100);
 
-    // Create the order
     const options = {
       amount: safeAmount, 
       currency: currency || "INR", 
       receipt: `receipt_${Date.now()}`,
-      // 🔒 THE MAGIC FIX: Passing Renewal Flags correctly to Webhook
       notes: {
         email: email,
         plan_name: planName || "Unknown",

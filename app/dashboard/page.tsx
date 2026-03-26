@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
-import Script from "next/script"; // 🚀 FIXED: Required for Razorpay Checkout on Dashboard
+import Script from "next/script";
 
 export default function Dashboard() {
   const { data: session, status } = useSession();
@@ -25,15 +25,14 @@ export default function Dashboard() {
   const [showAppBanner, setShowAppBanner] = useState(true);
   const [copiedScript, setCopiedScript] = useState(false); 
   
-  // 🚀 FIXED: Multi-Channel Persona States
-  const [selectedChannel, setSelectedChannel] = useState("widget"); // Default
+  const [selectedChannel, setSelectedChannel] = useState("widget"); 
   const [channelPrompts, setChannelPrompts] = useState({
     widget: "",
     telegram: "",
     whatsapp: ""
   });
   const [isSavingPrompt, setIsSavingPrompt] = useState(false);
-  const [isRenewing, setIsRenewing] = useState(false); // 🚀 RENEWAL STATE
+  const [isRenewing, setIsRenewing] = useState(false);
 
   const [knowledgeText, setKnowledgeText] = useState("");
   const [isInjecting, setIsInjecting] = useState(false);
@@ -52,7 +51,6 @@ export default function Dashboard() {
             setUserData(data.data);
             const activeChan = data.data.selected_channel || "widget";
             setSelectedChannel(activeChan);
-            // Load channel-specific prompts from backend
             setChannelPrompts({
               widget: data.data.system_prompt_widget || data.data.system_prompt || "",
               telegram: data.data.system_prompt_telegram || "",
@@ -94,27 +92,26 @@ export default function Dashboard() {
     }
   };
 
-  // 🚀 THE SURGICAL RENEWAL LOGIC (No Downtime, Direct Top-up)
+  // 🚀 FIXED: SURGICAL RENEWAL LOGIC (Matches planName strictly)
   const handleRenewal = async () => {
     if (!session?.user?.email) return;
     setIsRenewing(true);
 
     try {
       const currentPlan = userData?.plan?.toLowerCase() || "starter";
-      let amount = 89; // Default MAX price
+      let amount = 89; 
       if (currentPlan === "starter") amount = 19;
       if (currentPlan === "pro") amount = 39;
       if (currentPlan === "monthly") amount = 79;
       if (currentPlan === "yearly") amount = 790;
 
-      // Call Razorpay API to generate order
       const res = await fetch("/api/razorpay", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 
           email: session.user.email,
-          plan: currentPlan,
-          planType: "RENEWAL", // 👈 Indicates existing bot upgrade
+          planName: currentPlan, // 👈 FIXED: Changed from 'plan' to 'planName'
+          planType: "RENEWAL", 
           amount: amount,
           notes: {
             email: session.user.email,
@@ -136,7 +133,6 @@ export default function Dashboard() {
         description: `Renewing ${currentPlan.toUpperCase()} Plan`,
         order_id: orderData.orderId || orderData.id,
         handler: function (response: any) {
-          // Success! Reload to fetch updated expiry/tokens from DB
           alert("Payment Successful! Your AI Agent has been renewed.");
           window.location.reload();
         },
@@ -169,7 +165,6 @@ export default function Dashboard() {
       const res = await fetch("/api/user", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        // Send the specific channel and its prompt
         body: JSON.stringify({ 
           email: session.user.email, 
           systemPrompt: channelPrompts[selectedChannel as keyof typeof channelPrompts],
@@ -297,18 +292,16 @@ export default function Dashboard() {
   const usagePercentage = isPremium ? 100 : Math.min(((stats?.tokensUsed || 0) / (stats?.tokensAllocated || 1)) * 100, 100);
   const totalMsgs = (stats?.platformStats?.whatsapp || 0) + (stats?.platformStats?.telegram || 0) + (stats?.platformStats?.web || 0);
 
-  // 🚀 SURGICAL FIX 1: Removed `stats` entirely from dbValues. It strictly reads from the isolated bot's userData.
-  const dbValues = [
-    userData?.selected_model, userData?.selectedModel, userData?.ai_provider, userData?.ai_model
-  ].filter(Boolean).join(" ").toLowerCase();
+  // 🚀 SURGICAL FIX 1: Strict Model Identification (Gemini bug fixed!)
+  const exactModel = (userData?.selected_model || userData?.ai_provider || "gpt-5.2").toLowerCase();
 
-  const isOmniActive = dbValues.includes("omni") || dbValues.includes("multi_model");
+  const isOmniActive = exactModel.includes("omni") || exactModel.includes("multi_model") || exactModel.includes("nexus");
 
   const getModelDisplayName = () => {
     if (isOmniActive) return "🌌 OmniAgent Nexus";
-    if (dbValues.includes("claude") || dbValues.includes("anthropic")) return "Claude 3 (Opus 4.6)";
-    if (dbValues.includes("gemini") || dbValues.includes("google")) return "Gemini 3 (Flash)";
-    if (dbValues.includes("gpt") || dbValues.includes("openai")) return "GPT-5.2 (Turbo)";
+    if (exactModel.includes("claude") || exactModel.includes("anthropic")) return "Claude 3 (Opus 4.6)";
+    if (exactModel.includes("gemini") || exactModel.includes("google")) return "Gemini 3 (Flash)";
+    if (exactModel.includes("gpt") || exactModel.includes("openai")) return "GPT-5.2 (Turbo)";
     return "NOT SET";
   };
 
@@ -343,7 +336,6 @@ export default function Dashboard() {
 
   return (
     <div className="w-full min-h-screen bg-[#07070A] text-[#E8E8EC] font-sans relative selection:bg-orange-500/30 overflow-y-auto custom-scrollbar flex flex-col">
-      {/* 🚀 FIXED: Required for Razorpay Checkout to load on Dashboard */}
       <Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="lazyOnload" />
       
       <div className="fixed top-[-20%] right-[-8%] w-[800px] h-[800px] rounded-full pointer-events-none z-0" style={{background:"radial-gradient(circle,rgba(249,115,22,0.18) 0%,transparent 65%)",transform:"translateZ(0)"}}/>
@@ -411,7 +403,6 @@ export default function Dashboard() {
                     <Crown className="w-3 h-3"/> UNLIMITED TIER
                   </span>
                 )}
-                {/* 🚀 FIXED: SURGICAL RENEWAL BUTTON */}
                 <button 
                   onClick={handleRenewal} 
                   disabled={isRenewing}
@@ -451,7 +442,6 @@ export default function Dashboard() {
             <div className="absolute top-0 right-0 w-32 h-32 bg-green-500/5 rounded-full blur-3xl group-hover:bg-green-500/10 transition-colors"></div>
             <div className="relative z-10 w-full">
               <h3 className="text-gray-500 text-[10px] font-bold uppercase tracking-widest mb-3">Live Channels</h3>
-              {/* 🚀 SURGICAL FIX 3: STRICT CHANNEL LOCK */}
               <div className="flex flex-col gap-2">
                 {userData?.selected_channel === "whatsapp" && (
                   <div className="flex items-center gap-2 text-sm font-bold text-white">
@@ -592,7 +582,6 @@ export default function Dashboard() {
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.9, ease: "easeOut" }} className="bg-[#111113] border border-white/5 rounded-[1.5rem] p-8 shadow-2xl relative flex flex-col">
             <div className="flex items-center justify-between mb-2">
               <h3 className="text-lg font-black text-white tracking-wide flex items-center gap-2">🤖 AI Persona Configuration</h3>
-              {/* 🚀 SURGICAL FIX 4: STRICT PERSONA TAB LOCK */}
               <div className="flex bg-[#1A1A1A] border border-white/10 rounded-lg p-1">
                 <span className={`px-4 py-1 text-[10px] font-black uppercase tracking-widest rounded-md text-white ${selectedChannel === 'telegram' ? 'bg-blue-500' : selectedChannel === 'whatsapp' ? 'bg-green-500' : 'bg-purple-500'}`}>
                   {selectedChannel || 'Widget'}
