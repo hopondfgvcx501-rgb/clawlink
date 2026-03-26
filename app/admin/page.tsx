@@ -12,7 +12,7 @@ import {
   X, MessageSquare
 } from "lucide-react";
 
-// 🚨 STRICT ADMIN EMAIL LOCK (Do not change unless adding new admins)
+// 🚨 STRICT ADMIN EMAIL LOCK (TITANIUM SECURITY LAYER 1)
 const ADMIN_EMAILS = ["hopondfgvcx501@gmail.com"]; 
 
 export default function AdminDashboard() {
@@ -30,20 +30,19 @@ export default function AdminDashboard() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState("overview");
 
-  // 🚀 Broadcast States
   const [broadcastMsg, setBroadcastMsg] = useState("");
   const [broadcastTarget, setBroadcastTarget] = useState("all");
   const [isBroadcasting, setIsBroadcasting] = useState(false);
 
-  // 🚀 Client Details Drawer State
   const [selectedClient, setSelectedClient] = useState<any | null>(null);
   const [clientLogs, setClientLogs] = useState<any[]>([]);
   const [isLoadingLogs, setIsLoadingLogs] = useState(false);
 
-  // 🚀 SMART POLLING & DATA FETCHING
+  // 🚀 TITANIUM SECURITY LAYER 2: Smart Polling with Strict Auth Check
   const fetchAdminData = useCallback(async (isManualRefresh = false) => {
-    // Basic local security check before fetching
+    // Server-Side Guard bypass prevention
     if (!session?.user?.email || !ADMIN_EMAILS.includes(session.user.email.toLowerCase().trim())) {
+        setAccessDeniedReason("CRITICAL: Unauthorized Access Attempt Blocked.");
         return; 
     }
 
@@ -76,7 +75,6 @@ export default function AdminDashboard() {
     }
   }, [session?.user?.email]);
 
-  // 🚀 BACKGROUND REFRESH LOOP
   useEffect(() => {
     if (!isAuthorized || status !== "authenticated") return;
     fetchAdminData();
@@ -84,34 +82,28 @@ export default function AdminDashboard() {
     return () => clearInterval(intervalId); 
   }, [isAuthorized, status, fetchAdminData]);
 
-  // 🚨 SECURITY VALIDATION HOOK
+  // 🚨 TITANIUM SECURITY LAYER 3: Deep Client-Side Validation Hook
   useEffect(() => {
     if (status === "loading") return;
 
-    if (status === "unauthenticated") {
-      setAccessDeniedReason("You are not logged in. Please log in with Google first.");
+    if (status === "unauthenticated" || !session) {
+      setAccessDeniedReason("You are not logged in. System locked.");
       return;
     }
 
     const userEmail = session?.user?.email?.toLowerCase().trim();
 
-    if (!userEmail) {
-      setAccessDeniedReason("System cannot detect your Google Email ID.");
-      return;
-    }
-
-    if (!ADMIN_EMAILS.includes(userEmail)) {
-      setAccessDeniedReason(`ACCESS DENIED: Your email ID [ ${userEmail} ] does not have Level 9 God Mode Clearance.`);
+    if (!userEmail || !ADMIN_EMAILS.includes(userEmail)) {
+      setAccessDeniedReason(`ACCESS DENIED: Unauthorized identity detected [${userEmail || 'Unknown'}]. Incident logged.`);
+      setIsAuthorized(false);
       return;
     }
 
     setIsAuthorized(true);
   }, [session, status]);
 
-  // 🚀 GOD MODE ACTIONS
   const executeGodAction = async (actionType: string, botId: string, currentValue?: any) => {
     let newValue = null;
-    
     if (actionType === "UPDATE_TOKENS") {
         const input = prompt("Enter new Token Limit for this bot:", currentValue);
         if (input === null || isNaN(parseInt(input))) return;
@@ -130,12 +122,9 @@ export default function AdminDashboard() {
         });
         const data = await res.json();
         if (data.success) {
-            alert("Command Executed.");
+            alert("Command Executed Successfully.");
             fetchAdminData(true); 
-            if(selectedClient && selectedClient.id === botId) {
-                // close drawer if the modified bot is currently open
-                setSelectedClient(null);
-            }
+            if(selectedClient && selectedClient.id === botId) setSelectedClient(null);
         } else {
             alert("Execution Failed: " + data.error);
         }
@@ -144,11 +133,9 @@ export default function AdminDashboard() {
     }
   };
 
-  // 🚀 BROADCAST ACTION
   const handleBroadcast = async () => {
     if(!broadcastMsg.trim()) return alert("Message cannot be empty!");
     if(!confirm(`Are you sure you want to send this to ${broadcastTarget.toUpperCase()} users?`)) return;
-    
     setIsBroadcasting(true);
     setTimeout(() => {
         alert("🚀 Global Broadcast Dispatched!");
@@ -157,15 +144,11 @@ export default function AdminDashboard() {
     }, 1500);
   };
 
-  // 🚀 FETCH CLIENT CONVERSATION LOGS (Mocked for UI visualization)
   const openClientDetails = async (client: any) => {
       setSelectedClient(client);
       setIsLoadingLogs(true);
-      setClientLogs([]); // clear old logs
-
-      // Simulate network request to fetch logs based on client.id
+      setClientLogs([]); 
       setTimeout(() => {
-          // Mock data representing recent chat logs for this bot
           const mockLogs = [
               { role: 'user', msg: "Hi, I need help with my order.", time: "10 mins ago" },
               { role: 'bot', msg: "Hello! I'd be happy to help. Can you please provide your order ID?", time: "10 mins ago" },
@@ -180,7 +163,7 @@ export default function AdminDashboard() {
 
   const btn = "transition-all duration-[120ms] ease-out active:scale-[0.95] transform-gpu will-change-transform";
 
-  // --- RENDER LOCKDOWN SCREEN ---
+  // 🛡️ SECURITY RENDER BLOCKS
   if (accessDeniedReason) {
     return (
       <div className="min-h-screen bg-[#07070A] flex flex-col items-center justify-center text-center p-6 relative overflow-hidden">
@@ -197,7 +180,6 @@ export default function AdminDashboard() {
     );
   }
 
-  // --- RENDER LOADING SCREEN ---
   if (status === "loading" || !isAuthorized) {
     return (
       <div className="min-h-screen bg-[#07070A] flex flex-col items-center justify-center text-red-500 font-mono relative overflow-hidden">
@@ -208,7 +190,9 @@ export default function AdminDashboard() {
     );
   }
 
-  // --- RENDER MAIN DASHBOARD ---
+  // 🛡️ FINAL SAFEGUARD: Double check before rendering dashboard DOM
+  if (session?.user?.email !== ADMIN_EMAILS[0]) return null;
+
   return (
     <div className="min-h-screen bg-[#07070A] text-gray-300 font-sans selection:bg-orange-500/30 overflow-x-hidden relative flex flex-col custom-scrollbar">
       
@@ -220,7 +204,6 @@ export default function AdminDashboard() {
       <AnimatePresence>
         {selectedClient && (
           <>
-            {/* Backdrop overlay */}
             <motion.div 
                 initial={{ opacity: 0 }} 
                 animate={{ opacity: 1 }} 
@@ -228,8 +211,6 @@ export default function AdminDashboard() {
                 onClick={() => setSelectedClient(null)}
                 className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40"
             />
-            
-            {/* The Drawer */}
             <motion.div 
                 initial={{ x: "100%" }} 
                 animate={{ x: 0 }} 
@@ -305,7 +286,7 @@ export default function AdminDashboard() {
             <div>
               <h1 className="text-lg md:text-xl font-black text-white tracking-widest uppercase">CEO Command Center</h1>
               <div className="flex items-center gap-2">
-                  <p className="text-[9px] text-orange-500 font-bold tracking-[0.2em] uppercase flex items-center gap-1"><span className="w-1.5 h-1.5 bg-orange-500 rounded-full animate-pulse"></span> LIVE SYNC ACTIVE</p>
+                  <p className="text-[9px] text-orange-500 font-bold tracking-[0.2em] uppercase flex items-center gap-1"><span className="w-1.5 h-1.5 bg-orange-500 rounded-full animate-pulse"></span> SECURE LIVE SYNC</p>
                   <span className="text-[8px] text-gray-600 border border-gray-800 rounded px-1">10s</span>
               </div>
             </div>
@@ -323,7 +304,6 @@ export default function AdminDashboard() {
         </div>
       </nav>
 
-      {/* 🚀 SUB-NAV TABS */}
       <div className="relative z-20 w-full border-b border-white/5 bg-[#0a0a0c]/90 backdrop-blur-md">
           <div className="max-w-[1400px] mx-auto px-4 md:px-8 flex gap-6 overflow-x-auto custom-scrollbar">
               <button onClick={() => setActiveTab("overview")} className={`py-4 text-xs font-black uppercase tracking-widest border-b-2 transition-colors flex items-center gap-2 ${activeTab === 'overview' ? 'border-orange-500 text-orange-500' : 'border-transparent text-gray-600 hover:text-gray-300'}`}>
@@ -343,9 +323,6 @@ export default function AdminDashboard() {
 
       <main className="relative z-10 max-w-[1400px] mx-auto w-full p-4 md:p-8 space-y-8 flex-1">
         
-        {/* ==========================================
-            TAB 1: OVERVIEW RADAR
-            ========================================== */}
         {activeTab === "overview" && (
           <motion.div initial={{opacity: 0}} animate={{opacity: 1}} className="space-y-8">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
@@ -356,7 +333,6 @@ export default function AdminDashboard() {
                 </div>
                 <p className="text-2xl font-black text-white">₹{isLoading ? "..." : stats.totalRevenue.toLocaleString()}</p>
               </motion.div>
-
               <motion.div className="bg-[#111113] border border-white/5 p-6 rounded-[1.5rem] relative overflow-hidden group hover:border-red-500/30 transition-colors">
                 <div className="flex items-center gap-3 mb-2 relative z-10">
                   <div className="p-2 bg-red-500/10 text-red-500 rounded-lg border border-red-500/20"><AlertTriangle className="w-4 h-4"/></div>
@@ -364,7 +340,6 @@ export default function AdminDashboard() {
                 </div>
                 <p className="text-2xl font-black text-white">{isLoading ? "..." : stats.failedPayments}</p>
               </motion.div>
-
               <motion.div className="bg-[#111113] border border-white/5 p-6 rounded-[1.5rem] relative overflow-hidden group hover:border-blue-500/30 transition-colors">
                 <div className="flex items-center gap-3 mb-2">
                   <div className="p-2 bg-blue-500/10 text-blue-400 rounded-lg border border-blue-500/20"><Users className="w-4 h-4"/></div>
@@ -372,7 +347,6 @@ export default function AdminDashboard() {
                 </div>
                 <p className="text-2xl font-black text-white">{isLoading ? "..." : stats.activeBots}</p>
               </motion.div>
-
               <motion.div className="bg-[#111113] border border-white/5 p-6 rounded-[1.5rem] relative overflow-hidden group hover:border-purple-500/30 transition-colors">
                 <div className="flex items-center gap-3 mb-2">
                   <div className="p-2 bg-purple-500/10 text-purple-400 rounded-lg border border-purple-500/20"><Activity className="w-4 h-4"/></div>
@@ -380,7 +354,6 @@ export default function AdminDashboard() {
                 </div>
                 <p className="text-2xl font-black text-white">{isLoading ? "..." : stats.totalMessages.toLocaleString()}</p>
               </motion.div>
-
               <motion.div className="bg-[#111113] border border-orange-500/20 p-6 rounded-[1.5rem] relative overflow-hidden group hover:border-orange-500/40 transition-colors">
                 <div className="flex items-center gap-3 mb-2">
                   <div className="p-2 bg-orange-500/10 text-orange-500 rounded-lg border border-orange-500/20"><Clock className="w-4 h-4"/></div>
@@ -391,8 +364,6 @@ export default function AdminDashboard() {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              
-              {/* SYSTEM ERROR & ACTIVITY LOGS */}
               <div className="bg-[#0A0A0C] border border-white/5 rounded-[1.5rem] overflow-hidden flex flex-col shadow-[0_15px_50px_rgba(0,0,0,0.6)]">
                 <div className="p-5 border-b border-white/5 bg-[#111113] flex items-center gap-3">
                   <Terminal className="w-4 h-4 text-gray-400" />
@@ -425,7 +396,6 @@ export default function AdminDashboard() {
                 </div>
               </div>
 
-              {/* REFUNDS & SUPPORT TICKETS */}
               <div className="bg-[#111113] border border-white/5 rounded-[1.5rem] overflow-hidden flex flex-col shadow-[0_15px_50px_rgba(0,0,0,0.6)]">
                 <div className="p-5 border-b border-white/5 bg-[#0A0A0C] flex items-center gap-3">
                   <LifeBuoy className="w-4 h-4 text-orange-500" />
@@ -465,7 +435,6 @@ export default function AdminDashboard() {
               </div>
             </div>
 
-            {/* 🚀 CLIENT DATABASE TABLE (SPEED & GOD MODE) */}
             <div className="bg-[#111113] border border-white/5 rounded-[1.5rem] overflow-hidden shadow-[0_15px_50px_rgba(0,0,0,0.6)]">
               <div className="p-6 md:px-8 border-b border-white/5 flex flex-col sm:flex-row items-start sm:items-center justify-between bg-[#0A0A0C] gap-4">
                 <div className="flex items-center gap-3">
