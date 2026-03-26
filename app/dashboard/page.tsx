@@ -35,19 +35,12 @@ export default function Dashboard() {
   
   // 🚀 RENEWAL MODAL STATES
   const [showPlanModal, setShowPlanModal] = useState(false);
-  const [selectedRenewalPlan, setSelectedRenewalPlan] = useState("professional");
+  const [selectedRenewalPlan, setSelectedRenewalPlan] = useState("");
   const [isRenewing, setIsRenewing] = useState(false);
 
   const [knowledgeText, setKnowledgeText] = useState("");
   const [isInjecting, setIsInjecting] = useState(false);
   const [knowledgeItems, setKnowledgeItems] = useState<any[]>([]);
-
-  // PRICING EXACTLY MATCHING YOUR SCREENSHOT
-  const planPricing: Record<string, number> = {
-      starter: 99.6,
-      professional: 1577,
-      maximum: 7387
-  };
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -69,8 +62,7 @@ export default function Dashboard() {
             });
             // Set default selected plan in modal to user's current plan
             if (data.data.plan) {
-                const p = data.data.plan.toLowerCase();
-                if (['starter', 'professional', 'maximum'].includes(p)) setSelectedRenewalPlan(p);
+                setSelectedRenewalPlan(data.data.plan.toLowerCase());
             }
           }
         })
@@ -108,25 +100,73 @@ export default function Dashboard() {
     }
   };
 
-  // 🚀 FIXED: SURGICAL RENEWAL LOGIC WITH PLAN SELECTION
+  // 🚀 DYNAMIC PRICING ENGINE
+  const exactModel = (userData?.selected_model || userData?.ai_provider || "gpt-5.2").toLowerCase();
+  const isOmniActive = exactModel.includes("omni") || exactModel.includes("multi_model") || exactModel.includes("nexus");
+
+  const getPricingConfig = () => {
+    if (isOmniActive) {
+      return {
+        type: "omni",
+        plans: [
+          { id: "monthly", name: "Monthly", price: 7400, desc: "Billed monthly. 4x AI Fallback Matrix." },
+          { id: "yearly", name: "Yearly", price: 74000, desc: "Billed annually. 0% Downtime." }
+        ]
+      };
+    }
+    if (exactModel.includes("gpt") || exactModel.includes("openai")) {
+      return {
+        type: "single",
+        plans: [
+          { id: "starter", name: "Starter", price: 499, desc: "GPT-5.2 Entry level for private use." },
+          { id: "professional", name: "Professional", price: 2499, desc: "Expanded usage and priority routing." },
+          { id: "maximum", name: "Maximum", price: 9999, desc: "Uncapped limits, highest speeds." }
+        ]
+      };
+    }
+    if (exactModel.includes("claude") || exactModel.includes("anthropic")) {
+      return {
+        type: "single",
+        plans: [
+          { id: "starter", name: "Starter", price: 599, desc: "Claude 3 Entry level for private use." },
+          { id: "professional", name: "Professional", price: 2999, desc: "Expanded usage and priority routing." },
+          { id: "maximum", name: "Maximum", price: 11999, desc: "Uncapped limits, highest speeds." }
+        ]
+      };
+    }
+    // Default (Gemini)
+    return {
+      type: "single",
+      plans: [
+        { id: "starter", name: "Starter", price: 99.6, desc: "Entry level for private use." },
+        { id: "professional", name: "Professional", price: 1577, desc: "Expanded usage and priority routing." },
+        { id: "maximum", name: "Maximum", price: 7387, desc: "Uncapped limits, highest speeds." }
+      ]
+    };
+  };
+
+  const currentPricing = getPricingConfig();
+  const activePlanObj = currentPricing.plans.find(p => p.id === selectedRenewalPlan) || currentPricing.plans[0];
+
+  // 🚀 FIXED: SURGICAL RENEWAL LOGIC
   const handleRenewalPayment = async () => {
     if (!session?.user?.email) return;
     setIsRenewing(true);
 
     try {
-      const amount = planPricing[selectedRenewalPlan];
+      const amount = activePlanObj.price;
 
       const res = await fetch("/api/razorpay", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 
           email: session.user.email,
-          planName: selectedRenewalPlan, 
+          planName: activePlanObj.id, 
           planType: "RENEWAL", 
           amount: amount,
           notes: {
             email: session.user.email,
-            plan_name: selectedRenewalPlan,
+            plan_name: activePlanObj.id,
             is_renewal: "true"
           }
         }),
@@ -141,7 +181,7 @@ export default function Dashboard() {
         amount: orderData.amount,
         currency: orderData.currency || "INR",
         name: "ClawLink AI",
-        description: `Renewing to ${selectedRenewalPlan.toUpperCase()} Plan`,
+        description: `Renewing to ${activePlanObj.name.toUpperCase()} Plan`,
         order_id: orderData.orderId || orderData.id,
         handler: function (response: any) {
           alert("Payment Successful! Your AI Agent has been upgraded/renewed.");
@@ -304,9 +344,6 @@ export default function Dashboard() {
   const usagePercentage = isPremium ? 100 : Math.min(((stats?.tokensUsed || 0) / (stats?.tokensAllocated || 1)) * 100, 100);
   const totalMsgs = (stats?.platformStats?.whatsapp || 0) + (stats?.platformStats?.telegram || 0) + (stats?.platformStats?.web || 0);
 
-  const exactModel = (userData?.selected_model || userData?.ai_provider || "gpt-5.2").toLowerCase();
-  const isOmniActive = exactModel.includes("omni") || exactModel.includes("multi_model") || exactModel.includes("nexus");
-
   const getModelDisplayName = () => {
     if (isOmniActive) return "🌌 OmniAgent Nexus";
     if (exactModel.includes("claude") || exactModel.includes("anthropic")) return "Claude 3 (Opus 4.6)";
@@ -348,7 +385,7 @@ export default function Dashboard() {
     <div className="w-full min-h-screen bg-[#07070A] text-[#E8E8EC] font-sans relative selection:bg-orange-500/30 overflow-y-auto custom-scrollbar flex flex-col">
       <Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="lazyOnload" />
       
-      {/* 🚀 THE PLAN SELECTION RENEWAL MODAL */}
+      {/* 🚀 THE DYNAMIC PLAN SELECTION MODAL */}
       <AnimatePresence>
         {showPlanModal && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
@@ -366,29 +403,22 @@ export default function Dashboard() {
                 <h2 className="text-2xl font-black text-white uppercase tracking-widest mb-2 flex items-center justify-center gap-2">
                   <Globe className="w-6 h-6 text-orange-500"/> SELECT YOUR DEPLOYMENT PLAN
                 </h2>
-                <p className="text-sm text-gray-400">Select a tier to securely renew or upgrade your AI engine.</p>
+                <p className="text-sm text-gray-400">Select a tier to securely renew or upgrade your <span className="text-white font-bold">{getModelDisplayName()}</span> engine.</p>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                {/* Starter */}
-                <div onClick={() => setSelectedRenewalPlan('starter')} className={`cursor-pointer rounded-2xl p-6 border transition-all duration-200 ${selectedRenewalPlan === 'starter' ? 'border-orange-500 bg-orange-500/5 shadow-[0_0_30px_rgba(249,115,22,0.15)]' : 'border-white/10 bg-[#111113] hover:border-white/30'}`}>
-                  <p className="text-[10px] font-black uppercase tracking-widest text-gray-500 mb-4">Starter</p>
-                  <h3 className="text-4xl font-black text-white mb-2">₹99.6</h3>
-                  <p className="text-xs text-gray-400">Entry level for private use.</p>
-                </div>
-                {/* Professional */}
-                <div onClick={() => setSelectedRenewalPlan('professional')} className={`cursor-pointer rounded-2xl p-6 border transition-all duration-200 relative ${selectedRenewalPlan === 'professional' ? 'border-blue-500 bg-blue-500/5 shadow-[0_0_30px_rgba(59,130,246,0.15)]' : 'border-white/10 bg-[#111113] hover:border-white/30'}`}>
-                  <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-blue-600 text-white text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-full">Popular</div>
-                  <p className="text-[10px] font-black uppercase tracking-widest text-blue-500 mb-4">Professional</p>
-                  <h3 className="text-4xl font-black text-white mb-2">₹1577</h3>
-                  <p className="text-xs text-gray-400">Expanded usage and priority routing.</p>
-                </div>
-                {/* Maximum */}
-                <div onClick={() => setSelectedRenewalPlan('maximum')} className={`cursor-pointer rounded-2xl p-6 border transition-all duration-200 ${selectedRenewalPlan === 'maximum' ? 'border-orange-500 bg-orange-500/5 shadow-[0_0_30px_rgba(249,115,22,0.15)]' : 'border-white/10 bg-[#111113] hover:border-white/30'}`}>
-                  <p className="text-[10px] font-black uppercase tracking-widest text-orange-500 mb-4">Maximum</p>
-                  <h3 className="text-4xl font-black text-white mb-2">₹7387</h3>
-                  <p className="text-xs text-gray-400">Uncapped limits, highest speeds.</p>
-                </div>
+              <div className={`grid grid-cols-1 md:grid-cols-${currentPricing.plans.length} gap-6 mb-8`}>
+                {currentPricing.plans.map((plan) => {
+                  const isActive = activePlanObj.id === plan.id;
+                  const isPopular = plan.id === 'professional' || plan.id === 'yearly';
+                  return (
+                    <div key={plan.id} onClick={() => setSelectedRenewalPlan(plan.id)} className={`cursor-pointer rounded-2xl p-6 border transition-all duration-200 relative ${isActive ? 'border-orange-500 bg-orange-500/5 shadow-[0_0_30px_rgba(249,115,22,0.15)]' : 'border-white/10 bg-[#111113] hover:border-white/30'}`}>
+                      {isPopular && <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-blue-600 text-white text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-full">Popular</div>}
+                      <p className={`text-[10px] font-black uppercase tracking-widest mb-4 ${isActive ? 'text-orange-500' : 'text-gray-500'}`}>{plan.name}</p>
+                      <h3 className="text-4xl font-black text-white mb-2">₹{plan.price}</h3>
+                      <p className="text-xs text-gray-400">{plan.desc}</p>
+                    </div>
+                  );
+                })}
               </div>
 
               <div className="flex justify-center">
@@ -397,7 +427,7 @@ export default function Dashboard() {
                   disabled={isRenewing}
                   className={`bg-white text-black hover:bg-gray-200 px-12 py-4 rounded-xl font-black uppercase tracking-widest flex items-center gap-2 shadow-[0_0_20px_rgba(255,255,255,0.2)] disabled:opacity-50 ${btn}`}
                 >
-                  {isRenewing ? "PROCESSING..." : `INITIALIZE PAYMENT — ₹${planPricing[selectedRenewalPlan]}`}
+                  {isRenewing ? "PROCESSING..." : `INITIALIZE PAYMENT — ₹${activePlanObj.price}`}
                 </button>
               </div>
             </motion.div>
@@ -470,7 +500,7 @@ export default function Dashboard() {
                     <Crown className="w-3 h-3"/> UNLIMITED TIER
                   </span>
                 )}
-                {/* 🚀 TRIGGER NEW RENEWAL MODAL */}
+                {/* 🚀 TRIGGER RENEWAL MODAL */}
                 <button 
                   onClick={() => setShowPlanModal(true)} 
                   className={`mt-2 border border-white/20 text-gray-300 hover:text-white hover:bg-white/10 px-3 py-1.5 rounded text-[10px] font-bold uppercase tracking-widest transition-colors flex items-center gap-1 ${btn}`}
