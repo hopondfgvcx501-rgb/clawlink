@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { 
   ShieldAlert, Users, DollarSign, Activity, Database, 
   LogOut, Terminal, RefreshCw, ArrowLeft, LifeBuoy, 
-  CheckCircle, Crown 
+  CheckCircle, Crown, Edit2, PlayCircle, Ban
 } from "lucide-react";
 
 // 🚨 ADMIN EMAIL LOCK
@@ -19,7 +19,7 @@ export default function AdminDashboard() {
   
   const [isAuthorized, setIsAuthorized] = useState(false);
   const [accessDeniedReason, setAccessDeniedReason] = useState<string | null>(null); 
-  const [stats, setStats] = useState({ totalUsers: 0, totalRevenue: 0, apiCalls: 0, systemStatus: "Loading..." });
+  const [stats, setStats] = useState({ activeBots: 0, totalRevenue: 0, totalMessages: 0, systemStatus: "Loading..." });
   const [clients, setClients] = useState<any[]>([]);
   const [systemLogs, setSystemLogs] = useState<any[]>([]);
   const [supportTickets, setSupportTickets] = useState<any[]>([]);
@@ -35,9 +35,9 @@ export default function AdminDashboard() {
       const data = await res.json();
       if (data.success) {
         setStats({
-          totalUsers: data.stats.activeClients,
+          activeBots: data.stats.activeBots,
           totalRevenue: data.stats.mrr,
-          apiCalls: data.stats.apiCalls,
+          totalMessages: data.stats.totalMessages,
           systemStatus: "ALL SYSTEMS NOMINAL"
         });
         setClients(data.clients);
@@ -78,7 +78,38 @@ export default function AdminDashboard() {
     fetchAdminData();
   }, [session, status]);
 
-  // 🚀 ULTRA FAST BTN CLASS
+  // 🚀 GOD MODE ACTIONS
+  const executeGodAction = async (actionType: string, botId: string, currentValue?: any) => {
+    let newValue = null;
+    
+    if (actionType === "UPDATE_TOKENS") {
+        const input = prompt("Enter new Token Limit for this bot:", currentValue);
+        if (input === null || isNaN(parseInt(input))) return;
+        newValue = input;
+    } else if (actionType === "FORCE_RENEW") {
+        if (!confirm("Are you sure you want to forcibly grant 30 days of validity to this bot?")) return;
+    } else if (actionType === "BLOCK_BOT") {
+        if (!confirm("WARNING: This will instantly kill the bot. Are you sure?")) return;
+    }
+
+    try {
+        const res = await fetch("/api/admin", {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ adminEmail: session?.user?.email, action: actionType, botId, newValue })
+        });
+        const data = await res.json();
+        if (data.success) {
+            alert("Command Executed Successfully.");
+            fetchAdminData(true); // Refresh table
+        } else {
+            alert("Execution Failed: " + data.error);
+        }
+    } catch (e) {
+        alert("Network error executing command.");
+    }
+  };
+
   const btn = "transition-all duration-[120ms] ease-out active:scale-[0.95] transform-gpu will-change-transform";
 
   if (accessDeniedReason) {
@@ -110,7 +141,6 @@ export default function AdminDashboard() {
   return (
     <div className="min-h-screen bg-[#07070A] text-gray-300 font-sans selection:bg-orange-500/30 overflow-x-hidden relative flex flex-col custom-scrollbar">
       
-      {/* 🚀 AMBIENT CINEMATIC GLOW */}
       <div className="fixed top-[-20%] left-[20%] w-[800px] h-[600px] bg-orange-600/5 rounded-full blur-[150px] pointer-events-none z-0"></div>
       <div className="fixed bottom-[-10%] right-[-10%] w-[600px] h-[600px] bg-red-600/5 rounded-full blur-[150px] pointer-events-none z-0"></div>
 
@@ -152,25 +182,25 @@ export default function AdminDashboard() {
               <div className="p-2.5 bg-orange-500/10 text-orange-500 rounded-xl border border-orange-500/20"><DollarSign className="w-5 h-5"/></div>
               <h3 className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Total Revenue</h3>
             </div>
-            <p className="text-3xl font-black text-white relative z-10">${isLoading ? "..." : stats.totalRevenue.toLocaleString()}</p>
+            <p className="text-3xl font-black text-white relative z-10">₹{isLoading ? "..." : stats.totalRevenue.toLocaleString()}</p>
           </motion.div>
 
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.1, ease: "easeOut" }} 
             className="bg-[#111113] border border-white/5 p-6 rounded-[1.5rem] shadow-[0_10px_40px_rgba(0,0,0,0.5)] relative overflow-hidden group hover:border-blue-500/30 transition-colors">
             <div className="flex items-center gap-3 mb-4">
               <div className="p-2.5 bg-blue-500/10 text-blue-400 rounded-xl border border-blue-500/20"><Users className="w-5 h-5"/></div>
-              <h3 className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Active Bots</h3>
+              <h3 className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Live Bots</h3>
             </div>
-            <p className="text-3xl font-black text-white">{isLoading ? "..." : stats.totalUsers.toLocaleString()}</p>
+            <p className="text-3xl font-black text-white">{isLoading ? "..." : stats.activeBots.toLocaleString()}</p>
           </motion.div>
 
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.2, ease: "easeOut" }} 
             className="bg-[#111113] border border-white/5 p-6 rounded-[1.5rem] shadow-[0_10px_40px_rgba(0,0,0,0.5)] relative overflow-hidden group hover:border-pink-500/30 transition-colors">
             <div className="flex items-center gap-3 mb-4">
               <div className="p-2.5 bg-pink-500/10 text-pink-400 rounded-xl border border-pink-500/20"><Activity className="w-5 h-5"/></div>
-              <h3 className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Total API Calls</h3>
+              <h3 className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Messages Processed</h3>
             </div>
-            <p className="text-3xl font-black text-white">{isLoading ? "..." : stats.apiCalls.toLocaleString()}</p>
+            <p className="text-3xl font-black text-white">{isLoading ? "..." : stats.totalMessages.toLocaleString()}</p>
           </motion.div>
 
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.3, ease: "easeOut" }} 
@@ -185,87 +215,19 @@ export default function AdminDashboard() {
           </motion.div>
         </div>
 
-        {/* 🚀 RADAR PANELS: ERROR LOGS & SUPPORT TICKETS */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          
-          {/* SYSTEM ERROR LOGS (TERMINAL) */}
-          <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.3, delay: 0.4 }} 
-            className="bg-[#0A0A0C] border border-white/5 rounded-[1.5rem] overflow-hidden shadow-[0_15px_50px_rgba(0,0,0,0.6)] flex flex-col">
-            <div className="p-5 border-b border-white/5 bg-[#111113] flex items-center gap-3">
-              <Terminal className="w-4 h-4 text-gray-400" />
-              <h2 className="text-xs font-bold text-white uppercase tracking-widest">Live System Logs</h2>
-              <span className="ml-auto flex h-2.5 w-2.5 relative">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500"></span>
-              </span>
-            </div>
-            <div className="p-5 space-y-3 h-[280px] overflow-y-auto custom-scrollbar font-mono text-xs">
-              {systemLogs.length === 0 ? (
-                <div className="flex flex-col items-center justify-center h-full text-green-500/50">
-                  <CheckCircle className="w-8 h-8 mb-2" />
-                  <p>System running smoothly. No errors detected.</p>
-                </div>
-              ) : (
-                systemLogs.map((log, i) => (
-                  <motion.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.05 }} key={i} className="flex items-start gap-3 border-b border-white/5 pb-3">
-                    <span className={`px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider ${log.type === 'ERROR' ? 'bg-red-500/20 text-red-400 border border-red-500/30' : log.type === 'WARNING' ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30' : 'bg-blue-500/20 text-blue-400 border border-blue-500/30'}`}>
-                      {log.type}
-                    </span>
-                    <div className="flex-1">
-                      <p className="text-gray-300 leading-relaxed">{log.message}</p>
-                      <p className="text-[9px] text-gray-600 mt-1.5">{log.time}</p>
-                    </div>
-                  </motion.div>
-                ))
-              )}
-            </div>
-          </motion.div>
-
-          {/* CLIENT SUPPORT TICKETS */}
-          <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.3, delay: 0.5 }} 
-            className="bg-[#111113] border border-white/5 rounded-[1.5rem] overflow-hidden shadow-[0_15px_50px_rgba(0,0,0,0.6)] flex flex-col">
-            <div className="p-5 border-b border-white/5 bg-[#0A0A0C] flex items-center gap-3">
-              <LifeBuoy className="w-4 h-4 text-orange-500" />
-              <h2 className="text-xs font-bold text-white uppercase tracking-widest">Active Support Tickets</h2>
-              <span className="ml-auto bg-orange-500 text-white text-[9px] font-black px-2.5 py-1 rounded-lg uppercase tracking-wider">{supportTickets.length} Pending</span>
-            </div>
-            <div className="p-5 space-y-4 h-[280px] overflow-y-auto custom-scrollbar">
-              {supportTickets.length === 0 ? (
-                <div className="flex flex-col items-center justify-center h-full text-gray-500">
-                  <CheckCircle className="w-10 h-10 mb-3 opacity-20" />
-                  <p className="text-xs font-mono">All caught up! No active tickets.</p>
-                </div>
-              ) : (
-                supportTickets.map((ticket, i) => (
-                  <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }} key={i} className="bg-[#0A0A0C] border border-white/5 p-4 rounded-[1rem] hover:border-orange-500/30 transition-colors">
-                    <div className="flex justify-between items-start mb-2.5">
-                      <span className="text-[11px] font-black text-white">{ticket.user}</span>
-                      <span className={`text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded ${ticket.status === 'URGENT' ? 'bg-red-500/20 text-red-400 border border-red-500/20' : 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/20'}`}>
-                        {ticket.status}
-                      </span>
-                    </div>
-                    <p className="text-[13px] text-gray-400 font-sans leading-relaxed">{ticket.issue}</p>
-                    <div className="flex justify-between items-center mt-3 pt-3 border-t border-white/5">
-                      <span className="text-[9px] font-mono text-gray-600">{ticket.time}</span>
-                      <button className={`text-[9px] uppercase tracking-widest font-black text-orange-500 hover:text-orange-400 transition-colors ${btn}`}>Resolve →</button>
-                    </div>
-                  </motion.div>
-                ))
-              )}
-            </div>
-          </motion.div>
-        </div>
-
-        {/* 🚀 CLIENT DATABASE TABLE */}
+        {/* 🚀 CLIENT DATABASE TABLE (GOD MODE CONTROLS) */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.6 }} 
           className="bg-[#111113] border border-white/5 rounded-[1.5rem] overflow-hidden shadow-[0_15px_50px_rgba(0,0,0,0.6)]">
-          <div className="p-6 md:px-8 border-b border-white/5 flex items-center justify-between bg-[#0A0A0C]">
+          <div className="p-6 md:px-8 border-b border-white/5 flex flex-col sm:flex-row items-start sm:items-center justify-between bg-[#0A0A0C] gap-4">
             <div className="flex items-center gap-3">
               <Database className="w-5 h-5 text-blue-500" />
-              <h2 className="text-sm font-black text-white uppercase tracking-widest">Global Client Roster</h2>
+              <div>
+                <h2 className="text-sm font-black text-white uppercase tracking-widest">Global Fleet Control</h2>
+                <p className="text-[10px] text-gray-500 font-mono mt-1">Manage individual bots, override limits, and enforce policy.</p>
+              </div>
             </div>
             <button onClick={() => fetchAdminData(true)} className={`text-[10px] text-gray-400 hover:text-white flex items-center gap-2 transition-colors uppercase tracking-widest font-bold bg-white/5 border border-white/10 px-3 py-1.5 rounded-lg ${btn}`}>
-              <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin text-orange-500' : ''}`} /> Refresh
+              <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin text-orange-500' : ''}`} /> Refresh Database
             </button>
           </div>
           
@@ -273,50 +235,71 @@ export default function AdminDashboard() {
             <table className="w-full text-left text-sm whitespace-nowrap">
               <thead className="bg-[#07070A] text-[9px] uppercase font-bold text-gray-500 tracking-widest border-b border-white/5">
                 <tr>
-                  <th className="p-5 pl-8">Client Email</th>
-                  <th className="p-5">Platform</th>
-                  <th className="p-5">Model</th>
+                  <th className="p-5 pl-8">Client Identity</th>
+                  <th className="p-5">Channel</th>
+                  <th className="p-5">AI Engine</th>
                   <th className="p-5">Plan</th>
-                  <th className="p-5 pr-8 text-right">Tokens Left</th>
+                  <th className="p-5">Status/Tokens</th>
+                  <th className="p-5 pr-8 text-right">God Controls</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/5 font-medium text-gray-300">
                 {isLoading ? (
-                  <tr><td colSpan={5} className="p-10 text-center text-gray-500 text-xs font-mono animate-pulse">Decrypting Server Data...</td></tr>
+                  <tr><td colSpan={6} className="p-10 text-center text-gray-500 text-xs font-mono animate-pulse">Decrypting Server Data...</td></tr>
                 ) : clients.length === 0 ? (
-                  <tr><td colSpan={5} className="p-10 text-center text-gray-500 text-xs font-mono">No active clients found in the database.</td></tr>
+                  <tr><td colSpan={6} className="p-10 text-center text-gray-500 text-xs font-mono">No active bots found in the database.</td></tr>
                 ) : (
                   <AnimatePresence>
-                    {clients.map((client, idx) => (
-                      <motion.tr initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.05 }} key={idx} className="hover:bg-white/5 transition-colors group">
-                        <td className="p-5 pl-8 text-white font-mono text-xs">{client.email}</td>
+                    {clients.map((client, idx) => {
+                      const isPremium = client.is_unlimited || client.plan?.toLowerCase() === 'max' || client.plan?.toLowerCase() === 'yearly' || client.plan?.toLowerCase() === 'pro';
+                      const isExpired = client.plan_expiry_date ? new Date(client.plan_expiry_date) < new Date() : false;
+                      const isBlocked = client.tokens_allocated === 0 && !client.is_unlimited;
+
+                      return (
+                      <motion.tr initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.05 }} key={client.id} className="hover:bg-white/5 transition-colors group">
+                        <td className="p-5 pl-8">
+                            <p className="text-white font-bold text-xs">{client.email}</p>
+                            <p className="text-[9px] text-gray-600 font-mono mt-1">ID: {client.id.split('-')[0]}</p>
+                        </td>
                         <td className="p-5">
-                          {client.whatsapp_token ? (
-                            <span className="text-green-400 bg-green-400/10 px-2.5 py-1 rounded-md text-[9px] uppercase font-bold tracking-widest border border-green-400/20 shadow-[0_0_10px_rgba(74,222,128,0.1)]">WhatsApp</span>
-                          ) : client.telegram_token ? (
-                            <span className="text-blue-400 bg-blue-400/10 px-2.5 py-1 rounded-md text-[9px] uppercase font-bold tracking-widest border border-blue-400/20 shadow-[0_0_10px_rgba(96,165,250,0.1)]">Telegram</span>
+                          {client.selected_channel === 'whatsapp' || client.whatsapp_phone_id ? (
+                            <span className="text-green-400 bg-green-400/10 px-2.5 py-1 rounded-md text-[9px] uppercase font-bold tracking-widest border border-green-400/20 flex items-center w-fit gap-1"><div className="w-1.5 h-1.5 bg-green-500 rounded-full"></div> WhatsApp</span>
+                          ) : client.selected_channel === 'telegram' || client.telegram_token ? (
+                            <span className="text-blue-400 bg-blue-400/10 px-2.5 py-1 rounded-md text-[9px] uppercase font-bold tracking-widest border border-blue-400/20 flex items-center w-fit gap-1"><div className="w-1.5 h-1.5 bg-blue-500 rounded-full"></div> Telegram</span>
                           ) : (
-                            <span className="text-gray-400 bg-gray-400/10 px-2.5 py-1 rounded-md text-[9px] uppercase font-bold tracking-widest border border-gray-400/20">Pending</span>
+                            <span className="text-purple-400 bg-purple-400/10 px-2.5 py-1 rounded-md text-[9px] uppercase font-bold tracking-widest border border-purple-400/20 flex items-center w-fit gap-1"><div className="w-1.5 h-1.5 bg-purple-500 rounded-full"></div> Widget</span>
                           )}
                         </td>
-                        <td className="p-5 text-gray-400 font-sans text-xs">{client.ai_model || client.selected_model || "Not Set"}</td>
                         <td className="p-5">
-                          <span className={`uppercase text-[10px] font-black tracking-widest ${client.plan?.toLowerCase() === 'max' ? 'text-orange-500' : client.plan?.toLowerCase() === 'pro' ? 'text-blue-500' : 'text-gray-400'}`}>
+                            <span className="text-gray-300 font-sans text-xs uppercase tracking-wider">{client.selected_model || "Not Set"}</span>
+                        </td>
+                        <td className="p-5">
+                          <span className={`uppercase text-[10px] font-black tracking-widest px-2 py-1 rounded border ${client.plan?.toLowerCase() === 'max' ? 'bg-orange-500/10 text-orange-500 border-orange-500/20' : client.plan?.toLowerCase() === 'pro' ? 'bg-blue-500/10 text-blue-500 border-blue-500/20' : 'bg-white/5 text-gray-400 border-white/10'}`}>
                             {client.plan || 'Starter'}
                           </span>
                         </td>
-                        <td className="p-5 pr-8 font-mono text-right text-xs">
-                          {/* 🚀 FIX: Forced UI override for PRO and MAX to always show UNLIMITED */}
-                          {client.is_unlimited || client.plan?.toLowerCase() === 'pro' || client.plan?.toLowerCase() === 'max' || client.plan?.toLowerCase() === 'monthly' || client.plan?.toLowerCase() === 'yearly' ? (
-                            <span className="text-orange-500 font-bold tracking-widest">∞ UNLIMITED</span>
+                        <td className="p-5 font-mono text-xs">
+                          {isBlocked ? (
+                              <span className="text-red-500 font-bold bg-red-500/10 px-2 py-1 rounded text-[9px] uppercase tracking-widest">Killed</span>
+                          ) : isExpired ? (
+                              <span className="text-yellow-500 font-bold bg-yellow-500/10 px-2 py-1 rounded text-[9px] uppercase tracking-widest">Expired</span>
+                          ) : isPremium ? (
+                            <span className="text-orange-500 font-bold tracking-widest text-[10px]">∞ UNLIMITED</span>
                           ) : (
-                            <span className={`${(client.available_tokens || 0) < 1000 ? 'text-red-500 animate-pulse' : 'text-gray-300'}`}>
-                              {client.available_tokens?.toLocaleString() || client.tokens_allocated?.toLocaleString() || 0}
+                            <span className={`${(client.tokens_allocated - client.tokens_used) < 1000 ? 'text-red-400' : 'text-green-400'}`}>
+                              {(client.tokens_allocated - (client.tokens_used || 0)).toLocaleString()} <span className="text-gray-600 text-[10px]">left</span>
                             </span>
                           )}
                         </td>
+                        <td className="p-5 pr-8 text-right">
+                            <div className="flex items-center justify-end gap-2 opacity-30 group-hover:opacity-100 transition-opacity">
+                                <button onClick={() => executeGodAction("UPDATE_TOKENS", client.id, client.tokens_allocated)} title="Edit Token Limit" className="p-1.5 hover:bg-blue-500/20 hover:text-blue-400 rounded text-gray-500 transition-colors"><Edit2 className="w-3.5 h-3.5"/></button>
+                                <button onClick={() => executeGodAction("FORCE_RENEW", client.id)} title="Force 30-Day Renewal" className="p-1.5 hover:bg-green-500/20 hover:text-green-400 rounded text-gray-500 transition-colors"><PlayCircle className="w-3.5 h-3.5"/></button>
+                                <button onClick={() => executeGodAction("BLOCK_BOT", client.id)} title="Kill Switch (Block Bot)" className="p-1.5 hover:bg-red-500/20 hover:text-red-400 rounded text-gray-500 transition-colors"><Ban className="w-3.5 h-3.5"/></button>
+                            </div>
+                        </td>
                       </motion.tr>
-                    ))}
+                    )})}
                   </AnimatePresence>
                 )}
               </tbody>
