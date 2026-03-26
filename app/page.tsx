@@ -50,7 +50,7 @@ const Telegram_Icon = ({ size = 26 }: { size?: number }) => (
 const WhatsApp_Icon = ({ size = 26 }: { size?: number }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="transform-gpu">
     <path d="M12.004 0C5.376 0 .004 5.373.004 12c0 2.12.552 4.116 1.528 5.864L0 24l6.296-1.508c1.7.884 3.64 1.396 5.708 1.396 6.628 0 12-5.373 12-12S18.632 0 12.004 0z" fill="#25D366"/>
-    <path d="M19.16 16.544c-.312.884-1.504 1.636-2.584 1.832-.82.152-1.888.24-5.384-1.208-4.224-1.744-6.952-6.044-7.16-6.32-.208-.276-1.708-2.268-1.708-4.324 0-2.056 1.072-3.072 1.452-3.484.38-.412.828-.516 1.104-.516.276 0 .552.004.8.016.256.012.604-.1 1.02.908.432 1.04 1.052 2.556 1.144 2.748.092.192.152.416.016.696-.136.28-.208.452-.416.696-.208.244-.436.528-.624.712-.208.208-.424.432-.18.804.244.372 1.088 1.748 2.332 2.86 1.6 1.432 2.94 1.872 3.324 2.064.384.192.608.164.84-.108.232-.272 1.004-1.168 1.276-1.568.272-.4.544-.332.892-.204.348.128 2.204 1.04 2.58 1.232.376.192.624.288.716.448.092.16.092.932-.22 1.816z" fill="#fff"/>
+    <path d="M19.16 16.544c-.312.884-1.504 1.636-2.584 1.832-.82.152-1.888.24-5.384-1.208-4.224-1.744-6.952-6.044-7.16-6.32-.208-.276-1.708-2.268-1.708-4.324 0-2.056 1.072-3.072 1.452-3.484.38-.412.828-.516 1.104-.516.276 0 .552.004.8.016.256.012.604-.1 1.02.908.432 1.04 2.556 1.144 2.748.092.192.152.416.016.696-.136.28-.208.452-.416.696-.208.244-.436.528-.624.712-.208.208-.424.432-.18.804.244.372 1.088 1.748 2.332 2.86 1.6 1.432 2.94 1.872 3.324 2.064.384.192.608.164.84-.108.232-.272 1.004-1.168 1.276-1.568.272-.4.544-.332.892-.204.348.128 2.204 1.04 2.58 1.232.376.192.624.288.716.448.092.16.092.932-.22 1.816z" fill="#fff"/>
   </svg>
 );
 
@@ -308,17 +308,26 @@ export default function Home() {
     return currency === "INR" ? base * EXCHANGE_RATE : base;
   };
 
+  // 🚀 SURGICAL FIX: FIXED MULTIPLE MULTIPLICATION & ADDED PROPER WEBHOOK NOTES
   const triggerRazorpayPayment = async () => {
     if (!selectedTier) { alert("Please select a plan."); return; }
     if (typeof window === "undefined" || !(window as any).Razorpay) { alert("Payment gateway loading…"); return; }
     const finalPrice = getCurrentPrice(); setIsDeploying(true);
     try {
-      const exactPaise = Math.round(finalPrice * 100);
       const selectedModelForDB = activeModel === "omni" ? "multi_model" : activeModel;
       
       const res = await fetch("/api/razorpay", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ amount: exactPaise, currency, email: session?.user?.email || "user@clawlink.com", planName: selectedTier, selectedModel: selectedModelForDB }),
+        // Fixed Amount, added notes & planType for Razorpay Webhook correctly!
+        body: JSON.stringify({ 
+            amount: finalPrice, 
+            currency, 
+            email: session?.user?.email || "user@clawlink.com", 
+            planName: selectedTier, 
+            selectedModel: selectedModelForDB,
+            planType: "NEW",
+            notes: { is_renewal: "false" }
+        }),
       });
       const order = await res.json();
       if (order.error) { alert("Order Error: " + order.error); setIsDeploying(false); return; }
