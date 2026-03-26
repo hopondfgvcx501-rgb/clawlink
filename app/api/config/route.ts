@@ -31,8 +31,8 @@ export async function POST(req: Request) {
 
     // 🚀 CRITICAL FIX: Ensure 'multi_model' saves correctly as the provider for OmniAgent
     let providerToSave = "anthropic"; // default fallback
-    if (selectedModel === "multi_model") providerToSave = "multi_model"; // This triggers the OmniEngine
-    else if (selectedModel === "gpt-5.2") providerToSave = "openai";
+    if (selectedModel === "multi_model" || selectedModel === "omni") providerToSave = "multi_model"; 
+    else if (selectedModel === "gpt-5.2" || selectedModel === "openai") providerToSave = "openai";
     else if (selectedModel === "gemini") providerToSave = "google";
 
     // 1. UPDATE OR INSERT USER CONFIGURATION (AGENCY MODEL)
@@ -56,15 +56,14 @@ export async function POST(req: Request) {
         botIdentifier = telegramToken;
         botColumn = "telegram_token";
     } else if (selectedChannel === "whatsapp" && waPhoneId) {
-        // Assume telegramToken variable holds the WP token from frontend
-        payload.whatsapp_token = telegramToken; 
+        payload.whatsapp_token = telegramToken; // Frontend passes token here
         payload.whatsapp_phone_id = waPhoneId;
         botIdentifier = waPhoneId;
         botColumn = "whatsapp_phone_id";
     }
 
+    // 🚀 SURGICAL FIX: Corrected variable name from existingUser to existingBot
     if (botIdentifier && botColumn) {
-        // Check if this EXACT bot already exists
         const { data: existingBot } = await supabase
             .from("user_configs")
             .select("id")
@@ -74,11 +73,9 @@ export async function POST(req: Request) {
             .single();
 
         if (existingBot) {
-            // Update existing bot
             const { error } = await supabase.from("user_configs").update(payload).eq("id", existingBot.id);
             if (error) throw error;
         } else {
-            // Insert NEW bot
             const { error } = await supabase.from("user_configs").insert({
                 ...payload,
                 email: email.toLowerCase(),
@@ -88,17 +85,33 @@ export async function POST(req: Request) {
             if (error) throw error;
         }
     } else {
-        // Legacy fallback
-        const { error } = await supabase.from("user_configs").update(payload).eq("email", email.toLowerCase());
-        if (error) throw error;
+        // Legacy fallback or Widget creation
+        const { data: latestFallback } = await supabase
+            .from("user_configs")
+            .select("id")
+            .eq("email", email.toLowerCase())
+            .order("created_at", { ascending: false })
+            .limit(1)
+            .single();
+            
+        if (latestFallback) {
+             await supabase.from("user_configs").update(payload).eq("id", latestFallback.id);
+        } else {
+             await supabase.from("user_configs").insert({
+                ...payload,
+                email: email.toLowerCase(),
+                tokens_used: 0,
+                messages_used_this_month: 0
+             });
+        }
     }
 
     // 2. RECORD BILLING HISTORY FOR DASHBOARD INVOICES
     let amount = "19.00"; // Fallback
     if (plan === "pro") amount = "39.00";
     if (plan === "max") amount = "89.00";
-    if (plan === "monthly") amount = "79.00"; // Omni Monthly
-    if (plan === "yearly") amount = "790.00"; // Omni Yearly
+    if (plan === "monthly") amount = "79.00"; 
+    if (plan === "yearly") amount = "790.00"; 
 
     await supabase.from("billing_history").insert({
       email: email.toLowerCase(),
@@ -117,8 +130,6 @@ export async function POST(req: Request) {
         const tData = await tRes.json();
         if (tData.ok) {
           botLink = `https://t.me/${tData.result.username}`;
-          
-          // 🚀 AUTO-REGISTER TELEGRAM WEBHOOK (WITH TOKEN FOR AGENCY MODEL)
           const webhookUrl = `https://clawlink-six.vercel.app/api/webhook/telegram?token=${telegramToken}&email=${email}`;
           await fetch(`https://api.telegram.org/bot${telegramToken}/setWebhook?url=${webhookUrl}`);
         }
@@ -127,6 +138,8 @@ export async function POST(req: Request) {
       }
     } else if (selectedChannel === "whatsapp") {
       botLink = "https://business.facebook.com/wa/manage/";
+    } else if (selectedChannel === "widget") {
+      botLink = `https://clawlink-six.vercel.app/dashboard`; // Just redirect to dashboard for widget
     }
 
     // 4. SEND BEAUTIFUL ONBOARDING EMAIL
@@ -145,7 +158,7 @@ export async function POST(req: Request) {
 
         <p style="color: #cccccc; font-size: 16px; line-height: 1.6;">You can manage your bot's CRM, view billing history, and update the AI Persona directly from your dashboard.</p>
         <br/>
-        ${botLink ? `<a href="${botLink}" style="background: #22c55e; color: #000000; padding: 12px 24px; text-decoration: none; font-weight: bold; border-radius: 8px; margin-right: 10px; display: inline-block;">Open Live Bot</a>` : ''}
+        ${botLink && selectedChannel !== 'widget' ? `<a href="${botLink}" style="background: #22c55e; color: #000000; padding: 12px 24px; text-decoration: none; font-weight: bold; border-radius: 8px; margin-right: 10px; display: inline-block;">Open Live Bot</a>` : ''}
         <a href="https://clawlink.com/dashboard" style="background: #ffffff; color: #000000; padding: 12px 24px; text-decoration: none; font-weight: bold; border-radius: 8px; display: inline-block; margin-top: 10px;">Access Dashboard</a>
         
         <hr style="border: 0; border-top: 1px solid #333; margin: 40px 0 20px 0;" />

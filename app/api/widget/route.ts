@@ -20,7 +20,6 @@ export async function OPTIONS() {
     return new NextResponse(null, { status: 204, headers: corsHeaders });
 }
 
-// 🛡️ ENTERPRISE GUARDRAIL: Strict RAG Enforcement & Human Handoff Protocol
 const ENTERPRISE_GUARDRAIL = `
 CRITICAL INSTRUCTION: You are an Enterprise AI Support Agent. 
 1. ANTI-HALLUCINATION LOCK: You must ONLY use the provided Company Knowledge to answer questions. 
@@ -42,7 +41,6 @@ export async function GET(req: Request) {
         });
     }
 
-    // 🚀 INJECTS BEAUTIFUL UI WITH TEXT + VOICE SUPPORT
     const jsCode = `
       (function() {
         const clawlinkEmail = "${email}";
@@ -321,8 +319,15 @@ export async function POST(req: Request) {
             return NextResponse.json({ success: false, error: "Missing required fields" }, { status: 400, headers: corsHeaders });
         }
 
-        const { data: config } = await supabase.from("user_configs").select("*").eq("email", email).single();
-        if (!config) return NextResponse.json({ success: false, error: "Configuration not found" }, { status: 404, headers: corsHeaders });
+        // 🚀 SURGICAL FIX: Fetch ANY config associated with the user, prioritize the widget one if it exists, else use the default account constraints
+        const { data: configList } = await supabase.from("user_configs").select("*").eq("email", email).order("created_at", { ascending: false }).limit(5);
+        
+        if (!configList || configList.length === 0) {
+            return NextResponse.json({ success: false, error: "Configuration not found" }, { status: 404, headers: corsHeaders });
+        }
+
+        // Try to find a widget specific config, if not just use their most recently created account config
+        let config = configList.find(c => c.selected_channel === 'widget') || configList[0];
 
         const isUnlimited = config.is_unlimited || config.plan_name === "max" || config.plan_name === "ultra_max";
         const messagesUsed = config.messages_used_this_month || 0;
@@ -366,7 +371,7 @@ export async function POST(req: Request) {
             memoryHistory = pastChats.reverse().map(chat => `${chat.sender_type.toUpperCase()}: ${chat.message}`).join("\n");
         }
 
-        const systemPrompt = config.system_prompt || "You are a helpful AI assistant.";
+        const systemPrompt = config.system_prompt_widget || config.system_prompt || "You are a helpful AI assistant.";
         const fullContext = `${ENTERPRISE_GUARDRAIL}\n\nSystem Instructions: ${systemPrompt}\n\nCompany Knowledge Base:\n${customKnowledge ? customKnowledge : "No specific company data found for this query."}\n\nRecent Conversation History:\n${memoryHistory}\n\nUser's New Message: ${userText}`;
 
         await supabase.from("chat_history").insert({ 
@@ -384,7 +389,7 @@ export async function POST(req: Request) {
         let rawProvider = (config.ai_provider || config.selected_model || "openai").toLowerCase();
         let provider = "openai"; 
 
-        if (rawProvider === "multi_model") provider = "omni";
+        if (rawProvider === "multi_model" || rawProvider === "omni" || rawProvider === "nexus") provider = "omni";
         else if (rawProvider.includes("claude") || rawProvider.includes("anthropic")) provider = "anthropic";
         else if (rawProvider.includes("gemini") || rawProvider.includes("google")) provider = "google";
 

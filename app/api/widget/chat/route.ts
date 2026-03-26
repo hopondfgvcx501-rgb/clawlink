@@ -26,12 +26,6 @@ CRITICAL INSTRUCTION: You are an Advanced AI Support Agent operating on the Claw
 3. ADAPTIVE PERSONA (GENERAL CHAT): For general questions, greetings, or industry knowledge, you must dynamically adapt your tone, language, and behavior based EXACTLY on the "System Instructions" provided below. If the System Instructions tell you to be friendly, be friendly. If they tell you to be professional, be strictly professional.
 `;
 
-const AI_CHAINS: Record<string, string[]> = {
-    "openai": ["gpt-4-turbo", "gpt-4o", "gpt-3.5-turbo"],
-    "anthropic": ["claude-3-opus-20240229", "claude-3-sonnet-20240229"],
-    "google": ["gemini-1.5-pro-latest", "gemini-1.5-flash-latest"]
-};
-
 // =========================================================================
 // 🚀 AI, RAG & VOICE HELPER FUNCTIONS
 // =========================================================================
@@ -127,8 +121,15 @@ export async function POST(req: Request) {
             return NextResponse.json({ success: false, error: "Missing required fields" }, { status: 400, headers: corsHeaders });
         }
 
-        const { data: config } = await supabase.from("user_configs").select("*").eq("email", email).single();
-        if (!config) return NextResponse.json({ success: false, error: "Configuration not found" }, { status: 404, headers: corsHeaders });
+        // 🚀 SURGICAL FIX: Fetch ANY config associated with the user, prioritize the widget one if it exists
+        const { data: configList } = await supabase.from("user_configs").select("*").eq("email", email).order("created_at", { ascending: false }).limit(5);
+        
+        if (!configList || configList.length === 0) {
+            return NextResponse.json({ success: false, error: "Configuration not found" }, { status: 404, headers: corsHeaders });
+        }
+
+        // Try to find a widget specific config, if not just use their most recently created account config
+        let config = configList.find(c => c.selected_channel === 'widget') || configList[0];
 
         const isUnlimited = config.is_unlimited || config.plan_name === "max" || config.plan_name === "ultra_max";
         const messagesUsed = config.messages_used_this_month || 0;
@@ -172,7 +173,7 @@ export async function POST(req: Request) {
             memoryHistory = pastChats.reverse().map(chat => `${chat.sender_type.toUpperCase()}: ${chat.message}`).join("\n");
         }
 
-        const systemPrompt = config.system_prompt || "You are a helpful AI assistant.";
+        const systemPrompt = config.system_prompt_widget || config.system_prompt || "You are a helpful AI assistant.";
         const fullContext = `${ENTERPRISE_GUARDRAIL}\n\nSystem Instructions: ${systemPrompt}\n\nCompany Knowledge Base:\n${customKnowledge ? customKnowledge : "No specific company data found for this query."}\n\nRecent Conversation History:\n${memoryHistory}\n\nUser's New Message: ${userText}`;
 
         await supabase.from("chat_history").insert({ 
@@ -190,7 +191,7 @@ export async function POST(req: Request) {
         let rawProvider = (config.ai_provider || config.selected_model || "openai").toLowerCase();
         let provider = "openai"; 
 
-        if (rawProvider === "multi_model") provider = "omni";
+        if (rawProvider === "multi_model" || rawProvider === "omni" || rawProvider === "nexus") provider = "omni";
         else if (rawProvider.includes("claude") || rawProvider.includes("anthropic")) provider = "anthropic";
         else if (rawProvider.includes("gemini") || rawProvider.includes("google")) provider = "google";
 

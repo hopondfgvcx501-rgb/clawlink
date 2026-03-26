@@ -10,7 +10,7 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-// 1. GET: Fetch User Stats for Dashboard (SMART FILTERING)
+// 1. GET: Fetch User Stats for Dashboard (BILLION-USER SMART FILTERING)
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
@@ -43,8 +43,6 @@ export async function GET(req: Request) {
     if (validBots.length === 0) validBots = [data[0]];
 
     let highestPlan = "Starter";
-    let bestModel = "Not Set";
-    let bestProvider = "openai";
     let isUnlimited = false;
     let totalAllocated = 0;
     let totalUsed = 0;
@@ -53,8 +51,11 @@ export async function GET(req: Request) {
     let tgToken = null;
     let waToken = null;
     let waPhoneId = null;
+    
+    // Track Active Channels to know which model is actually serving what
+    let channelModels: Record<string, string> = { telegram: "Not Set", whatsapp: "Not Set", widget: "Not Set" };
 
-    // Scan through valid bots to find the true power of this user
+    // Scan through valid bots to map EXACT power and identity to specific channels
     for (const bot of validBots) {
         totalAllocated += (bot.tokens_allocated || 0);
         totalUsed += (bot.tokens_used || 0);
@@ -67,34 +68,49 @@ export async function GET(req: Request) {
             highestPlan = bot.plan;
         }
 
-        if (bot.ai_model && bot.ai_model !== "Not Set") {
-            if (bestModel === "Not Set" || bot.ai_model === "multi_model") {
-                bestModel = bot.ai_model;
-                bestProvider = bot.ai_provider || "openai";
-            }
+        // 🚀 SURGICAL FIX: Map exact models to their respective channels! No Omni override unless it's actually Omni on that channel.
+        if (bot.telegram_token) { 
+            activeTelegram = true; 
+            tgToken = bot.telegram_token; 
+            if(channelModels.telegram === "Not Set") channelModels.telegram = bot.ai_model || "Not Set";
         }
-
-        if (bot.telegram_token) { activeTelegram = true; tgToken = bot.telegram_token; }
-        if (bot.whatsapp_phone_id || bot.whatsapp_token) { activeWhatsapp = true; waToken = bot.whatsapp_token; waPhoneId = bot.whatsapp_phone_id; }
+        if (bot.whatsapp_phone_id || bot.whatsapp_token) { 
+            activeWhatsapp = true; 
+            waToken = bot.whatsapp_token; 
+            waPhoneId = bot.whatsapp_phone_id; 
+            if(channelModels.whatsapp === "Not Set") channelModels.whatsapp = bot.ai_model || "Not Set";
+        }
+        // Map widget/default model
+        if(bot.selected_channel === "widget" || !bot.telegram_token && !bot.whatsapp_phone_id) {
+            if(channelModels.widget === "Not Set") channelModels.widget = bot.ai_model || "Not Set";
+        }
     }
 
+    // Determine the active display channel
+    const displayChannel = activeTelegram ? "telegram" : (activeWhatsapp ? "whatsapp" : "widget");
+    
+    // ✨ THE BILLION-USER FIX: Fetch the EXACT model for the currently active channel
+    let bestModel = channelModels[displayChannel] !== "Not Set" ? channelModels[displayChannel] : (validBots[0].ai_model || "gpt-5.2");
+    
+    let bestProvider = "openai";
     if (bestModel.toLowerCase().includes("claude") || bestModel.toLowerCase().includes("anthropic")) bestProvider = "anthropic";
     else if (bestModel.toLowerCase().includes("gemini") || bestModel.toLowerCase().includes("google")) bestProvider = "google";
+    else if (bestModel.toLowerCase().includes("omni") || bestModel.toLowerCase().includes("multi_model")) bestProvider = "multi_model";
 
     const dashboardData = {
       plan: highestPlan,
       provider: bestProvider,
       model: bestModel,
       selected_model: bestModel, 
-      selected_channel: activeTelegram ? "telegram" : (activeWhatsapp ? "whatsapp" : "web"),
+      selected_channel: displayChannel,
       ai_provider: bestProvider,
       tokensAllocated: isUnlimited ? 9999999 : totalAllocated,
       tokensUsed: totalUsed,
       isUnlimited: isUnlimited,
       systemPrompt: validBots[0].system_prompt || "",
-      system_prompt_telegram: validBots[0].system_prompt_telegram || "",
-      system_prompt_whatsapp: validBots[0].system_prompt_whatsapp || "",
-      system_prompt_widget: validBots[0].system_prompt_widget || "",
+      system_prompt_telegram: validBots.find(b=>b.telegram_token)?.system_prompt_telegram || "",
+      system_prompt_whatsapp: validBots.find(b=>b.whatsapp_phone_id)?.system_prompt_whatsapp || "",
+      system_prompt_widget: validBots.find(b=>b.selected_channel==="widget")?.system_prompt_widget || validBots[0].system_prompt || "",
       telegramActive: activeTelegram,
       whatsappActive: activeWhatsapp,
       telegram_token: tgToken,
@@ -123,6 +139,7 @@ export async function POST(req: Request) {
             const sm = selectedModel.toLowerCase();
             if (sm.includes("claude") || sm.includes("anthropic")) aiProvider = "anthropic";
             if (sm.includes("gemini") || sm.includes("google")) aiProvider = "google";
+            if (sm.includes("omni") || sm.includes("multi_model")) aiProvider = "multi_model";
         }
 
         // 🚀 FIXED: Check if user already exists to prevent blank spam rows!
@@ -135,7 +152,6 @@ export async function POST(req: Request) {
             .single();
 
         if (existingUser) {
-            // Update the existing latest record instead of creating a useless blank row
             await supabase.from("user_configs").update({
                 selected_model: selectedModel || undefined,
                 selected_channel: selectedChannel || undefined,
@@ -143,7 +159,6 @@ export async function POST(req: Request) {
                 plan: plan || undefined
             }).eq("id", existingUser.id);
         } else {
-            // Only insert if it's a completely brand new user
             await supabase.from("user_configs").insert({
                 email: email.toLowerCase(),
                 selected_model: selectedModel,
@@ -187,6 +202,7 @@ export async function PUT(req: Request) {
         const sm = selectedModel.toLowerCase();
         if (sm.includes("claude") || sm.includes("anthropic")) updateData.ai_provider = "anthropic";
         else if (sm.includes("gemini") || sm.includes("google")) updateData.ai_provider = "google";
+        else if (sm.includes("omni") || sm.includes("multi_model")) updateData.ai_provider = "multi_model";
         else updateData.ai_provider = "openai";
     }
 
