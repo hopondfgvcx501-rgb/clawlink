@@ -8,7 +8,8 @@ import {
   ShieldAlert, Users, DollarSign, Activity, Database, 
   LogOut, Terminal, RefreshCw, ArrowLeft, LifeBuoy, 
   CheckCircle, Crown, Edit2, PlayCircle, Ban, AlertTriangle, Clock,
-  LayoutDashboard, Server, RadioTower, Send, ToggleRight, Webhook
+  LayoutDashboard, Server, RadioTower, Send, ToggleRight, Webhook,
+  X, MessageSquare
 } from "lucide-react";
 
 // 🚨 STRICT ADMIN EMAIL LOCK (Do not change unless adding new admins)
@@ -33,6 +34,11 @@ export default function AdminDashboard() {
   const [broadcastMsg, setBroadcastMsg] = useState("");
   const [broadcastTarget, setBroadcastTarget] = useState("all");
   const [isBroadcasting, setIsBroadcasting] = useState(false);
+
+  // 🚀 Client Details Drawer State
+  const [selectedClient, setSelectedClient] = useState<any | null>(null);
+  const [clientLogs, setClientLogs] = useState<any[]>([]);
+  const [isLoadingLogs, setIsLoadingLogs] = useState(false);
 
   // 🚀 SMART POLLING & DATA FETCHING
   const fetchAdminData = useCallback(async (isManualRefresh = false) => {
@@ -126,6 +132,10 @@ export default function AdminDashboard() {
         if (data.success) {
             alert("Command Executed.");
             fetchAdminData(true); 
+            if(selectedClient && selectedClient.id === botId) {
+                // close drawer if the modified bot is currently open
+                setSelectedClient(null);
+            }
         } else {
             alert("Execution Failed: " + data.error);
         }
@@ -134,7 +144,7 @@ export default function AdminDashboard() {
     }
   };
 
-  // 🚀 BROADCAST ACTION (Mocked for UI)
+  // 🚀 BROADCAST ACTION
   const handleBroadcast = async () => {
     if(!broadcastMsg.trim()) return alert("Message cannot be empty!");
     if(!confirm(`Are you sure you want to send this to ${broadcastTarget.toUpperCase()} users?`)) return;
@@ -145,6 +155,27 @@ export default function AdminDashboard() {
         setBroadcastMsg("");
         setIsBroadcasting(false);
     }, 1500);
+  };
+
+  // 🚀 FETCH CLIENT CONVERSATION LOGS (Mocked for UI visualization)
+  const openClientDetails = async (client: any) => {
+      setSelectedClient(client);
+      setIsLoadingLogs(true);
+      setClientLogs([]); // clear old logs
+
+      // Simulate network request to fetch logs based on client.id
+      setTimeout(() => {
+          // Mock data representing recent chat logs for this bot
+          const mockLogs = [
+              { role: 'user', msg: "Hi, I need help with my order.", time: "10 mins ago" },
+              { role: 'bot', msg: "Hello! I'd be happy to help. Can you please provide your order ID?", time: "10 mins ago" },
+              { role: 'user', msg: "Order #84920", time: "8 mins ago" },
+              { role: 'bot', msg: "Thank you. I see your order is currently in processing. It should ship within 24 hours.", time: "8 mins ago" },
+              { role: 'system', msg: "Latency spike detected (840ms)", time: "8 mins ago" }
+          ];
+          setClientLogs(mockLogs);
+          setIsLoadingLogs(false);
+      }, 800);
   };
 
   const btn = "transition-all duration-[120ms] ease-out active:scale-[0.95] transform-gpu will-change-transform";
@@ -185,6 +216,83 @@ export default function AdminDashboard() {
       <div className="fixed top-[-20%] left-[20%] w-[800px] h-[600px] bg-orange-600/5 rounded-full blur-[150px] pointer-events-none z-0"></div>
       <div className="fixed bottom-[-10%] right-[-10%] w-[600px] h-[600px] bg-red-600/5 rounded-full blur-[150px] pointer-events-none z-0"></div>
 
+      {/* 🚀 CLIENT SIDE DRAWER (Chat Logs) */}
+      <AnimatePresence>
+        {selectedClient && (
+          <>
+            {/* Backdrop overlay */}
+            <motion.div 
+                initial={{ opacity: 0 }} 
+                animate={{ opacity: 1 }} 
+                exit={{ opacity: 0 }} 
+                onClick={() => setSelectedClient(null)}
+                className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40"
+            />
+            
+            {/* The Drawer */}
+            <motion.div 
+                initial={{ x: "100%" }} 
+                animate={{ x: 0 }} 
+                exit={{ x: "100%" }} 
+                transition={{ type: "spring", bounce: 0, duration: 0.4 }}
+                className="fixed right-0 top-0 bottom-0 w-full max-w-md bg-[#0a0a0c] border-l border-white/10 z-50 flex flex-col shadow-2xl"
+            >
+                <div className="p-6 border-b border-white/5 flex justify-between items-center bg-[#111113]">
+                    <div>
+                        <h2 className="text-white font-bold text-sm tracking-widest uppercase flex items-center gap-2">
+                            <Activity className="w-4 h-4 text-blue-500"/> Bot Diagnostics
+                        </h2>
+                        <p className="text-[10px] text-gray-500 font-mono mt-1 tracking-wider">{selectedClient.email}</p>
+                    </div>
+                    <button onClick={() => setSelectedClient(null)} className="p-2 bg-white/5 hover:bg-white/10 rounded-lg text-gray-400 hover:text-white transition-colors"><X className="w-4 h-4"/></button>
+                </div>
+
+                <div className="p-6 border-b border-white/5 bg-[#0A0A0C]">
+                     <div className="flex flex-wrap gap-2 mb-4">
+                        <span className="text-[9px] uppercase font-bold tracking-widest px-2 py-1 rounded border border-white/10 bg-white/5 text-gray-300">ID: {selectedClient.id.split('-')[0]}</span>
+                        <span className={`text-[9px] uppercase font-bold tracking-widest px-2 py-1 rounded border ${selectedClient.plan?.toLowerCase() === 'max' ? 'bg-orange-500/10 text-orange-500 border-orange-500/20' : 'bg-blue-500/10 text-blue-500 border-blue-500/20'}`}>Plan: {selectedClient.plan || 'Starter'}</span>
+                        <span className="text-[9px] uppercase font-bold tracking-widest px-2 py-1 rounded border bg-purple-500/10 text-purple-400 border-purple-500/20">Engine: {selectedClient.selected_model || 'GPT-4o'}</span>
+                     </div>
+                     <div className="flex gap-2">
+                        <button onClick={() => executeGodAction("FORCE_RENEW", selectedClient.id)} className={`flex-1 flex items-center justify-center gap-2 bg-green-500/10 text-green-500 border border-green-500/20 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-green-500/20 transition-colors ${btn}`}><PlayCircle className="w-3.5 h-3.5"/> Renew</button>
+                        <button onClick={() => executeGodAction("BLOCK_BOT", selectedClient.id)} className={`flex-1 flex items-center justify-center gap-2 bg-red-500/10 text-red-500 border border-red-500/20 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-red-500/20 transition-colors ${btn}`}><Ban className="w-3.5 h-3.5"/> Kill Bot</button>
+                     </div>
+                </div>
+
+                <div className="flex-1 overflow-y-auto p-6 bg-[#07070A] custom-scrollbar relative">
+                    <h3 className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-6 flex items-center gap-2"><MessageSquare className="w-3.5 h-3.5"/> Live Conversation Logs</h3>
+                    
+                    {isLoadingLogs ? (
+                        <div className="flex flex-col items-center justify-center py-20 opacity-50">
+                            <RefreshCw className="w-6 h-6 animate-spin text-gray-500 mb-4"/>
+                            <p className="text-[10px] font-mono text-gray-500 uppercase tracking-widest">Intercepting Feed...</p>
+                        </div>
+                    ) : clientLogs.length === 0 ? (
+                        <div className="text-center py-10 text-gray-600 text-xs font-mono">No recent activity detected.</div>
+                    ) : (
+                        <div className="space-y-6">
+                            {clientLogs.map((log, index) => (
+                                <div key={index} className={`flex flex-col ${log.role === 'user' ? 'items-end' : log.role === 'system' ? 'items-center' : 'items-start'}`}>
+                                    {log.role === 'system' ? (
+                                        <div className="text-[9px] font-mono text-amber-500/70 bg-amber-500/10 px-3 py-1 rounded border border-amber-500/20">{log.msg}</div>
+                                    ) : (
+                                        <>
+                                            <span className="text-[8px] font-bold text-gray-600 uppercase tracking-widest mb-1 mx-1">{log.role === 'user' ? 'Client User' : 'AI Agent'} • {log.time}</span>
+                                            <div className={`p-3 rounded-xl max-w-[85%] text-xs leading-relaxed shadow-md ${log.role === 'user' ? 'bg-[#1A1A1A] border border-white/5 text-gray-300 rounded-tr-sm' : 'bg-blue-500/10 border border-blue-500/20 text-blue-100 rounded-tl-sm'}`}>
+                                                {log.msg}
+                                            </div>
+                                        </>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
       <nav className="relative z-20 border-b border-white/5 bg-[#07070A]/70 backdrop-blur-xl p-5 px-6 md:px-10 flex justify-between items-center sticky top-0">
         <div className="flex items-center gap-4">
           <button onClick={() => router.push('/dashboard')} className={`p-2.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl ${btn}`}>
@@ -220,6 +328,9 @@ export default function AdminDashboard() {
           <div className="max-w-[1400px] mx-auto px-4 md:px-8 flex gap-6 overflow-x-auto custom-scrollbar">
               <button onClick={() => setActiveTab("overview")} className={`py-4 text-xs font-black uppercase tracking-widest border-b-2 transition-colors flex items-center gap-2 ${activeTab === 'overview' ? 'border-orange-500 text-orange-500' : 'border-transparent text-gray-600 hover:text-gray-300'}`}>
                  <LayoutDashboard className="w-4 h-4"/> Radar & Fleet
+              </button>
+              <button onClick={() => setActiveTab("users")} className={`py-4 text-xs font-black uppercase tracking-widest border-b-2 transition-colors flex items-center gap-2 ${activeTab === 'users' ? 'border-orange-500 text-orange-500' : 'border-transparent text-gray-600 hover:text-gray-300'}`}>
+                 <Users className="w-4 h-4"/> User Management
               </button>
               <button onClick={() => setActiveTab("broadcast")} className={`py-4 text-xs font-black uppercase tracking-widest border-b-2 transition-colors flex items-center gap-2 ${activeTab === 'broadcast' ? 'border-orange-500 text-orange-500' : 'border-transparent text-gray-600 hover:text-gray-300'}`}>
                  <RadioTower className="w-4 h-4"/> Broadcast Hub
@@ -280,6 +391,7 @@ export default function AdminDashboard() {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              
               {/* SYSTEM ERROR & ACTIVITY LOGS */}
               <div className="bg-[#0A0A0C] border border-white/5 rounded-[1.5rem] overflow-hidden flex flex-col shadow-[0_15px_50px_rgba(0,0,0,0.6)]">
                 <div className="p-5 border-b border-white/5 bg-[#111113] flex items-center gap-3">
@@ -393,7 +505,14 @@ export default function AdminDashboard() {
                           const isBlocked = client.tokens_allocated === 0 && !client.is_unlimited;
 
                           return (
-                          <motion.tr initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.05 }} key={client.id} className="hover:bg-white/5 transition-colors group">
+                          <motion.tr 
+                            initial={{ opacity: 0, y: 10 }} 
+                            animate={{ opacity: 1, y: 0 }} 
+                            transition={{ delay: idx * 0.05 }} 
+                            key={client.id} 
+                            onClick={() => openClientDetails(client)}
+                            className="hover:bg-white/5 transition-colors group cursor-pointer"
+                          >
                             <td className="p-5 pl-8">
                                 <p className="text-white font-bold text-xs">{client.email}</p>
                                 <p className="text-[9px] text-gray-600 font-mono mt-1">BOT: {client.id.split('-')[0].toUpperCase()}</p>
@@ -436,7 +555,7 @@ export default function AdminDashboard() {
                               )}
                             </td>
                             <td className="p-5 pr-8 text-right">
-                                <div className="flex items-center justify-end gap-2 opacity-30 group-hover:opacity-100 transition-opacity">
+                                <div className="flex items-center justify-end gap-2 opacity-30 group-hover:opacity-100 transition-opacity" onClick={e => e.stopPropagation()}>
                                     <button onClick={() => executeGodAction("UPDATE_TOKENS", client.id, client.tokens_allocated)} title="Edit Token Limit" className="p-1.5 hover:bg-blue-500/20 hover:text-blue-400 rounded text-gray-500 transition-colors"><Edit2 className="w-3.5 h-3.5"/></button>
                                     <button onClick={() => executeGodAction("FORCE_RENEW", client.id)} title="Force 30-Day Renewal" className="p-1.5 hover:bg-green-500/20 hover:text-green-400 rounded text-gray-500 transition-colors"><PlayCircle className="w-3.5 h-3.5"/></button>
                                     <button onClick={() => executeGodAction("BLOCK_BOT", client.id)} title="Kill Switch (Block Bot)" className="p-1.5 hover:bg-red-500/20 hover:text-red-400 rounded text-gray-500 transition-colors"><Ban className="w-3.5 h-3.5"/></button>
@@ -454,7 +573,43 @@ export default function AdminDashboard() {
         )}
 
         {/* ==========================================
-            TAB 2: BROADCAST HUB
+            TAB 2: USER MANAGEMENT (With Drawer Support)
+            ========================================== */}
+        {activeTab === "users" && (
+           <motion.div initial={{opacity: 0, y: 20}} animate={{opacity: 1, y: 0}} className="space-y-6">
+              <div className="panel">
+                <div className="panel-head">
+                  <div className="panel-title">User Management</div>
+                  <input className="bg-[#07070A] border border-white/10 rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:border-orange-500 text-white placeholder-gray-600" placeholder="Search by email..." style={{width: '240px'}}/>
+                </div>
+                <div className="panel-body" style={{padding: 0}}>
+                    <table className="w-full text-left text-sm whitespace-nowrap">
+                      <thead className="bg-[#07070A] text-[9px] uppercase font-bold text-gray-500 tracking-widest border-b border-white/5">
+                        <tr>
+                          <th className="p-5 pl-8">Email</th>
+                          <th className="p-5">Active Plan</th>
+                          <th className="p-5">Bots Deployed</th>
+                          <th className="p-5">Status</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-white/5 font-medium text-gray-300">
+                         {clients.map((client, idx) => (
+                             <tr key={client.id} onClick={() => openClientDetails(client)} className="hover:bg-white/5 transition-colors cursor-pointer group">
+                                <td className="p-5 pl-8 text-white text-xs">{client.email}</td>
+                                <td className="p-5 text-[10px] font-black uppercase tracking-widest text-orange-500">{client.plan || "Starter"}</td>
+                                <td className="p-5 text-xs font-mono">1</td>
+                                <td className="p-5"><span className="badge green">Active</span></td>
+                             </tr>
+                         ))}
+                      </tbody>
+                    </table>
+                </div>
+              </div>
+           </motion.div>
+        )}
+
+        {/* ==========================================
+            TAB 3: BROADCAST HUB
             ========================================== */}
         {activeTab === "broadcast" && (
           <motion.div initial={{opacity: 0, y: 20}} animate={{opacity: 1, y: 0}} className="max-w-4xl mx-auto">
@@ -501,7 +656,7 @@ export default function AdminDashboard() {
         )}
 
         {/* ==========================================
-            TAB 3: INFRASTRUCTURE & SETTINGS (NO API KEYS)
+            TAB 4: INFRASTRUCTURE & SETTINGS
             ========================================== */}
         {activeTab === "infrastructure" && (
           <motion.div initial={{opacity: 0, y: 20}} animate={{opacity: 1, y: 0}} className="grid grid-cols-1 lg:grid-cols-2 gap-8">
