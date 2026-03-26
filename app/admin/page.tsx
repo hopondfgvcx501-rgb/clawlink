@@ -2,12 +2,13 @@
 
 import { useSession, signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   ShieldAlert, Users, DollarSign, Activity, Database, 
   LogOut, Terminal, RefreshCw, ArrowLeft, LifeBuoy, 
-  CheckCircle, Crown, Edit2, PlayCircle, Ban, AlertTriangle, Clock, CreditCard
+  CheckCircle, Crown, Edit2, PlayCircle, Ban, AlertTriangle, Clock,
+  LayoutDashboard, Server, Settings, Zap
 } from "lucide-react";
 
 // 🚨 ADMIN EMAIL LOCK
@@ -19,19 +20,21 @@ export default function AdminDashboard() {
   
   const [isAuthorized, setIsAuthorized] = useState(false);
   const [accessDeniedReason, setAccessDeniedReason] = useState<string | null>(null); 
-  const [stats, setStats] = useState({ activeBots: 0, totalRevenue: 0, totalMessages: 0, failedPayments: 0, avgLatency: "...", systemStatus: "Loading..." });
+  const [stats, setStats] = useState({ activeBots: 0, totalRevenue: 0, totalMessages: 0, failedPayments: 0, avgLatency: "...", systemStatus: "Connecting..." });
   const [clients, setClients] = useState<any[]>([]);
   const [systemLogs, setSystemLogs] = useState<any[]>([]);
   const [supportTickets, setSupportTickets] = useState<any[]>([]);
+  
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [activeTab, setActiveTab] = useState("overview");
 
-  const fetchAdminData = async (isManualRefresh = false) => {
+  // 🚀 SMART POLLING: Fetch data function
+  const fetchAdminData = useCallback(async (isManualRefresh = false) => {
     if (isManualRefresh) setIsRefreshing(true);
-    else setIsLoading(true);
     
     try {
-      const res = await fetch(`/api/admin?email=${session?.user?.email}`);
+      const res = await fetch(`/api/admin?email=${session?.user?.email}&t=${Date.now()}`, { cache: 'no-store' });
       const data = await res.json();
       if (data.success) {
         setStats({
@@ -40,21 +43,38 @@ export default function AdminDashboard() {
           totalMessages: data.stats.totalMessages,
           failedPayments: data.stats.failedPayments,
           avgLatency: data.stats.avgLatency,
-          systemStatus: "ALL SYSTEMS NOMINAL"
+          systemStatus: "OPTIMAL LIVE"
         });
         setClients(data.clients);
         setSystemLogs(data.logs || []);
         setSupportTickets(data.tickets || []);
       } else {
-        setAccessDeniedReason("API Access Denied: " + data.error);
+        if (!isManualRefresh) setAccessDeniedReason("API Access Denied: " + data.error);
       }
     } catch (error) {
       console.error("Failed to load admin data:", error);
+      if (isManualRefresh) setStats(prev => ({...prev, systemStatus: "CONNECTION ERROR"}));
     } finally {
       setIsLoading(false);
       setIsRefreshing(false);
     }
-  };
+  }, [session?.user?.email]);
+
+  // 🚀 BACKGROUND REFRESH LOOP (Every 10 seconds)
+  useEffect(() => {
+    if (!isAuthorized || status !== "authenticated") return;
+
+    // Initial fetch
+    fetchAdminData();
+
+    // Setup Auto-Refresh
+    const intervalId = setInterval(() => {
+        fetchAdminData(false); // Background fetch (silent)
+    }, 10000); // 10000ms = 10 seconds
+
+    return () => clearInterval(intervalId); // Cleanup on unmount
+  }, [isAuthorized, status, fetchAdminData]);
+
 
   useEffect(() => {
     if (status === "loading") return;
@@ -77,7 +97,6 @@ export default function AdminDashboard() {
     }
 
     setIsAuthorized(true);
-    fetchAdminData();
   }, [session, status]);
 
   // 🚀 GOD MODE ACTIONS
@@ -102,7 +121,7 @@ export default function AdminDashboard() {
         });
         const data = await res.json();
         if (data.success) {
-            alert("Command Executed Successfully.");
+            alert("Command Executed.");
             fetchAdminData(true); 
         } else {
             alert("Execution Failed: " + data.error);
@@ -157,7 +176,10 @@ export default function AdminDashboard() {
             </div>
             <div>
               <h1 className="text-lg md:text-xl font-black text-white tracking-widest uppercase">CEO Command Center</h1>
-              <p className="text-[9px] text-orange-500 font-bold tracking-[0.2em] uppercase flex items-center gap-1"><span className="w-1.5 h-1.5 bg-orange-500 rounded-full animate-pulse"></span> NSA/CIA Level Tracker</p>
+              <div className="flex items-center gap-2">
+                  <p className="text-[9px] text-orange-500 font-bold tracking-[0.2em] uppercase flex items-center gap-1"><span className="w-1.5 h-1.5 bg-orange-500 rounded-full animate-pulse"></span> LIVE SYNC ACTIVE</p>
+                  <span className="text-[8px] text-gray-600 border border-gray-800 rounded px-1">10s</span>
+              </div>
             </div>
           </div>
         </div>
@@ -172,6 +194,21 @@ export default function AdminDashboard() {
           </button>
         </div>
       </nav>
+
+      {/* 🚀 SUB-NAV TABS FOR FUTURE EXPANSION */}
+      <div className="relative z-10 w-full border-b border-white/5 bg-[#0a0a0c]">
+          <div className="max-w-[1400px] mx-auto px-4 md:px-8 flex gap-4 overflow-x-auto custom-scrollbar">
+              <button onClick={() => setActiveTab("overview")} className={`py-4 px-2 text-xs font-bold uppercase tracking-widest border-b-2 transition-colors flex items-center gap-2 ${activeTab === 'overview' ? 'border-orange-500 text-orange-500' : 'border-transparent text-gray-500 hover:text-gray-300'}`}>
+                 <LayoutDashboard className="w-3.5 h-3.5"/> Overview Radar
+              </button>
+              <button onClick={() => setActiveTab("users")} className={`py-4 px-2 text-xs font-bold uppercase tracking-widest border-b-2 transition-colors flex items-center gap-2 ${activeTab === 'users' ? 'border-orange-500 text-orange-500' : 'border-transparent text-gray-500 hover:text-gray-300'}`}>
+                 <Users className="w-3.5 h-3.5"/> User Management
+              </button>
+              <button onClick={() => setActiveTab("infrastructure")} className={`py-4 px-2 text-xs font-bold uppercase tracking-widest border-b-2 transition-colors flex items-center gap-2 ${activeTab === 'infrastructure' ? 'border-orange-500 text-orange-500' : 'border-transparent text-gray-500 hover:text-gray-300'}`}>
+                 <Server className="w-3.5 h-3.5"/> Infrastructure
+              </button>
+          </div>
+      </div>
 
       <main className="relative z-10 max-w-[1400px] mx-auto w-full p-4 md:p-8 space-y-8 flex-1">
         
@@ -237,7 +274,10 @@ export default function AdminDashboard() {
                 <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500"></span>
               </span>
             </div>
-            <div className="p-5 space-y-3 h-[280px] overflow-y-auto custom-scrollbar font-mono text-xs">
+            <div className="p-5 space-y-3 h-[280px] overflow-y-auto custom-scrollbar font-mono text-xs relative">
+              {/* Scanline Effect */}
+              <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] bg-[length:100%_4px,3px_100%] pointer-events-none opacity-20"></div>
+              
               {systemLogs.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-full text-green-500/50">
                   <CheckCircle className="w-8 h-8 mb-2" />
@@ -245,7 +285,7 @@ export default function AdminDashboard() {
                 </div>
               ) : (
                 systemLogs.map((log, i) => (
-                  <motion.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.05 }} key={i} className="flex items-start gap-3 border-b border-white/5 pb-3">
+                  <motion.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.05 }} key={i} className="flex items-start gap-3 border-b border-white/5 pb-3 relative z-10">
                     <span className={`px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider ${log.type === 'ERROR' ? 'bg-red-500/20 text-red-400 border border-red-500/30' : log.type === 'PAYMENT' ? 'bg-green-500/20 text-green-400 border border-green-500/30' : log.type === 'WARNING' ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30' : 'bg-blue-500/20 text-blue-400 border border-blue-500/30'}`}>
                       {log.type}
                     </span>
@@ -289,7 +329,7 @@ export default function AdminDashboard() {
                     <div className="flex justify-between items-center mt-3 pt-3 border-t border-white/5">
                       <span className="text-[9px] font-mono text-gray-600">{ticket.time}</span>
                       <div className="flex gap-3">
-                        {ticket.type === "REFUND" && <button className="text-[9px] uppercase tracking-widest font-black text-red-500 hover:text-red-400 transition-colors">Process Refund</button>}
+                        {ticket.type === "REFUND" && <button className={`text-[9px] uppercase tracking-widest font-black text-red-500 hover:text-red-400 transition-colors ${btn}`}>Process Refund</button>}
                         <button className={`text-[9px] uppercase tracking-widest font-black text-blue-500 hover:text-blue-400 transition-colors ${btn}`}>Resolve →</button>
                       </div>
                     </div>
@@ -312,7 +352,7 @@ export default function AdminDashboard() {
               </div>
             </div>
             <button onClick={() => fetchAdminData(true)} className={`text-[10px] text-gray-400 hover:text-white flex items-center gap-2 transition-colors uppercase tracking-widest font-bold bg-white/5 border border-white/10 px-3 py-1.5 rounded-lg ${btn}`}>
-              <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin text-orange-500' : ''}`} /> Refresh Radar
+              <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin text-orange-500' : ''}`} /> Force Sync
             </button>
           </div>
           
@@ -329,7 +369,7 @@ export default function AdminDashboard() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/5 font-medium text-gray-300">
-                {isLoading ? (
+                {isLoading && clients.length === 0 ? (
                   <tr><td colSpan={6} className="p-10 text-center text-gray-500 text-xs font-mono animate-pulse">Decrypting Server Data...</td></tr>
                 ) : clients.length === 0 ? (
                   <tr><td colSpan={6} className="p-10 text-center text-gray-500 text-xs font-mono">No active bots found in the database.</td></tr>
@@ -348,9 +388,9 @@ export default function AdminDashboard() {
                         </td>
                         <td className="p-5">
                           {client.selected_channel === 'whatsapp' || client.whatsapp_phone_id ? (
-                            <span className="text-green-400 bg-green-400/10 px-2.5 py-1 rounded-md text-[9px] uppercase font-bold tracking-widest border border-green-400/20 flex items-center w-fit gap-1"><div className="w-1.5 h-1.5 bg-green-500 rounded-full"></div> WhatsApp</span>
+                            <span className="text-green-400 bg-green-400/10 px-2.5 py-1 rounded-md text-[9px] uppercase font-bold tracking-widest border border-green-400/20 flex items-center w-fit gap-1"><div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></div> WhatsApp</span>
                           ) : client.selected_channel === 'telegram' || client.telegram_token ? (
-                            <span className="text-blue-400 bg-blue-400/10 px-2.5 py-1 rounded-md text-[9px] uppercase font-bold tracking-widest border border-blue-400/20 flex items-center w-fit gap-1"><div className="w-1.5 h-1.5 bg-blue-500 rounded-full"></div> Telegram</span>
+                            <span className="text-blue-400 bg-blue-400/10 px-2.5 py-1 rounded-md text-[9px] uppercase font-bold tracking-widest border border-blue-400/20 flex items-center w-fit gap-1"><div className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-pulse"></div> Telegram</span>
                           ) : (
                             <span className="text-purple-400 bg-purple-400/10 px-2.5 py-1 rounded-md text-[9px] uppercase font-bold tracking-widest border border-purple-400/20 flex items-center w-fit gap-1"><div className="w-1.5 h-1.5 bg-purple-500 rounded-full"></div> Widget</span>
                           )}
@@ -358,12 +398,14 @@ export default function AdminDashboard() {
                         <td className="p-5">
                             <span className="text-gray-300 font-sans text-xs uppercase tracking-wider">{client.selected_model || "Not Set"}</span>
                         </td>
-                        {/* 🚀 NEW: Speed and Health Column */}
+                        {/* 🚀 SPEED & HEALTH RADAR */}
                         <td className="p-5">
                             <div className="flex items-center gap-2">
-                                <span className="text-orange-400 font-mono text-[10px] bg-orange-400/10 px-2 py-0.5 rounded border border-orange-400/20">{client.latency}</span>
+                                <span className={`font-mono text-[10px] px-2 py-0.5 rounded border ${parseInt(client.latency) > 800 ? 'text-orange-400 bg-orange-400/10 border-orange-400/20' : 'text-green-400 bg-green-400/10 border-green-400/20'}`}>
+                                  {client.latency}
+                                </span>
                                 {client.health === "WARNING" ? (
-                                    <span className="text-yellow-500 bg-yellow-500/10 px-1.5 rounded" title="High Latency Detected">⚠️</span>
+                                    <span className="text-yellow-500 bg-yellow-500/10 px-1.5 rounded animate-pulse" title="High Latency Detected">⚠️</span>
                                 ) : (
                                     <span className="text-green-500 bg-green-500/10 px-1.5 rounded">✓</span>
                                 )}
@@ -385,7 +427,7 @@ export default function AdminDashboard() {
                         <td className="p-5 pr-8 text-right">
                             <div className="flex items-center justify-end gap-2 opacity-30 group-hover:opacity-100 transition-opacity">
                                 <button onClick={() => executeGodAction("UPDATE_TOKENS", client.id, client.tokens_allocated)} title="Edit Token Limit" className="p-1.5 hover:bg-blue-500/20 hover:text-blue-400 rounded text-gray-500 transition-colors"><Edit2 className="w-3.5 h-3.5"/></button>
-                                <button onClick={() => executeGodAction("FORCE_RErab", client.id)} title="Force 30-Day Renewal" className="p-1.5 hover:bg-green-500/20 hover:text-green-400 rounded text-gray-500 transition-colors"><PlayCircle className="w-3.5 h-3.5"/></button>
+                                <button onClick={() => executeGodAction("FORCE_RENEW", client.id)} title="Force 30-Day Renewal" className="p-1.5 hover:bg-green-500/20 hover:text-green-400 rounded text-gray-500 transition-colors"><PlayCircle className="w-3.5 h-3.5"/></button>
                                 <button onClick={() => executeGodAction("BLOCK_BOT", client.id)} title="Kill Switch (Block Bot)" className="p-1.5 hover:bg-red-500/20 hover:text-red-400 rounded text-gray-500 transition-colors"><Ban className="w-3.5 h-3.5"/></button>
                             </div>
                         </td>
