@@ -8,7 +8,7 @@ import {
   Receipt, Download, Smartphone, BrainCircuit, 
   MessageSquare, Search, Bell, ChevronDown, 
   ExternalLink, Bot, Users, ArrowUpRight, Crown,
-  Radio, Copy, Check, Globe
+  Radio, Copy, Check, Globe, X
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
@@ -32,11 +32,22 @@ export default function Dashboard() {
     whatsapp: ""
   });
   const [isSavingPrompt, setIsSavingPrompt] = useState(false);
+  
+  // 🚀 RENEWAL MODAL STATES
+  const [showPlanModal, setShowPlanModal] = useState(false);
+  const [selectedRenewalPlan, setSelectedRenewalPlan] = useState("professional");
   const [isRenewing, setIsRenewing] = useState(false);
 
   const [knowledgeText, setKnowledgeText] = useState("");
   const [isInjecting, setIsInjecting] = useState(false);
   const [knowledgeItems, setKnowledgeItems] = useState<any[]>([]);
+
+  // PRICING EXACTLY MATCHING YOUR SCREENSHOT
+  const planPricing: Record<string, number> = {
+      starter: 99.6,
+      professional: 1577,
+      maximum: 7387
+  };
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -56,6 +67,11 @@ export default function Dashboard() {
               telegram: data.data.system_prompt_telegram || "",
               whatsapp: data.data.system_prompt_whatsapp || ""
             });
+            // Set default selected plan in modal to user's current plan
+            if (data.data.plan) {
+                const p = data.data.plan.toLowerCase();
+                if (['starter', 'professional', 'maximum'].includes(p)) setSelectedRenewalPlan(p);
+            }
           }
         })
         .catch(console.error);
@@ -92,30 +108,25 @@ export default function Dashboard() {
     }
   };
 
-  // 🚀 FIXED: SURGICAL RENEWAL LOGIC (Matches planName strictly)
-  const handleRenewal = async () => {
+  // 🚀 FIXED: SURGICAL RENEWAL LOGIC WITH PLAN SELECTION
+  const handleRenewalPayment = async () => {
     if (!session?.user?.email) return;
     setIsRenewing(true);
 
     try {
-      const currentPlan = userData?.plan?.toLowerCase() || "starter";
-      let amount = 89; 
-      if (currentPlan === "starter") amount = 19;
-      if (currentPlan === "pro") amount = 39;
-      if (currentPlan === "monthly") amount = 79;
-      if (currentPlan === "yearly") amount = 790;
+      const amount = planPricing[selectedRenewalPlan];
 
       const res = await fetch("/api/razorpay", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 
           email: session.user.email,
-          planName: currentPlan, // 👈 FIXED: Changed from 'plan' to 'planName'
+          planName: selectedRenewalPlan, 
           planType: "RENEWAL", 
           amount: amount,
           notes: {
             email: session.user.email,
-            plan_name: currentPlan,
+            plan_name: selectedRenewalPlan,
             is_renewal: "true"
           }
         }),
@@ -129,11 +140,11 @@ export default function Dashboard() {
         key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || process.env.NEXT_PUBLIC_RAZORPAY_KEY,
         amount: orderData.amount,
         currency: orderData.currency || "INR",
-        name: "ClawLink Renewal",
-        description: `Renewing ${currentPlan.toUpperCase()} Plan`,
+        name: "ClawLink AI",
+        description: `Renewing to ${selectedRenewalPlan.toUpperCase()} Plan`,
         order_id: orderData.orderId || orderData.id,
         handler: function (response: any) {
-          alert("Payment Successful! Your AI Agent has been renewed.");
+          alert("Payment Successful! Your AI Agent has been upgraded/renewed.");
           window.location.reload();
         },
         prefill: {
@@ -145,9 +156,10 @@ export default function Dashboard() {
       
       const rzp = new (window as any).Razorpay(options);
       rzp.open();
+      setShowPlanModal(false); // Close modal when Razorpay opens
     } catch (error) {
       console.error("Renewal Error:", error);
-      alert("Failed to initiate renewal. Please check your connection.");
+      alert("Failed to initiate payment. Please check your connection.");
     } finally {
       setIsRenewing(false);
     }
@@ -287,14 +299,12 @@ export default function Dashboard() {
   }
 
   const currentPlan = userData?.plan?.toLowerCase() || "starter";
-  const isPremium = currentPlan === "pro" || currentPlan === "max" || currentPlan === "monthly" || currentPlan === "yearly" || currentPlan.includes("ultra");
+  const isPremium = currentPlan === "pro" || currentPlan === "professional" || currentPlan === "max" || currentPlan === "maximum" || currentPlan === "monthly" || currentPlan === "yearly" || currentPlan.includes("ultra");
   const showTokens = !isPremium; 
   const usagePercentage = isPremium ? 100 : Math.min(((stats?.tokensUsed || 0) / (stats?.tokensAllocated || 1)) * 100, 100);
   const totalMsgs = (stats?.platformStats?.whatsapp || 0) + (stats?.platformStats?.telegram || 0) + (stats?.platformStats?.web || 0);
 
-  // 🚀 SURGICAL FIX 1: Strict Model Identification (Gemini bug fixed!)
   const exactModel = (userData?.selected_model || userData?.ai_provider || "gpt-5.2").toLowerCase();
-
   const isOmniActive = exactModel.includes("omni") || exactModel.includes("multi_model") || exactModel.includes("nexus");
 
   const getModelDisplayName = () => {
@@ -338,6 +348,63 @@ export default function Dashboard() {
     <div className="w-full min-h-screen bg-[#07070A] text-[#E8E8EC] font-sans relative selection:bg-orange-500/30 overflow-y-auto custom-scrollbar flex flex-col">
       <Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="lazyOnload" />
       
+      {/* 🚀 THE PLAN SELECTION RENEWAL MODAL */}
+      <AnimatePresence>
+        {showPlanModal && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              className="bg-[#0A0A0C] border border-white/10 rounded-2xl p-8 max-w-4xl w-full relative shadow-[0_20px_60px_rgba(0,0,0,0.8)]"
+            >
+              <button onClick={() => setShowPlanModal(false)} className="absolute top-4 right-4 p-2 bg-white/5 hover:bg-white/10 rounded-full text-gray-400 hover:text-white transition-colors">
+                <X className="w-5 h-5"/>
+              </button>
+              
+              <div className="text-center mb-8">
+                <h2 className="text-2xl font-black text-white uppercase tracking-widest mb-2 flex items-center justify-center gap-2">
+                  <Globe className="w-6 h-6 text-orange-500"/> SELECT YOUR DEPLOYMENT PLAN
+                </h2>
+                <p className="text-sm text-gray-400">Select a tier to securely renew or upgrade your AI engine.</p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                {/* Starter */}
+                <div onClick={() => setSelectedRenewalPlan('starter')} className={`cursor-pointer rounded-2xl p-6 border transition-all duration-200 ${selectedRenewalPlan === 'starter' ? 'border-orange-500 bg-orange-500/5 shadow-[0_0_30px_rgba(249,115,22,0.15)]' : 'border-white/10 bg-[#111113] hover:border-white/30'}`}>
+                  <p className="text-[10px] font-black uppercase tracking-widest text-gray-500 mb-4">Starter</p>
+                  <h3 className="text-4xl font-black text-white mb-2">₹99.6</h3>
+                  <p className="text-xs text-gray-400">Entry level for private use.</p>
+                </div>
+                {/* Professional */}
+                <div onClick={() => setSelectedRenewalPlan('professional')} className={`cursor-pointer rounded-2xl p-6 border transition-all duration-200 relative ${selectedRenewalPlan === 'professional' ? 'border-blue-500 bg-blue-500/5 shadow-[0_0_30px_rgba(59,130,246,0.15)]' : 'border-white/10 bg-[#111113] hover:border-white/30'}`}>
+                  <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-blue-600 text-white text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-full">Popular</div>
+                  <p className="text-[10px] font-black uppercase tracking-widest text-blue-500 mb-4">Professional</p>
+                  <h3 className="text-4xl font-black text-white mb-2">₹1577</h3>
+                  <p className="text-xs text-gray-400">Expanded usage and priority routing.</p>
+                </div>
+                {/* Maximum */}
+                <div onClick={() => setSelectedRenewalPlan('maximum')} className={`cursor-pointer rounded-2xl p-6 border transition-all duration-200 ${selectedRenewalPlan === 'maximum' ? 'border-orange-500 bg-orange-500/5 shadow-[0_0_30px_rgba(249,115,22,0.15)]' : 'border-white/10 bg-[#111113] hover:border-white/30'}`}>
+                  <p className="text-[10px] font-black uppercase tracking-widest text-orange-500 mb-4">Maximum</p>
+                  <h3 className="text-4xl font-black text-white mb-2">₹7387</h3>
+                  <p className="text-xs text-gray-400">Uncapped limits, highest speeds.</p>
+                </div>
+              </div>
+
+              <div className="flex justify-center">
+                <button 
+                  onClick={handleRenewalPayment} 
+                  disabled={isRenewing}
+                  className={`bg-white text-black hover:bg-gray-200 px-12 py-4 rounded-xl font-black uppercase tracking-widest flex items-center gap-2 shadow-[0_0_20px_rgba(255,255,255,0.2)] disabled:opacity-50 ${btn}`}
+                >
+                  {isRenewing ? "PROCESSING..." : `INITIALIZE PAYMENT — ₹${planPricing[selectedRenewalPlan]}`}
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
       <div className="fixed top-[-20%] right-[-8%] w-[800px] h-[800px] rounded-full pointer-events-none z-0" style={{background:"radial-gradient(circle,rgba(249,115,22,0.18) 0%,transparent 65%)",transform:"translateZ(0)"}}/>
       <div className="fixed bottom-[-20%] left-[-8%] w-[800px] h-[800px] rounded-full pointer-events-none z-0" style={{background:"radial-gradient(circle,rgba(99,102,241,0.15) 0%,transparent 65%)",transform:"translateZ(0)"}}/>
 
@@ -403,12 +470,12 @@ export default function Dashboard() {
                     <Crown className="w-3 h-3"/> UNLIMITED TIER
                   </span>
                 )}
+                {/* 🚀 TRIGGER NEW RENEWAL MODAL */}
                 <button 
-                  onClick={handleRenewal} 
-                  disabled={isRenewing}
-                  className={`mt-2 border border-white/20 text-gray-300 hover:text-white hover:bg-white/10 px-3 py-1.5 rounded text-[10px] font-bold uppercase tracking-widest transition-colors flex items-center gap-1 ${btn} disabled:opacity-50`}
+                  onClick={() => setShowPlanModal(true)} 
+                  className={`mt-2 border border-white/20 text-gray-300 hover:text-white hover:bg-white/10 px-3 py-1.5 rounded text-[10px] font-bold uppercase tracking-widest transition-colors flex items-center gap-1 ${btn}`}
                 >
-                  {isRenewing ? "Loading..." : <><Zap className="w-3 h-3"/> Upgrade / Renew</>}
+                  <Zap className="w-3 h-3"/> Upgrade / Renew
                 </button>
               </div>
             </div>
