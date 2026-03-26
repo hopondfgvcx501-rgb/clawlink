@@ -14,40 +14,40 @@ import { useRouter } from "next/navigation";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import Script from "next/script";
 
-/* ─── 🚀 CRITICAL NEW MASTER PRICING CONFIG (MARCH 2026) ────────── */
+/* ─── 🚀 CRITICAL NEW MASTER PRICING CONFIG (PREMIUM TEXT ONLY) ────────── */
 const PRICING_DATA: Record<string, any> = {
   gemini: {
     name: "Gemini (Google)",
     plans: [
-      { id: "plus", name: "Plus", usd: 19, inr: 1596, msgs: "1,500 msgs/mo", desc: "Gemini 1.5 Flash. Entry level for private use.", accent: "rgba(255,255,255,.35)", color: "text-gray-400" },
-      { id: "pro", name: "Pro", usd: 59, inr: 4956, msgs: "3,000 msgs/mo", desc: "Gemini 1.5 Pro. High quality routing.", accent: "#3B82F6", color: "text-blue-400", badge: "Popular" },
-      { id: "ultra", name: "Ultra", usd: 99, inr: 8316, msgs: "5,000 msgs/mo", desc: "Gemini 2.0 Pro. Enterprise speed.", accent: "#A855F7", color: "text-purple-400" },
-      { id: "adv_max", name: "Adv Max", usd: 1099, inr: 92316, msgs: "7,000 msgs/mo", desc: "Gemini 2.0 Ultra. Uncapped limits.", accent: "#F97316", color: "text-orange-400", badge: "Yearly ⭐", isYearly: true }
+      { id: "plus", name: "Plus", usd: 19, inr: 1596, msgs: "Optimized Speed", desc: "Instant customer conversions & rapid response.", accent: "rgba(255,255,255,.35)", color: "text-gray-400" },
+      { id: "pro", name: "Pro", usd: 59, inr: 4956, msgs: "Enterprise Scale", desc: "Complex query mastermind & priority routing.", accent: "#3B82F6", color: "text-blue-400", badge: "Popular" },
+      { id: "ultra", name: "Ultra", usd: 99, inr: 8316, msgs: "Peak Execution", desc: "Zero parallel chat limit & max system power.", accent: "#A855F7", color: "text-purple-400" },
+      { id: "adv_max", name: "Adv Max", usd: 1099, inr: 92316, msgs: "Unlimited Tier", desc: "Global system dominance & uncapped scaling.", accent: "#F97316", color: "text-orange-400", badge: "Yearly ⭐", isYearly: true }
     ]
   },
   "gpt-5.2": { 
     name: "GPT (OpenAI)",
     plans: [
-      { id: "plus", name: "Plus", usd: 25, inr: 2100, msgs: "1,500 msgs/mo", desc: "GPT-4o mini. Efficient & fast.", accent: "rgba(255,255,255,.35)", color: "text-gray-400" },
-      { id: "pro", name: "Pro", usd: 99, inr: 8316, msgs: "3,000 msgs/mo", desc: "GPT-4o. Industry standard model.", accent: "#3B82F6", color: "text-blue-400", badge: "Popular" },
-      { id: "ultra", name: "Ultra", usd: 199, inr: 16716, msgs: "5,000 msgs/mo", desc: "GPT o1-mini. Advanced reasoning.", accent: "#A855F7", color: "text-purple-400" },
-      { id: "adv_max", name: "Adv Max", usd: 2397, inr: 201348, msgs: "7,000 msgs/mo", desc: "GPT o1-mini max. Production scale.", accent: "#F97316", color: "text-orange-400", badge: "Yearly ⭐", isYearly: true }
+      { id: "plus", name: "Plus", usd: 25, inr: 2100, msgs: "Optimized Speed", desc: "Instant customer conversions & rapid response.", accent: "rgba(255,255,255,.35)", color: "text-gray-400" },
+      { id: "pro", name: "Pro", usd: 99, inr: 8316, msgs: "Enterprise Scale", desc: "Complex query mastermind & priority routing.", accent: "#3B82F6", color: "text-blue-400", badge: "Popular" },
+      { id: "ultra", name: "Ultra", usd: 199, inr: 16716, msgs: "Peak Execution", desc: "Zero parallel chat limit & max system power.", accent: "#A855F7", color: "text-purple-400" },
+      { id: "adv_max", name: "Adv Max", usd: 2397, inr: 201348, msgs: "Unlimited Tier", desc: "Global system dominance & uncapped scaling.", accent: "#F97316", color: "text-orange-400", badge: "Yearly ⭐", isYearly: true }
     ]
   },
   claude: {
     name: "Claude (Anthropic)",
     plans: [
-      { id: "plus", name: "Plus", usd: 47, inr: 3948, msgs: "1,500 msgs/mo", desc: "Claude Haiku 4.5. Best text processing.", accent: "rgba(255,255,255,.35)", color: "text-gray-400" },
-      { id: "pro", name: "Pro", usd: 129, inr: 10836, msgs: "3,000 msgs/mo", desc: "Claude Sonnet 4.6. Premium quality.", accent: "#3B82F6", color: "text-blue-400", badge: "Popular" },
-      { id: "ultra", name: "Ultra", usd: 189, inr: 15876, msgs: "5,000 msgs/mo", desc: "Claude Sonnet 4.6+. Elite reasoning.", accent: "#A855F7", color: "text-purple-400" },
-      { id: "adv_max", name: "Adv Max", usd: 2997, inr: 251748, msgs: "7,000 msgs/mo", desc: "Sonnet 4.6 Unlimited.", accent: "#F97316", color: "text-orange-400", badge: "Yearly ⭐", isYearly: true }
+      { id: "plus", name: "Plus", usd: 47, inr: 3948, msgs: "Optimized Speed", desc: "Instant customer conversions & rapid response.", accent: "rgba(255,255,255,.35)", color: "text-gray-400" },
+      { id: "pro", name: "Pro", usd: 129, inr: 10836, msgs: "Enterprise Scale", desc: "Complex query mastermind & priority routing.", accent: "#3B82F6", color: "text-blue-400", badge: "Popular" },
+      { id: "ultra", name: "Ultra", usd: 189, inr: 15876, msgs: "Peak Execution", desc: "Zero parallel chat limit & max system power.", accent: "#A855F7", color: "text-purple-400" },
+      { id: "adv_max", name: "Adv Max", usd: 2997, inr: 251748, msgs: "Unlimited Tier", desc: "Global system dominance & uncapped scaling.", accent: "#F97316", color: "text-orange-400", badge: "Yearly ⭐", isYearly: true }
     ]
   },
   omni: {
     name: "OmniAgent Bundle",
     plans: [
-      { id: "monthly", name: "Pro Bundle", usd: 149, inr: 12516, msgs: "Smart Routing", desc: "GPT-4o + Gemini Pro + Claude Sonnet. 3x Fallback.", accent: "#00BFFF", color: "text-[#00BFFF]" },
-      { id: "yearly", name: "Adv Premium", usd: 2397, inr: 201348, msgs: "Auto Routing", desc: "o1-mini + Gemini 2.0 + Sonnet 4.6. Zero downtime.", accent: "#BA7517", color: "text-[#BA7517]", badge: "Yearly ⭐", isYearly: true }
+      { id: "monthly", name: "Pro Bundle", usd: 149, inr: 12516, msgs: "Smart Matrix", desc: "Elite multi-persona integration. 3x Fallback.", accent: "#00BFFF", color: "text-[#00BFFF]" },
+      { id: "yearly", name: "Adv Premium", usd: 2397, inr: 201348, msgs: "Zero Downtime", desc: "Ultimate auto-routing & global priority access.", accent: "#BA7517", color: "text-[#BA7517]", badge: "Yearly ⭐", isYearly: true }
     ]
   }
 };
@@ -147,7 +147,6 @@ export default function Dashboard() {
     }
   };
 
-  // 🚀 DYNAMIC PRICING ENGINE: Mapped to PRICING_DATA
   const exactModel = (userData?.selected_model || userData?.ai_provider || "gpt-5.2").toLowerCase();
   
   let pricingKey = "gpt-5.2";
@@ -159,7 +158,6 @@ export default function Dashboard() {
   const currentPricing = PRICING_DATA[pricingKey] || PRICING_DATA["gpt-5.2"];
   const activePlanObj = currentPricing.plans.find((p: any) => p.id === selectedRenewalPlan) || currentPricing.plans[0];
 
-  // 🚀 FIXED: SURGICAL RENEWAL LOGIC (Using new dynamic prices)
   const handleRenewalPayment = async () => {
     if (!session?.user?.email) return;
     setIsRenewing(true);
@@ -208,7 +206,7 @@ export default function Dashboard() {
       
       const rzp = new (window as any).Razorpay(options);
       rzp.open();
-      setShowPlanModal(false); // Close modal when Razorpay opens
+      setShowPlanModal(false); 
     } catch (error) {
       console.error("Renewal Error:", error);
       alert("Failed to initiate payment. Please check your connection.");
@@ -352,8 +350,6 @@ export default function Dashboard() {
 
   const currentPlan = userData?.plan?.toLowerCase() || "starter";
   const isPremium = currentPlan === "pro" || currentPlan === "professional" || currentPlan === "max" || currentPlan === "maximum" || currentPlan === "monthly" || currentPlan === "yearly" || currentPlan.includes("ultra") || currentPlan === "adv_max" || currentPlan === "plus";
-  const showTokens = !isPremium; 
-  const usagePercentage = isPremium ? 100 : Math.min(((stats?.tokensUsed || 0) / (stats?.tokensAllocated || 1)) * 100, 100);
   const totalMsgs = (stats?.platformStats?.whatsapp || 0) + (stats?.platformStats?.telegram || 0) + (stats?.platformStats?.web || 0);
 
   const getModelDisplayName = () => {
@@ -376,9 +372,7 @@ export default function Dashboard() {
           window.open(`https://t.me/${data.result.username}`, "_blank");
           return;
         }
-      } catch (e) {
-        console.error("Failed to fetch exact telegram bot link");
-      }
+      } catch (e) {}
       window.open(`https://t.me/${userData?.tg_username || ""}`, "_blank"); 
     } else if (isWhatsappLive) {
       if (userData?.whatsapp_number) {
@@ -602,23 +596,22 @@ export default function Dashboard() {
         </motion.div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* 🚀 FIXED API TOKENS CARD - 100% PREMUIM TEXT, NO NUMBERS */}
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25, delay: 0.4, ease: "easeOut" }} className="bg-[#111113] border border-white/5 p-6 rounded-[1.5rem] shadow-xl relative overflow-hidden group hover:border-white/10 transition-colors">
             <div className="absolute top-0 right-0 w-32 h-32 bg-orange-500/5 rounded-full blur-3xl group-hover:bg-orange-500/10 transition-colors"></div>
             <div className="flex justify-between items-start mb-4 relative z-10">
               <div className="w-10 h-10 rounded-xl bg-orange-500/10 flex items-center justify-center text-orange-500 border border-orange-500/20"><Zap className="w-5 h-5"/></div>
-              <span className="text-[10px] font-bold uppercase tracking-widest text-gray-500">API Tokens</span>
+              <span className="text-[10px] font-bold uppercase tracking-widest text-gray-500">System Capacity</span>
             </div>
-            <h3 className="text-3xl font-black text-white relative z-10">
-              {showTokens ? (stats?.tokensUsed?.toLocaleString() || 0) : <span className="text-2xl text-orange-400 font-bold">UNLIMITED</span>}
+            <h3 className="text-2xl font-black text-orange-400 relative z-10 mt-1">
+              UNLIMITED TIER
             </h3>
             <p className="text-xs text-gray-400 mt-1 relative z-10">
-              {showTokens ? `/ ${stats?.tokensAllocated} Used` : "Fair Usage Policy Applies"}
+              Enterprise Infrastructure Active
             </p>
-            {showTokens && (
-              <div className="w-full bg-[#1A1A1A] h-1.5 mt-4 rounded-full overflow-hidden relative z-10">
-                <div className={`h-full bg-orange-500`} style={{ width: `${usagePercentage}%` }}></div>
-              </div>
-            )}
+            <div className="w-full bg-[#1A1A1A] h-1.5 mt-4 rounded-full overflow-hidden relative z-10">
+              <div className={`h-full bg-orange-500/50 w-full`}></div>
+            </div>
           </motion.div>
 
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25, delay: 0.5, ease: "easeOut" }} className="bg-[#111113] border border-white/5 p-6 rounded-[1.5rem] shadow-xl relative overflow-hidden group hover:border-white/10 transition-colors">

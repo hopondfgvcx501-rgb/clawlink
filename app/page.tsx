@@ -11,40 +11,40 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 
-/* ─── 🚀 CRITICAL NEW MASTER PRICING CONFIG (MARCH 2026) ────────── */
+/* ─── 🚀 CRITICAL NEW MASTER PRICING CONFIG (PREMIUM TEXT ONLY) ────────── */
 const PRICING_DATA: Record<string, any> = {
   gemini: {
     name: "Gemini (Google)",
     plans: [
-      { id: "plus", name: "Plus", usd: 19, inr: 1596, msgs: "1,500 msgs/mo", desc: "Gemini 1.5 Flash. Entry level for private use.", accent: "rgba(255,255,255,.35)", color: "text-gray-400" },
-      { id: "pro", name: "Pro", usd: 59, inr: 4956, msgs: "3,000 msgs/mo", desc: "Gemini 1.5 Pro. High quality routing.", accent: "#3B82F6", color: "text-blue-400", badge: "Popular" },
-      { id: "ultra", name: "Ultra", usd: 99, inr: 8316, msgs: "5,000 msgs/mo", desc: "Gemini 2.0 Pro. Enterprise speed.", accent: "#A855F7", color: "text-purple-400" },
-      { id: "adv_max", name: "Adv Max", usd: 1099, inr: 92316, msgs: "7,000 msgs/mo", desc: "Gemini 2.0 Ultra. Uncapped limits.", accent: "#F97316", color: "text-orange-400", badge: "Yearly ⭐", isYearly: true }
+      { id: "plus", name: "Plus", usd: 19, inr: 1596, msgs: "Optimized Speed", desc: "Instant customer conversions & rapid response.", accent: "rgba(255,255,255,.35)", color: "text-gray-400" },
+      { id: "pro", name: "Pro", usd: 59, inr: 4956, msgs: "Enterprise Scale", desc: "Complex query mastermind & priority routing.", accent: "#3B82F6", color: "text-blue-400", badge: "Popular" },
+      { id: "ultra", name: "Ultra", usd: 99, inr: 8316, msgs: "Peak Execution", desc: "Zero parallel chat limit & max system power.", accent: "#A855F7", color: "text-purple-400" },
+      { id: "adv_max", name: "Adv Max", usd: 1099, inr: 92316, msgs: "Unlimited Tier", desc: "Global system dominance & uncapped scaling.", accent: "#F97316", color: "text-orange-400", badge: "Yearly ⭐", isYearly: true }
     ]
   },
   "gpt-5.2": { 
     name: "GPT (OpenAI)",
     plans: [
-      { id: "plus", name: "Plus", usd: 25, inr: 2100, msgs: "1,500 msgs/mo", desc: "GPT-4o mini. Efficient & fast.", accent: "rgba(255,255,255,.35)", color: "text-gray-400" },
-      { id: "pro", name: "Pro", usd: 99, inr: 8316, msgs: "3,000 msgs/mo", desc: "GPT-4o. Industry standard model.", accent: "#3B82F6", color: "text-blue-400", badge: "Popular" },
-      { id: "ultra", name: "Ultra", usd: 199, inr: 16716, msgs: "5,000 msgs/mo", desc: "GPT o1-mini. Advanced reasoning.", accent: "#A855F7", color: "text-purple-400" },
-      { id: "adv_max", name: "Adv Max", usd: 2397, inr: 201348, msgs: "7,000 msgs/mo", desc: "GPT o1-mini max. Production scale.", accent: "#F97316", color: "text-orange-400", badge: "Yearly ⭐", isYearly: true }
+      { id: "plus", name: "Plus", usd: 25, inr: 2100, msgs: "Optimized Speed", desc: "Instant customer conversions & rapid response.", accent: "rgba(255,255,255,.35)", color: "text-gray-400" },
+      { id: "pro", name: "Pro", usd: 99, inr: 8316, msgs: "Enterprise Scale", desc: "Complex query mastermind & priority routing.", accent: "#3B82F6", color: "text-blue-400", badge: "Popular" },
+      { id: "ultra", name: "Ultra", usd: 199, inr: 16716, msgs: "Peak Execution", desc: "Zero parallel chat limit & max system power.", accent: "#A855F7", color: "text-purple-400" },
+      { id: "adv_max", name: "Adv Max", usd: 2397, inr: 201348, msgs: "Unlimited Tier", desc: "Global system dominance & uncapped scaling.", accent: "#F97316", color: "text-orange-400", badge: "Yearly ⭐", isYearly: true }
     ]
   },
   claude: {
     name: "Claude (Anthropic)",
     plans: [
-      { id: "plus", name: "Plus", usd: 47, inr: 3948, msgs: "1,500 msgs/mo", desc: "Claude Haiku 4.5. Best text processing.", accent: "rgba(255,255,255,.35)", color: "text-gray-400" },
-      { id: "pro", name: "Pro", usd: 129, inr: 10836, msgs: "3,000 msgs/mo", desc: "Claude Sonnet 4.6. Premium quality.", accent: "#3B82F6", color: "text-blue-400", badge: "Popular" },
-      { id: "ultra", name: "Ultra", usd: 189, inr: 15876, msgs: "5,000 msgs/mo", desc: "Claude Sonnet 4.6+. Elite reasoning.", accent: "#A855F7", color: "text-purple-400" },
-      { id: "adv_max", name: "Adv Max", usd: 2997, inr: 251748, msgs: "7,000 msgs/mo", desc: "Sonnet 4.6 Unlimited.", accent: "#F97316", color: "text-orange-400", badge: "Yearly ⭐", isYearly: true }
+      { id: "plus", name: "Plus", usd: 47, inr: 3948, msgs: "Optimized Speed", desc: "Instant customer conversions & rapid response.", accent: "rgba(255,255,255,.35)", color: "text-gray-400" },
+      { id: "pro", name: "Pro", usd: 129, inr: 10836, msgs: "Enterprise Scale", desc: "Complex query mastermind & priority routing.", accent: "#3B82F6", color: "text-blue-400", badge: "Popular" },
+      { id: "ultra", name: "Ultra", usd: 189, inr: 15876, msgs: "Peak Execution", desc: "Zero parallel chat limit & max system power.", accent: "#A855F7", color: "text-purple-400" },
+      { id: "adv_max", name: "Adv Max", usd: 2997, inr: 251748, msgs: "Unlimited Tier", desc: "Global system dominance & uncapped scaling.", accent: "#F97316", color: "text-orange-400", badge: "Yearly ⭐", isYearly: true }
     ]
   },
   omni: {
     name: "OmniAgent Bundle",
     plans: [
-      { id: "monthly", name: "Pro Bundle", usd: 149, inr: 12516, msgs: "Smart Routing", desc: "GPT-4o + Gemini Pro + Claude Sonnet. 3x Fallback.", accent: "#00BFFF", color: "text-[#00BFFF]" },
-      { id: "yearly", name: "Adv Premium", usd: 2397, inr: 201348, msgs: "Auto Routing", desc: "o1-mini + Gemini 2.0 + Sonnet 4.6. Zero downtime.", accent: "#BA7517", color: "text-[#BA7517]", badge: "Yearly ⭐", isYearly: true }
+      { id: "monthly", name: "Pro Bundle", usd: 149, inr: 12516, msgs: "Smart Matrix", desc: "Elite multi-persona integration. 3x Fallback.", accent: "#00BFFF", color: "text-[#00BFFF]" },
+      { id: "yearly", name: "Adv Premium", usd: 2397, inr: 201348, msgs: "Zero Downtime", desc: "Ultimate auto-routing & global priority access.", accent: "#BA7517", color: "text-[#BA7517]", badge: "Yearly ⭐", isYearly: true }
     ]
   }
 };
