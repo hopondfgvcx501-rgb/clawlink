@@ -14,6 +14,44 @@ import { useRouter } from "next/navigation";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import Script from "next/script";
 
+/* ─── 🚀 CRITICAL NEW MASTER PRICING CONFIG (MARCH 2026) ────────── */
+const PRICING_DATA: Record<string, any> = {
+  gemini: {
+    name: "Gemini (Google)",
+    plans: [
+      { id: "plus", name: "Plus", usd: 19, inr: 1596, msgs: "1,500 msgs/mo", desc: "Gemini 1.5 Flash. Entry level for private use.", accent: "rgba(255,255,255,.35)", color: "text-gray-400" },
+      { id: "pro", name: "Pro", usd: 59, inr: 4956, msgs: "3,000 msgs/mo", desc: "Gemini 1.5 Pro. High quality routing.", accent: "#3B82F6", color: "text-blue-400", badge: "Popular" },
+      { id: "ultra", name: "Ultra", usd: 99, inr: 8316, msgs: "5,000 msgs/mo", desc: "Gemini 2.0 Pro. Enterprise speed.", accent: "#A855F7", color: "text-purple-400" },
+      { id: "adv_max", name: "Adv Max", usd: 1099, inr: 92316, msgs: "7,000 msgs/mo", desc: "Gemini 2.0 Ultra. Uncapped limits.", accent: "#F97316", color: "text-orange-400", badge: "Yearly ⭐", isYearly: true }
+    ]
+  },
+  "gpt-5.2": { 
+    name: "GPT (OpenAI)",
+    plans: [
+      { id: "plus", name: "Plus", usd: 25, inr: 2100, msgs: "1,500 msgs/mo", desc: "GPT-4o mini. Efficient & fast.", accent: "rgba(255,255,255,.35)", color: "text-gray-400" },
+      { id: "pro", name: "Pro", usd: 99, inr: 8316, msgs: "3,000 msgs/mo", desc: "GPT-4o. Industry standard model.", accent: "#3B82F6", color: "text-blue-400", badge: "Popular" },
+      { id: "ultra", name: "Ultra", usd: 199, inr: 16716, msgs: "5,000 msgs/mo", desc: "GPT o1-mini. Advanced reasoning.", accent: "#A855F7", color: "text-purple-400" },
+      { id: "adv_max", name: "Adv Max", usd: 2397, inr: 201348, msgs: "7,000 msgs/mo", desc: "GPT o1-mini max. Production scale.", accent: "#F97316", color: "text-orange-400", badge: "Yearly ⭐", isYearly: true }
+    ]
+  },
+  claude: {
+    name: "Claude (Anthropic)",
+    plans: [
+      { id: "plus", name: "Plus", usd: 47, inr: 3948, msgs: "1,500 msgs/mo", desc: "Claude Haiku 4.5. Best text processing.", accent: "rgba(255,255,255,.35)", color: "text-gray-400" },
+      { id: "pro", name: "Pro", usd: 129, inr: 10836, msgs: "3,000 msgs/mo", desc: "Claude Sonnet 4.6. Premium quality.", accent: "#3B82F6", color: "text-blue-400", badge: "Popular" },
+      { id: "ultra", name: "Ultra", usd: 189, inr: 15876, msgs: "5,000 msgs/mo", desc: "Claude Sonnet 4.6+. Elite reasoning.", accent: "#A855F7", color: "text-purple-400" },
+      { id: "adv_max", name: "Adv Max", usd: 2997, inr: 251748, msgs: "7,000 msgs/mo", desc: "Sonnet 4.6 Unlimited.", accent: "#F97316", color: "text-orange-400", badge: "Yearly ⭐", isYearly: true }
+    ]
+  },
+  omni: {
+    name: "OmniAgent Bundle",
+    plans: [
+      { id: "monthly", name: "Pro Bundle", usd: 149, inr: 12516, msgs: "Smart Routing", desc: "GPT-4o + Gemini Pro + Claude Sonnet. 3x Fallback.", accent: "#00BFFF", color: "text-[#00BFFF]" },
+      { id: "yearly", name: "Adv Premium", usd: 2397, inr: 201348, msgs: "Auto Routing", desc: "o1-mini + Gemini 2.0 + Sonnet 4.6. Zero downtime.", accent: "#BA7517", color: "text-[#BA7517]", badge: "Yearly ⭐", isYearly: true }
+    ]
+  }
+};
+
 export default function Dashboard() {
   const { data: session, status } = useSession();
   const router = useRouter();
@@ -42,10 +80,19 @@ export default function Dashboard() {
   const [isInjecting, setIsInjecting] = useState(false);
   const [knowledgeItems, setKnowledgeItems] = useState<any[]>([]);
 
+  // CURRENCY LOGIC
+  const [currency, setCurrency] = useState<"USD"|"INR">("USD");
+  const [currencySymbol, setCurrencySymbol] = useState("$");
+
   useEffect(() => {
     if (status === "unauthenticated") {
       router.push("/");
     }
+
+    try {
+      const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      if (tz === "Asia/Calcutta" || tz === "Asia/Kolkata") { setCurrency("INR"); setCurrencySymbol("₹"); }
+    } catch {}
 
     if (session?.user?.email) {
       fetch(`/api/user?email=${session.user.email}&t=${Date.now()}`, { cache: 'no-store' })
@@ -100,61 +147,25 @@ export default function Dashboard() {
     }
   };
 
-  // 🚀 DYNAMIC PRICING ENGINE
+  // 🚀 DYNAMIC PRICING ENGINE: Mapped to PRICING_DATA
   const exactModel = (userData?.selected_model || userData?.ai_provider || "gpt-5.2").toLowerCase();
-  const isOmniActive = exactModel.includes("omni") || exactModel.includes("multi_model") || exactModel.includes("nexus");
+  
+  let pricingKey = "gpt-5.2";
+  if (exactModel.includes("omni") || exactModel.includes("multi_model") || exactModel.includes("nexus")) pricingKey = "omni";
+  else if (exactModel.includes("claude") || exactModel.includes("anthropic")) pricingKey = "claude";
+  else if (exactModel.includes("gemini") || exactModel.includes("google")) pricingKey = "gemini";
 
-  const getPricingConfig = () => {
-    if (isOmniActive) {
-      return {
-        type: "omni",
-        plans: [
-          { id: "monthly", name: "Monthly", price: 7400, desc: "Billed monthly. 4x AI Fallback Matrix." },
-          { id: "yearly", name: "Yearly", price: 74000, desc: "Billed annually. 0% Downtime." }
-        ]
-      };
-    }
-    if (exactModel.includes("gpt") || exactModel.includes("openai")) {
-      return {
-        type: "single",
-        plans: [
-          { id: "starter", name: "Starter", price: 499, desc: "GPT-5.2 Entry level for private use." },
-          { id: "professional", name: "Professional", price: 2499, desc: "Expanded usage and priority routing." },
-          { id: "maximum", name: "Maximum", price: 9999, desc: "Uncapped limits, highest speeds." }
-        ]
-      };
-    }
-    if (exactModel.includes("claude") || exactModel.includes("anthropic")) {
-      return {
-        type: "single",
-        plans: [
-          { id: "starter", name: "Starter", price: 599, desc: "Claude 3 Entry level for private use." },
-          { id: "professional", name: "Professional", price: 2999, desc: "Expanded usage and priority routing." },
-          { id: "maximum", name: "Maximum", price: 11999, desc: "Uncapped limits, highest speeds." }
-        ]
-      };
-    }
-    // Default (Gemini)
-    return {
-      type: "single",
-      plans: [
-        { id: "starter", name: "Starter", price: 99.6, desc: "Entry level for private use." },
-        { id: "professional", name: "Professional", price: 1577, desc: "Expanded usage and priority routing." },
-        { id: "maximum", name: "Maximum", price: 7387, desc: "Uncapped limits, highest speeds." }
-      ]
-    };
-  };
+  const isOmniActive = pricingKey === "omni";
+  const currentPricing = PRICING_DATA[pricingKey] || PRICING_DATA["gpt-5.2"];
+  const activePlanObj = currentPricing.plans.find((p: any) => p.id === selectedRenewalPlan) || currentPricing.plans[0];
 
-  const currentPricing = getPricingConfig();
-  const activePlanObj = currentPricing.plans.find(p => p.id === selectedRenewalPlan) || currentPricing.plans[0];
-
-  // 🚀 FIXED: SURGICAL RENEWAL LOGIC
+  // 🚀 FIXED: SURGICAL RENEWAL LOGIC (Using new dynamic prices)
   const handleRenewalPayment = async () => {
     if (!session?.user?.email) return;
     setIsRenewing(true);
 
     try {
-      const amount = activePlanObj.price;
+      const amount = currency === "INR" ? activePlanObj.inr : activePlanObj.usd;
 
       const res = await fetch("/api/razorpay", {
         method: "POST",
@@ -164,6 +175,7 @@ export default function Dashboard() {
           planName: activePlanObj.id, 
           planType: "RENEWAL", 
           amount: amount,
+          currency: currency,
           notes: {
             email: session.user.email,
             plan_name: activePlanObj.id,
@@ -339,7 +351,7 @@ export default function Dashboard() {
   }
 
   const currentPlan = userData?.plan?.toLowerCase() || "starter";
-  const isPremium = currentPlan === "pro" || currentPlan === "professional" || currentPlan === "max" || currentPlan === "maximum" || currentPlan === "monthly" || currentPlan === "yearly" || currentPlan.includes("ultra");
+  const isPremium = currentPlan === "pro" || currentPlan === "professional" || currentPlan === "max" || currentPlan === "maximum" || currentPlan === "monthly" || currentPlan === "yearly" || currentPlan.includes("ultra") || currentPlan === "adv_max" || currentPlan === "plus";
   const showTokens = !isPremium; 
   const usagePercentage = isPremium ? 100 : Math.min(((stats?.tokensUsed || 0) / (stats?.tokensAllocated || 1)) * 100, 100);
   const totalMsgs = (stats?.platformStats?.whatsapp || 0) + (stats?.platformStats?.telegram || 0) + (stats?.platformStats?.web || 0);
@@ -393,7 +405,7 @@ export default function Dashboard() {
               initial={{ opacity: 0, scale: 0.95, y: 10 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 10 }}
-              className="bg-[#0A0A0C] border border-white/10 rounded-2xl p-8 max-w-4xl w-full relative shadow-[0_20px_60px_rgba(0,0,0,0.8)]"
+              className="bg-[#0A0A0C] border border-white/10 rounded-2xl p-8 max-w-5xl w-full relative shadow-[0_20px_60px_rgba(0,0,0,0.8)]"
             >
               <button onClick={() => setShowPlanModal(false)} className="absolute top-4 right-4 p-2 bg-white/5 hover:bg-white/10 rounded-full text-gray-400 hover:text-white transition-colors">
                 <X className="w-5 h-5"/>
@@ -406,16 +418,22 @@ export default function Dashboard() {
                 <p className="text-sm text-gray-400">Select a tier to securely renew or upgrade your <span className="text-white font-bold">{getModelDisplayName()}</span> engine.</p>
               </div>
 
-              <div className={`grid grid-cols-1 md:grid-cols-${currentPricing.plans.length} gap-6 mb-8`}>
-                {currentPricing.plans.map((plan) => {
-                  const isActive = activePlanObj.id === plan.id;
-                  const isPopular = plan.id === 'professional' || plan.id === 'yearly';
+              <div className={`grid grid-cols-1 md:grid-cols-${currentPricing.plans.length} gap-6 mb-8 max-w-${isOmniActive ? '2xl' : '5xl'} mx-auto text-left`}>
+                {currentPricing.plans.map((plan: any) => {
+                  const isActive = activePlanObj?.id === plan.id;
                   return (
-                    <div key={plan.id} onClick={() => setSelectedRenewalPlan(plan.id)} className={`cursor-pointer rounded-2xl p-6 border transition-all duration-200 relative ${isActive ? 'border-orange-500 bg-orange-500/5 shadow-[0_0_30px_rgba(249,115,22,0.15)]' : 'border-white/10 bg-[#111113] hover:border-white/30'}`}>
-                      {isPopular && <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-blue-600 text-white text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-full">Popular</div>}
-                      <p className={`text-[10px] font-black uppercase tracking-widest mb-4 ${isActive ? 'text-orange-500' : 'text-gray-500'}`}>{plan.name}</p>
-                      <h3 className="text-4xl font-black text-white mb-2">₹{plan.price}</h3>
-                      <p className="text-xs text-gray-400">{plan.desc}</p>
+                    <div key={plan.id} data-spring onClick={() => !isRenewing && setSelectedRenewalPlan(plan.id)}
+                      className={`relative p-5 rounded-2xl cursor-pointer transition-all duration-150 ${btn} ${isActive ? "scale-[1.02]" : "hover:scale-[1.01]"}`}
+                      style={{
+                        background: isActive ? "rgba(255,255,255,0.05)" : "rgba(255,255,255,0.02)",
+                        border: `1px solid ${isActive ? plan.accent : "rgba(255,255,255,0.07)"}`,
+                        boxShadow: isActive ? `0 0 28px ${plan.accent}40` : "none"
+                      }}>
+                      {plan.badge && <div className="absolute -top-3 left-1/2 -translate-x-1/2 text-white text-[9px] font-bold uppercase px-3 py-1 rounded-full tracking-widest" style={{ background: plan.accent }}>{plan.badge}</div>}
+                      <h3 className={`font-bold uppercase text-[11px] tracking-widest mb-2 ${plan.color}`}>{plan.name}</h3>
+                      <div className="text-[1.9rem] font-black text-white mb-2">{currencySymbol}{currency === "INR" ? plan.inr.toLocaleString() : plan.usd.toLocaleString()}<span style={{ fontSize: 13, fontWeight: 400, color: "#888" }}>{plan.isYearly ? "/yr" : "/mo"}</span></div>
+                      <p className="text-[11px] text-gray-400 leading-relaxed mb-3 h-8">{plan.desc}</p>
+                      <span className="inline-block px-2 py-1 bg-white/5 rounded text-[10px] text-gray-300 border border-white/10">{plan.msgs}</span>
                     </div>
                   );
                 })}
@@ -427,7 +445,7 @@ export default function Dashboard() {
                   disabled={isRenewing}
                   className={`bg-white text-black hover:bg-gray-200 px-12 py-4 rounded-xl font-black uppercase tracking-widest flex items-center gap-2 shadow-[0_0_20px_rgba(255,255,255,0.2)] disabled:opacity-50 ${btn}`}
                 >
-                  {isRenewing ? "PROCESSING..." : `INITIALIZE PAYMENT — ₹${activePlanObj.price}`}
+                  {isRenewing ? "PROCESSING..." : `INITIALIZE PAYMENT — ${currencySymbol}${(currency === "INR" ? activePlanObj.inr : activePlanObj.usd).toLocaleString()}`}
                 </button>
               </div>
             </motion.div>

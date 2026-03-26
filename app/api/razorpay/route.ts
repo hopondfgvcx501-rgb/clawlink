@@ -22,8 +22,7 @@ export async function POST(req: Request) {
       key_secret: keySecret,
     });
 
-    // 🔒 SURGICAL FIX 2: Razorpay strictly expects integers in PAISE.
-    // E.g., if amount is 19 (Rupees), safeAmount becomes 1900 (Paise).
+    // 🔒 SURGICAL FIX: Razorpay strictly expects integers in PAISE.
     const safeAmount = Math.round(amount * 100);
 
     const options = {

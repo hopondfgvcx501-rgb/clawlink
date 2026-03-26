@@ -11,14 +11,43 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 
-/* ─── Pricing config — ORIGINAL UNTOUCHED ───────────────────── */
-const MODEL_DETAILS: Record<string, { name: string; starter: number; pro: number }> = {
-  gemini:    { name: "Gemini 3 Flash", starter: 1.2, pro: 19 },
-  "gpt-5.2": { name: "GPT-5.2",        starter: 19,  pro: 39 },
-  claude:    { name: "Opus 4.6",       starter: 29,  pro: 59 },
+/* ─── 🚀 CRITICAL NEW MASTER PRICING CONFIG (MARCH 2026) ────────── */
+const PRICING_DATA: Record<string, any> = {
+  gemini: {
+    name: "Gemini (Google)",
+    plans: [
+      { id: "plus", name: "Plus", usd: 19, inr: 1596, msgs: "1,500 msgs/mo", desc: "Gemini 1.5 Flash. Entry level for private use.", accent: "rgba(255,255,255,.35)", color: "text-gray-400" },
+      { id: "pro", name: "Pro", usd: 59, inr: 4956, msgs: "3,000 msgs/mo", desc: "Gemini 1.5 Pro. High quality routing.", accent: "#3B82F6", color: "text-blue-400", badge: "Popular" },
+      { id: "ultra", name: "Ultra", usd: 99, inr: 8316, msgs: "5,000 msgs/mo", desc: "Gemini 2.0 Pro. Enterprise speed.", accent: "#A855F7", color: "text-purple-400" },
+      { id: "adv_max", name: "Adv Max", usd: 1099, inr: 92316, msgs: "7,000 msgs/mo", desc: "Gemini 2.0 Ultra. Uncapped limits.", accent: "#F97316", color: "text-orange-400", badge: "Yearly ⭐", isYearly: true }
+    ]
+  },
+  "gpt-5.2": { 
+    name: "GPT (OpenAI)",
+    plans: [
+      { id: "plus", name: "Plus", usd: 25, inr: 2100, msgs: "1,500 msgs/mo", desc: "GPT-4o mini. Efficient & fast.", accent: "rgba(255,255,255,.35)", color: "text-gray-400" },
+      { id: "pro", name: "Pro", usd: 99, inr: 8316, msgs: "3,000 msgs/mo", desc: "GPT-4o. Industry standard model.", accent: "#3B82F6", color: "text-blue-400", badge: "Popular" },
+      { id: "ultra", name: "Ultra", usd: 199, inr: 16716, msgs: "5,000 msgs/mo", desc: "GPT o1-mini. Advanced reasoning.", accent: "#A855F7", color: "text-purple-400" },
+      { id: "adv_max", name: "Adv Max", usd: 2397, inr: 201348, msgs: "7,000 msgs/mo", desc: "GPT o1-mini max. Production scale.", accent: "#F97316", color: "text-orange-400", badge: "Yearly ⭐", isYearly: true }
+    ]
+  },
+  claude: {
+    name: "Claude (Anthropic)",
+    plans: [
+      { id: "plus", name: "Plus", usd: 47, inr: 3948, msgs: "1,500 msgs/mo", desc: "Claude Haiku 4.5. Best text processing.", accent: "rgba(255,255,255,.35)", color: "text-gray-400" },
+      { id: "pro", name: "Pro", usd: 129, inr: 10836, msgs: "3,000 msgs/mo", desc: "Claude Sonnet 4.6. Premium quality.", accent: "#3B82F6", color: "text-blue-400", badge: "Popular" },
+      { id: "ultra", name: "Ultra", usd: 189, inr: 15876, msgs: "5,000 msgs/mo", desc: "Claude Sonnet 4.6+. Elite reasoning.", accent: "#A855F7", color: "text-purple-400" },
+      { id: "adv_max", name: "Adv Max", usd: 2997, inr: 251748, msgs: "7,000 msgs/mo", desc: "Sonnet 4.6 Unlimited.", accent: "#F97316", color: "text-orange-400", badge: "Yearly ⭐", isYearly: true }
+    ]
+  },
+  omni: {
+    name: "OmniAgent Bundle",
+    plans: [
+      { id: "monthly", name: "Pro Bundle", usd: 149, inr: 12516, msgs: "Smart Routing", desc: "GPT-4o + Gemini Pro + Claude Sonnet. 3x Fallback.", accent: "#00BFFF", color: "text-[#00BFFF]" },
+      { id: "yearly", name: "Adv Premium", usd: 2397, inr: 201348, msgs: "Auto Routing", desc: "o1-mini + Gemini 2.0 + Sonnet 4.6. Zero downtime.", accent: "#BA7517", color: "text-[#BA7517]", badge: "Yearly ⭐", isYearly: true }
+    ]
+  }
 };
-const MAX_PLAN_PRICE = 89;
-const OMNI_PRICING   = { monthly: 79, yearly: 790 };
 
 /* ─── Icons — FIXED INLINE SVGS FOR BETTER VISIBILITY ────────── */
 const OpenAI_Icon  = () => <Image src="/logos/openai.svg"  alt="OpenAI"  width={26} height={26} className="transform-gpu" />;
@@ -118,10 +147,9 @@ export default function Home() {
   const [botLink,             setBotLink]             = useState("");
   const [activeModel,         setActiveModel]         = useState("gpt-5.2");
   const [activeChannel,       setActiveChannel]       = useState("telegram");
-  const [selectedTier,        setSelectedTier]        = useState<"starter"|"pro"|"max"|"monthly"|"yearly"|null>(null);
+  const [selectedTier,        setSelectedTier]        = useState<string|null>(null);
   const [currency,            setCurrency]            = useState<"USD"|"INR">("USD");
   const [currencySymbol,      setCurrencySymbol]      = useState("$");
-  const EXCHANGE_RATE = 83;
 
   const [isHelpOpen,         setIsHelpOpen]         = useState(false);
   const [helpEmail,          setHelpEmail]          = useState("");
@@ -300,25 +328,28 @@ export default function Home() {
     }, 800);
   };
 
+  // 🚀 FIXED: DYNAMIC PRICING ENGINE CONNECTION
   const getCurrentPrice = (tier = selectedTier) => {
     if (!tier) return 0;
-    let base = 0;
-    if (activeModel === "omni") base = tier === "monthly" ? OMNI_PRICING.monthly : tier === "yearly" ? OMNI_PRICING.yearly : 89;
-    else base = tier === "max" ? MAX_PLAN_PRICE : (MODEL_DETAILS[activeModel]?.[tier as "starter"|"pro"] || 39);
-    return currency === "INR" ? base * EXCHANGE_RATE : base;
+    const modelData = PRICING_DATA[activeModel];
+    if (!modelData) return 0;
+    const planData = modelData.plans.find((p: any) => p.id === tier);
+    if (!planData) return 0;
+    return currency === "INR" ? planData.inr : planData.usd;
   };
 
-  // 🚀 SURGICAL FIX: FIXED MULTIPLE MULTIPLICATION & ADDED PROPER WEBHOOK NOTES
   const triggerRazorpayPayment = async () => {
     if (!selectedTier) { alert("Please select a plan."); return; }
     if (typeof window === "undefined" || !(window as any).Razorpay) { alert("Payment gateway loading…"); return; }
-    const finalPrice = getCurrentPrice(); setIsDeploying(true);
+    
+    const finalPrice = getCurrentPrice(); 
+    setIsDeploying(true);
+    
     try {
       const selectedModelForDB = activeModel === "omni" ? "multi_model" : activeModel;
       
       const res = await fetch("/api/razorpay", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        // Fixed Amount, added notes & planType for Razorpay Webhook correctly!
         body: JSON.stringify({ 
             amount: finalPrice, 
             currency, 
@@ -332,20 +363,21 @@ export default function Home() {
       const order = await res.json();
       if (order.error) { alert("Order Error: " + order.error); setIsDeploying(false); return; }
       
-      // 🚀 FIXED: RAZORPAY POPUP LOGO NOW USES OFFICIAL ORANGE SVG BASE64
       const clawLinkLogoBase64 = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxNTIgMjYiPjxwYXRoIGQ9Ik0yMiAzQzE4IC41IDEwIC41IDcgNC41UzMuNSAxOCA3IDIyLjUgMTggMjYgMjIgMjMiIHN0cm9rZT0iI2ZmZiIgc3Ryb2tlLXdpZHRoPSI0LjUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgZmlsbD0ibm9uZSIvPjxsaW5lIHgxPSI3LjUiIHkxPSIzIiB4Mj0iMTQuNSIgeTI9IjExLjUiIHN0cm9rZT0iI2Y5NzMxNiIgc3Ryb2tlLXdpZHRoPSIyLjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPjxsaW5lIHgxPSIxMi41IiB5MT0iMS41IiB4Mj0iMTkuNSIgeTI9IjEwIiBzdHJva2U9IiNmOTczMTYiIHN0cm9rZS13aWR0aD0iMi4yIiBzdHJva2UtbGluZWNhcD0icm91bmQiLz48bGluZSB4MT0iMTcuNSIgeTE9IjIuNSIgeDI9IjI0IiB5Mj0iMTAuNSIgc3Ryb2tlPSIjZjk3MzE2IiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPjx0ZXh0IHg9IjMwIiB5PSIxOCIgZm9udC1mYW1pbHk9InNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMTQuNSIgZm9udC13ZWlnaHQ9IjgwMCIgbGV0dGVyLXNwYWNpbmc9IjEuNCIgZmlsbD0iI2ZmZiI+TEFXTElOSzwvdGV4dD48dGV4dCB4PSIxMTYiIHk9IjE4IiBmb250LWZhbWlseT0ic2Fucy1zZXJpZiIgZm9udC1zaXplPSI5LjUiIGZvbnQtd2VpZ2h0PSI3MDAiIGxldHRlci1zcGFjaW5nPSIuNyIgZmlsbD0iI2Y5NzMxNiI+LkNPTTwvdGV4dD48L3N2Zz4=";
+
+      const activePlanObj = PRICING_DATA[activeModel]?.plans.find((p: any) => p.id === selectedTier);
 
       const options = {
         key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID, amount: order.amount, currency: order.currency,
         name: "ClawLink Premium",
         image: clawLinkLogoBase64, 
-        description: `Plan: ${selectedTier?.toUpperCase()} | Model: ${activeModel === "omni" ? "OmniAgent Nexus" : MODEL_DETAILS[activeModel]?.name}`,
+        description: `Plan: ${activePlanObj?.name?.toUpperCase()} | Model: ${activeModel === "omni" ? "OmniAgent Nexus" : PRICING_DATA[activeModel]?.name}`,
         order_id: order.id,
         handler: async () => {
           try {
             const cfgRes = await fetch("/api/config", {
               method: "POST", headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ email: session?.user?.email, selectedModel: selectedModelForDB, selectedChannel: activeChannel, telegramToken, waPhoneId, waPhoneNumber, plan: selectedTier, billingCycle: selectedTier === "yearly" ? "Yearly" : "Monthly" }),
+              body: JSON.stringify({ email: session?.user?.email, selectedModel: selectedModelForDB, selectedChannel: activeChannel, telegramToken, waPhoneId, waPhoneNumber, plan: selectedTier, billingCycle: activePlanObj?.isYearly ? "Yearly" : "Monthly" }),
             });
             const cfg = await cfgRes.json();
             if (cfg.success && cfg.botLink) { setBotLink(cfg.botLink); setShowPricingPopup(false); }
@@ -360,11 +392,9 @@ export default function Home() {
     } catch { alert("Gateway init failed."); setIsDeploying(false); }
   };
 
-  // 🚀 FIXED: ULTRA SMART WHATSAPP APP REDIRECT (Native Phone/Desktop App)
   const openLiveBotHandler = () => {
     if (activeChannel === "whatsapp") {
       if (waPhoneNumber) { 
-        // This forces Native WhatsApp App to open instead of Web browser on both Phone & Desktop!
         window.open(`https://api.whatsapp.com/send?phone=${waPhoneNumber.replace(/\D/g, '')}`, "_blank"); 
       } else if (botLink && botLink.includes('wa.me')) { 
         window.open(botLink.replace('wa.me/', 'api.whatsapp.com/send?phone='), "_blank"); 
@@ -386,7 +416,6 @@ export default function Home() {
 
   if (!isMounted) return null;
 
-  // 🚀 ULTRA FAST BTN CLASS — Spring + GPU accelerated
   const btn = "transition-all duration-[120ms] ease-out active:scale-[0.93] transform-gpu will-change-transform";
 
   const pillBase = [
@@ -1082,11 +1111,12 @@ export default function Home() {
         )}
       </AnimatePresence>
 
+      {/* 🚀 CRITICAL NEW PRICING MODAL UI */}
       <AnimatePresence>
         {showPricingPopup && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-[16px] p-4">
             <motion.div initial={{opacity:0,y:12,scale:.96}} animate={{opacity:1,y:0,scale:1}} exit={{opacity:0,y:12,scale:.96}} transition={{duration:.12,ease:"easeOut"}}
-              className="w-full max-w-4xl p-7 md:p-10 rounded-[1.75rem] text-center relative overflow-y-auto nsb"
+              className="w-full max-w-5xl p-7 md:p-10 rounded-[1.75rem] text-center relative overflow-y-auto nsb"
               style={{background:"#0F0F12",border:"1px solid rgba(255,255,255,0.09)",boxShadow:"0 0 100px rgba(0,0,0,0.9)",maxHeight:"92vh"}}>
               <div className="absolute top-0 left-[20%] right-[20%] h-px" style={{background:"linear-gradient(90deg,transparent,rgba(249,115,22,0.4),transparent)"}}/>
               {!isDeploying && (
@@ -1095,7 +1125,6 @@ export default function Home() {
                 </button>
               )}
               
-              {/* 🚀 FIXED: RAZORPAY POPUP LOGO (Orange and White "C" Clawlink Logo) */}
               <div className="flex justify-center mb-6">
                 <svg width="130" height="22" viewBox="0 0 152 26" fill="none">
                   <defs>
@@ -1114,60 +1143,59 @@ export default function Home() {
               </div>
 
               <h2 className="text-[1.7rem] font-black uppercase tracking-tight mb-3 text-white">
-                {activeModel==="omni" ? "OmniAgent Enterprise Plans" : "Select Your Deployment Plan"}
+                {activeModel === "omni" ? "OmniAgent Enterprise Bundles" : `${PRICING_DATA[activeModel]?.name} Plans`}
               </h2>
               <p className="text-gray-400 text-[13px] mb-8 max-w-xl mx-auto leading-relaxed">
-                {activeModel==="omni"
+                {activeModel === "omni"
                   ? "OmniAgent includes 3x AI Fallback (GPT, Claude, Gemini) for 0% downtime."
                   : "Select a tier to securely initialize your AI engine."}
               </p>
 
-              {activeModel==="omni" ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-8 max-w-xl mx-auto text-left">
-                  {[
-                    {tier:"monthly" as const,accent:"#00BFFF",label:"Monthly Enterprise",badge:null,desc:"3x Smart AI Fallback. Billed monthly."},
-                    {tier:"yearly"  as const,accent:"#0052D4",label:"Yearly Enterprise",badge:"Save 16%",desc:"Maximum value for production scale."},
-                  ].map(({tier,accent,label,badge,desc})=>(
-                    <div key={tier} data-spring onClick={()=>!isDeploying&&setSelectedTier(tier)}
-                      className={`relative p-6 rounded-2xl cursor-pointer transition-all duration-150 ${btn} ${selectedTier===tier?"scale-[1.02]":"hover:scale-[1.01]"}`}
-                      style={{background:selectedTier===tier?"rgba(255,255,255,0.05)":"rgba(255,255,255,0.02)",
-                              border:`1px solid ${selectedTier===tier?accent:"rgba(255,255,255,0.07)"}`,
-                              boxShadow:selectedTier===tier?`0 0 32px ${accent}44`:"none"}}>
-                      {badge&&<div className="absolute -top-3 left-1/2 -translate-x-1/2 text-white text-[9px] font-bold uppercase px-3 py-1 rounded-full tracking-widest" style={{background:accent}}>{badge}</div>}
-                      <h3 className="font-bold uppercase text-[11px] tracking-widest mb-2" style={{color:accent}}>{label}</h3>
-                      <div className="text-[2rem] font-black text-white mb-2">{currencySymbol}{getCurrentPrice(tier)}</div>
-                      <p className="text-[12px] text-gray-400 leading-relaxed">{desc}</p>
+              {activeModel === "omni" ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-8 max-w-2xl mx-auto text-left">
+                  {PRICING_DATA.omni.plans.map((plan: any) => (
+                    <div key={plan.id} data-spring onClick={() => !isDeploying && setSelectedTier(plan.id)}
+                      className={`relative p-6 rounded-2xl cursor-pointer transition-all duration-150 ${btn} ${selectedTier === plan.id ? "scale-[1.02]" : "hover:scale-[1.01]"}`}
+                      style={{
+                        background: selectedTier === plan.id ? "rgba(255,255,255,0.05)" : "rgba(255,255,255,0.02)",
+                        border: `1px solid ${selectedTier === plan.id ? plan.accent : "rgba(255,255,255,0.07)"}`,
+                        boxShadow: selectedTier === plan.id ? `0 0 32px ${plan.accent}44` : "none"
+                      }}>
+                      {plan.badge && <div className="absolute -top-3 left-1/2 -translate-x-1/2 text-white text-[9px] font-bold uppercase px-3 py-1 rounded-full tracking-widest" style={{ background: plan.accent }}>{plan.badge}</div>}
+                      <h3 className="font-bold uppercase text-[11px] tracking-widest mb-2" style={{ color: plan.accent }}>{plan.name}</h3>
+                      <div className="text-[2rem] font-black text-white mb-2">{currencySymbol}{currency === "INR" ? plan.inr.toLocaleString() : plan.usd.toLocaleString()}<span style={{ fontSize: 14, fontWeight: 400, color: "#888" }}>{plan.isYearly ? "/yr" : "/mo"}</span></div>
+                      <p className="text-[12px] text-gray-400 leading-relaxed mb-3">{plan.desc}</p>
+                      <span className="inline-block px-2 py-1 bg-white/5 rounded text-[10px] text-gray-300 border border-white/10">{plan.msgs}</span>
                     </div>
                   ))}
                 </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8 text-left">
-                  {[
-                    {tier:"starter" as const,accent:"rgba(255,255,255,.35)",label:"Starter",color:"text-gray-400",badge:null,desc:"Entry level for private use."},
-                    {tier:"pro"     as const,accent:"#3B82F6",label:"Professional",color:"text-blue-400",badge:"Popular",desc:"Expanded usage and priority routing."},
-                    {tier:"max"     as const,accent:"#F97316",label:"Maximum",color:"text-orange-400",badge:null,desc:"Uncapped limits, highest speeds."},
-                  ].map(({tier,accent,label,color,badge,desc})=>(
-                    <div key={tier} data-spring onClick={()=>!isDeploying&&setSelectedTier(tier)}
-                      className={`relative p-5 rounded-2xl cursor-pointer transition-all duration-150 ${btn} ${selectedTier===tier?"scale-[1.02]":"hover:scale-[1.01]"}`}
-                      style={{background:selectedTier===tier?"rgba(255,255,255,0.04)":"rgba(255,255,255,0.02)",
-                              border:`1px solid ${selectedTier===tier?accent:"rgba(255,255,255,0.07)"}`,
-                              boxShadow:selectedTier===tier?`0 0 28px ${accent}40`:"none"}}>
-                      {badge&&<div className="absolute -top-3 left-1/2 -translate-x-1/2 text-white text-[9px] font-bold uppercase px-3 py-1 rounded-full tracking-widest bg-blue-600">{badge}</div>}
-                      <h3 className={`font-bold uppercase text-[11px] tracking-widest mb-2 ${color}`}>{label}</h3>
-                      <div className="text-[1.9rem] font-black text-white mb-2">{currencySymbol}{getCurrentPrice(tier)}</div>
-                      <p className="text-[12px] text-gray-400 leading-relaxed">{desc}</p>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8 text-left">
+                  {PRICING_DATA[activeModel]?.plans.map((plan: any) => (
+                    <div key={plan.id} data-spring onClick={() => !isDeploying && setSelectedTier(plan.id)}
+                      className={`relative p-5 rounded-2xl cursor-pointer transition-all duration-150 ${btn} ${selectedTier === plan.id ? "scale-[1.02]" : "hover:scale-[1.01]"}`}
+                      style={{
+                        background: selectedTier === plan.id ? "rgba(255,255,255,0.04)" : "rgba(255,255,255,0.02)",
+                        border: `1px solid ${selectedTier === plan.id ? plan.accent : "rgba(255,255,255,0.07)"}`,
+                        boxShadow: selectedTier === plan.id ? `0 0 28px ${plan.accent}40` : "none"
+                      }}>
+                      {plan.badge && <div className="absolute -top-3 left-1/2 -translate-x-1/2 text-white text-[9px] font-bold uppercase px-3 py-1 rounded-full tracking-widest" style={{ background: plan.accent }}>{plan.badge}</div>}
+                      <h3 className={`font-bold uppercase text-[11px] tracking-widest mb-2 ${plan.color}`}>{plan.name}</h3>
+                      <div className="text-[1.9rem] font-black text-white mb-2">{currencySymbol}{currency === "INR" ? plan.inr.toLocaleString() : plan.usd.toLocaleString()}<span style={{ fontSize: 13, fontWeight: 400, color: "#888" }}>{plan.isYearly ? "/yr" : "/mo"}</span></div>
+                      <p className="text-[11px] text-gray-400 leading-relaxed mb-3 h-8">{plan.desc}</p>
+                      <span className="inline-block px-2 py-1 bg-white/5 rounded text-[10px] text-gray-300 border border-white/10">{plan.msgs}</span>
                     </div>
                   ))}
                 </div>
               )}
 
-              <button data-ripple data-spring onClick={triggerRazorpayPayment} disabled={isDeploying||!selectedTier}
+              <button data-ripple data-spring onClick={triggerRazorpayPayment} disabled={isDeploying || !selectedTier}
                 className={`relative overflow-hidden w-full max-w-sm mx-auto font-black py-4 rounded-xl uppercase tracking-widest flex justify-center items-center gap-2 transition-all duration-150 ${btn}
-                  ${!selectedTier?"cursor-not-allowed opacity-40 bg-gray-800 text-gray-500"
-                    :activeModel==="omni"
-                      ?"bg-gradient-to-r from-[#0052D4] to-[#00BFFF] text-white hover:scale-[1.02] shadow-[0_0_24px_rgba(0,191,255,0.4)]"
-                      :"bg-white text-black hover:bg-gray-100 hover:scale-[1.02] shadow-[0_0_24px_rgba(255,255,255,0.25)]"}`}>
-                {isDeploying?"Deploying Infrastructure…":!selectedTier?"Select a Tier":`Initialize Payment — ${currencySymbol}${getCurrentPrice()}`}
+                  ${!selectedTier ? "cursor-not-allowed opacity-40 bg-gray-800 text-gray-500"
+                    : activeModel === "omni"
+                      ? "bg-gradient-to-r from-[#0052D4] to-[#00BFFF] text-white hover:scale-[1.02] shadow-[0_0_24px_rgba(0,191,255,0.4)]"
+                      : "bg-white text-black hover:bg-gray-100 hover:scale-[1.02] shadow-[0_0_24px_rgba(255,255,255,0.25)]"}`}>
+                {isDeploying ? "Deploying Infrastructure…" : !selectedTier ? "Select a Tier" : `Initialize Payment — ${currencySymbol}${getCurrentPrice().toLocaleString()}`}
               </button>
             </motion.div>
           </div>

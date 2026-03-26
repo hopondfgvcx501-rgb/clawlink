@@ -36,34 +36,29 @@ export async function POST(req: NextRequest) {
       
       const notes = paymentEntity.notes || {};
       const userEmail = (notes.email || paymentEntity.email || "").toLowerCase(); 
-      const planName = (notes.plan_name || "Starter").toLowerCase();
-      // Safely default to what user sent from UI, else openai
+      const planName = (notes.plan_name || "plus").toLowerCase();
       const rawModel = (notes.selected_model || "openai").toLowerCase();
       
       const isRenewal = notes.is_renewal === "true" || notes.plan_type === "RENEWAL";
 
       if (userEmail) {
-        console.log(`💰 PAYMENT RECEIVED! Upgrading ${userEmail} to ${planName.toUpperCase()}. Renewal Mode: ${isRenewal}. Model: ${rawModel}`);
-
-        // 🧠 Smart AI Provider Routing (Surgical Fix for Omni vs Gemini)
         let aiProvider = "openai";
         if (rawModel.includes("claude") || rawModel.includes("anthropic")) aiProvider = "anthropic";
         else if (rawModel.includes("gemini") || rawModel.includes("google")) aiProvider = "google";
         else if (rawModel.includes("omni") || rawModel.includes("multi_model") || rawModel.includes("nexus")) aiProvider = "multi_model";
 
+        // 🚀 MASTER PRICING UPGRADE LIMITS
         let isUnlimited = false;
-        let tokensAllocated = 10000; 
+        let tokensAllocated = 2000000; 
+        let monthlyLimit = 1500;
 
-        if (planName === "pro") {
-            isUnlimited = true;
-            tokensAllocated = 500000;
-        } else if (planName === "max" || planName === "yearly" || planName === "monthly" || planName === "ultra-premium") {
-            isUnlimited = true;
-            tokensAllocated = 9999999;
-        }
+        if (planName === "pro") { tokensAllocated = 5000000; monthlyLimit = 3000; } 
+        else if (planName === "ultra") { tokensAllocated = 10000000; monthlyLimit = 5000; }
+        else if (planName === "adv_max" || planName === "yearly") { isUnlimited = true; tokensAllocated = 99999999; monthlyLimit = 7000; }
+        else if (planName === "monthly") { tokensAllocated = 5000000; monthlyLimit = 3000; }
 
         const newExpiryDate = new Date();
-        if (planName === "yearly") {
+        if (planName === "adv_max" || planName === "yearly") {
             newExpiryDate.setDate(newExpiryDate.getDate() + 365);
         } else {
             newExpiryDate.setDate(newExpiryDate.getDate() + 30); 
@@ -73,6 +68,7 @@ export async function POST(req: NextRequest) {
             plan: planName,            
             is_unlimited: isUnlimited, 
             tokens_allocated: tokensAllocated,
+            monthly_message_limit: monthlyLimit,
             plan_expiry_date: newExpiryDate.toISOString(),
             plan_status: 'Active'
         };
@@ -93,32 +89,32 @@ export async function POST(req: NextRequest) {
         if (notes.whatsapp_phone_id) { payload.whatsapp_phone_id = notes.whatsapp_phone_id; }
 
         if (isRenewal) {
-            const { data: latestBot } = await supabase
+            const { data } = await supabase
                 .from("user_configs")
                 .select("id")
                 .eq("email", userEmail)
                 .order("created_at", { ascending: false })
-                .limit(1)
-                .single();
+                .limit(1);
+
+            const latestBot = data?.[0];
 
             if (latestBot) {
                 const { error: dbError } = await supabase.from("user_configs").update(payload).eq("id", latestBot.id);
                 if (dbError) throw dbError;
-                console.log(`✅ Successfully RENEWED and Top-Up existing bot ID: ${latestBot.id}`);
             }
         } else if (botIdentifier && botColumn) {
-            const { data: existingBot } = await supabase
+            const { data } = await supabase
                 .from("user_configs")
                 .select("id")
                 .eq("email", userEmail)
                 .eq(botColumn, botIdentifier)
-                .limit(1)
-                .single();
+                .limit(1);
+
+            const existingBot = data?.[0];
 
             if (existingBot) {
                 const { error: dbError } = await supabase.from("user_configs").update(payload).eq("id", existingBot.id);
                 if (dbError) throw dbError;
-                console.log(`✅ Successfully updated existing bot ID: ${existingBot.id}`);
             } else {
                 const { error: dbError } = await supabase.from("user_configs").insert({ 
                     ...payload, 
@@ -127,7 +123,6 @@ export async function POST(req: NextRequest) {
                     messages_used_this_month: 0 
                 });
                 if (dbError) throw dbError;
-                console.log(`✅ Successfully created a NEW bot for ${userEmail}`);
             }
         } else {
             const { error: dbError } = await supabase
@@ -135,7 +130,6 @@ export async function POST(req: NextRequest) {
               .update(payload)
               .eq("email", userEmail);
             if (dbError) throw dbError;
-            console.log(`✅ Legacy update applied for ${userEmail}`);
         }
 
         try {
@@ -147,15 +141,12 @@ export async function POST(req: NextRequest) {
                 status: "PAID",
                 razorpay_order_id: paymentEntity.order_id
             });
-        } catch (invoiceError) {
-            console.error("Failed to generate invoice record, but payment was successful:", invoiceError);
-        }
+        } catch (invoiceError) {}
       }
     }
 
     return NextResponse.json({ success: true });
   } catch (error: any) {
-    console.error("🚨 RAZORPAY WEBHOOK SYSTEM ERROR:", error.message);
     return NextResponse.json({ error: "Server processing failed" }, { status: 500 });
   }
 }
