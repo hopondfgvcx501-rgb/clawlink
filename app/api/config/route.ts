@@ -62,7 +62,7 @@ export async function POST(req: Request) {
         botColumn = "whatsapp_phone_id";
     }
 
-    // 🚀 SURGICAL FIX: Corrected variable name from existingUser to existingBot
+    // 🚀 SURGICAL FIX: Safely check existingBot and fallback to latest config if no specific bot found
     if (botIdentifier && botColumn) {
         const { data: existingBot } = await supabase
             .from("user_configs")
