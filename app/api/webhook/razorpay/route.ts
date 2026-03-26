@@ -89,12 +89,16 @@ export async function POST(req: NextRequest) {
         if (notes.whatsapp_phone_id) { payload.whatsapp_phone_id = notes.whatsapp_phone_id; }
 
         if (isRenewal) {
-            const { data } = await supabase
-                .from("user_configs")
-                .select("id")
-                .eq("email", userEmail)
-                .order("created_at", { ascending: false })
-                .limit(1);
+            // 🚀 SURGICAL FIX: Token identity matching inside your exact original structure!
+            let query = supabase.from("user_configs").select("id").eq("email", userEmail);
+            
+            if (botColumn && botIdentifier) {
+                query = query.eq(botColumn, botIdentifier);
+            } else {
+                query = query.order("created_at", { ascending: false });
+            }
+
+            const { data } = await query.limit(1);
 
             const latestBot = data?.[0];
 

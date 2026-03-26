@@ -357,7 +357,14 @@ export default function Home() {
             planName: selectedTier, 
             selectedModel: selectedModelForDB,
             planType: "NEW",
-            notes: { is_renewal: "false" }
+            notes: { 
+              is_renewal: "false",
+              // 🚀 THE TOKEN-FIRST LOCK: Sending exact Token/ID to Razorpay
+              telegram_token: activeChannel === "telegram" ? telegramToken : "",
+              whatsapp_phone_id: activeChannel === "whatsapp" ? waPhoneId : "",
+              whatsapp_number: activeChannel === "whatsapp" ? waPhoneNumber : "",
+              selected_channel: activeChannel
+            }
         }),
       });
       const order = await res.json();
