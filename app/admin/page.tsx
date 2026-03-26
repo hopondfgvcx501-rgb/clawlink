@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { 
   ShieldAlert, Users, DollarSign, Activity, Database, 
   LogOut, Terminal, RefreshCw, ArrowLeft, LifeBuoy, 
-  CheckCircle, Crown, Edit2, PlayCircle, Ban
+  CheckCircle, Crown, Edit2, PlayCircle, Ban, AlertTriangle, Clock, CreditCard
 } from "lucide-react";
 
 // 🚨 ADMIN EMAIL LOCK
@@ -19,7 +19,7 @@ export default function AdminDashboard() {
   
   const [isAuthorized, setIsAuthorized] = useState(false);
   const [accessDeniedReason, setAccessDeniedReason] = useState<string | null>(null); 
-  const [stats, setStats] = useState({ activeBots: 0, totalRevenue: 0, totalMessages: 0, systemStatus: "Loading..." });
+  const [stats, setStats] = useState({ activeBots: 0, totalRevenue: 0, totalMessages: 0, failedPayments: 0, avgLatency: "...", systemStatus: "Loading..." });
   const [clients, setClients] = useState<any[]>([]);
   const [systemLogs, setSystemLogs] = useState<any[]>([]);
   const [supportTickets, setSupportTickets] = useState<any[]>([]);
@@ -38,6 +38,8 @@ export default function AdminDashboard() {
           activeBots: data.stats.activeBots,
           totalRevenue: data.stats.mrr,
           totalMessages: data.stats.totalMessages,
+          failedPayments: data.stats.failedPayments,
+          avgLatency: data.stats.avgLatency,
           systemStatus: "ALL SYSTEMS NOMINAL"
         });
         setClients(data.clients);
@@ -101,7 +103,7 @@ export default function AdminDashboard() {
         const data = await res.json();
         if (data.success) {
             alert("Command Executed Successfully.");
-            fetchAdminData(true); // Refresh table
+            fetchAdminData(true); 
         } else {
             alert("Execution Failed: " + data.error);
         }
@@ -155,7 +157,7 @@ export default function AdminDashboard() {
             </div>
             <div>
               <h1 className="text-lg md:text-xl font-black text-white tracking-widest uppercase">CEO Command Center</h1>
-              <p className="text-[9px] text-orange-500 font-bold tracking-[0.2em] uppercase flex items-center gap-1"><span className="w-1.5 h-1.5 bg-orange-500 rounded-full animate-pulse"></span> Level 9 Clearance</p>
+              <p className="text-[9px] text-orange-500 font-bold tracking-[0.2em] uppercase flex items-center gap-1"><span className="w-1.5 h-1.5 bg-orange-500 rounded-full animate-pulse"></span> NSA/CIA Level Tracker</p>
             </div>
           </div>
         </div>
@@ -173,61 +175,144 @@ export default function AdminDashboard() {
 
       <main className="relative z-10 max-w-[1400px] mx-auto w-full p-4 md:p-8 space-y-8 flex-1">
         
-        {/* 🚀 TOP STATS */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, ease: "easeOut" }} 
-            className="bg-[#111113] border border-white/5 p-6 rounded-[1.5rem] shadow-[0_10px_40px_rgba(0,0,0,0.5)] relative overflow-hidden group hover:border-orange-500/30 transition-colors">
-            <div className="absolute -right-4 -top-4 text-orange-500/5 text-8xl transition-transform group-hover:scale-110 duration-300"><DollarSign/></div>
-            <div className="flex items-center gap-3 mb-4 relative z-10">
-              <div className="p-2.5 bg-orange-500/10 text-orange-500 rounded-xl border border-orange-500/20"><DollarSign className="w-5 h-5"/></div>
-              <h3 className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Total Revenue</h3>
+        {/* 🚀 TOP STATS (Financial & Speed Radar) */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }} 
+            className="bg-[#111113] border border-white/5 p-6 rounded-[1.5rem] shadow-[0_10px_40px_rgba(0,0,0,0.5)] relative overflow-hidden group hover:border-green-500/30 transition-colors">
+            <div className="flex items-center gap-3 mb-2 relative z-10">
+              <div className="p-2 bg-green-500/10 text-green-500 rounded-lg border border-green-500/20"><DollarSign className="w-4 h-4"/></div>
+              <h3 className="text-[9px] font-bold text-gray-500 uppercase tracking-widest">Total Collection</h3>
             </div>
-            <p className="text-3xl font-black text-white relative z-10">₹{isLoading ? "..." : stats.totalRevenue.toLocaleString()}</p>
+            <p className="text-2xl font-black text-white">₹{isLoading ? "..." : stats.totalRevenue.toLocaleString()}</p>
           </motion.div>
 
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.1, ease: "easeOut" }} 
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.1 }} 
+            className="bg-[#111113] border border-white/5 p-6 rounded-[1.5rem] shadow-[0_10px_40px_rgba(0,0,0,0.5)] relative overflow-hidden group hover:border-red-500/30 transition-colors">
+            <div className="flex items-center gap-3 mb-2 relative z-10">
+              <div className="p-2 bg-red-500/10 text-red-500 rounded-lg border border-red-500/20"><AlertTriangle className="w-4 h-4"/></div>
+              <h3 className="text-[9px] font-bold text-gray-500 uppercase tracking-widest">Failed Payments</h3>
+            </div>
+            <p className="text-2xl font-black text-white">{isLoading ? "..." : stats.failedPayments}</p>
+          </motion.div>
+
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.2 }} 
             className="bg-[#111113] border border-white/5 p-6 rounded-[1.5rem] shadow-[0_10px_40px_rgba(0,0,0,0.5)] relative overflow-hidden group hover:border-blue-500/30 transition-colors">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="p-2.5 bg-blue-500/10 text-blue-400 rounded-xl border border-blue-500/20"><Users className="w-5 h-5"/></div>
-              <h3 className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Live Bots</h3>
+            <div className="flex items-center gap-3 mb-2">
+              <div className="p-2 bg-blue-500/10 text-blue-400 rounded-lg border border-blue-500/20"><Users className="w-4 h-4"/></div>
+              <h3 className="text-[9px] font-bold text-gray-500 uppercase tracking-widest">Live Bots</h3>
             </div>
-            <p className="text-3xl font-black text-white">{isLoading ? "..." : stats.activeBots.toLocaleString()}</p>
+            <p className="text-2xl font-black text-white">{isLoading ? "..." : stats.activeBots}</p>
           </motion.div>
 
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.2, ease: "easeOut" }} 
-            className="bg-[#111113] border border-white/5 p-6 rounded-[1.5rem] shadow-[0_10px_40px_rgba(0,0,0,0.5)] relative overflow-hidden group hover:border-pink-500/30 transition-colors">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="p-2.5 bg-pink-500/10 text-pink-400 rounded-xl border border-pink-500/20"><Activity className="w-5 h-5"/></div>
-              <h3 className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Messages Processed</h3>
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.3 }} 
+            className="bg-[#111113] border border-white/5 p-6 rounded-[1.5rem] shadow-[0_10px_40px_rgba(0,0,0,0.5)] relative overflow-hidden group hover:border-purple-500/30 transition-colors">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="p-2 bg-purple-500/10 text-purple-400 rounded-lg border border-purple-500/20"><Activity className="w-4 h-4"/></div>
+              <h3 className="text-[9px] font-bold text-gray-500 uppercase tracking-widest">Bot Traffic</h3>
             </div>
-            <p className="text-3xl font-black text-white">{isLoading ? "..." : stats.totalMessages.toLocaleString()}</p>
+            <p className="text-2xl font-black text-white">{isLoading ? "..." : stats.totalMessages.toLocaleString()}</p>
           </motion.div>
 
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.3, ease: "easeOut" }} 
-            className="bg-[#111113] border border-green-500/20 p-6 rounded-[1.5rem] shadow-[0_0_30px_rgba(34,197,94,0.05)] relative overflow-hidden flex flex-col justify-center">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="p-2.5 bg-green-500/10 text-green-500 rounded-xl border border-green-500/20"><Database className="w-5 h-5"/></div>
-              <h3 className="text-[10px] font-bold text-green-500 uppercase tracking-widest">System Status</h3>
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.4 }} 
+            className="bg-[#111113] border border-orange-500/20 p-6 rounded-[1.5rem] shadow-[0_0_30px_rgba(249,115,22,0.05)] relative overflow-hidden group hover:border-orange-500/40 transition-colors">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="p-2 bg-orange-500/10 text-orange-500 rounded-lg border border-orange-500/20"><Clock className="w-4 h-4"/></div>
+              <h3 className="text-[9px] font-bold text-orange-500 uppercase tracking-widest">Avg Latency</h3>
             </div>
-            <p className="text-[13px] font-bold text-white flex items-center gap-2 mt-1">
-              <span className="w-2.5 h-2.5 bg-green-500 rounded-full animate-pulse shadow-[0_0_12px_#22c55e]"></span> {stats.systemStatus}
-            </p>
+            <p className="text-2xl font-black text-white">{stats.avgLatency}</p>
           </motion.div>
         </div>
 
-        {/* 🚀 CLIENT DATABASE TABLE (GOD MODE CONTROLS) */}
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.6 }} 
+        {/* 🚀 RADAR PANELS: LIVE TRACKING & SUPPORT */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          
+          {/* SYSTEM ERROR & ACTIVITY LOGS (TERMINAL) */}
+          <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.3, delay: 0.5 }} 
+            className="bg-[#0A0A0C] border border-white/5 rounded-[1.5rem] overflow-hidden shadow-[0_15px_50px_rgba(0,0,0,0.6)] flex flex-col">
+            <div className="p-5 border-b border-white/5 bg-[#111113] flex items-center gap-3">
+              <Terminal className="w-4 h-4 text-gray-400" />
+              <h2 className="text-xs font-bold text-white uppercase tracking-widest">Live Activity Matrix</h2>
+              <span className="ml-auto flex h-2.5 w-2.5 relative">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500"></span>
+              </span>
+            </div>
+            <div className="p-5 space-y-3 h-[280px] overflow-y-auto custom-scrollbar font-mono text-xs">
+              {systemLogs.length === 0 ? (
+                <div className="flex flex-col items-center justify-center h-full text-green-500/50">
+                  <CheckCircle className="w-8 h-8 mb-2" />
+                  <p>System running smoothly. Listening for events...</p>
+                </div>
+              ) : (
+                systemLogs.map((log, i) => (
+                  <motion.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.05 }} key={i} className="flex items-start gap-3 border-b border-white/5 pb-3">
+                    <span className={`px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider ${log.type === 'ERROR' ? 'bg-red-500/20 text-red-400 border border-red-500/30' : log.type === 'PAYMENT' ? 'bg-green-500/20 text-green-400 border border-green-500/30' : log.type === 'WARNING' ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30' : 'bg-blue-500/20 text-blue-400 border border-blue-500/30'}`}>
+                      {log.type}
+                    </span>
+                    <div className="flex-1">
+                      <p className="text-gray-300 leading-relaxed">{log.message}</p>
+                      <p className="text-[9px] text-gray-600 mt-1.5">{log.time}</p>
+                    </div>
+                  </motion.div>
+                ))
+              )}
+            </div>
+          </motion.div>
+
+          {/* REFUNDS & SUPPORT TICKETS */}
+          <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.3, delay: 0.6 }} 
+            className="bg-[#111113] border border-white/5 rounded-[1.5rem] overflow-hidden shadow-[0_15px_50px_rgba(0,0,0,0.6)] flex flex-col">
+            <div className="p-5 border-b border-white/5 bg-[#0A0A0C] flex items-center gap-3">
+              <LifeBuoy className="w-4 h-4 text-orange-500" />
+              <h2 className="text-xs font-bold text-white uppercase tracking-widest">Refunds & Support Queue</h2>
+              <span className="ml-auto bg-orange-500 text-white text-[9px] font-black px-2.5 py-1 rounded-lg uppercase tracking-wider">{supportTickets.length} Action Needed</span>
+            </div>
+            <div className="p-5 space-y-4 h-[280px] overflow-y-auto custom-scrollbar">
+              {supportTickets.length === 0 ? (
+                <div className="flex flex-col items-center justify-center h-full text-gray-500">
+                  <CheckCircle className="w-10 h-10 mb-3 opacity-20" />
+                  <p className="text-xs font-mono">Queue is empty! Good job.</p>
+                </div>
+              ) : (
+                supportTickets.map((ticket, i) => (
+                  <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }} key={i} className="bg-[#0A0A0C] border border-white/5 p-4 rounded-[1rem] hover:border-orange-500/30 transition-colors">
+                    <div className="flex justify-between items-start mb-2.5">
+                      <span className="text-[11px] font-black text-white">{ticket.user}</span>
+                      <div className="flex gap-2">
+                        {ticket.type === "REFUND" && <span className="text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded bg-red-500/20 text-red-400 border border-red-500/20">REFUND</span>}
+                        <span className={`text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded ${ticket.status === 'URGENT' ? 'bg-orange-500/20 text-orange-400 border border-orange-500/20' : 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/20'}`}>
+                          {ticket.status}
+                        </span>
+                      </div>
+                    </div>
+                    <p className="text-[13px] text-gray-400 font-sans leading-relaxed">{ticket.issue}</p>
+                    <div className="flex justify-between items-center mt-3 pt-3 border-t border-white/5">
+                      <span className="text-[9px] font-mono text-gray-600">{ticket.time}</span>
+                      <div className="flex gap-3">
+                        {ticket.type === "REFUND" && <button className="text-[9px] uppercase tracking-widest font-black text-red-500 hover:text-red-400 transition-colors">Process Refund</button>}
+                        <button className={`text-[9px] uppercase tracking-widest font-black text-blue-500 hover:text-blue-400 transition-colors ${btn}`}>Resolve →</button>
+                      </div>
+                    </div>
+                  </motion.div>
+                ))
+              )}
+            </div>
+          </motion.div>
+        </div>
+
+        {/* 🚀 CLIENT DATABASE TABLE (SPEED & GOD MODE) */}
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.7 }} 
           className="bg-[#111113] border border-white/5 rounded-[1.5rem] overflow-hidden shadow-[0_15px_50px_rgba(0,0,0,0.6)]">
           <div className="p-6 md:px-8 border-b border-white/5 flex flex-col sm:flex-row items-start sm:items-center justify-between bg-[#0A0A0C] gap-4">
             <div className="flex items-center gap-3">
               <Database className="w-5 h-5 text-blue-500" />
               <div>
-                <h2 className="text-sm font-black text-white uppercase tracking-widest">Global Fleet Control</h2>
-                <p className="text-[10px] text-gray-500 font-mono mt-1">Manage individual bots, override limits, and enforce policy.</p>
+                <h2 className="text-sm font-black text-white uppercase tracking-widest">Global Fleet Radar</h2>
+                <p className="text-[10px] text-gray-500 font-mono mt-1">Monitor bot latency, health, and execute God Mode commands.</p>
               </div>
             </div>
             <button onClick={() => fetchAdminData(true)} className={`text-[10px] text-gray-400 hover:text-white flex items-center gap-2 transition-colors uppercase tracking-widest font-bold bg-white/5 border border-white/10 px-3 py-1.5 rounded-lg ${btn}`}>
-              <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin text-orange-500' : ''}`} /> Refresh Database
+              <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin text-orange-500' : ''}`} /> Refresh Radar
             </button>
           </div>
           
@@ -235,11 +320,11 @@ export default function AdminDashboard() {
             <table className="w-full text-left text-sm whitespace-nowrap">
               <thead className="bg-[#07070A] text-[9px] uppercase font-bold text-gray-500 tracking-widest border-b border-white/5">
                 <tr>
-                  <th className="p-5 pl-8">Client Identity</th>
+                  <th className="p-5 pl-8">Client / Bot ID</th>
                   <th className="p-5">Channel</th>
                   <th className="p-5">AI Engine</th>
-                  <th className="p-5">Plan</th>
-                  <th className="p-5">Status/Tokens</th>
+                  <th className="p-5">Speed / Health</th>
+                  <th className="p-5">Plan Status</th>
                   <th className="p-5 pr-8 text-right">God Controls</th>
                 </tr>
               </thead>
@@ -259,7 +344,7 @@ export default function AdminDashboard() {
                       <motion.tr initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.05 }} key={client.id} className="hover:bg-white/5 transition-colors group">
                         <td className="p-5 pl-8">
                             <p className="text-white font-bold text-xs">{client.email}</p>
-                            <p className="text-[9px] text-gray-600 font-mono mt-1">ID: {client.id.split('-')[0]}</p>
+                            <p className="text-[9px] text-gray-600 font-mono mt-1">BOT: {client.id.split('-')[0].toUpperCase()}</p>
                         </td>
                         <td className="p-5">
                           {client.selected_channel === 'whatsapp' || client.whatsapp_phone_id ? (
@@ -273,10 +358,16 @@ export default function AdminDashboard() {
                         <td className="p-5">
                             <span className="text-gray-300 font-sans text-xs uppercase tracking-wider">{client.selected_model || "Not Set"}</span>
                         </td>
+                        {/* 🚀 NEW: Speed and Health Column */}
                         <td className="p-5">
-                          <span className={`uppercase text-[10px] font-black tracking-widest px-2 py-1 rounded border ${client.plan?.toLowerCase() === 'max' ? 'bg-orange-500/10 text-orange-500 border-orange-500/20' : client.plan?.toLowerCase() === 'pro' ? 'bg-blue-500/10 text-blue-500 border-blue-500/20' : 'bg-white/5 text-gray-400 border-white/10'}`}>
-                            {client.plan || 'Starter'}
-                          </span>
+                            <div className="flex items-center gap-2">
+                                <span className="text-orange-400 font-mono text-[10px] bg-orange-400/10 px-2 py-0.5 rounded border border-orange-400/20">{client.latency}</span>
+                                {client.health === "WARNING" ? (
+                                    <span className="text-yellow-500 bg-yellow-500/10 px-1.5 rounded" title="High Latency Detected">⚠️</span>
+                                ) : (
+                                    <span className="text-green-500 bg-green-500/10 px-1.5 rounded">✓</span>
+                                )}
+                            </div>
                         </td>
                         <td className="p-5 font-mono text-xs">
                           {isBlocked ? (
@@ -294,7 +385,7 @@ export default function AdminDashboard() {
                         <td className="p-5 pr-8 text-right">
                             <div className="flex items-center justify-end gap-2 opacity-30 group-hover:opacity-100 transition-opacity">
                                 <button onClick={() => executeGodAction("UPDATE_TOKENS", client.id, client.tokens_allocated)} title="Edit Token Limit" className="p-1.5 hover:bg-blue-500/20 hover:text-blue-400 rounded text-gray-500 transition-colors"><Edit2 className="w-3.5 h-3.5"/></button>
-                                <button onClick={() => executeGodAction("FORCE_RENEW", client.id)} title="Force 30-Day Renewal" className="p-1.5 hover:bg-green-500/20 hover:text-green-400 rounded text-gray-500 transition-colors"><PlayCircle className="w-3.5 h-3.5"/></button>
+                                <button onClick={() => executeGodAction("FORCE_RErab", client.id)} title="Force 30-Day Renewal" className="p-1.5 hover:bg-green-500/20 hover:text-green-400 rounded text-gray-500 transition-colors"><PlayCircle className="w-3.5 h-3.5"/></button>
                                 <button onClick={() => executeGodAction("BLOCK_BOT", client.id)} title="Kill Switch (Block Bot)" className="p-1.5 hover:bg-red-500/20 hover:text-red-400 rounded text-gray-500 transition-colors"><Ban className="w-3.5 h-3.5"/></button>
                             </div>
                         </td>
