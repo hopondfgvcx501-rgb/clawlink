@@ -62,15 +62,16 @@ export async function POST(req: Request) {
         botColumn = "whatsapp_phone_id";
     }
 
-    // 🚀 SURGICAL FIX: Safely check existingBot and fallback to latest config if no specific bot found
+    // 🚀 SURGICAL FIX: REMOVED .single() WHICH CRASHES SUPABASE WHEN 0 ROWS EXIST!
     if (botIdentifier && botColumn) {
-        const { data: existingBot } = await supabase
+        const { data } = await supabase
             .from("user_configs")
             .select("id")
             .eq("email", email.toLowerCase())
             .eq(botColumn, botIdentifier)
-            .limit(1)
-            .single();
+            .limit(1);
+
+        const existingBot = data?.[0]; // Safe array access instead of .single()
 
         if (existingBot) {
             const { error } = await supabase.from("user_configs").update(payload).eq("id", existingBot.id);
@@ -86,14 +87,15 @@ export async function POST(req: Request) {
         }
     } else {
         // Legacy fallback or Widget creation
-        const { data: latestFallback } = await supabase
+        const { data } = await supabase
             .from("user_configs")
             .select("id")
             .eq("email", email.toLowerCase())
             .order("created_at", { ascending: false })
-            .limit(1)
-            .single();
+            .limit(1);
             
+        const latestFallback = data?.[0]; // Safe array access instead of .single()
+
         if (latestFallback) {
              await supabase.from("user_configs").update(payload).eq("id", latestFallback.id);
         } else {
