@@ -44,9 +44,12 @@ export async function POST(req: NextRequest) {
       const userEmail = (notes.email || paymentEntity.email || "").toLowerCase(); 
       const planName = (notes.plan_name || "Starter").toLowerCase();
       const rawModel = (notes.selected_model || "openai").toLowerCase();
+      
+      // 🚀 THE SURGICAL RENEWAL DETECTOR
+      const isRenewal = notes.is_renewal === "true" || notes.plan_type === "RENEWAL";
 
       if (userEmail) {
-        console.log(`💰 PAYMENT RECEIVED! Upgrading ${userEmail} to ${planName.toUpperCase()} with ${rawModel.toUpperCase()} engine...`);
+        console.log(`💰 PAYMENT RECEIVED! Upgrading ${userEmail} to ${planName.toUpperCase()}. Renewal Mode: ${isRenewal}`);
 
         // 🧠 Smart AI Provider Routing
         let aiProvider = "openai";
@@ -60,40 +63,63 @@ export async function POST(req: NextRequest) {
         if (planName === "pro") {
             isUnlimited = true;
             tokensAllocated = 500000;
-        } else if (planName === "max" || planName === "unlimited" || planName === "ultra-premium") {
+        } else if (planName === "max" || planName === "yearly" || planName === "monthly" || planName === "ultra-premium") {
             isUnlimited = true;
             tokensAllocated = 9999999;
         }
 
-        // 🚀 FIXED: DYNAMIC PAYLOAD FOR AGENCY MODEL
+        // 📅 DATE MATH: Extending Validity
+        const newExpiryDate = new Date();
+        if (planName === "yearly") {
+            newExpiryDate.setDate(newExpiryDate.getDate() + 365);
+        } else {
+            newExpiryDate.setDate(newExpiryDate.getDate() + 30); // 30 Days for Monthly/Pro/Max
+        }
+
+        // 🚀 FIXED: DYNAMIC PAYLOAD (Tailored for Renewal or New)
         const payload: any = {
             plan: planName,            
             is_unlimited: isUnlimited, 
             tokens_allocated: tokensAllocated,
-            selected_model: rawModel,  
-            ai_provider: aiProvider    
+            plan_expiry_date: newExpiryDate.toISOString(),
+            plan_status: 'Active'
         };
+
+        // If NOT a renewal, set the model. If it IS a renewal, leave the model untouched (so Claude stays Claude).
+        if (!isRenewal) {
+            payload.selected_model = rawModel;  
+            payload.ai_provider = aiProvider; 
+        } else {
+            // It's a Renewal: Reset the counters! Nayi ginti shuru.
+            payload.tokens_used = 0;
+            payload.messages_used_this_month = 0;
+        }
 
         let botIdentifier = null;
         let botColumn = null;
 
-        // Extract tokens from Razorpay notes if present
-        if (notes.telegram_token) {
-            payload.telegram_token = notes.telegram_token;
-            botIdentifier = notes.telegram_token;
-            botColumn = "telegram_token";
-        }
-        if (notes.whatsapp_token) {
-            payload.whatsapp_token = notes.whatsapp_token;
-            botIdentifier = notes.whatsapp_token;
-            botColumn = "whatsapp_token";
-        }
-        if (notes.whatsapp_phone_id) {
-            payload.whatsapp_phone_id = notes.whatsapp_phone_id;
-        }
+        // Extract tokens from Razorpay notes if present (For new token purchases)
+        if (notes.telegram_token) { payload.telegram_token = notes.telegram_token; botIdentifier = notes.telegram_token; botColumn = "telegram_token"; }
+        if (notes.whatsapp_token) { payload.whatsapp_token = notes.whatsapp_token; botIdentifier = notes.whatsapp_token; botColumn = "whatsapp_token"; }
+        if (notes.whatsapp_phone_id) { payload.whatsapp_phone_id = notes.whatsapp_phone_id; }
 
-        // 4. AGENCY MODEL LOGIC: Insert new bot OR update specific existing bot
-        if (botIdentifier && botColumn) {
+        // 4. AGENCY MODEL LOGIC: Renewal vs New Insert
+        if (isRenewal) {
+            // 🔄 STRICT RENEWAL LOGIC: Top-up the latest active bot without touching its identity!
+            const { data: latestBot } = await supabase
+                .from("user_configs")
+                .select("id")
+                .eq("email", userEmail)
+                .order("created_at", { ascending: false })
+                .limit(1)
+                .single();
+
+            if (latestBot) {
+                const { error: dbError } = await supabase.from("user_configs").update(payload).eq("id", latestBot.id);
+                if (dbError) throw dbError;
+                console.log(`✅ Successfully RENEWED and Top-Up existing bot ID: ${latestBot.id}`);
+            }
+        } else if (botIdentifier && botColumn) {
             // Check if this EXACT bot already exists for this email
             const { data: existingBot } = await supabase
                 .from("user_configs")
@@ -120,7 +146,7 @@ export async function POST(req: NextRequest) {
                 console.log(`✅ Successfully created a NEW bot for ${userEmail}`);
             }
         } else {
-            // ⚠️ LEGACY FALLBACK: If no specific token was passed from frontend
+            // ⚠️ LEGACY FALLBACK
             const { error: dbError } = await supabase
               .from("user_configs")
               .update(payload)
@@ -134,7 +160,7 @@ export async function POST(req: NextRequest) {
             await supabase.from("billing_history").insert({
                 email: userEmail,
                 plan_name: planName.toUpperCase(),
-                amount: (paymentEntity.amount / 100).toString(), // Convert from paise to main currency
+                amount: (paymentEntity.amount / 100).toString(), 
                 currency: paymentEntity.currency,
                 status: "PAID",
                 razorpay_order_id: paymentEntity.order_id

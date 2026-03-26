@@ -3,11 +3,11 @@ import Razorpay from "razorpay";
 
 export async function POST(req: Request) {
   try {
-    // 🚀 Extracting payload from the frontend
-    const { amount, currency, email, planName, selectedModel } = await req.json();
+    // 🚀 Extracting payload from the frontend (Added notes & planType support)
+    const { amount, currency, email, planName, selectedModel, planType, notes: frontendNotes } = await req.json();
 
     if (!email) {
-       return NextResponse.json({ error: "User Email is required" }, { status: 400 });
+        return NextResponse.json({ error: "User Email is required" }, { status: 400 });
     }
 
     const keyId = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
@@ -26,7 +26,6 @@ export async function POST(req: Request) {
     });
 
     // 🔒 SAFETY CHECK: Razorpay strictly expects integers in PAISE.
-    // Math.round() ensures there are no decimal points that could crash the payment.
     const safeAmount = Math.round(amount);
 
     // Create the order
@@ -34,11 +33,13 @@ export async function POST(req: Request) {
       amount: safeAmount, 
       currency: currency || "INR", 
       receipt: `receipt_${Date.now()}`,
-      // 🔒 THE MAGIC FIX: These notes ensure the webhook/frontend knows exactly what was purchased
+      // 🔒 THE MAGIC FIX: Passing Renewal Flags correctly to Webhook
       notes: {
         email: email,
         plan_name: planName || "Unknown",
-        selected_model: selectedModel || "google" 
+        selected_model: selectedModel || "google",
+        is_renewal: frontendNotes?.is_renewal || "false",
+        plan_type: planType || "NEW"
       }
     };
 
