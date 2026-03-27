@@ -359,7 +359,7 @@ export default function Home() {
             planType: "NEW",
             notes: { 
               is_renewal: "false",
-              // 🚀 THE TOKEN-FIRST LOCK: Sending exact Token/ID to Razorpay
+              // 🚀 CRITICAL SENDS NEW BOT IDENTIFIER TO DB WEBHOOK
               telegram_token: activeChannel === "telegram" ? telegramToken : "",
               whatsapp_phone_id: activeChannel === "whatsapp" ? waPhoneId : "",
               whatsapp_number: activeChannel === "whatsapp" ? waPhoneNumber : "",

@@ -35,7 +35,7 @@ export async function GET(req: Request) {
         (bot.ai_model && bot.ai_model !== "Not Set") || 
         bot.telegram_token || 
         bot.whatsapp_phone_id || 
-        bot.plan === "max" || bot.plan === "pro" || bot.plan === "monthly" || bot.plan === "yearly"
+        bot.plan === "max" || bot.plan === "pro" || bot.plan === "monthly" || bot.plan === "yearly" || bot.plan === "adv_max" || bot.plan === "ultra" || bot.plan === "plus"
     );
 
     if (validBots.length === 0) validBots = [data[0]];
@@ -70,7 +70,7 @@ export async function GET(req: Request) {
 
     // STRICT IDENTITY: The dashboard will ONLY reflect the exact plan and model of the Primary Bot.
     let highestPlan = primaryBot.plan || "Starter";
-    let isUnlimited = primaryBot.is_unlimited || highestPlan.toLowerCase() === "max" || highestPlan.toLowerCase() === "yearly" || highestPlan.toLowerCase() === "monthly";
+    let isUnlimited = primaryBot.is_unlimited || highestPlan.toLowerCase() === "max" || highestPlan.toLowerCase() === "yearly" || highestPlan.toLowerCase() === "monthly" || highestPlan.toLowerCase() === "adv_max" || highestPlan.toLowerCase() === "ultra" || highestPlan.toLowerCase() === "pro";
     
     let bestModel = primaryBot.ai_model || "gpt-5.2";
     let bestProvider = primaryBot.ai_provider || "openai";
@@ -116,7 +116,7 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
     try {
         const body = await req.json();
-        const { email, selectedModel, selectedChannel, plan } = body;
+        const { email, selectedModel, selectedChannel, plan, telegram_token, whatsapp_phone_id } = body;
 
         if (!email) return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
 
@@ -128,15 +128,18 @@ export async function POST(req: Request) {
             if (sm.includes("omni") || sm.includes("multi_model") || sm.includes("nexus")) aiProvider = "multi_model";
         }
 
-        // 🚀 FIXED: Strictly match the specific channel to avoid overwriting Telegram with Widget data!
-        const { data } = await supabase
-            .from("user_configs")
-            .select("id")
-            .eq("email", email.toLowerCase())
-            .eq("selected_channel", selectedChannel || "widget")
-            .order("created_at", { ascending: false })
-            .limit(1);
+        // 🚀 THE MULTI-BOT LOCK: Match EXACTLY by Token. If token matches -> Overwrite. If new Token -> Create New Row!
+        let query = supabase.from("user_configs").select("id").eq("email", email.toLowerCase());
+        
+        if (telegram_token) {
+            query = query.eq("telegram_token", telegram_token);
+        } else if (whatsapp_phone_id) {
+            query = query.eq("whatsapp_phone_id", whatsapp_phone_id);
+        } else {
+            query = query.eq("selected_channel", selectedChannel || "widget").order("created_at", { ascending: false });
+        }
 
+        const { data } = await query.limit(1);
         const existingUser = data?.[0];
 
         if (existingUser) {
@@ -151,13 +154,15 @@ export async function POST(req: Request) {
                 selected_model: selectedModel,
                 selected_channel: selectedChannel || "widget",
                 ai_provider: aiProvider,
+                telegram_token: telegram_token || undefined,
+                whatsapp_phone_id: whatsapp_phone_id || undefined,
                 plan: plan || "Starter",
                 tokens_allocated: 10000, 
                 tokens_used: 0
             });
         }
 
-        return NextResponse.json({ success: true, message: "User config saved perfectly!" });
+        return NextResponse.json({ success: true, message: "User config saved perfectly with Token Isolation!" });
     } catch (error: any) {
         console.error("Config POST Error:", error.message);
         return NextResponse.json({ success: false, error: "Server Error" }, { status: 500 });
@@ -168,7 +173,7 @@ export async function POST(req: Request) {
 export async function PUT(req: Request) {
   try {
     const body = await req.json();
-    const { email, systemPrompt, selectedModel, selectedChannel, channel } = body;
+    const { email, systemPrompt, selectedModel, selectedChannel, channel, telegram_token, whatsapp_phone_id } = body;
 
     if (!email) return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
 
@@ -197,8 +202,10 @@ export async function PUT(req: Request) {
 
     let query = supabase.from("user_configs").update(updateData).eq("email", email.toLowerCase());
     
-    // 🚀 FIXED: Only update the SPECIFIC bot's persona, not all bots!
-    if (targetColumn === "telegram_token") query = query.not("telegram_token", "is", null);
+    // 🚀 FIXED: Only update the SPECIFIC bot's persona using exact Token! (Never overwrite other bots)
+    if (telegram_token) query = query.eq("telegram_token", telegram_token);
+    else if (whatsapp_phone_id) query = query.eq("whatsapp_phone_id", whatsapp_phone_id);
+    else if (targetColumn === "telegram_token") query = query.not("telegram_token", "is", null);
     else if (targetColumn === "whatsapp_phone_id") query = query.not("whatsapp_phone_id", "is", null);
     else if (targetColumn === "widget") query = query.eq("selected_channel", "widget");
 
@@ -209,7 +216,7 @@ export async function PUT(req: Request) {
       throw error;
     }
 
-    return NextResponse.json({ success: true, message: `Data updated successfully for ${channel || 'master'}` });
+    return NextResponse.json({ success: true, message: `Data updated successfully for exact bot` });
   } catch (error: any) {
     console.error("User Update Error:", error.message);
     return NextResponse.json({ success: false, error: "Internal Server Error" }, { status: 500 });
