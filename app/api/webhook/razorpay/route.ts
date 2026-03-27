@@ -89,7 +89,7 @@ export async function POST(req: NextRequest) {
         if (notes.whatsapp_phone_id) { payload.whatsapp_phone_id = notes.whatsapp_phone_id; }
 
         if (isRenewal) {
-            // 🚀 SURGICAL FIX: Token identity matching inside your exact original structure!
+            // 🚀 SURGICAL FIX: Exact Token match for Renewal!
             let query = supabase.from("user_configs").select("id").eq("email", userEmail);
             
             if (botColumn && botIdentifier) {
@@ -129,10 +129,17 @@ export async function POST(req: NextRequest) {
                 if (dbError) throw dbError;
             }
         } else {
+            // 🚨 BILLION-USER MULTI-BOT FIX: NEVER use update() here, it kills all previous bots! 
+            // Instead, we insert a brand new row specifically for the new Widget channel.
             const { error: dbError } = await supabase
               .from("user_configs")
-              .update(payload)
-              .eq("email", userEmail);
+              .insert({
+                  ...payload,
+                  email: userEmail,
+                  selected_channel: "widget",
+                  tokens_used: 0,
+                  messages_used_this_month: 0 
+              });
             if (dbError) throw dbError;
         }
 
