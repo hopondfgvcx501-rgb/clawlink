@@ -359,7 +359,7 @@ export default function Home() {
             planType: "NEW",
             notes: { 
               is_renewal: "false",
-              // 🚀 CRITICAL SENDS NEW BOT IDENTIFIER TO DB WEBHOOK
+              // 🚀 CRITICAL: SENDS EXACT BOT IDENTIFIER TO DB WEBHOOK TO ENSURE CORRECT INSERTION/UPDATE
               telegram_token: activeChannel === "telegram" ? telegramToken : "",
               whatsapp_phone_id: activeChannel === "whatsapp" ? waPhoneId : "",
               whatsapp_number: activeChannel === "whatsapp" ? waPhoneNumber : "",

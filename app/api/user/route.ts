@@ -32,7 +32,8 @@ export async function GET(req: Request) {
 
     // 🚀 FILTER THE BUG: Ignore blank/auto-generated onboarding rows. Only check real bots.
     let validBots = data.filter(bot => 
-        (bot.ai_model && bot.ai_model !== "Not Set") || 
+        (bot.selected_model && bot.selected_model !== "Not Set") || 
+        bot.ai_model ||
         bot.telegram_token || 
         bot.whatsapp_phone_id || 
         bot.plan === "max" || bot.plan === "pro" || bot.plan === "monthly" || bot.plan === "yearly" || bot.plan === "adv_max" || bot.plan === "ultra" || bot.plan === "plus"
@@ -40,47 +41,56 @@ export async function GET(req: Request) {
 
     if (validBots.length === 0) validBots = [data[0]];
 
-    // 🚀 BILLION-USER FIX: Sort bots by LATEST EXPIRY DATE or CREATED DATE.
-    // The bot that was just deployed or just upgraded will always shoot to the top!
+    // 🚀 ROOT CAUSE FIX: NEVER sort by Expiry Date! ALWAYS sort strictly by created_at. 
+    // The newest payment/bot will exactly be index [0].
     validBots.sort((a, b) => {
-        const timeA = new Date(a.plan_expiry_date || a.created_at).getTime();
-        const timeB = new Date(b.plan_expiry_date || b.created_at).getTime();
+        const timeA = new Date(a.created_at).getTime();
+        const timeB = new Date(b.created_at).getTime();
         return timeB - timeA; // Descending: Newest first
     });
 
-    // ✨ THIS IS THE MASTER BOT (The one just interacted with/paid for)
+    // ✨ THIS IS THE MASTER BOT (The exact bot the user just bought or updated)
     const primaryBot = validBots[0];
 
     let totalAllocated = 0;
     let totalUsed = 0;
     let activeTelegram = false;
     let activeWhatsapp = false;
-    let tgToken = null;
-    let waToken = null;
-    let waPhoneId = null;
+    let tgToken = primaryBot.telegram_token || null;
+    let waToken = primaryBot.whatsapp_token || null;
+    let waPhoneId = primaryBot.whatsapp_phone_id || null;
 
     // Scan all bots to aggregate tokens and check active channels
     for (const bot of validBots) {
         totalAllocated += (bot.tokens_allocated || 0);
         totalUsed += (bot.tokens_used || 0);
 
-        if (bot.telegram_token) { activeTelegram = true; tgToken = bot.telegram_token; }
-        if (bot.whatsapp_phone_id || bot.whatsapp_token) { activeWhatsapp = true; waToken = bot.whatsapp_token; waPhoneId = bot.whatsapp_phone_id; }
+        if (bot.telegram_token) { activeTelegram = true; }
+        if (bot.whatsapp_phone_id || bot.whatsapp_token) { activeWhatsapp = true; }
     }
 
     // STRICT IDENTITY: The dashboard will ONLY reflect the exact plan and model of the Primary Bot.
     let highestPlan = primaryBot.plan || "Starter";
     let isUnlimited = primaryBot.is_unlimited || highestPlan.toLowerCase() === "max" || highestPlan.toLowerCase() === "yearly" || highestPlan.toLowerCase() === "monthly" || highestPlan.toLowerCase() === "adv_max" || highestPlan.toLowerCase() === "ultra" || highestPlan.toLowerCase() === "pro";
     
-    let bestModel = primaryBot.ai_model || "gpt-5.2";
+    // 🚀 EXACT MODEL FIX: Always grab the model the user actually selected in DB
+    let bestModel = primaryBot.selected_model || primaryBot.ai_model || "gpt-5.2";
     let bestProvider = primaryBot.ai_provider || "openai";
     
     // Auto-correct provider based on exact model text
     if (bestModel.toLowerCase().includes("claude") || bestModel.toLowerCase().includes("anthropic")) bestProvider = "anthropic";
     else if (bestModel.toLowerCase().includes("gemini") || bestModel.toLowerCase().includes("google")) bestProvider = "google";
-    else if (bestModel.toLowerCase().includes("omni") || bestModel.toLowerCase().includes("multi_model") || bestModel.toLowerCase().includes("nexus")) {
+    else if (bestModel.toLowerCase().includes("omni") || bestModel.toLowerCase().includes("multi") || bestModel.toLowerCase().includes("nexus")) {
         bestProvider = "multi_model";
         bestModel = "OmniAgent Nexus";
+    }
+
+    // 🚀 EXACT CHANNEL FIX: Fallback to the token currently attached to primaryBot
+    let currentChannel = primaryBot.selected_channel;
+    if (!currentChannel) {
+        if (primaryBot.telegram_token) currentChannel = "telegram";
+        else if (primaryBot.whatsapp_phone_id) currentChannel = "whatsapp";
+        else currentChannel = "widget";
     }
 
     const dashboardData = {
@@ -88,21 +98,23 @@ export async function GET(req: Request) {
       provider: bestProvider,
       model: bestModel,
       selected_model: bestModel, 
-      selected_channel: primaryBot.selected_channel || (activeTelegram ? "telegram" : (activeWhatsapp ? "whatsapp" : "widget")),
+      selected_channel: currentChannel,
       ai_provider: bestProvider,
       tokensAllocated: isUnlimited ? 9999999 : totalAllocated,
       tokensUsed: totalUsed,
       isUnlimited: isUnlimited,
       systemPrompt: primaryBot.system_prompt || "",
-      system_prompt_telegram: validBots.find(b=>b.telegram_token)?.system_prompt_telegram || "",
-      system_prompt_whatsapp: validBots.find(b=>b.whatsapp_phone_id)?.system_prompt_whatsapp || "",
-      system_prompt_widget: validBots.find(b=>b.selected_channel==="widget")?.system_prompt_widget || primaryBot.system_prompt || "",
+      system_prompt_telegram: primaryBot.system_prompt_telegram || "",
+      system_prompt_whatsapp: primaryBot.system_prompt_whatsapp || "",
+      system_prompt_widget: primaryBot.system_prompt_widget || "",
       telegramActive: activeTelegram,
       whatsappActive: activeWhatsapp,
-      telegram_token: primaryBot.telegram_token || tgToken,
-      whatsapp_token: primaryBot.whatsapp_token || waToken,
-      whatsapp_phone_id: primaryBot.whatsapp_phone_id || waPhoneId,
-      liveBotLink: primaryBot.selected_channel === "telegram" && primaryBot.telegram_token ? "https://t.me/BotFather" : (primaryBot.selected_channel === "whatsapp" ? "https://business.facebook.com/wa/manage/" : null)
+      telegram_token: primaryBot.telegram_token || null,
+      whatsapp_token: primaryBot.whatsapp_token || null,
+      whatsapp_phone_id: primaryBot.whatsapp_phone_id || null,
+      whatsapp_number: primaryBot.whatsapp_number || "",
+      liveBotLink: currentChannel === "telegram" && primaryBot.telegram_token ? "https://t.me/BotFather" : (currentChannel === "whatsapp" ? "https://business.facebook.com/wa/manage/" : null),
+      bots: validBots
     };
 
     return NextResponse.json({ success: true, data: dashboardData });

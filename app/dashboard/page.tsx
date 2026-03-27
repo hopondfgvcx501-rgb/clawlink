@@ -14,40 +14,40 @@ import { useRouter } from "next/navigation";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import Script from "next/script";
 
-/* ─── 🚀 CRITICAL NEW MASTER PRICING CONFIG (PREMIUM TEXT ONLY) ────────── */
+/* ─── 🚀 NEW MASTER PRICING CONFIG (FROM LATEST PDF - MARGIN 90%+) ────────── */
 const PRICING_DATA: Record<string, any> = {
   gemini: {
     name: "Gemini (Google)",
     plans: [
-      { id: "plus", name: "Plus", usd: 19, inr: 1596, msgs: "Optimized Speed", desc: "Instant customer conversions & rapid response.", accent: "rgba(255,255,255,.35)", color: "text-gray-400" },
-      { id: "pro", name: "Pro", usd: 59, inr: 4956, msgs: "Enterprise Scale", desc: "Complex query mastermind & priority routing.", accent: "#3B82F6", color: "text-blue-400", badge: "Popular" },
-      { id: "ultra", name: "Ultra", usd: 99, inr: 8316, msgs: "Peak Execution", desc: "Zero parallel chat limit & max system power.", accent: "#A855F7", color: "text-purple-400" },
-      { id: "adv_max", name: "Adv Max", usd: 1099, inr: 92316, msgs: "Unlimited Tier", desc: "Global system dominance & uncapped scaling.", accent: "#F97316", color: "text-orange-400", badge: "Yearly ⭐", isYearly: true }
+      { id: "plus", name: "Plus", usd: 27, inr: 2268, msgs: "Optimized Speed", desc: "Instant customer conversions & rapid response.", accent: "rgba(255,255,255,.35)", color: "text-gray-400" },
+      { id: "pro", name: "Pro", usd: 109, inr: 9156, msgs: "Enterprise Scale", desc: "Complex query mastermind & priority routing.", accent: "#3B82F6", color: "text-blue-400", badge: "Popular" },
+      { id: "ultra", name: "Ultra", usd: 169, inr: 14196, msgs: "Peak Execution", desc: "Zero parallel chat limit & max system power.", accent: "#A855F7", color: "text-purple-400" },
+      { id: "adv_max", name: "Adv Max", usd: 2748, inr: 230832, msgs: "Unlimited Tier", desc: "Global system dominance & uncapped scaling.", accent: "#F97316", color: "text-orange-400", badge: "Yearly ⭐", isYearly: true }
     ]
   },
   "gpt-5.2": { 
     name: "GPT (OpenAI)",
     plans: [
-      { id: "plus", name: "Plus", usd: 25, inr: 2100, msgs: "Optimized Speed", desc: "Instant customer conversions & rapid response.", accent: "rgba(255,255,255,.35)", color: "text-gray-400" },
-      { id: "pro", name: "Pro", usd: 99, inr: 8316, msgs: "Enterprise Scale", desc: "Complex query mastermind & priority routing.", accent: "#3B82F6", color: "text-blue-400", badge: "Popular" },
-      { id: "ultra", name: "Ultra", usd: 199, inr: 16716, msgs: "Peak Execution", desc: "Zero parallel chat limit & max system power.", accent: "#A855F7", color: "text-purple-400" },
-      { id: "adv_max", name: "Adv Max", usd: 2397, inr: 201348, msgs: "Unlimited Tier", desc: "Global system dominance & uncapped scaling.", accent: "#F97316", color: "text-orange-400", badge: "Yearly ⭐", isYearly: true }
+      { id: "plus", name: "Plus", usd: 29, inr: 2436, msgs: "Optimized Speed", desc: "Instant customer conversions & rapid response.", accent: "rgba(255,255,255,.35)", color: "text-gray-400" },
+      { id: "pro", name: "Pro", usd: 199, inr: 16716, msgs: "Enterprise Scale", desc: "Complex query mastermind & priority routing.", accent: "#3B82F6", color: "text-blue-400", badge: "Popular" },
+      { id: "ultra", name: "Ultra", usd: 379, inr: 31836, msgs: "Peak Execution", desc: "Zero parallel chat limit & max system power.", accent: "#A855F7", color: "text-purple-400" },
+      { id: "adv_max", name: "Adv Max", usd: 5988, inr: 502992, msgs: "Unlimited Tier", desc: "Global system dominance & uncapped scaling.", accent: "#F97316", color: "text-orange-400", badge: "Yearly ⭐", isYearly: true }
     ]
   },
   claude: {
     name: "Claude (Anthropic)",
     plans: [
       { id: "plus", name: "Plus", usd: 47, inr: 3948, msgs: "Optimized Speed", desc: "Instant customer conversions & rapid response.", accent: "rgba(255,255,255,.35)", color: "text-gray-400" },
-      { id: "pro", name: "Pro", usd: 129, inr: 10836, msgs: "Enterprise Scale", desc: "Complex query mastermind & priority routing.", accent: "#3B82F6", color: "text-blue-400", badge: "Popular" },
-      { id: "ultra", name: "Ultra", usd: 189, inr: 15876, msgs: "Peak Execution", desc: "Zero parallel chat limit & max system power.", accent: "#A855F7", color: "text-purple-400" },
-      { id: "adv_max", name: "Adv Max", usd: 2997, inr: 251748, msgs: "Unlimited Tier", desc: "Global system dominance & uncapped scaling.", accent: "#F97316", color: "text-orange-400", badge: "Yearly ⭐", isYearly: true }
+      { id: "pro", name: "Pro", usd: 269, inr: 22596, msgs: "Enterprise Scale", desc: "Complex query mastermind & priority routing.", accent: "#3B82F6", color: "text-blue-400", badge: "Popular" },
+      { id: "ultra", name: "Ultra", usd: 449, inr: 37716, msgs: "Peak Execution", desc: "Zero parallel chat limit & max system power.", accent: "#A855F7", color: "text-purple-400" },
+      { id: "adv_max", name: "Adv Max", usd: 6948, inr: 583632, msgs: "Unlimited Tier", desc: "Global system dominance & uncapped scaling.", accent: "#F97316", color: "text-orange-400", badge: "Yearly ⭐", isYearly: true }
     ]
   },
   omni: {
     name: "OmniAgent Bundle",
     plans: [
-      { id: "monthly", name: "Pro Bundle", usd: 149, inr: 12516, msgs: "Smart Matrix", desc: "Elite multi-persona integration. 3x Fallback.", accent: "#00BFFF", color: "text-[#00BFFF]" },
-      { id: "yearly", name: "Adv Premium", usd: 2397, inr: 201348, msgs: "Zero Downtime", desc: "Ultimate auto-routing & global priority access.", accent: "#BA7517", color: "text-[#BA7517]", badge: "Yearly ⭐", isYearly: true }
+      { id: "monthly", name: "Pro Bundle", usd: 249, inr: 20916, msgs: "Smart Matrix", desc: "Elite multi-persona integration. 3x Fallback.", accent: "#00BFFF", color: "text-[#00BFFF]" },
+      { id: "yearly", name: "Adv Premium", usd: 4548, inr: 382032, msgs: "Zero Downtime", desc: "Ultimate auto-routing & global priority access.", accent: "#BA7517", color: "text-[#BA7517]", badge: "Yearly ⭐", isYearly: true }
     ]
   }
 };
@@ -147,6 +147,7 @@ export default function Dashboard() {
     }
   };
 
+  // 🚀 EXACT MATCH FOR PRICING UI: Fetch exactly what DB saved as selected_model
   const exactModel = (userData?.selected_model || userData?.ai_provider || "gpt-5.2").toLowerCase();
   
   let pricingKey = "gpt-5.2";
@@ -177,7 +178,12 @@ export default function Dashboard() {
           notes: {
             email: session.user.email,
             plan_name: activePlanObj.id,
-            is_renewal: "true"
+            is_renewal: "true",
+            // 🚀 THE ULTIMATE LOCK: SENDS EXACT TOKEN BEING VIEWED IN DASHBOARD
+            telegram_token: userData?.telegram_token || "",
+            whatsapp_phone_id: userData?.whatsapp_phone_id || "",
+            whatsapp_number: userData?.whatsapp_number || "",
+            selected_channel: userData?.selected_channel || "widget"
           }
         }),
       });
@@ -230,7 +236,10 @@ export default function Dashboard() {
         body: JSON.stringify({ 
           email: session.user.email, 
           systemPrompt: channelPrompts[selectedChannel as keyof typeof channelPrompts],
-          channel: selectedChannel 
+          channel: selectedChannel,
+          // Send specific token so we ONLY update the active bot
+          telegram_token: userData?.telegram_token,
+          whatsapp_phone_id: userData?.whatsapp_phone_id
         })
       });
       const data = await res.json();
@@ -352,16 +361,18 @@ export default function Dashboard() {
   const isPremium = currentPlan === "pro" || currentPlan === "professional" || currentPlan === "max" || currentPlan === "maximum" || currentPlan === "monthly" || currentPlan === "yearly" || currentPlan.includes("ultra") || currentPlan === "adv_max" || currentPlan === "plus";
   const totalMsgs = (stats?.platformStats?.whatsapp || 0) + (stats?.platformStats?.telegram || 0) + (stats?.platformStats?.web || 0);
 
+  // 🚀 FIXED: UI Model extraction directly from the precise DB value
   const getModelDisplayName = () => {
     if (isOmniActive) return "🌌 OmniAgent Nexus";
-    if (exactModel.includes("claude") || exactModel.includes("anthropic")) return "Claude 3 (Opus 4.6)";
-    if (exactModel.includes("gemini") || exactModel.includes("google")) return "Gemini 3 (Flash)";
-    if (exactModel.includes("gpt") || exactModel.includes("openai")) return "GPT-5.2 (Turbo)";
+    if (pricingKey === "claude") return "Claude 3 (Opus 4.6)";
+    if (pricingKey === "gemini") return "Gemini 3 (Flash)";
+    if (pricingKey === "gpt-5.2" || exactModel.includes("gpt") || exactModel.includes("openai")) return "GPT-5.2 (Turbo)";
     return "NOT SET";
   };
 
-  const isTelegramLive = !!userData?.telegram_token || !!userData?.telegramActive;
-  const isWhatsappLive = !!userData?.whatsapp_token || !!userData?.whatsapp_phone_id || !!userData?.whatsappActive;
+  const activeChanDisplay = userData?.selected_channel || "widget";
+  const isTelegramLive = !!userData?.telegram_token || !!userData?.telegramActive || activeChanDisplay === "telegram";
+  const isWhatsappLive = !!userData?.whatsapp_phone_id || !!userData?.whatsappActive || activeChanDisplay === "whatsapp";
 
   const handleOpenLiveBot = async () => {
     if (isTelegramLive && userData?.telegram_token) {
@@ -512,7 +523,6 @@ export default function Dashboard() {
                     <Crown className="w-3 h-3"/> UNLIMITED TIER
                   </span>
                 )}
-                {/* 🚀 TRIGGER RENEWAL MODAL */}
                 <button 
                   onClick={() => setShowPlanModal(true)} 
                   className={`mt-2 border border-white/20 text-gray-300 hover:text-white hover:bg-white/10 px-3 py-1.5 rounded text-[10px] font-bold uppercase tracking-widest transition-colors flex items-center gap-1 ${btn}`}
@@ -552,17 +562,17 @@ export default function Dashboard() {
             <div className="relative z-10 w-full">
               <h3 className="text-gray-500 text-[10px] font-bold uppercase tracking-widest mb-3">Live Channels</h3>
               <div className="flex flex-col gap-2">
-                {userData?.selected_channel === "whatsapp" && (
+                {activeChanDisplay === "whatsapp" && (
                   <div className="flex items-center gap-2 text-sm font-bold text-white">
                     <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span> WhatsApp Cloud
                   </div>
                 )}
-                {userData?.selected_channel === "telegram" && (
+                {activeChanDisplay === "telegram" && (
                   <div className="flex items-center gap-2 text-sm font-bold text-white">
                     <span className="w-2 h-2 bg-blue-400 rounded-full animate-pulse"></span> Telegram Bot
                   </div>
                 )}
-                {(userData?.selected_channel === "widget" || !userData?.selected_channel) && (
+                {activeChanDisplay === "widget" && (
                   <div className="flex items-center gap-2 text-sm font-bold text-white">
                     <span className="w-2 h-2 bg-purple-500 rounded-full animate-pulse"></span> Web Widget
                   </div>
