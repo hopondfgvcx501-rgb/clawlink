@@ -99,10 +99,10 @@ export async function GET(req: Request) {
       system_prompt_widget: validBots.find(b=>b.selected_channel==="widget")?.system_prompt_widget || primaryBot.system_prompt || "",
       telegramActive: activeTelegram,
       whatsappActive: activeWhatsapp,
-      telegram_token: tgToken,
-      whatsapp_token: waToken,
-      whatsapp_phone_id: waPhoneId,
-      liveBotLink: primaryBot.selected_channel === "telegram" && tgToken ? "https://t.me/BotFather" : (primaryBot.selected_channel === "whatsapp" ? "https://business.facebook.com/wa/manage/" : null)
+      telegram_token: primaryBot.telegram_token || tgToken,
+      whatsapp_token: primaryBot.whatsapp_token || waToken,
+      whatsapp_phone_id: primaryBot.whatsapp_phone_id || waPhoneId,
+      liveBotLink: primaryBot.selected_channel === "telegram" && primaryBot.telegram_token ? "https://t.me/BotFather" : (primaryBot.selected_channel === "whatsapp" ? "https://business.facebook.com/wa/manage/" : null)
     };
 
     return NextResponse.json({ success: true, data: dashboardData });
