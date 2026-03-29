@@ -442,10 +442,6 @@ export default function Home() {
   return (
     <div className="bg-[#07070A] min-h-screen text-[#E8E8EC] font-sans selection:bg-orange-500/30 overflow-x-hidden">
 
-      {/* 🚀 BROWSER TAB & GOOGLE SEARCH FAVICON FIX */}
-      <title>ClawLink.com</title>
-      <link rel="icon" type="image/svg+xml" href="/Esko logo inside rou.svg" />
-
       <style dangerouslySetInnerHTML={{__html:`
         *{box-sizing:border-box;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
         .nsb::-webkit-scrollbar{display:none}.nsb{-ms-overflow-style:none;scrollbar-width:none}
@@ -574,11 +570,21 @@ export default function Home() {
         style={{backdropFilter:"blur(12px)",WebkitBackdropFilter:"blur(12px)",
                 background:"rgba(7,7,10,0.4)",borderBottom:"1px solid rgba(255,255,255,0.055)"}}>
 
-        {/* 🚀 FIXED: NEW 'C' CLAWLINK.COM LOGO */}
-        <div className="flex items-center gap-1 shrink-0 cursor-pointer transition-transform hover:scale-105" onClick={() => router.push("/")}>
-          <Image src="/Esko logo inside rou.svg" alt="ClawLink Logo" width={30} height={30} className="mr-1" />
-          <span className="font-sans text-[17px] font-black text-white tracking-[1.2px] mt-0.5">LAWLINK<span className="text-orange-500 text-[11px] tracking-[1px]">.COM</span></span>
-        </div>
+        {/* 🚀 FIXED: WHITE & ORANGE CLAWLINK.COM LOGO */}
+        <svg width="130" height="22" viewBox="0 0 152 26" fill="none" className="shrink-0 cursor-pointer transition-transform hover:scale-105" onClick={() => router.push("/")}>
+          <defs>
+            <linearGradient id="cg" x1="0" y1="0" x2="0" y2="26" gradientUnits="userSpaceOnUse">
+              <stop stopColor="#fff"/><stop offset="1" stopColor="rgba(255,255,255,.65)"/>
+            </linearGradient>
+          </defs>
+          <path d="M22 3C18 .5 10 .5 7 4.5S3.5 18 7 22.5 18 26 22 23" stroke="rgba(255,255,255,.1)" strokeWidth="8" strokeLinecap="round" fill="none"/>
+          <path d="M22 3C18 .5 10 .5 7 4.5S3.5 18 7 22.5 18 26 22 23" stroke="url(#cg)" strokeWidth="4.5" strokeLinecap="round" fill="none"/>
+          <line x1="7.5" y1="3" x2="14.5" y2="11.5" stroke="#f97316" strokeWidth="2.2" strokeLinecap="round"/>
+          <line x1="12.5" y1="1.5" x2="19.5" y2="10" stroke="#f97316" strokeWidth="2.2" strokeLinecap="round"/>
+          <line x1="17.5" y1="2.5" x2="24" y2="10.5" stroke="#f97316" strokeWidth="2" strokeLinecap="round"/>
+          <text x="30" y="18" fontFamily="-apple-system,BlinkMacSystemFont,sans-serif" fontSize="14.5" fontWeight="800" letterSpacing="1.4" fill="#fff">LAWLINK</text>
+          <text x="116" y="18" fontFamily="-apple-system,BlinkMacSystemFont,sans-serif" fontSize="9.5" fontWeight="700" letterSpacing=".7" fill="#f97316">.COM</text>
+        </svg>
 
         <div className="flex items-center gap-3 md:gap-5">
           {status === "authenticated" && (
