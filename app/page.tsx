@@ -54,50 +54,28 @@ const OpenAI_Icon  = () => <Image src="/logos/openai.svg"  alt="OpenAI"  width={
 const Claude_Icon  = () => <Image src="/logos/claude.svg"  alt="Claude"  width={26} height={26} className="transform-gpu" />;
 const Gemini_Icon  = () => <Image src="/logos/gemini.svg"  alt="Gemini"  width={26} height={26} className="transform-gpu" />;
 
-const Llama_Icon = () => (
-  <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-800 transform-gpu">
-    <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/>
-  </svg>
-);
-
-const Omni_Icon = () => (
-  <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#00BFFF" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M12 4.5C10 4.5 8 5.5 7.5 7.5 6 7.5 4.5 8.5 4.5 10.5 4 11.5 4 13 5 14 4.5 15.5 5.5 17 7 17.5 7.5 19 9 20 10.5 20H12"/>
-    <path d="M12 4.5C14 4.5 16 5.5 16.5 7.5 18 7.5 19.5 8.5 19.5 10.5 20 11.5 20 13 19 14 19.5 15.5 18.5 17 17 17.5 16.5 19 15 20 13.5 20H12"/>
-    <line x1="12" y1="4.5" x2="12" y2="20"/><circle cx="8.5" cy="10.5" r="1" fill="#00BFFF" stroke="none"/><circle cx="15.5" cy="10.5" r="1" fill="#00BFFF" stroke="none"/><circle cx="7.5" cy="14.5" r="1" fill="#00BFFF" stroke="none"/><circle cx="16.5" cy="14.5" r="1" fill="#00BFFF" stroke="none"/>
-    <line x1="8.5" y1="10.5" x2="12" y2="12.5" strokeWidth="1" strokeOpacity=".5"/><line x1="15.5" y1="10.5" x2="12" y2="12.5" strokeWidth="1" strokeOpacity=".5"/><line x1="7.5" y1="14.5" x2="12" y2="12.5" strokeWidth="1" strokeOpacity=".5"/><line x1="16.5" y1="14.5" x2="12" y2="12.5" strokeWidth="1" strokeOpacity=".5"/>
-  </svg>
-);
+/* 🚀 SURGICAL FIX: ORIGINAL PUBLIC LOGOS INSTEAD OF BLURRY SVGS */
+const Llama_Icon = () => <Image src="/logos/Llama 4 Maverick.svg" alt="Llama" width={26} height={26} className="transform-gpu" />;
+const Omni_Icon = () => <Image src="/logos/OmniAgent Nexus.svg" alt="OmniAgent" width={26} height={26} className="transform-gpu" />;
 
 const Telegram_Icon = ({ size = 26 }: { size?: number }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="transform-gpu">
-    <path d="M12 24c6.627 0 12-5.373 12-12S18.627 0 12 0 0 5.373 0 12s5.373 12 12 12z" fill="#2AABEE"/>
-    <path d="M5.425 11.871L16.48 7.61c.526-.196 1.006.124.819.86l-1.892 8.92c-.167.755-.615.939-1.242.593L10.73 15.45l-1.657 1.588c-.183.183-.338.338-.692.338l.245-3.528 6.425-5.8c.28-.249-.06-.388-.435-.138L6.68 12.89l-3.417-1.066c-.744-.233-.759-.745.155-1.103z" fill="#fff"/>
-  </svg>
+  <Image src="/logos/Telegram.svg" alt="Telegram" width={size} height={size} className="transform-gpu" />
 );
 
 const WhatsApp_Icon = ({ size = 26 }: { size?: number }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="transform-gpu">
-    <path d="M12.004 0C5.376 0 .004 5.373.004 12c0 2.12.552 4.116 1.528 5.864L0 24l6.296-1.508c1.7.884 3.64 1.396 5.708 1.396 6.628 0 12-5.373 12-12S18.632 0 12.004 0z" fill="#25D366"/>
-    <path d="M19.16 16.544c-.312.884-1.504 1.636-2.584 1.832-.82.152-1.888.24-5.384-1.208-4.224-1.744-6.952-6.044-7.16-6.32-.208-.276-1.708-2.268-1.708-4.324 0-2.056 1.072-3.072 1.452-3.484.38-.412.828-.516 1.104-.516.276 0 .552.004.8.016.256.012.604-.1 1.02.908.432 1.04 2.556 1.144 2.748.092.192.152.416.016.696-.136.28-.208.452-.416.696-.208.244-.436.528-.624.712-.208.208-.424.432-.18.804.244.372 1.088 1.748 2.332 2.86 1.6 1.432 2.94 1.872 3.324 2.064.384.192.608.164.84-.108.232-.272 1.004-1.168 1.276-1.568.272-.4.544-.332.892-.204.348.128 2.204 1.04 2.58 1.232.376.192.624.288.716.448.092.16.092.932-.22 1.816z" fill="#fff"/>
-  </svg>
+  <Image src="/logos/WhatsApp.svg" alt="WhatsApp" width={size} height={size} className="transform-gpu" />
 );
 
 const Discord_Icon = () => (
-  <svg viewBox="0 0 24 24" width="22" height="22" fill="#5865F2" className="transform-gpu"><path d="M20.3 5.4c-1.6-.7-3.4-1.2-5.2-1.5-.2.4-.4.9-.6 1.3-1.9-.3-3.8-.3-5.7 0-.2-.4-.4-.9-.6-1.3-1.8.3-3.6.8-5.2 1.5-3.3 4.9-4.2 9.7-3.3 14.4 2.2 1.6 4.3 2.6 6.4 3.2.5-.7 1-1.5 1.4-2.3-1.2-.5-2.4-1.1-3.5-1.8.3-.2.6-.4.9-.7 4.6 2.1 9.7 2.1 14.3 0 .3.2.6.5.9.7-1.1.7-2.3 1.3-3.5 1.8.4.8.9 1.6 1.4 2.3 2.1-.6 4.2-1.6 6.4-3.2 1-5.1.1-10-3.2-14.4z"/></svg>
+  <Image src="/logos/Discord.svg" alt="Discord" width={22} height={22} className="transform-gpu" />
 );
 
 const Instagram_Icon = () => (
-  <div className="w-[22px] h-[22px] rounded-lg bg-gradient-to-tr from-[#f09433] via-[#e6683c] to-[#bc1888] flex items-center justify-center"><div className="w-[14px] h-[14px] border-[2px] border-white rounded-[4px] flex items-center justify-center"><div className="w-[5px] h-[5px] bg-white rounded-full"/></div></div>
+  <Image src="/logos/Instagram.svg" alt="Instagram" width={22} height={22} className="transform-gpu" />
 );
 
 const Google_Icon = () => (
-  <svg viewBox="0 0 24 24" width="22" height="22" className="transform-gpu">
-    <path fill="#EA4335" d="M5.266 9.765A7.077 7.077 0 0112 4.909c1.69 0 3.218.6 4.418 1.582L19.91 3C17.782 1.145 15.055 0 12 0 7.27 0 3.198 2.698 1.24 6.65l4.026 3.115Z"/>
-    <path fill="#34A853" d="M16.04 18.013c-1.09.703-2.474 1.078-4.04 1.078a7.077 7.077 0 01-6.723-4.823l-4.04 3.067A11.965 11.965 0 0012 24c2.933 0 5.735-1.043 7.834-3l-3.793-2.987Z"/>
-    <path fill="#4A90E2" d="M19.834 21c2.195-2.048 3.62-5.096 3.62-9 0-.71-.109-1.473-.272-2.182H12v4.637h6.436c-.317 1.559-1.17 2.766-2.395 3.558L19.834 21Z"/>
-    <path fill="#FBBC05" d="M5.277 14.268A7.12 7.12 0 014.909 12c0-.782.125-1.533.357-2.235L1.24 6.65A11.934 11.934 0 000 12c0 1.92.445 3.73 1.237 5.335l4.04-3.067Z"/>
-  </svg>
+  <Image src="/logos/Gmail.svg" alt="Google" width={22} height={22} className="transform-gpu" />
 );
 
 /* ─── Chat atoms ───────────────────────── */
@@ -442,6 +420,10 @@ export default function Home() {
   return (
     <div className="bg-[#07070A] min-h-screen text-[#E8E8EC] font-sans selection:bg-orange-500/30 overflow-x-hidden">
 
+      {/* 🚀 BROWSER TAB & GOOGLE SEARCH FAVICON FIX */}
+      <title>ClawLink.com</title>
+      <link rel="icon" type="image/svg+xml" href="/Esko logo inside rou.svg" />
+
       <style dangerouslySetInnerHTML={{__html:`
         *{box-sizing:border-box;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
         .nsb::-webkit-scrollbar{display:none}.nsb{-ms-overflow-style:none;scrollbar-width:none}
@@ -570,21 +552,11 @@ export default function Home() {
         style={{backdropFilter:"blur(12px)",WebkitBackdropFilter:"blur(12px)",
                 background:"rgba(7,7,10,0.4)",borderBottom:"1px solid rgba(255,255,255,0.055)"}}>
 
-        {/* 🚀 FIXED: WHITE & ORANGE CLAWLINK.COM LOGO */}
-        <svg width="130" height="22" viewBox="0 0 152 26" fill="none" className="shrink-0 cursor-pointer transition-transform hover:scale-105" onClick={() => router.push("/")}>
-          <defs>
-            <linearGradient id="cg" x1="0" y1="0" x2="0" y2="26" gradientUnits="userSpaceOnUse">
-              <stop stopColor="#fff"/><stop offset="1" stopColor="rgba(255,255,255,.65)"/>
-            </linearGradient>
-          </defs>
-          <path d="M22 3C18 .5 10 .5 7 4.5S3.5 18 7 22.5 18 26 22 23" stroke="rgba(255,255,255,.1)" strokeWidth="8" strokeLinecap="round" fill="none"/>
-          <path d="M22 3C18 .5 10 .5 7 4.5S3.5 18 7 22.5 18 26 22 23" stroke="url(#cg)" strokeWidth="4.5" strokeLinecap="round" fill="none"/>
-          <line x1="7.5" y1="3" x2="14.5" y2="11.5" stroke="#f97316" strokeWidth="2.2" strokeLinecap="round"/>
-          <line x1="12.5" y1="1.5" x2="19.5" y2="10" stroke="#f97316" strokeWidth="2.2" strokeLinecap="round"/>
-          <line x1="17.5" y1="2.5" x2="24" y2="10.5" stroke="#f97316" strokeWidth="2" strokeLinecap="round"/>
-          <text x="30" y="18" fontFamily="-apple-system,BlinkMacSystemFont,sans-serif" fontSize="14.5" fontWeight="800" letterSpacing="1.4" fill="#fff">LAWLINK</text>
-          <text x="116" y="18" fontFamily="-apple-system,BlinkMacSystemFont,sans-serif" fontSize="9.5" fontWeight="700" letterSpacing=".7" fill="#f97316">.COM</text>
-        </svg>
+        {/* 🚀 FIXED: NEW 'C' CLAWLINK.COM LOGO */}
+        <div className="flex items-center gap-1 shrink-0 cursor-pointer transition-transform hover:scale-105" onClick={() => router.push("/")}>
+          <Image src="/Esko logo inside rou.svg" alt="ClawLink Logo" width={30} height={30} className="mr-1" />
+          <span className="font-sans text-[17px] font-black text-white tracking-[1.2px] mt-0.5">LAWLINK<span className="text-orange-500 text-[11px] tracking-[1px]">.COM</span></span>
+        </div>
 
         <div className="flex items-center gap-3 md:gap-5">
           {status === "authenticated" && (
