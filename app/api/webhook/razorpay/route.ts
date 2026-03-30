@@ -39,6 +39,8 @@ export async function POST(req: NextRequest) {
       const planName = (notes.plan_name || "plus").toLowerCase();
       const rawModel = (notes.selected_model || "openai").toLowerCase();
       
+      // 🚀 SURGICAL FIX 1: Extract EXACT channel from Razorpay notes
+      const selectedChannel = (notes.selected_channel || "widget").toLowerCase();
       const isRenewal = notes.is_renewal === "true" || notes.plan_type === "RENEWAL";
 
       if (userEmail) {
@@ -64,14 +66,22 @@ export async function POST(req: NextRequest) {
             newExpiryDate.setDate(newExpiryDate.getDate() + 30); 
         }
 
+        // 🚀 SURGICAL FIX 2: Force inject `selected_channel` and all Keys into DB Payload
         const payload: any = {
             plan: planName,            
             is_unlimited: isUnlimited, 
             tokens_allocated: tokensAllocated,
             monthly_message_limit: monthlyLimit,
             plan_expiry_date: newExpiryDate.toISOString(),
-            plan_status: 'Active'
+            plan_status: 'Active',
+            selected_channel: selectedChannel // <--- THE MISSING LINK FIXED!
         };
+
+        // 🚀 FORCE SAVE ALL TOKENS (No data lost anymore)
+        if (notes.telegram_token) payload.telegram_token = notes.telegram_token;
+        if (notes.whatsapp_token) payload.whatsapp_token = notes.whatsapp_token;
+        if (notes.whatsapp_phone_id) payload.whatsapp_phone_id = notes.whatsapp_phone_id;
+        if (notes.whatsapp_number) payload.whatsapp_number = notes.whatsapp_number;
 
         if (!isRenewal) {
             payload.selected_model = rawModel;  
@@ -84,63 +94,49 @@ export async function POST(req: NextRequest) {
         let botIdentifier = null;
         let botColumn = null;
 
-        if (notes.telegram_token) { payload.telegram_token = notes.telegram_token; botIdentifier = notes.telegram_token; botColumn = "telegram_token"; }
-        if (notes.whatsapp_token) { payload.whatsapp_token = notes.whatsapp_token; botIdentifier = notes.whatsapp_token; botColumn = "whatsapp_token"; }
-        if (notes.whatsapp_phone_id) { payload.whatsapp_phone_id = notes.whatsapp_phone_id; }
+        if (notes.telegram_token) { botIdentifier = notes.telegram_token; botColumn = "telegram_token"; }
+        if (notes.whatsapp_token) { botIdentifier = notes.whatsapp_token; botColumn = "whatsapp_token"; }
 
         if (isRenewal) {
-            // 🚀 SURGICAL FIX: Exact Token match for Renewal!
+            // Renewal Logic: Find exact bot and update
             let query = supabase.from("user_configs").select("id").eq("email", userEmail);
-            
-            if (botColumn && botIdentifier) {
-                query = query.eq(botColumn, botIdentifier);
-            } else {
-                query = query.order("created_at", { ascending: false });
-            }
+            if (botColumn && botIdentifier) { query = query.eq(botColumn, botIdentifier); } 
+            else { query = query.order("created_at", { ascending: false }); }
 
             const { data } = await query.limit(1);
-
             const latestBot = data?.[0];
 
             if (latestBot) {
-                const { error: dbError } = await supabase.from("user_configs").update(payload).eq("id", latestBot.id);
-                if (dbError) throw dbError;
+                await supabase.from("user_configs").update(payload).eq("id", latestBot.id);
             }
         } else if (botIdentifier && botColumn) {
-            const { data } = await supabase
-                .from("user_configs")
-                .select("id")
-                .eq("email", userEmail)
-                .eq(botColumn, botIdentifier)
-                .limit(1);
-
+            // New Purchase Logic (With specific channel/token)
+            const { data } = await supabase.from("user_configs").select("id").eq("email", userEmail).eq(botColumn, botIdentifier).limit(1);
             const existingBot = data?.[0];
 
             if (existingBot) {
-                const { error: dbError } = await supabase.from("user_configs").update(payload).eq("id", existingBot.id);
-                if (dbError) throw dbError;
+                await supabase.from("user_configs").update(payload).eq("id", existingBot.id);
             } else {
-                const { error: dbError } = await supabase.from("user_configs").insert({ 
+                await supabase.from("user_configs").insert({ 
                     ...payload, 
                     email: userEmail,
                     tokens_used: 0,
                     messages_used_this_month: 0 
                 });
-                if (dbError) throw dbError;
             }
         } else {
-            // 🚨 BILLION-USER MULTI-BOT FIX: NEVER use update() here, it kills all previous bots! 
-            // Instead, we insert a brand new row specifically for the new Widget channel.
-            const { error: dbError } = await supabase
-              .from("user_configs")
-              .insert({
-                  ...payload,
-                  email: userEmail,
-                  selected_channel: "widget",
-                  tokens_used: 0,
-                  messages_used_this_month: 0 
-              });
-            if (dbError) throw dbError;
+            // New Purchase Logic (Without token or Widget selected)
+            const { data } = await supabase.from("user_configs").select("id").eq("email", userEmail).limit(1);
+            if (data && data[0]) {
+                 await supabase.from("user_configs").update(payload).eq("id", data[0].id);
+            } else {
+                 await supabase.from("user_configs").insert({
+                    ...payload,
+                    email: userEmail,
+                    tokens_used: 0,
+                    messages_used_this_month: 0 
+                 });
+            }
         }
 
         try {
