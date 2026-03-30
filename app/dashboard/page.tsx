@@ -147,7 +147,6 @@ export default function Dashboard() {
     }
   };
 
-  // 🚀 EXACT MATCH FOR PRICING UI: Fetch exactly what DB saved as selected_model
   const exactModel = (userData?.selected_model || userData?.ai_provider || "gpt-5.2").toLowerCase();
   
   let pricingKey = "gpt-5.2";
@@ -179,7 +178,6 @@ export default function Dashboard() {
             email: session.user.email,
             plan_name: activePlanObj.id,
             is_renewal: "true",
-            // 🚀 THE ULTIMATE LOCK: SENDS EXACT TOKEN BEING VIEWED IN DASHBOARD
             telegram_token: userData?.telegram_token || "",
             whatsapp_phone_id: userData?.whatsapp_phone_id || "",
             whatsapp_number: userData?.whatsapp_number || "",
@@ -237,7 +235,6 @@ export default function Dashboard() {
           email: session.user.email, 
           systemPrompt: channelPrompts[selectedChannel as keyof typeof channelPrompts],
           channel: selectedChannel,
-          // Send specific token so we ONLY update the active bot
           telegram_token: userData?.telegram_token,
           whatsapp_phone_id: userData?.whatsapp_phone_id
         })
@@ -361,7 +358,6 @@ export default function Dashboard() {
   const isPremium = currentPlan === "pro" || currentPlan === "professional" || currentPlan === "max" || currentPlan === "maximum" || currentPlan === "monthly" || currentPlan === "yearly" || currentPlan.includes("ultra") || currentPlan === "adv_max" || currentPlan === "plus";
   const totalMsgs = (stats?.platformStats?.whatsapp || 0) + (stats?.platformStats?.telegram || 0) + (stats?.platformStats?.web || 0);
 
-  // 🚀 FIXED: UI Model extraction directly from the precise DB value
   const getModelDisplayName = () => {
     if (isOmniActive) return "🌌 OmniAgent Nexus";
     if (pricingKey === "claude") return "Claude 3 (Opus 4.6)";
@@ -370,9 +366,40 @@ export default function Dashboard() {
     return "NOT SET";
   };
 
-  const activeChanDisplay = userData?.selected_channel || "widget";
-  const isTelegramLive = !!userData?.telegram_token || !!userData?.telegramActive || activeChanDisplay === "telegram";
-  const isWhatsappLive = !!userData?.whatsapp_phone_id || !!userData?.whatsappActive || activeChanDisplay === "whatsapp";
+  const isTelegramLive = !!userData?.telegram_token || !!userData?.telegramActive;
+  const isWhatsappLive = !!userData?.whatsapp_phone_id || !!userData?.whatsappActive;
+
+  // 🚀 FIXED: Removed Web Widget fallback. Only shows Active Channels or "Not Deployed Yet". Safe Tailwind classes used.
+  const getPrimaryLiveChannel = () => {
+      if (isWhatsappLive) return { 
+          name: "WhatsApp Cloud", 
+          bgLight: "bg-green-500/5", 
+          bgHover: "group-hover:bg-green-500/10", 
+          dot: "bg-green-500 animate-pulse", 
+          text: "text-green-500", 
+          border: "border-green-500/20", 
+          iconBg: "bg-green-500/10" 
+      };
+      if (isTelegramLive) return { 
+          name: "Telegram Bot", 
+          bgLight: "bg-blue-500/5", 
+          bgHover: "group-hover:bg-blue-500/10", 
+          dot: "bg-blue-400 animate-pulse", 
+          text: "text-blue-400", 
+          border: "border-blue-500/20", 
+          iconBg: "bg-blue-500/10" 
+      };
+      return { 
+          name: "Not Deployed Yet", 
+          bgLight: "bg-gray-500/5", 
+          bgHover: "group-hover:bg-gray-500/10", 
+          dot: "bg-gray-600", 
+          text: "text-gray-500", 
+          border: "border-gray-500/20", 
+          iconBg: "bg-gray-500/10" 
+      };
+  };
+  const primaryChannel = getPrimaryLiveChannel();
 
   const handleOpenLiveBot = async () => {
     if (isTelegramLive && userData?.telegram_token) {
@@ -558,28 +585,17 @@ export default function Dashboard() {
           </motion.div>
 
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25, delay: 0.2, ease: "easeOut" }} className="bg-[#111113] border border-white/5 p-6 rounded-[1.5rem] shadow-xl flex justify-between items-center relative overflow-hidden group hover:border-white/10 transition-colors">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-green-500/5 rounded-full blur-3xl group-hover:bg-green-500/10 transition-colors"></div>
+            <div className={`absolute top-0 right-0 w-32 h-32 ${primaryChannel.bgLight} rounded-full blur-3xl ${primaryChannel.bgHover} transition-colors`}></div>
             <div className="relative z-10 w-full">
               <h3 className="text-gray-500 text-[10px] font-bold uppercase tracking-widest mb-3">Live Channels</h3>
               <div className="flex flex-col gap-2">
-                {activeChanDisplay === "whatsapp" && (
-                  <div className="flex items-center gap-2 text-sm font-bold text-white">
-                    <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span> WhatsApp Cloud
+                  <div className={`flex items-center gap-2 text-sm font-bold ${primaryChannel.text === 'text-gray-500' ? 'text-gray-400 italic' : 'text-white'}`}>
+                    {primaryChannel.dot && <span className={`w-2 h-2 ${primaryChannel.dot} rounded-full`}></span>} 
+                    {primaryChannel.name}
                   </div>
-                )}
-                {activeChanDisplay === "telegram" && (
-                  <div className="flex items-center gap-2 text-sm font-bold text-white">
-                    <span className="w-2 h-2 bg-blue-400 rounded-full animate-pulse"></span> Telegram Bot
-                  </div>
-                )}
-                {activeChanDisplay === "widget" && (
-                  <div className="flex items-center gap-2 text-sm font-bold text-white">
-                    <span className="w-2 h-2 bg-purple-500 rounded-full animate-pulse"></span> Web Widget
-                  </div>
-                )}
               </div>
             </div>
-            <div className="w-12 h-12 rounded-xl bg-green-500/10 flex items-center justify-center text-green-500 border border-green-500/20 relative z-10 shrink-0">
+            <div className={`w-12 h-12 rounded-xl ${primaryChannel.iconBg} flex items-center justify-center ${primaryChannel.text} ${primaryChannel.border} border relative z-10 shrink-0`}>
               <Radio className="w-6 h-6"/>
             </div>
           </motion.div>
@@ -606,7 +622,6 @@ export default function Dashboard() {
         </motion.div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* 🚀 FIXED API TOKENS CARD - 100% PREMUIM TEXT, NO NUMBERS */}
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25, delay: 0.4, ease: "easeOut" }} className="bg-[#111113] border border-white/5 p-6 rounded-[1.5rem] shadow-xl relative overflow-hidden group hover:border-white/10 transition-colors">
             <div className="absolute top-0 right-0 w-32 h-32 bg-orange-500/5 rounded-full blur-3xl group-hover:bg-orange-500/10 transition-colors"></div>
             <div className="flex justify-between items-start mb-4 relative z-10">
