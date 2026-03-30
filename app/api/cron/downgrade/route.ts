@@ -38,21 +38,25 @@ export async function GET(req: Request) {
       return NextResponse.json({ success: true, message: "No expired plans found today." });
     }
 
-    // 2. Downgrade accounts
-    for (const user of expiredUsers) {
-      await supabase
-        .from("user_configs")
-        .update({
-          plan_status: "Expired",
-          available_tokens: 0,
-          is_unlimited: false
-        })
-        .eq("email", user.email);
-    }
+    // 🚀 FIX 3: ENTERPRISE BULK UPDATE (Zero Database Bottleneck)
+    // Extract all emails into a simple array
+    const emailsToDowngrade = expiredUsers.map(user => user.email);
+
+    // Execute ONE single update query instead of looping 1000 times
+    const { error: updateError } = await supabase
+      .from("user_configs")
+      .update({
+        plan_status: "Expired",
+        available_tokens: 0,
+        is_unlimited: false
+      })
+      .in("email", emailsToDowngrade); // The magic "in" filter
+
+    if (updateError) throw updateError;
 
     return NextResponse.json({ 
       success: true, 
-      message: `System successfully downgraded ${expiredUsers.length} expired accounts.` 
+      message: `System successfully bulk-downgraded ${emailsToDowngrade.length} expired accounts.` 
     });
 
   } catch (error: any) {

@@ -185,6 +185,9 @@ export async function POST(req: Request) {
             message: crmLogMessage 
         });
 
+        // =========================================================================
+        // 8. 🧠 CLAWLINK PROFIT MAXIMIZER & SMART FALLBACK ENGINE
+        // =========================================================================
         let aiResponse = "I am having trouble connecting to my neural network. Please try again in a moment.";
         let wasSuccessful = false;
         
@@ -198,52 +201,82 @@ export async function POST(req: Request) {
         const words = userText.split(/\s+/).length;
         const usageRatio = isUnlimited ? 0 : (messagesUsed / (monthlyLimit || 1)) * 100;
         
-        const CHEAP_MODEL = "gemini-1.5-flash";
-        const MEDIUM_MODEL = "gpt-4o-mini";
-        const EXPENSIVE_MODEL = "claude-3-5-sonnet-20240620";
+        // 🚀 TIERED MODELS CONFIGURATION (Actual API Strings)
+        const GEMINI_CHEAP = "gemini-1.5-flash-8b";
+        const GEMINI_MID = "gemini-1.5-flash";
+        const GEMINI_PREMIUM = "gemini-1.5-pro";
+        
+        const GPT_CHEAP = "gpt-4o-mini";
+        const GPT_MID = "gpt-4o";
+        const GPT_PREMIUM = "gpt-4-turbo";
+        
+        const CLAUDE_CHEAP = "claude-3-haiku-20240307";
+        const CLAUDE_MID = "claude-3-5-sonnet-20240620";
+        const CLAUDE_PREMIUM = "claude-3-opus-20240229";
 
-        let targetProvider = "google";
-        let targetModel = CHEAP_MODEL;
+        let targetProvider = provider;
+        let targetModel = "";
 
+        // 🧠 COMPLEXITY & BUDGET ROUTER
         if (provider === "omni") {
+            // OMNI BUNDLE (Cross-Provider allowed)
             if (usageRatio >= 80) {
-                targetProvider = "google"; targetModel = CHEAP_MODEL; 
+                targetProvider = "google"; targetModel = GEMINI_CHEAP; 
             } else if (usageRatio >= 60) {
-                if (words < 40) { targetProvider = "google"; targetModel = CHEAP_MODEL; }
-                else { targetProvider = "openai"; targetModel = MEDIUM_MODEL; }
+                targetProvider = "openai"; targetModel = words < 40 ? GPT_CHEAP : GPT_MID;
             } else {
-                if (words < 40) { targetProvider = "google"; targetModel = CHEAP_MODEL; }
-                else if (words < 150) { targetProvider = "openai"; targetModel = MEDIUM_MODEL; }
-                else { targetProvider = "anthropic"; targetModel = EXPENSIVE_MODEL; } 
+                if (words < 40) { targetProvider = "google"; targetModel = GEMINI_MID; }
+                else if (words < 150) { targetProvider = "openai"; targetModel = GPT_MID; }
+                else { targetProvider = "anthropic"; targetModel = CLAUDE_PREMIUM; } 
             }
         } else {
-            if (usageRatio >= 80) {
-                targetProvider = "google"; targetModel = CHEAP_MODEL;
+            // NORMAL PLAN (Single Provider Strict Logic)
+            if (usageRatio >= 85) {
+                // High Budget Danger: Force Cheapest Model of their chosen provider
+                if (provider === "openai") targetModel = GPT_CHEAP;
+                else if (provider === "anthropic") targetModel = CLAUDE_CHEAP;
+                else targetModel = GEMINI_CHEAP;
             } else {
-                targetProvider = provider;
-                if (provider === "openai") targetModel = words < 40 ? "gpt-4o-mini" : "gpt-4o";
-                else if (provider === "anthropic") targetModel = words < 40 ? "claude-3-haiku-20240307" : "claude-3-5-sonnet-20240620";
-                else targetModel = "gemini-1.5-flash";
+                // Adaptive by Complexity (Word Count)
+                if (provider === "openai") targetModel = words < 40 ? GPT_CHEAP : (words > 150 ? GPT_PREMIUM : GPT_MID);
+                else if (provider === "anthropic") targetModel = words < 40 ? CLAUDE_CHEAP : (words > 150 ? CLAUDE_PREMIUM : CLAUDE_MID);
+                else targetModel = words < 40 ? GEMINI_CHEAP : (words > 150 ? GEMINI_PREMIUM : GEMINI_MID);
             }
         }
 
+        // ⚡ EXECUTION & FALLBACK ENGINE
         try {
             if (targetProvider === "anthropic") aiResponse = await callClaude(targetModel, fullContext);
             else if (targetProvider === "openai") aiResponse = await callOpenAI(targetModel, fullContext);
             else aiResponse = await callGemini(targetModel, fullContext);
             wasSuccessful = true;
         } catch (err1) {
-            console.error(`[Widget AI Error] ${targetModel} failed. Routing to GPT Mini...`);
-            try {
-                aiResponse = await callOpenAI(MEDIUM_MODEL, fullContext);
-                wasSuccessful = true;
-            } catch (err2) {
-                console.error(`[Widget AI Error] GPT Mini failed. Routing to Gemini Flash...`);
+            console.error(`[Widget AI Error] ${targetModel} failed.`);
+            
+            // 🛡️ FALLBACK LOGIC
+            if (provider === "omni") {
+                // CROSS-PROVIDER FALLBACK
+                console.log("[Omni Fallback] Routing to GPT-4o-mini...");
                 try {
-                    aiResponse = await callGemini(CHEAP_MODEL, fullContext);
+                    aiResponse = await callOpenAI(GPT_CHEAP, fullContext);
                     wasSuccessful = true;
-                } catch (err3) {
-                    console.error(`[Widget AI Error] All providers failed.`);
+                } catch (err2) {
+                    console.log("[Omni Fallback 2] Routing to Gemini Flash...");
+                    try {
+                        aiResponse = await callGemini(GEMINI_CHEAP, fullContext);
+                        wasSuccessful = true;
+                    } catch (err3) { console.error("[Omni] All cross-provider fallbacks failed."); }
+                }
+            } else {
+                // INTRA-PROVIDER FALLBACK (Protecting tokens for single-provider users)
+                console.log(`[Intra-Provider Fallback] ${provider} downgrading to cheaper model...`);
+                try {
+                    if (provider === "anthropic") aiResponse = await callClaude(CLAUDE_CHEAP, fullContext);
+                    else if (provider === "openai") aiResponse = await callOpenAI(GPT_CHEAP, fullContext);
+                    else aiResponse = await callGemini(GEMINI_CHEAP, fullContext);
+                    wasSuccessful = true;
+                } catch (err2) {
+                    console.error(`[Intra-Provider] Fallback failed for ${provider}.`);
                 }
             }
         }

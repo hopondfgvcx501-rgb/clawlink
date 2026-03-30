@@ -154,7 +154,7 @@ export async function POST(req: Request) {
         let rawProvider = (config.ai_provider || config.selected_model || "openai").toLowerCase();
         let provider = "openai"; 
         
-        if (rawProvider === "multi_model") provider = "omni";
+        if (rawProvider === "multi_model" || rawProvider === "omni") provider = "omni";
         else if (rawProvider.includes("claude") || rawProvider.includes("anthropic")) provider = "anthropic";
         else if (rawProvider.includes("gemini") || rawProvider.includes("google")) provider = "google";
 
@@ -241,61 +241,91 @@ export async function POST(req: Request) {
             email: ownerEmail, platform: "telegram", platform_chat_id: chatId, customer_name: customerName, sender_type: "user", message: crmLogMessage 
         });
 
-        // ==========================================
-        // 8. 🧠 CLAWLINK PROFIT MAXIMIZER (Hidden Smart Routing)
-        // ==========================================
+        // =========================================================================
+        // 8. 🧠 CLAWLINK PROFIT MAXIMIZER & SMART FALLBACK ENGINE
+        // =========================================================================
         let aiResponse = "Hello! Our AI assistant is currently undergoing a brief scheduled maintenance. Please leave your query and our human support team will get back to you shortly.";
         let wasSuccessful = false;
 
         const words = userText.split(/\s+/).length;
         const usageRatio = isUnlimited ? 0 : (tokensUsed / tokensAllocated) * 100;
         
-        const CHEAP_MODEL = "gemini-1.5-flash";
-        const MEDIUM_MODEL = "gpt-4o-mini";
-        const EXPENSIVE_MODEL = "claude-3-5-sonnet-20240620";
+        // 🚀 TIERED MODELS CONFIGURATION (Actual API Strings)
+        const GEMINI_CHEAP = "gemini-1.5-flash-8b"; // Or 'gemini-2.0-flash-lite' when generally available
+        const GEMINI_MID = "gemini-1.5-flash";      // The workhorse
+        const GEMINI_PREMIUM = "gemini-1.5-pro";    // Complex tasks
+        
+        const GPT_CHEAP = "gpt-4o-mini";
+        const GPT_MID = "gpt-4o";
+        const GPT_PREMIUM = "gpt-4-turbo"; 
+        
+        const CLAUDE_CHEAP = "claude-3-haiku-20240307";
+        const CLAUDE_MID = "claude-3-5-sonnet-20240620";
+        const CLAUDE_PREMIUM = "claude-3-opus-20240229";
 
-        let targetProvider = "google";
-        let targetModel = CHEAP_MODEL;
+        let targetProvider = provider;
+        let targetModel = "";
 
+        // 🧠 COMPLEXITY & BUDGET ROUTER
         if (provider === "omni") {
+            // OMNI BUNDLE (Cross-Provider allowed)
             if (usageRatio >= 80) {
-                targetProvider = "google"; targetModel = CHEAP_MODEL; 
+                targetProvider = "google"; targetModel = GEMINI_CHEAP; 
             } else if (usageRatio >= 60) {
-                if (words < 40) { targetProvider = "google"; targetModel = CHEAP_MODEL; }
-                else { targetProvider = "openai"; targetModel = MEDIUM_MODEL; } 
+                targetProvider = "openai"; targetModel = words < 40 ? GPT_CHEAP : GPT_MID;
             } else {
-                if (words < 40) { targetProvider = "google"; targetModel = CHEAP_MODEL; }
-                else if (words < 150) { targetProvider = "openai"; targetModel = MEDIUM_MODEL; }
-                else { targetProvider = "anthropic"; targetModel = EXPENSIVE_MODEL; } 
+                if (words < 40) { targetProvider = "google"; targetModel = GEMINI_MID; }
+                else if (words < 150) { targetProvider = "openai"; targetModel = GPT_MID; }
+                else { targetProvider = "anthropic"; targetModel = CLAUDE_PREMIUM; } 
             }
         } else {
-            if (usageRatio >= 80) {
-                targetProvider = "google"; targetModel = CHEAP_MODEL;
+            // NORMAL PLAN (Single Provider Strict Logic)
+            if (usageRatio >= 85) {
+                // High Budget Danger: Force Cheapest Model of their chosen provider
+                if (provider === "openai") targetModel = GPT_CHEAP;
+                else if (provider === "anthropic") targetModel = CLAUDE_CHEAP;
+                else targetModel = GEMINI_CHEAP;
             } else {
-                targetProvider = provider;
-                if (provider === "openai") targetModel = words < 40 ? "gpt-4o-mini" : "gpt-4o";
-                else if (provider === "anthropic") targetModel = words < 40 ? "claude-3-haiku-20240307" : "claude-3-5-sonnet-20240620";
-                else targetModel = "gemini-1.5-flash";
+                // Adaptive by Complexity (Word Count)
+                if (provider === "openai") targetModel = words < 40 ? GPT_CHEAP : (words > 150 ? GPT_PREMIUM : GPT_MID);
+                else if (provider === "anthropic") targetModel = words < 40 ? CLAUDE_CHEAP : (words > 150 ? CLAUDE_PREMIUM : CLAUDE_MID);
+                else targetModel = words < 40 ? GEMINI_CHEAP : (words > 150 ? GEMINI_PREMIUM : GEMINI_MID);
             }
         }
 
+        // ⚡ EXECUTION & FALLBACK ENGINE
         try {
             if (targetProvider === "anthropic") aiResponse = await callClaude(targetModel, fullContext, userApiKey);
             else if (targetProvider === "openai") aiResponse = await callOpenAI(targetModel, fullContext, userApiKey);
             else aiResponse = await callGemini(targetModel, fullContext, userApiKey);
             wasSuccessful = true;
         } catch (err1) {
-            console.error(`[AI Error] ${targetModel} failed. Routing to GPT Mini...`);
-            try {
-                aiResponse = await callOpenAI(MEDIUM_MODEL, fullContext, userApiKey);
-                wasSuccessful = true;
-            } catch (err2) {
-                console.error(`[AI Error] GPT Mini failed. Routing to Gemini Flash...`);
+            console.error(`[AI Error] ${targetModel} failed.`);
+            
+            // 🛡️ FALLBACK LOGIC
+            if (provider === "omni") {
+                // CROSS-PROVIDER FALLBACK
+                console.log("[Omni Fallback] Routing to GPT-4o-mini...");
                 try {
-                    aiResponse = await callGemini(CHEAP_MODEL, fullContext, userApiKey);
+                    aiResponse = await callOpenAI(GPT_CHEAP, fullContext, userApiKey);
                     wasSuccessful = true;
-                } catch (err3) {
-                    console.error(`[AI Error] All providers failed.`);
+                } catch (err2) {
+                    console.log("[Omni Fallback 2] Routing to Gemini Flash...");
+                    try {
+                        aiResponse = await callGemini(GEMINI_CHEAP, fullContext, userApiKey);
+                        wasSuccessful = true;
+                    } catch (err3) { console.error("[Omni] All cross-provider fallbacks failed."); }
+                }
+            } else {
+                // INTRA-PROVIDER FALLBACK (Protecting tokens for single-provider users)
+                console.log(`[Intra-Provider Fallback] ${provider} downgrading to cheaper model...`);
+                try {
+                    if (provider === "anthropic") aiResponse = await callClaude(CLAUDE_CHEAP, fullContext, userApiKey);
+                    else if (provider === "openai") aiResponse = await callOpenAI(GPT_CHEAP, fullContext, userApiKey);
+                    else aiResponse = await callGemini(GEMINI_CHEAP, fullContext, userApiKey);
+                    wasSuccessful = true;
+                } catch (err2) {
+                    console.error(`[Intra-Provider] Fallback failed for ${provider}.`);
                 }
             }
         }

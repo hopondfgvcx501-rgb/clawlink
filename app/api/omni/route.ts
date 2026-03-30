@@ -14,7 +14,7 @@ CRITICAL INSTRUCTION: You are an Enterprise AI Support Agent.
 `;
 
 // ==========================================
-// 🥇 HELPER 1: OPENAI (GPT) - NOW PRIORITY 1
+// 🥇 HELPER 1: OPENAI (GPT)
 // ==========================================
 async function callOpenAI(models: string[], systemPrompt: string, history: any[], prompt: string, key: string | null) {
   const apiKey = key || process.env.OPENAI_API_KEY || "";
@@ -54,7 +54,7 @@ async function callOpenAI(models: string[], systemPrompt: string, history: any[]
 }
 
 // ==========================================
-// 🥈 HELPER 2: GOOGLE (GEMINI) - NOW PRIORITY 2
+// 🥈 HELPER 2: GOOGLE (GEMINI)
 // ==========================================
 async function callGemini(models: string[], systemPrompt: string, prompt: string, key: string | null) {
   const geminiKey = key || process.env.GEMINI_API_KEY || "";
@@ -87,7 +87,7 @@ async function callGemini(models: string[], systemPrompt: string, prompt: string
 }
 
 // ==========================================
-// 🥉 HELPER 3: ANTHROPIC (CLAUDE) - NOW PRIORITY 3 (Since no funds)
+// 🥉 HELPER 3: ANTHROPIC (CLAUDE)
 // ==========================================
 async function callAnthropic(models: string[], history: any[], systemPrompt: string, prompt: string, key: string | null) {
   const apiKey = key || process.env.ANTHROPIC_API_KEY || "";
@@ -129,7 +129,7 @@ async function callAnthropic(models: string[], history: any[], systemPrompt: str
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { prompt, systemPrompt, history = [], apiKey = null, forceCheap = false } = body;
+    const { prompt, systemPrompt, history = [], apiKey = null, forceCheap = false, userWords = 0 } = body;
 
     if (!prompt) {
       return NextResponse.json({ error: "Prompt payload is missing" }, { status: 400 });
@@ -137,56 +137,77 @@ export async function POST(req: Request) {
 
     console.log(`⚡ [OMNI-NEXUS] Request intercepted. Engaging Deep Fallback Matrix... (ForceCheap: ${forceCheap})`);
 
-    const geminiModels = ["gemini-1.5-flash", "gemini-1.5-flash-8b", "gemini-1.5-pro"];
-    const openAIModels = ["gpt-4o-mini", "gpt-4o", "gpt-3.5-turbo"];
-    const claudeModels = ["claude-3-5-sonnet-20240620", "claude-3-sonnet-20240229", "claude-3-haiku-20240307"];
+    // Tiered Models based on cost/capability
+    const geminiModelsCheap = ["gemini-1.5-flash-8b", "gemini-1.5-flash"];
+    const geminiModelsPremium = ["gemini-1.5-pro", "gemini-1.5-flash"];
+    
+    const openAIModelsCheap = ["gpt-4o-mini"];
+    const openAIModelsPremium = ["gpt-4-turbo", "gpt-4o", "gpt-4o-mini"];
+    
+    const claudeModelsCheap = ["claude-3-haiku-20240307"];
+    const claudeModelsPremium = ["claude-3-opus-20240229", "claude-3-5-sonnet-20240620", "claude-3-haiku-20240307"];
+
+    // Default to a balanced approach if words aren't passed
+    const isComplexQuery = userWords > 150;
 
     // ======================================================================
-    // 🧠 SMART COST-SAVING ROUTE (When forceCheap is true from Webhooks/Widget)
+    // 🧠 SMART COST-SAVING ROUTE (When forceCheap is true from Webhooks/Widget OR simple query)
     // ======================================================================
-    if (forceCheap) {
-      console.log("💰 [OMNI-NEXUS] Cost-Saving Mode Active. Routing directly to OpenAI Mini.");
-      const cheapResult = await callOpenAI(["gpt-4o-mini"], systemPrompt, history, prompt, apiKey);
-      if (cheapResult.success) {
-        console.log(`✅ [OMNI-NEXUS] Success via ${cheapResult.provider} (${cheapResult.model})`);
-        return NextResponse.json(cheapResult);
+    if (forceCheap || (!isComplexQuery && !forceCheap)) {
+      console.log(`💰 [OMNI-NEXUS] Optimal Routing Active. (ForceCheap: ${forceCheap}, Complex: ${isComplexQuery})`);
+      
+      // Try Gemini Cheap first
+      const geminiResult = await callGemini(geminiModelsCheap, systemPrompt, prompt, apiKey);
+      if (geminiResult.success) {
+        console.log(`✅ [OMNI-NEXUS] Success via ${geminiResult.provider} (${geminiResult.model})`);
+        return NextResponse.json(geminiResult);
       }
-      // If GPT fails, fallback to Gemini
-      const backupResult = await callGemini(geminiModels, systemPrompt, prompt, apiKey);
-      if (backupResult.success) {
-        console.log(`✅ [OMNI-NEXUS] Backup Success via ${backupResult.provider} (${backupResult.model})`);
-        return NextResponse.json(backupResult);
+
+      // If Gemini fails, fallback to OpenAI Mini
+      const gptResult = await callOpenAI(openAIModelsCheap, systemPrompt, history, prompt, apiKey);
+      if (gptResult.success) {
+        console.log(`✅ [OMNI-NEXUS] Backup Success via ${gptResult.provider} (${gptResult.model})`);
+        return NextResponse.json(gptResult);
+      }
+      
+      // Last resort cheap Claude
+      const claudeResult = await callAnthropic(claudeModelsCheap, history, systemPrompt, prompt, apiKey);
+      if (claudeResult.success) {
+         console.log(`✅ [OMNI-NEXUS] Backup Success via ${claudeResult.provider} (${claudeResult.model})`);
+         return NextResponse.json(claudeResult);
       }
     } 
     // ======================================================================
-    // 💎 PREMIUM ROUTE (Normal Flow) - REORDERED
+    // 💎 PREMIUM ROUTE (Complex Queries)
     // ======================================================================
     else {
+      console.log("💎 [OMNI-NEXUS] Complex Query Detected. Engaging Premium Tier Models.");
+      
       // ----------------------------------------------------------------------
-      // PRIORITY 1: OPENAI (Fastest & Funded)
+      // PRIORITY 1: CLAUDE PREMIUM (Best for complex reasoning)
       // ----------------------------------------------------------------------
-      const openAIResult = await callOpenAI(openAIModels, systemPrompt, history, prompt, apiKey);
+      const claudeResult = await callAnthropic(claudeModelsPremium, history, systemPrompt, prompt, apiKey);
+      if (claudeResult.success) {
+        console.log(`✅ [OMNI-NEXUS] Success via ${claudeResult.provider} (${claudeResult.model})`);
+        return NextResponse.json(claudeResult);
+      }
+
+      // ----------------------------------------------------------------------
+      // PRIORITY 2: OPENAI PREMIUM
+      // ----------------------------------------------------------------------
+      const openAIResult = await callOpenAI(openAIModelsPremium, systemPrompt, history, prompt, apiKey);
       if (openAIResult.success) {
         console.log(`✅ [OMNI-NEXUS] Success via ${openAIResult.provider} (${openAIResult.model})`);
         return NextResponse.json(openAIResult);
       }
 
       // ----------------------------------------------------------------------
-      // PRIORITY 2: GEMINI (Free & Reliable Fallback)
+      // PRIORITY 3: GEMINI PREMIUM (Reliable Fallback)
       // ----------------------------------------------------------------------
-      const geminiResult = await callGemini(geminiModels, systemPrompt, prompt, apiKey);
+      const geminiResult = await callGemini(geminiModelsPremium, systemPrompt, prompt, apiKey);
       if (geminiResult.success) {
         console.log(`✅ [OMNI-NEXUS] Success via ${geminiResult.provider} (${geminiResult.model})`);
         return NextResponse.json(geminiResult);
-      }
-
-      // ----------------------------------------------------------------------
-      // PRIORITY 3: CLAUDE (Unfunded Fallback)
-      // ----------------------------------------------------------------------
-      const claudeResult = await callAnthropic(claudeModels, history, systemPrompt, prompt, apiKey);
-      if (claudeResult.success) {
-        console.log(`✅ [OMNI-NEXUS] Success via ${claudeResult.provider} (${claudeResult.model})`);
-        return NextResponse.json(claudeResult);
       }
     }
 

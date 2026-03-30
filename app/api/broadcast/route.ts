@@ -8,6 +8,13 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
 const supabase = createClient(supabaseUrl, supabaseKey);
 
+// 🚀 HELPER: Smart Array Chunking to avoid API Rate Limits
+function chunkArray<T>(arr: T[], size: number): T[][] {
+    return Array.from({ length: Math.ceil(arr.length / size) }, (v, i) =>
+        arr.slice(i * size, i * size + size)
+    );
+}
+
 // =========================================================================
 // 1. GET: Fetch Total Audience Size (Clawlink Core)
 // =========================================================================
@@ -33,7 +40,7 @@ export async function GET(req: Request) {
 }
 
 // =========================================================================
-// 2. POST: Execute Blast with Token Management
+// 2. POST: Execute Blast with Token Management & Rate Limit Protection
 // =========================================================================
 export async function POST(req: Request) {
     try {
@@ -73,27 +80,42 @@ export async function POST(req: Request) {
             });
         }
 
-        // 4. 🔥 THE BLAST LOOP
-        let sentCount = 0;
-        const blastPromises = uniqueChatIds.map(async (chatId) => {
-            try {
-                if (channel === "telegram" && config.telegram_token) {
-                    await fetch(`https://api.telegram.org/bot${config.telegram_token}/sendMessage`, {
-                        method: "POST", headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ chat_id: chatId, text: `📢 Broadcast:\n\n${message}` })
-                    });
-                    sentCount++;
-                } else if (channel === "whatsapp" && config.whatsapp_token && config.whatsapp_phone_id) {
-                    await fetch(`https://graph.facebook.com/v18.0/${config.whatsapp_phone_id}/messages`, {
-                        method: "POST", headers: { "Content-Type": "application/json", "Authorization": `Bearer ${config.whatsapp_token}` },
-                        body: JSON.stringify({ messaging_product: "whatsapp", to: chatId, text: { body: message } })
-                    });
-                    sentCount++;
-                }
-            } catch (e) { console.error(`Error sending to ${chatId}`); }
-        });
+        // 4. 🔥 THE SMART BATCHING LOOP (Prevents 429 Too Many Requests & Timeouts)
+        // Telegram strictly allows ~30 msgs/sec. WhatsApp allows ~80 msgs/sec.
+        const BATCH_SIZE = channel === "telegram" ? 25 : 50; 
+        const COOLDOWN_MS = 1200; // 1.2 seconds wait between batches
 
-        await Promise.all(blastPromises);
+        let sentCount = 0;
+        const chunks = chunkArray(uniqueChatIds, BATCH_SIZE);
+
+        for (const chunk of chunks) {
+            const chunkPromises = chunk.map(async (chatId) => {
+                try {
+                    if (channel === "telegram" && config.telegram_token) {
+                        const res = await fetch(`https://api.telegram.org/bot${config.telegram_token}/sendMessage`, {
+                            method: "POST", headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ chat_id: chatId, text: `📢 Broadcast:\n\n${message}` })
+                        });
+                        if(res.ok) sentCount++;
+                    } else if (channel === "whatsapp" && config.whatsapp_token && config.whatsapp_phone_id) {
+                        const res = await fetch(`https://graph.facebook.com/v18.0/${config.whatsapp_phone_id}/messages`, {
+                            method: "POST", headers: { "Content-Type": "application/json", "Authorization": `Bearer ${config.whatsapp_token}` },
+                            body: JSON.stringify({ messaging_product: "whatsapp", to: chatId, text: { body: message } })
+                        });
+                        if(res.ok) sentCount++;
+                    }
+                } catch (e) { 
+                    console.error(`[Broadcast Error] Failed sending to ${chatId}`); 
+                }
+            });
+
+            await Promise.all(chunkPromises); // Fire one batch
+            
+            // Sleep to respect API rate limits before firing the next batch
+            if (chunks.length > 1) {
+                await new Promise(resolve => setTimeout(resolve, COOLDOWN_MS));
+            }
+        }
 
         // 5. Update usage & logs
         if (sentCount > 0) {
@@ -111,7 +133,7 @@ export async function POST(req: Request) {
             });
         }
 
-        return NextResponse.json({ success: true, sentCount });
+        return NextResponse.json({ success: true, sentCount, totalTargeted: uniqueChatIds.length });
 
     } catch (error: any) {
         return NextResponse.json({ success: false, error: "Server Error" }, { status: 500 });
