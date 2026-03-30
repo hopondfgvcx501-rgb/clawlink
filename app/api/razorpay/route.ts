@@ -25,6 +25,7 @@ export async function POST(req: Request) {
     // 🔒 SURGICAL FIX: Razorpay strictly expects integers in PAISE.
     const safeAmount = Math.round(amount * 100);
 
+    // 🚀 SURGICAL FIX: Dynamically merge all frontendNotes to prevent Data Drop!
     const options = {
       amount: safeAmount, 
       currency: currency || "INR", 
@@ -32,9 +33,9 @@ export async function POST(req: Request) {
       notes: {
         email: email,
         plan_name: planName || "Unknown",
-        selected_model: selectedModel || "google",
-        is_renewal: frontendNotes?.is_renewal || "false",
-        plan_type: planType || "NEW"
+        selected_model: selectedModel || "google", // Ensure this is explicitly set from frontend
+        plan_type: planType || "NEW",
+        ...frontendNotes // <--- THIS SAVES EVERYTHING! (is_renewal, token, channel, etc)
       }
     };
 
