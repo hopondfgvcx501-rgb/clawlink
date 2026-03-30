@@ -366,29 +366,43 @@ export default function Dashboard() {
     return "NOT SET";
   };
 
-  const isTelegramLive = !!userData?.telegram_token || !!userData?.telegramActive;
-  const isWhatsappLive = !!userData?.whatsapp_phone_id || !!userData?.whatsappActive;
+  // 🚀 STRICT VERIFICATION: Reads EXACT channel user selected in DB
+  const exactSelectedChannel = (userData?.selected_channel || "").toLowerCase();
+  
+  // 🚀 STRICT VERIFICATION: Ensure tokens actually exist (Proof of Setup)
+  const hasTgToken = !!userData?.telegram_token && userData?.telegram_token !== "";
+  const hasWaId = !!userData?.whatsapp_phone_id && userData?.whatsapp_phone_id !== "";
 
-  // 🚀 FIXED: Removed Web Widget fallback. Only shows Active Channels or "Not Deployed Yet". Safe Tailwind classes used.
   const getPrimaryLiveChannel = () => {
-      if (isWhatsappLive) return { 
-          name: "WhatsApp Cloud", 
-          bgLight: "bg-green-500/5", 
-          bgHover: "group-hover:bg-green-500/10", 
-          dot: "bg-green-500 animate-pulse", 
-          text: "text-green-500", 
-          border: "border-green-500/20", 
-          iconBg: "bg-green-500/10" 
-      };
-      if (isTelegramLive) return { 
-          name: "Telegram Bot", 
-          bgLight: "bg-blue-500/5", 
-          bgHover: "group-hover:bg-blue-500/10", 
-          dot: "bg-blue-400 animate-pulse", 
-          text: "text-blue-400", 
-          border: "border-blue-500/20", 
-          iconBg: "bg-blue-500/10" 
-      };
+      // 1. If user explicitly selected TELEGRAM in setup
+      if (exactSelectedChannel === "telegram") {
+          return { 
+              name: "Telegram Bot", 
+              bgLight: "bg-blue-500/5", 
+              bgHover: "group-hover:bg-blue-500/10", 
+              dot: hasTgToken ? "bg-blue-400 animate-pulse" : "bg-yellow-500", // Yellow if missing setup
+              text: "text-blue-400", 
+              border: "border-blue-500/20", 
+              iconBg: "bg-blue-500/10",
+              isLive: hasTgToken
+          };
+      }
+      
+      // 2. If user explicitly selected WHATSAPP in setup
+      if (exactSelectedChannel === "whatsapp") {
+          return { 
+              name: "WhatsApp Cloud", 
+              bgLight: "bg-green-500/5", 
+              bgHover: "group-hover:bg-green-500/10", 
+              dot: hasWaId ? "bg-green-500 animate-pulse" : "bg-yellow-500", 
+              text: "text-green-500", 
+              border: "border-green-500/20", 
+              iconBg: "bg-green-500/10",
+              isLive: hasWaId
+          };
+      }
+
+      // 3. If NO channel was selected (Setup completely skipped)
       return { 
           name: "Not Deployed Yet", 
           bgLight: "bg-gray-500/5", 
@@ -396,13 +410,15 @@ export default function Dashboard() {
           dot: "bg-gray-600", 
           text: "text-gray-500", 
           border: "border-gray-500/20", 
-          iconBg: "bg-gray-500/10" 
+          iconBg: "bg-gray-500/10",
+          isLive: false
       };
   };
   const primaryChannel = getPrimaryLiveChannel();
 
   const handleOpenLiveBot = async () => {
-    if (isTelegramLive && userData?.telegram_token) {
+    // Navigate based on strict verification
+    if (exactSelectedChannel === "telegram" && hasTgToken) {
       try {
         const res = await fetch(`https://api.telegram.org/bot${userData.telegram_token}/getMe`);
         const data = await res.json();
@@ -412,14 +428,15 @@ export default function Dashboard() {
         }
       } catch (e) {}
       window.open(`https://t.me/${userData?.tg_username || ""}`, "_blank"); 
-    } else if (isWhatsappLive) {
+    } else if (exactSelectedChannel === "whatsapp" && hasWaId) {
       if (userData?.whatsapp_number) {
         window.open(`https://api.whatsapp.com/send?phone=${userData.whatsapp_number.replace(/\D/g, '')}`, "_blank");
       } else {
         window.open("https://api.whatsapp.com/", "_blank"); 
       }
     } else {
-      router.push(`/widget?email=${session?.user?.email}`); 
+      // If payment/setup pending, alert user or redirect to widget
+      alert("⚠️ Your bot is not fully deployed yet. Please complete setup/payment.");
     }
   };
 
@@ -593,6 +610,12 @@ export default function Dashboard() {
                     {primaryChannel.dot && <span className={`w-2 h-2 ${primaryChannel.dot} rounded-full`}></span>} 
                     {primaryChannel.name}
                   </div>
+                  {/* 🚀 STRICT VERIFICATION UI: Warns if setup/payment is pending */}
+                  {exactSelectedChannel && (
+                    <p className={`text-[10px] font-mono mt-1 ${primaryChannel.isLive ? 'text-green-500' : 'text-yellow-500'}`}>
+                      {primaryChannel.isLive ? "✓ Verified & Live" : "⚠️ Pending Setup / Payment"}
+                    </p>
+                  )}
               </div>
             </div>
             <div className={`w-12 h-12 rounded-xl ${primaryChannel.iconBg} flex items-center justify-center ${primaryChannel.text} ${primaryChannel.border} border relative z-10 shrink-0`}>
