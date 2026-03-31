@@ -5,23 +5,24 @@ export function middleware(req: NextRequest) {
     const origin = req.headers.get('origin') || req.headers.get('referer') || '';
     const pathname = req.nextUrl.pathname;
     
-    // 🚀 FIXED: Allow ALL webhooks, public widgets, and auth routes automatically
+    // Allow ALL webhooks, public widgets, and auth routes automatically
     const isWebhook = pathname.startsWith('/api/webhook/');
     const isWidget = pathname.startsWith('/api/widget');
     const isAuth = pathname.startsWith('/api/auth');
     const isPublicRoute = isWebhook || isWidget || isAuth;
 
-    // 🛑 Block only completely unauthorized core API calls (Dashboard data)
+    // Block only completely unauthorized core API calls
     if (pathname.startsWith('/api/') && !isPublicRoute) {
         const allowedOrigins = [
             'https://clawlink.com',
             'https://www.clawlink.com',
             'https://clawlinkai.com', 
+            'https://www.clawlinkai.com', // <-- 🚀 FIXED: Added your active WWW domain!
             'https://clawlink-six.vercel.app', 
             'http://localhost:3000'
         ];
 
-        // 🚀 SMARTER CHECK: If origin is empty, it might be an internal server call, let it pass if it's not a browser
+        // If origin is empty, it might be an internal server call
         const isAllowed = origin === '' || allowedOrigins.some(allowed => origin.startsWith(allowed));
 
         if (!isAllowed) {
