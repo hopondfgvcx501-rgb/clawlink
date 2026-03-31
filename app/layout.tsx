@@ -1,11 +1,20 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import Providers from "./providers"; 
 
-// 🚀 ENTERPRISE SEO & SOCIAL SHARE BANNER CONFIGURATION
+// 🚀 ENTERPRISE PWA & THEME CONFIGURATION (Strict Next.js Rule)
+export const viewport: Viewport = {
+  themeColor: "#F97316",
+};
+
+// 🚀 ENTERPRISE SEO, PWA MANIFEST & SOCIAL SHARE BANNER
 export const metadata: Metadata = {
   title: "ClawLink | Global AI SaaS Infrastructure",
   description: "One-click deploy your own 24/7 active AI agent on Telegram and Meta Cloud under 30 seconds. Powered by GPT, Claude, and Gemini.",
+  manifest: "/manifest.json", // 👈 PWA Manifest linked natively!
+  icons: {
+    apple: "/icon-192x192.png", // 👈 Apple Icon linked natively!
+  },
   metadataBase: new URL("https://clawlink.com"),
   openGraph: {
     title: "ClawLink Enterprise AI",
