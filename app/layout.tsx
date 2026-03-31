@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
-import { Providers } from "./providers"; // 👈 Wapas ./ kar diya
-import "./globals.css"; // 👈 Wapas ./ kar diya
+import { Providers } from "./providers";
+import "./globals.css"; //
 
 export const metadata: Metadata = {
   title: "ClawLink | AI Agent Deployer",

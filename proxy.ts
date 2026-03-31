@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-export function middleware(req: NextRequest) {
-    const origin = req.headers.get('origin') || req.headers.get('referer') || '';
-    const pathname = req.nextUrl.pathname;
+export default function proxy(request: NextRequest) {
+    const origin = request.headers.get('origin') || request.headers.get('referer') || '';
+    const pathname = request.nextUrl.pathname;
     
     // Allow ALL webhooks, public widgets, and auth routes automatically
     const isWebhook = pathname.startsWith('/api/webhook/');
@@ -17,8 +17,7 @@ export function middleware(req: NextRequest) {
             'https://clawlink.com',
             'https://www.clawlink.com',
             'https://clawlinkai.com', 
-            'https://www.clawlinkai.com', // <-- 🚀 FIXED: Added your active WWW domain!
-            'https://www.clawlinkai.com', 
+            'https://www.clawlinkai.com',
             'http://localhost:3000'
         ];
 
