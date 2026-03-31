@@ -1,29 +1,26 @@
-import type { Metadata, Viewport } from "next";
-import "./globals.css";
-import Providers from "./providers"; 
+import type { Metadata } from "next";
+import { Providers } from "@/app/providers";
+import "@/app/globals.css";
 
-// 🚀 ENTERPRISE PWA & THEME CONFIGURATION (Strict Next.js Rule)
-export const viewport: Viewport = {
-  themeColor: "#F97316",
-};
-
-// 🚀 ENTERPRISE SEO, PWA MANIFEST & SOCIAL SHARE BANNER
 export const metadata: Metadata = {
-  title: "ClawLink | Global AI SaaS Infrastructure",
+  title: "ClawLink | AI Agent Deployer",
   description: "One-click deploy your own 24/7 active AI agent on Telegram and Meta Cloud under 30 seconds. Powered by GPT, Claude, and Gemini.",
-  manifest: "/manifest.json", // 👈 PWA Manifest linked natively!
+  manifest: "/manifest.json",
   icons: {
-    apple: "/icon-192x192.png", // 👈 Apple Icon linked natively!
+    apple: "/icon-192x192.png",
   },
-  metadataBase: new URL("https://clawlink.com"),
+  metadataBase: new URL("https://www.clawlinkai.com"),
+  verification: {
+    google: "QgkpU_LPUkzu-FGEhCXL-kTRLY8_e_FmptmJmj0ddUU",
+  },
   openGraph: {
     title: "ClawLink Enterprise AI",
     description: "Deploy auto-fallback AI bots on Telegram & WhatsApp instantly.",
-    url: "https://clawlink.com",
+    url: "https://www.clawlinkai.com",
     siteName: "ClawLink",
     images: [
       {
-        url: "https://images.unsplash.com/photo-1633356122544-f134324a6cee?q=80&w=1200&auto=format&fit=crop", 
+        url: "https://images.unsplash.com/photo-1633356122544-f134324a6cee?q=80&w=1200&auto=format&fit=crop",
         width: 1200,
         height: 630,
         alt: "ClawLink AI Engine",
@@ -40,7 +37,6 @@ export const metadata: Metadata = {
   },
 };
 
-// 🚀 DEFAULT EXPORT LOCKED
 export default function RootLayout({
   children,
 }: Readonly<{
