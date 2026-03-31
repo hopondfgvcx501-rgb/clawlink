@@ -40,7 +40,7 @@ export async function GET(req: Request) {
 }
 
 // =========================================================================
-// 🚀 AI HELPER FUNCTIONS 
+// 🚀 AI HELPER FUNCTIONS (NOW WITH LONG-TERM MEMORY ARRAYS)
 // =========================================================================
 async function generateEmbedding(text: string) {
     if (!process.env.GEMINI_API_KEY) return null;
@@ -55,33 +55,57 @@ async function generateEmbedding(text: string) {
     } catch (e) { return null; }
 }
 
-async function callGemini(model: string, prompt: string) {
+async function callGemini(model: string, systemPrompt: string, history: any[], userText: string) {
     if (!process.env.GEMINI_API_KEY) throw new Error("API_KEY missing");
+    
+    // 🧠 Proper Gemini Context Array formatting
+    const contents = history.map(msg => ({
+        role: msg.role === "assistant" ? "model" : "user",
+        parts: [{ text: msg.content }]
+    }));
+    contents.push({ role: "user", parts: [{ text: userText }] });
+
     const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${process.env.GEMINI_API_KEY}`, {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: prompt }] }] })
+        body: JSON.stringify({ 
+            system_instruction: { parts: { text: systemPrompt } },
+            contents: contents 
+        })
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error?.message || "Gemini Error");
     return data.candidates[0].content.parts[0].text;
 }
 
-async function callOpenAI(model: string, prompt: string) {
+async function callOpenAI(model: string, systemPrompt: string, history: any[], userText: string) {
     if (!process.env.OPENAI_API_KEY) throw new Error("API_KEY missing");
+    
+    // 🧠 Proper OpenAI Context Array formatting
+    const messages = [
+        { role: "system", content: systemPrompt },
+        ...history,
+        { role: "user", content: userText }
+    ];
+
     const res = await fetch("https://api.openai.com/v1/chat/completions", {
         method: "POST", headers: { "Content-Type": "application/json", "Authorization": `Bearer ${process.env.OPENAI_API_KEY}` },
-        body: JSON.stringify({ model: model, messages: [{ role: "user", content: prompt }] })
+        body: JSON.stringify({ model: model, messages: messages })
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error?.message || "OpenAI Error");
     return data.choices[0].message.content;
 }
 
-async function callClaude(model: string, prompt: string) {
+async function callClaude(model: string, systemPrompt: string, history: any[], userText: string) {
     if (!process.env.ANTHROPIC_API_KEY) throw new Error("API_KEY missing");
     const res = await fetch("https://api.anthropic.com/v1/messages", {
         method: "POST", headers: { "Content-Type": "application/json", "x-api-key": process.env.ANTHROPIC_API_KEY, "anthropic-version": "2023-06-01" },
-        body: JSON.stringify({ model: model, max_tokens: 1024, messages: [{ role: "user", content: prompt }] })
+        body: JSON.stringify({ 
+            model: model, 
+            max_tokens: 1024, 
+            system: systemPrompt,
+            messages: [...history, { role: "user", content: userText }] 
+        })
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error?.message || "Claude Error");
@@ -133,10 +157,9 @@ export async function POST(req: Request) {
         }
 
         whatsappToken = config.whatsapp_token;
-        const configId = config.id; // 💎 UNIQUE ID FOR TRACKING
+        const configId = config.id; 
         const userEmail = config.email;
 
-        // 🚀 FIXED: Isolated WhatsApp Persona to prevent multi-channel conflicts
         const systemPrompt = config.system_prompt_whatsapp || config.system_prompt || "You are a helpful AI assistant on WhatsApp.";
         
         let rawProvider = (config.ai_provider || config.selected_model || "openai").toLowerCase();
@@ -156,7 +179,6 @@ export async function POST(req: Request) {
         const expiryDate = new Date(config.plan_expiry_date);
         const isExpired = config.plan_expiry_date ? (new Date() > expiryDate) : false;
 
-        // 🚀 CUSTOMER-FACING MAINTENANCE MESSAGE
         if (isExpired || (!isUnlimited && tokensUsed >= tokensAllocated)) {
             const maintenanceMsg = "Hello! Our AI assistant is currently undergoing a brief scheduled maintenance to serve you better. Please leave your query and our human support team will get back to you shortly. Thank you for your patience!";
                 
@@ -180,19 +202,25 @@ export async function POST(req: Request) {
             }
         } catch (e) {}
 
+        // 🧠 MEMORY ENGINE UPGRADE: Fetch 20 messages (10 user, 10 bot)
         const { data: pastChats } = await supabase
             .from("chat_history")
             .select("sender_type, message")
             .eq("email", userEmail)
             .eq("platform_chat_id", chatId)
             .order("created_at", { ascending: false })
-            .limit(4);
+            .limit(20); 
 
-        let memoryHistory = pastChats && pastChats.length > 0 
-            ? pastChats.reverse().map(chat => `${chat.sender_type.toUpperCase()}: ${chat.message}`).join("\n") 
-            : "";
+        // 🧠 Format history into Array instead of one big string
+        let historyArray: any[] = [];
+        if (pastChats && pastChats.length > 0) {
+            historyArray = pastChats.reverse().map(chat => ({
+                role: chat.sender_type === "bot" ? "assistant" : "user",
+                content: chat.message
+            }));
+        }
 
-        const fullContext = `${ENTERPRISE_GUARDRAIL}\n\nSystem Instructions: ${systemPrompt}\n\nCompany Knowledge Base:\n${customKnowledge ? customKnowledge : "None."}\n\nMemory:\n${memoryHistory}\n\nUser: ${userText}`;
+        const fullSystemContext = `${ENTERPRISE_GUARDRAIL}\n\nSystem Instructions: ${systemPrompt}\n\nCompany Knowledge Base:\n${customKnowledge ? customKnowledge : "None."}`;
         
         await supabase.from("chat_history").insert({ 
             email: userEmail, platform: "whatsapp", platform_chat_id: chatId, customer_name: customerName, sender_type: "user", message: userText 
@@ -207,7 +235,6 @@ export async function POST(req: Request) {
         const words = userText.split(/\s+/).length;
         const usageRatio = isUnlimited ? 0 : (tokensUsed / tokensAllocated) * 100;
         
-        // 🚀 TIERED MODELS CONFIGURATION (Actual API Strings)
         const GEMINI_CHEAP = "gemini-1.5-flash-8b";
         const GEMINI_MID = "gemini-1.5-flash";
         const GEMINI_PREMIUM = "gemini-1.5-pro";
@@ -223,9 +250,7 @@ export async function POST(req: Request) {
         let targetProvider = provider;
         let targetModel = "";
 
-        // 🧠 COMPLEXITY & BUDGET ROUTER
         if (provider === "omni") {
-            // OMNI BUNDLE (Cross-Provider allowed)
             if (usageRatio >= 80) {
                 targetProvider = "google"; targetModel = GEMINI_CHEAP; 
             } else if (usageRatio >= 60) {
@@ -236,14 +261,11 @@ export async function POST(req: Request) {
                 else { targetProvider = "anthropic"; targetModel = CLAUDE_PREMIUM; } 
             }
         } else {
-            // NORMAL PLAN (Single Provider Strict Logic)
             if (usageRatio >= 85) {
-                // High Budget Danger: Force Cheapest Model of their chosen provider
                 if (provider === "openai") targetModel = GPT_CHEAP;
                 else if (provider === "anthropic") targetModel = CLAUDE_CHEAP;
                 else targetModel = GEMINI_CHEAP;
             } else {
-                // Adaptive by Complexity (Word Count)
                 if (provider === "openai") targetModel = words < 40 ? GPT_CHEAP : (words > 150 ? GPT_PREMIUM : GPT_MID);
                 else if (provider === "anthropic") targetModel = words < 40 ? CLAUDE_CHEAP : (words > 150 ? CLAUDE_PREMIUM : CLAUDE_MID);
                 else targetModel = words < 40 ? GEMINI_CHEAP : (words > 150 ? GEMINI_PREMIUM : GEMINI_MID);
@@ -252,34 +274,31 @@ export async function POST(req: Request) {
 
         // ⚡ EXECUTION & FALLBACK ENGINE
         try {
-            if (targetProvider === "anthropic") aiResponse = await callClaude(targetModel, fullContext);
-            else if (targetProvider === "openai") aiResponse = await callOpenAI(targetModel, fullContext);
-            else aiResponse = await callGemini(targetModel, fullContext);
+            if (targetProvider === "anthropic") aiResponse = await callClaude(targetModel, fullSystemContext, historyArray, userText);
+            else if (targetProvider === "openai") aiResponse = await callOpenAI(targetModel, fullSystemContext, historyArray, userText);
+            else aiResponse = await callGemini(targetModel, fullSystemContext, historyArray, userText);
             wasSuccessful = true;
         } catch (err1) {
             console.error(`[WhatsApp AI Error] ${targetModel} failed.`);
             
-            // 🛡️ FALLBACK LOGIC
             if (provider === "omni") {
-                // CROSS-PROVIDER FALLBACK
                 console.log("[Omni Fallback] Routing to GPT-4o-mini...");
                 try {
-                    aiResponse = await callOpenAI(GPT_CHEAP, fullContext);
+                    aiResponse = await callOpenAI(GPT_CHEAP, fullSystemContext, historyArray, userText);
                     wasSuccessful = true;
                 } catch (err2) {
                     console.log("[Omni Fallback 2] Routing to Gemini Flash...");
                     try {
-                        aiResponse = await callGemini(GEMINI_CHEAP, fullContext);
+                        aiResponse = await callGemini(GEMINI_CHEAP, fullSystemContext, historyArray, userText);
                         wasSuccessful = true;
                     } catch (err3) { console.error("[Omni] All cross-provider fallbacks failed."); }
                 }
             } else {
-                // INTRA-PROVIDER FALLBACK (Protecting tokens for single-provider users)
                 console.log(`[Intra-Provider Fallback] ${provider} downgrading to cheaper model...`);
                 try {
-                    if (provider === "anthropic") aiResponse = await callClaude(CLAUDE_CHEAP, fullContext);
-                    else if (provider === "openai") aiResponse = await callOpenAI(GPT_CHEAP, fullContext);
-                    else aiResponse = await callGemini(GEMINI_CHEAP, fullContext);
+                    if (provider === "anthropic") aiResponse = await callClaude(CLAUDE_CHEAP, fullSystemContext, historyArray, userText);
+                    else if (provider === "openai") aiResponse = await callOpenAI(GPT_CHEAP, fullSystemContext, historyArray, userText);
+                    else aiResponse = await callGemini(GEMINI_CHEAP, fullSystemContext, historyArray, userText);
                     wasSuccessful = true;
                 } catch (err2) {
                     console.error(`[Intra-Provider] Fallback failed for ${provider}.`);
@@ -295,7 +314,6 @@ export async function POST(req: Request) {
             if (!isUnlimited) {
                 updatePayload.tokens_used = tokensUsed + 1;
             }
-            // 🚀 FIXED: Update EXACT bot by its unique ID, not by email!
             await supabase.from("user_configs").update(updatePayload).eq("id", configId);
         }
         

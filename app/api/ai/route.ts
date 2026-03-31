@@ -26,17 +26,33 @@ export async function POST(req: Request) {
     const companyName = kb?.company_name || "Our Company";
     const businessInfo = kb?.business_info || "We are a helpful business. Please assist the customer politely.";
 
-    // 2. Fetch User's Model Configuration (This decides which API to hit)
+    // 2. Fetch User's Model Configuration
     const { data: config } = await supabase
       .from("user_configs")
       .select("ai_model, is_unlimited, available_tokens")
       .eq("email", email)
       .single();
 
-    // Default to gpt-5.2 if nothing is set
     const selectedModel = config?.ai_model || "gpt-5.2"; 
 
-    // 3. Construct the Master System Prompt
+    // 🧠 3. FETCH LONG-TERM MEMORY (Sliding Window - Last 20 messages)
+    const { data: pastChats } = await supabase
+      .from("chat_history")
+      .select("sender_type, message")
+      .eq("email", email)
+      .eq("platform_chat_id", userPhoneOrChatId || "anonymous")
+      .order("created_at", { ascending: false })
+      .limit(20);
+
+    let historyArray: any[] = [];
+    if (pastChats && pastChats.length > 0) {
+      historyArray = pastChats.reverse().map(chat => ({
+        role: chat.sender_type === "bot" ? "assistant" : "user",
+        content: chat.message
+      }));
+    }
+
+    // 4. Construct the Master System Prompt
     const systemPrompt = `You are a professional, helpful, and concise AI customer support agent for ${companyName}.
     
     CORE BUSINESS KNOWLEDGE (Strictly follow this):
@@ -49,16 +65,21 @@ export async function POST(req: Request) {
 
     let finalReply = "Sorry, I am experiencing temporary cognitive lag. Please try again.";
 
-    // 🚀 4. STRICT INTRA-PROVIDER FALLBACK SYSTEM
-    // Configuration of Fallback Models (Premium -> Mid -> Cheap)
+    // 🚀 5. STRICT INTRA-PROVIDER FALLBACK SYSTEM
     const geminiModels = ["gemini-1.5-pro", "gemini-1.5-flash", "gemini-1.5-flash-8b"];
     const openaiModels = ["gpt-4-turbo", "gpt-4o", "gpt-4o-mini"];
     const claudeModels = ["claude-3-opus-20240229", "claude-3-5-sonnet-20240620", "claude-3-haiku-20240307"];
 
     if (selectedModel === "gemini") {
-      // --- GEMINI ENGINE ---
       const geminiApiKey = process.env.GEMINI_API_KEY; 
       if (!geminiApiKey) throw new Error("Gemini API Key missing");
+
+      // 🧠 Proper Gemini Context Array
+      const contents = historyArray.map(msg => ({
+          role: msg.role === "assistant" ? "model" : "user",
+          parts: [{ text: msg.content }]
+      }));
+      contents.push({ role: "user", parts: [{ text: message }] });
 
       let geminiSuccess = false;
       for (const model of geminiModels) {
@@ -69,7 +90,7 @@ export async function POST(req: Request) {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     system_instruction: { parts: { text: systemPrompt } },
-                    contents: [{ parts: [{ text: message }] }]
+                    contents: contents
                 })
             });
             
@@ -78,7 +99,7 @@ export async function POST(req: Request) {
                 if (data.candidates && data.candidates[0]?.content?.parts[0]?.text) {
                     finalReply = data.candidates[0].content.parts[0].text;
                     geminiSuccess = true;
-                    break; // Exit loop on success
+                    break;
                 }
             } else {
                  console.warn(`[Intra-Provider] Gemini ${model} failed with status: ${res.status}`);
@@ -87,11 +108,9 @@ export async function POST(req: Request) {
             console.warn(`[Intra-Provider] Gemini ${model} network error:`, e);
         }
       }
-      
       if(!geminiSuccess) throw new Error("All Gemini fallbacks failed.");
 
     } else if (selectedModel === "claude") {
-      // --- CLAUDE (ANTHROPIC) ENGINE ---
       const claudeApiKey = process.env.ANTHROPIC_API_KEY;
       if (!claudeApiKey) throw new Error("Claude API Key missing");
 
@@ -110,7 +129,7 @@ export async function POST(req: Request) {
                     model: model, 
                     max_tokens: 1024,
                     system: systemPrompt,
-                    messages: [{ role: "user", content: message }]
+                    messages: [...historyArray, { role: "user", content: message }]
                 })
             });
             
@@ -119,7 +138,7 @@ export async function POST(req: Request) {
                 if (data.content && data.content[0]?.text) {
                     finalReply = data.content[0].text;
                     claudeSuccess = true;
-                    break; // Exit loop on success
+                    break;
                 }
             } else {
                  console.warn(`[Intra-Provider] Claude ${model} failed with status: ${res.status}`);
@@ -128,13 +147,18 @@ export async function POST(req: Request) {
              console.warn(`[Intra-Provider] Claude ${model} network error:`, e);
         }
       }
-
       if(!claudeSuccess) throw new Error("All Claude fallbacks failed.");
 
     } else {
-      // --- OPENAI (GPT) ENGINE (Default for gpt-5.2) ---
       const openaiApiKey = process.env.OPENAI_API_KEY;
       if (!openaiApiKey) throw new Error("OpenAI API Key missing");
+
+      // 🧠 Proper OpenAI Context Array
+      const messages = [
+          { role: "system", content: systemPrompt },
+          ...historyArray,
+          { role: "user", content: message }
+      ];
 
       let openaiSuccess = false;
       for (const model of openaiModels) {
@@ -148,10 +172,7 @@ export async function POST(req: Request) {
                 },
                 body: JSON.stringify({
                     model: model,
-                    messages: [
-                    { role: "system", content: systemPrompt },
-                    { role: "user", content: message }
-                    ]
+                    messages: messages
                 })
             });
             
@@ -160,7 +181,7 @@ export async function POST(req: Request) {
                 if (data.choices && data.choices[0]?.message?.content) {
                     finalReply = data.choices[0].message.content;
                     openaiSuccess = true;
-                    break; // Exit loop on success
+                    break; 
                 }
             } else {
                  console.warn(`[Intra-Provider] OpenAI ${model} failed with status: ${res.status}`);
@@ -169,26 +190,23 @@ export async function POST(req: Request) {
              console.warn(`[Intra-Provider] OpenAI ${model} network error:`, e);
         }
       }
-
       if(!openaiSuccess) throw new Error("All OpenAI fallbacks failed.");
     }
 
-    // 5. Deduct Token if not Unlimited
+    // 6. Deduct Token if not Unlimited
     if (config && !config.is_unlimited && config.available_tokens > 0) {
-      await supabase
-        .from("user_configs")
-        .update({ available_tokens: config.available_tokens - 1 })
-        .eq("email", email);
+      await supabase.from("user_configs").update({ available_tokens: config.available_tokens - 1 }).eq("email", email);
     }
 
-    // 6. Log Conversation into Live CRM Inbox
+    // 7. Save to BOTH tables to ensure memory works perfectly!
     await supabase.from("bot_conversations").insert({
-      email: email,
-      platform: platform || "unknown",
-      chat_id: userPhoneOrChatId || "anonymous",
-      user_message: message,
-      bot_reply: finalReply
+      email: email, platform: platform || "unknown", chat_id: userPhoneOrChatId || "anonymous", user_message: message, bot_reply: finalReply
     });
+
+    await supabase.from("chat_history").insert([
+      { email: email, platform: platform || "web", platform_chat_id: userPhoneOrChatId || "anonymous", customer_name: "Customer", sender_type: "user", message: message },
+      { email: email, platform: platform || "web", platform_chat_id: userPhoneOrChatId || "anonymous", customer_name: "Customer", sender_type: "bot", message: finalReply }
+    ]);
 
     return NextResponse.json({ success: true, reply: finalReply });
 

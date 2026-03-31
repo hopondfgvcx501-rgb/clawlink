@@ -23,7 +23,7 @@ CRITICAL INSTRUCTION: You are an Advanced AI Support Agent operating on the Claw
 `;
 
 // =========================================================================
-// 🚀 AI & RAG HELPER FUNCTIONS
+// 🚀 AI & RAG HELPER FUNCTIONS (UPGRADED WITH MEMORY ARRAYS)
 // =========================================================================
 async function generateEmbedding(text: string, key: string | null) {
     const apiKey = key || process.env.GEMINI_API_KEY;
@@ -47,36 +47,60 @@ async function generateEmbedding(text: string, key: string | null) {
     }
 }
 
-async function callGemini(model: string, prompt: string, key: string | null) {
+async function callGemini(model: string, systemPrompt: string, history: any[], userText: string, key: string | null) {
     const apiKey = key || process.env.GEMINI_API_KEY;
     if (!apiKey) throw new Error("API_KEY missing");
+    
+    // 🧠 Proper Gemini Context Array
+    const contents = history.map(msg => ({
+        role: msg.role === "assistant" ? "model" : "user",
+        parts: [{ text: msg.content }]
+    }));
+    contents.push({ role: "user", parts: [{ text: userText }] });
+
     const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: prompt }] }] })
+        body: JSON.stringify({ 
+            system_instruction: { parts: { text: systemPrompt } },
+            contents: contents 
+        })
     });
     const data = await res.json();
     if (!res.ok) throw new Error("Gemini Error: " + JSON.stringify(data));
     return data.candidates[0].content.parts[0].text;
 }
 
-async function callOpenAI(model: string, prompt: string, key: string | null) {
+async function callOpenAI(model: string, systemPrompt: string, history: any[], userText: string, key: string | null) {
     const apiKey = key || process.env.OPENAI_API_KEY;
     if (!apiKey) throw new Error("API_KEY missing");
+    
+    // 🧠 Proper OpenAI Context Array
+    const messages = [
+        { role: "system", content: systemPrompt },
+        ...history,
+        { role: "user", content: userText }
+    ];
+
     const res = await fetch("https://api.openai.com/v1/chat/completions", {
         method: "POST", headers: { "Content-Type": "application/json", "Authorization": `Bearer ${apiKey}` },
-        body: JSON.stringify({ model: model, messages: [{ role: "user", content: prompt }] })
+        body: JSON.stringify({ model: model, messages: messages })
     });
     const data = await res.json();
     if (!res.ok) throw new Error("OpenAI Error: " + JSON.stringify(data));
     return data.choices[0].message.content;
 }
 
-async function callClaude(model: string, prompt: string, key: string | null) {
+async function callClaude(model: string, systemPrompt: string, history: any[], userText: string, key: string | null) {
     const apiKey = key || process.env.ANTHROPIC_API_KEY;
     if (!apiKey) throw new Error("API_KEY missing");
     const res = await fetch("https://api.anthropic.com/v1/messages", {
         method: "POST", headers: { "Content-Type": "application/json", "x-api-key": apiKey, "anthropic-version": "2023-06-01" },
-        body: JSON.stringify({ model: model, max_tokens: 1024, messages: [{ role: "user", content: prompt }] })
+        body: JSON.stringify({ 
+            model: model, 
+            max_tokens: 1024, 
+            system: systemPrompt,
+            messages: [...history, { role: "user", content: userText }] 
+        })
     });
     const data = await res.json();
     if (!res.ok) throw new Error("Claude Error: " + JSON.stringify(data));
@@ -144,7 +168,7 @@ export async function POST(req: Request) {
         if (!config || !config.telegram_token) return NextResponse.json({ success: true });
 
         const ownerEmail = config.email;
-        const configId = config.id; // 💎 UNIQUE ID FOR TRACKING
+        const configId = config.id; 
         const telegramToken = config.telegram_token;
         
         // Multi-Channel Persona Support
@@ -223,19 +247,25 @@ export async function POST(req: Request) {
             }
         } catch (e) {}
 
+        // 🧠 MEMORY ENGINE UPGRADE: Fetch 20 messages (10 user, 10 bot)
         const { data: pastChats } = await supabase
             .from("chat_history")
             .select("sender_type, message")
             .eq("email", ownerEmail)
             .eq("platform_chat_id", chatId)
             .order("created_at", { ascending: false })
-            .limit(4);
+            .limit(20);
 
-        let memoryHistory = pastChats && pastChats.length > 0 
-            ? pastChats.reverse().map(chat => `${chat.sender_type.toUpperCase()}: ${chat.message}`).join("\n") 
-            : "";
+        // 🧠 Format history into Array instead of one big string
+        let historyArray: any[] = [];
+        if (pastChats && pastChats.length > 0) {
+            historyArray = pastChats.reverse().map(chat => ({
+                role: chat.sender_type === "bot" ? "assistant" : "user",
+                content: chat.message
+            }));
+        }
 
-        const fullContext = `${ENTERPRISE_GUARDRAIL}\n\nSystem Instructions: ${systemPrompt}\n\nCompany Knowledge:\n${customKnowledge ? customKnowledge : "None."}\n\nMemory:\n${memoryHistory}\n\nUser: ${userText}`;
+        const fullSystemContext = `${ENTERPRISE_GUARDRAIL}\n\nSystem Instructions: ${systemPrompt}\n\nCompany Knowledge:\n${customKnowledge ? customKnowledge : "None."}`;
         
         await supabase.from("chat_history").insert({ 
             email: ownerEmail, platform: "telegram", platform_chat_id: chatId, customer_name: customerName, sender_type: "user", message: crmLogMessage 
@@ -250,10 +280,9 @@ export async function POST(req: Request) {
         const words = userText.split(/\s+/).length;
         const usageRatio = isUnlimited ? 0 : (tokensUsed / tokensAllocated) * 100;
         
-        // 🚀 TIERED MODELS CONFIGURATION (Actual API Strings)
-        const GEMINI_CHEAP = "gemini-1.5-flash-8b"; // Or 'gemini-2.0-flash-lite' when generally available
-        const GEMINI_MID = "gemini-1.5-flash";      // The workhorse
-        const GEMINI_PREMIUM = "gemini-1.5-pro";    // Complex tasks
+        const GEMINI_CHEAP = "gemini-1.5-flash-8b"; 
+        const GEMINI_MID = "gemini-1.5-flash";      
+        const GEMINI_PREMIUM = "gemini-1.5-pro";    
         
         const GPT_CHEAP = "gpt-4o-mini";
         const GPT_MID = "gpt-4o";
@@ -266,9 +295,7 @@ export async function POST(req: Request) {
         let targetProvider = provider;
         let targetModel = "";
 
-        // 🧠 COMPLEXITY & BUDGET ROUTER
         if (provider === "omni") {
-            // OMNI BUNDLE (Cross-Provider allowed)
             if (usageRatio >= 80) {
                 targetProvider = "google"; targetModel = GEMINI_CHEAP; 
             } else if (usageRatio >= 60) {
@@ -279,14 +306,11 @@ export async function POST(req: Request) {
                 else { targetProvider = "anthropic"; targetModel = CLAUDE_PREMIUM; } 
             }
         } else {
-            // NORMAL PLAN (Single Provider Strict Logic)
             if (usageRatio >= 85) {
-                // High Budget Danger: Force Cheapest Model of their chosen provider
                 if (provider === "openai") targetModel = GPT_CHEAP;
                 else if (provider === "anthropic") targetModel = CLAUDE_CHEAP;
                 else targetModel = GEMINI_CHEAP;
             } else {
-                // Adaptive by Complexity (Word Count)
                 if (provider === "openai") targetModel = words < 40 ? GPT_CHEAP : (words > 150 ? GPT_PREMIUM : GPT_MID);
                 else if (provider === "anthropic") targetModel = words < 40 ? CLAUDE_CHEAP : (words > 150 ? CLAUDE_PREMIUM : CLAUDE_MID);
                 else targetModel = words < 40 ? GEMINI_CHEAP : (words > 150 ? GEMINI_PREMIUM : GEMINI_MID);
@@ -295,34 +319,31 @@ export async function POST(req: Request) {
 
         // ⚡ EXECUTION & FALLBACK ENGINE
         try {
-            if (targetProvider === "anthropic") aiResponse = await callClaude(targetModel, fullContext, userApiKey);
-            else if (targetProvider === "openai") aiResponse = await callOpenAI(targetModel, fullContext, userApiKey);
-            else aiResponse = await callGemini(targetModel, fullContext, userApiKey);
+            if (targetProvider === "anthropic") aiResponse = await callClaude(targetModel, fullSystemContext, historyArray, userText, userApiKey);
+            else if (targetProvider === "openai") aiResponse = await callOpenAI(targetModel, fullSystemContext, historyArray, userText, userApiKey);
+            else aiResponse = await callGemini(targetModel, fullSystemContext, historyArray, userText, userApiKey);
             wasSuccessful = true;
         } catch (err1) {
             console.error(`[AI Error] ${targetModel} failed.`);
             
-            // 🛡️ FALLBACK LOGIC
             if (provider === "omni") {
-                // CROSS-PROVIDER FALLBACK
                 console.log("[Omni Fallback] Routing to GPT-4o-mini...");
                 try {
-                    aiResponse = await callOpenAI(GPT_CHEAP, fullContext, userApiKey);
+                    aiResponse = await callOpenAI(GPT_CHEAP, fullSystemContext, historyArray, userText, userApiKey);
                     wasSuccessful = true;
                 } catch (err2) {
                     console.log("[Omni Fallback 2] Routing to Gemini Flash...");
                     try {
-                        aiResponse = await callGemini(GEMINI_CHEAP, fullContext, userApiKey);
+                        aiResponse = await callGemini(GEMINI_CHEAP, fullSystemContext, historyArray, userText, userApiKey);
                         wasSuccessful = true;
                     } catch (err3) { console.error("[Omni] All cross-provider fallbacks failed."); }
                 }
             } else {
-                // INTRA-PROVIDER FALLBACK (Protecting tokens for single-provider users)
                 console.log(`[Intra-Provider Fallback] ${provider} downgrading to cheaper model...`);
                 try {
-                    if (provider === "anthropic") aiResponse = await callClaude(CLAUDE_CHEAP, fullContext, userApiKey);
-                    else if (provider === "openai") aiResponse = await callOpenAI(GPT_CHEAP, fullContext, userApiKey);
-                    else aiResponse = await callGemini(GEMINI_CHEAP, fullContext, userApiKey);
+                    if (provider === "anthropic") aiResponse = await callClaude(CLAUDE_CHEAP, fullSystemContext, historyArray, userText, userApiKey);
+                    else if (provider === "openai") aiResponse = await callOpenAI(GPT_CHEAP, fullSystemContext, historyArray, userText, userApiKey);
+                    else aiResponse = await callGemini(GEMINI_CHEAP, fullSystemContext, historyArray, userText, userApiKey);
                     wasSuccessful = true;
                 } catch (err2) {
                     console.error(`[Intra-Provider] Fallback failed for ${provider}.`);
@@ -338,7 +359,6 @@ export async function POST(req: Request) {
             if (!isUnlimited) {
                 updatePayload.tokens_used = tokensUsed + 1;
             }
-            // 🚀 FIXED: Update EXACT bot by its unique ID, not by email!
             await supabase.from("user_configs").update(updatePayload).eq("id", configId);
         }
         
@@ -354,13 +374,12 @@ export async function POST(req: Request) {
         return NextResponse.json({ success: true });
 
     } catch (error: any) {
-        console.error("Critical Webhook Error:", error); // Logs error to Vercel console
+        console.error("Critical Webhook Error:", error); 
         
-        // Forward system error directly to the Telegram chat for easy debugging
         try {
             const body = await req.clone().json().catch(() => ({})); 
             const chatId = body?.message?.chat?.id;
-            const token = process.env.TELEGRAM_BOT_TOKEN; // Can also be extracted from searchParams for multi-tenant setups
+            const token = process.env.TELEGRAM_BOT_TOKEN; 
             
             if (chatId && token) {
                 await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
