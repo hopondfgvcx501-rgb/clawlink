@@ -354,6 +354,47 @@ export async function POST(req: Request) {
         return NextResponse.json({ success: true });
 
     } catch (error: any) {
+        console.error("Critical Webhook Error:", error); // Ye Vercel logs mein laal dikhayega
+        
+        // Error sidha Telegram par bhejna (Debugging ke liye)
+        try {
+            const body = await req.clone().json().catch(() => ({})); 
+            const chatId = body?.message?.chat?.id;
+            const token = process.env.TELEGRAM_BOT_TOKEN; // Ya aap url parameter se bhi nikal sakte hain agar multi-tenant hai
+            
+            if (chatId && token) {
+                await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+                    method: "POST", 
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ 
+                        chat_id: chatId, 
+                        text: `⚠️ [SYSTEM ERROR]: ${error.message || "Unknown Error Occurred"}` 
+                    })
+                });
+            }
+        } catch (error: any) {
+        console.error("Critical Webhook Error:", error); // Ye Vercel logs mein laal dikhayega
+        
+        // Error sidha Telegram par bhejna (Debugging ke liye)
+        try {
+            const body = await req.clone().json().catch(() => ({})); 
+            const chatId = body?.message?.chat?.id;
+            const token = process.env.TELEGRAM_BOT_TOKEN; // Ya aap url parameter se bhi nikal sakte hain agar multi-tenant hai
+            
+            if (chatId && token) {
+                await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+                    method: "POST", 
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ 
+                        chat_id: chatId, 
+                        text: `⚠️ [SYSTEM ERROR]: ${error.message || "Unknown Error Occurred"}` 
+                    })
+                });
+            }
+        } catch (e) {
+            console.error("Failed to send error to Telegram", e);
+        }
+
         return NextResponse.json({ success: true }); 
     }
 }
