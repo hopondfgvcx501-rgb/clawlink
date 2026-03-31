@@ -1035,6 +1035,31 @@ export default function Home() {
                       </a>
                     </div>
                     <div className="p-5 rounded-2xl" style={{background:"rgba(255,255,255,0.03)",border:"1px solid rgba(255,255,255,0.07)"}}>
+                      
+                      {/* 🚀 CLAWLINK WEBHOOK COPY SECTION */}
+                      <div className="mb-6 p-4 rounded-xl" style={{background:"rgba(0,0,0,0.3)", border:"1px dashed rgba(37,211,102,0.3)"}}>
+                        <p className="text-[11px] font-bold text-[#25D366] mb-3 flex items-center gap-2">
+                          🔗 Step 1: Copy these to Meta Webhook
+                        </p>
+                        
+                        <div className="mb-3">
+                          <label className="block text-[9px] font-bold uppercase tracking-widest text-gray-500 mb-1.5">Webhook URL</label>
+                          <div className="flex items-center gap-2">
+                            <input readOnly value="https://www.clawlinkai.com/api/webhook/whatsapp" className="w-full bg-black/50 text-gray-300 p-2.5 rounded-lg text-[11px] border border-white/10 outline-none font-mono" />
+                            <button type="button" onClick={() => copyToClipboard("https://www.clawlinkai.com/api/webhook/whatsapp")} className="bg-white/10 hover:bg-white/20 text-white px-4 py-2.5 rounded-lg text-[11px] font-bold transition-all">Copy</button>
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="block text-[9px] font-bold uppercase tracking-widest text-gray-500 mb-1.5">Verify Token</label>
+                          <div className="flex items-center gap-2">
+                            <input readOnly value="clawlinkmeta2026" className="w-full bg-black/50 text-gray-300 p-2.5 rounded-lg text-[11px] border border-white/10 outline-none font-mono" />
+                            <button type="button" onClick={() => copyToClipboard("clawlinkmeta2026")} className="bg-white/10 hover:bg-white/20 text-white px-4 py-2.5 rounded-lg text-[11px] font-bold transition-all">Copy</button>
+                          </div>
+                        </div>
+                      </div>
+                      {/* 🚀 END CLAWLINK WEBHOOK COPY SECTION */}
+
                       <label className="block text-[9px] font-bold uppercase tracking-widest text-gray-400 mb-3">Phone Number ID</label>
                       <input type="text" value={waPhoneId} onChange={e=>setWaPhoneId(e.target.value)} placeholder="e.g. 1044727838716942"
                         className="w-full px-4 py-3.5 rounded-xl text-[13px] text-white font-mono mb-4 outline-none transition-colors duration-150"

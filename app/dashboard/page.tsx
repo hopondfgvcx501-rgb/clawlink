@@ -339,6 +339,8 @@ export default function Dashboard() {
 
   const webChatScript = `<script src="https://www.clawlinkai.com/api/widget?id=${session?.user?.email}" defer></script>`;
 
+  const copyToClipboard = (t: string) => { navigator.clipboard.writeText(t); alert("Copied!"); };
+
   const copyScript = () => {
     navigator.clipboard.writeText(webChatScript);
     setCopiedScript(true);
@@ -757,6 +759,31 @@ export default function Dashboard() {
             <div className="absolute top-0 right-0 p-6 opacity-10 pointer-events-none"><BrainCircuit className="w-32 h-32 text-green-500" /></div>
             <h3 className="text-lg font-black text-green-400 mb-2 tracking-wide flex items-center gap-2 relative z-10">🧠 Custom Knowledge Base (RAG)</h3>
             <p className="text-sm text-gray-400 mb-6 relative z-10">Train your AI with your specific business data. Paste product details, FAQs, or policies below to convert them into vectors.</p>
+            
+            {/* 🚀 CLAWLINK WEBHOOK COPY SECTION */}
+            <div className="mb-6 p-4 rounded-xl relative z-10" style={{background:"rgba(0,0,0,0.3)", border:"1px dashed rgba(37,211,102,0.3)"}}>
+              <p className="text-[11px] font-bold text-[#25D366] mb-3 flex items-center gap-2">
+                🔗 Step 1: Copy these to Meta Webhook
+              </p>
+              
+              <div className="mb-3">
+                <label className="block text-[9px] font-bold uppercase tracking-widest text-gray-500 mb-1.5">Webhook URL</label>
+                <div className="flex items-center gap-2">
+                  <input readOnly value="https://www.clawlinkai.com/api/webhook/whatsapp" className="w-full bg-black/50 text-gray-300 p-2.5 rounded-lg text-[11px] border border-white/10 outline-none font-mono" />
+                  <button type="button" onClick={() => copyToClipboard("https://www.clawlinkai.com/api/webhook/whatsapp")} className="bg-white/10 hover:bg-white/20 text-white px-4 py-2.5 rounded-lg text-[11px] font-bold transition-all">Copy</button>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[9px] font-bold uppercase tracking-widest text-gray-500 mb-1.5">Verify Token</label>
+                <div className="flex items-center gap-2">
+                  <input readOnly value="clawlinkmeta2026" className="w-full bg-black/50 text-gray-300 p-2.5 rounded-lg text-[11px] border border-white/10 outline-none font-mono" />
+                  <button type="button" onClick={() => copyToClipboard("clawlinkmeta2026")} className="bg-white/10 hover:bg-white/20 text-white px-4 py-2.5 rounded-lg text-[11px] font-bold transition-all">Copy</button>
+                </div>
+              </div>
+            </div>
+            {/* 🚀 END CLAWLINK WEBHOOK COPY SECTION */}
+
             <textarea rows={4} value={knowledgeText} onChange={(e) => setKnowledgeText(e.target.value)} placeholder="Paste your business information here..." className="w-full bg-[#07070A] border border-green-500/30 rounded-xl p-4 text-sm text-green-100 focus:border-green-400 focus:shadow-[0_0_15px_rgba(34,197,94,0.2)] focus:outline-none transition-all resize-none mb-4 font-mono placeholder:text-green-900/50 relative z-10 custom-scrollbar" />
             <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6 relative z-10">
               <p className="text-[10px] text-gray-500 font-mono flex items-center gap-1"><Database className="w-3 h-3"/> Encrypted in Vector DB</p>
