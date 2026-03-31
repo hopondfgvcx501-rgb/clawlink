@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
-import { Providers } from "./providers";
-import "./globals.css"; //
+import Providers from "./providers"; // 👈 Yahan se curly brackets { } hata diye!
+import "./globals.css";
 
 export const metadata: Metadata = {
   title: "ClawLink | AI Agent Deployer",
