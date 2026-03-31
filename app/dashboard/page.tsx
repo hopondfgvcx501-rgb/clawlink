@@ -337,7 +337,7 @@ export default function Dashboard() {
     window.open(url, "_blank");
   };
 
-  const webChatScript = `<script src="https://clawlink-six.vercel.app/api/widget?id=${session?.user?.email}" defer></script>`;
+  const webChatScript = `<script src="https://www.clawlinkai.com/api/widget?id=${session?.user?.email}" defer></script>`;
 
   const copyScript = () => {
     navigator.clipboard.writeText(webChatScript);

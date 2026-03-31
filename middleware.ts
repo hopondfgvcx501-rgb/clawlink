@@ -18,7 +18,7 @@ export function middleware(req: NextRequest) {
             'https://www.clawlink.com',
             'https://clawlinkai.com', 
             'https://www.clawlinkai.com', // <-- 🚀 FIXED: Added your active WWW domain!
-            'https://clawlink-six.vercel.app', 
+            'https://www.clawlinkai.com', 
             'http://localhost:3000'
         ];
 

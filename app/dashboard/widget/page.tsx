@@ -133,7 +133,7 @@ export default function WebWidgetDashboard() {
   const affiliateId = session?.user?.email ? Buffer.from(session.user.email).toString('base64').substring(0, 10) : "USER_ID";
   
   const snippet = `<script 
-  src="https://clawlink-six.vercel.app/widget.js" 
+  src="https://www.clawlinkai.com/widget.js" 
   data-client-id="${affiliateId}"
   data-color="#3B82F6"
   defer>

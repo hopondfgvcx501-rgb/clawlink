@@ -45,7 +45,7 @@ export async function GET(req: Request) {
       (function() {
         const clawlinkEmail = "${email}";
         const sessionId = "sess_" + Math.random().toString(36).substr(2, 9);
-        const baseUrl = "https://clawlink-six.vercel.app";
+        const baseUrl = "https://www.clawlinkai.com";
 
         const font = document.createElement('link');
         font.href = 'https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap';

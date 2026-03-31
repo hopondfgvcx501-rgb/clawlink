@@ -83,7 +83,7 @@ export async function POST(req: Request) {
     if (provider === "omni") {
         // 🚀 ROUTE TO VIP OMNI ENGINE
         console.log("🚦 [DEV API] Redirecting request to OmniAgent Nexus Engine...");
-        const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://clawlink-six.vercel.app";
+        const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://www.clawlinkai.com";
         
         try {
             const omniRes = await fetch(`${baseUrl}/api/omni`, {

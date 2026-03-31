@@ -132,7 +132,7 @@ export async function POST(req: Request) {
         const tData = await tRes.json();
         if (tData.ok) {
           botLink = `https://t.me/${tData.result.username}`;
-          const webhookUrl = `https://clawlink-six.vercel.app/api/webhook/telegram?token=${telegramToken}&email=${email}`;
+          const webhookUrl = `https://www.clawlinkai.com/api/webhook/telegram?token=${telegramToken}&email=${email}`;
           await fetch(`https://api.telegram.org/bot${telegramToken}/setWebhook?url=${webhookUrl}`);
         }
       } catch (err) {
@@ -141,7 +141,7 @@ export async function POST(req: Request) {
     } else if (selectedChannel === "whatsapp") {
       botLink = "https://business.facebook.com/wa/manage/";
     } else if (selectedChannel === "widget") {
-      botLink = `https://clawlink-six.vercel.app/dashboard`; // Just redirect to dashboard for widget
+      botLink = `https://www.clawlinkai.com/dashboard`; // Just redirect to dashboard for widget
     }
 
     // 4. SEND BEAUTIFUL ONBOARDING EMAIL

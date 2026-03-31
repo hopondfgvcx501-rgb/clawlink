@@ -32,7 +32,7 @@ export async function POST(req: Request) {
           <p style="color: #cccccc; font-size: 16px;">Hello ${name || 'User'},</p>
           <p style="color: #cccccc; font-size: 16px;">Your ClawLink AI Agent has consumed <strong>${usage}</strong> out of <strong>${limit}</strong> monthly messages (80% Limit Reached).</p>
           <p style="color: #cccccc; font-size: 16px;">To ensure zero downtime for your customers, please upgrade your plan from the dashboard.</p>
-          <a href="https://clawlink-six.vercel.app/dashboard" style="display: inline-block; background-color: #f97316; color: #ffffff; text-decoration: none; padding: 14px 28px; border-radius: 8px; font-weight: bold; margin-top: 20px;">Upgrade Plan Now</a>
+          <a href="https://www.clawlinkai.com/dashboard" style="display: inline-block; background-color: #f97316; color: #ffffff; text-decoration: none; padding: 14px 28px; border-radius: 8px; font-weight: bold; margin-top: 20px;">Upgrade Plan Now</a>
           <p style="color: #666666; font-size: 12px; margin-top: 40px;">© 2026 ClawLink Inc. All rights reserved.</p>
         </div>
       `;
@@ -43,7 +43,7 @@ export async function POST(req: Request) {
           <p style="color: #cccccc; font-size: 16px;">Hello ${name || 'User'},</p>
           <p style="color: #cccccc; font-size: 16px;">Your ClawLink AI Agent has reached its 100% capacity (${limit} messages).</p>
           <p style="color: #cccccc; font-size: 16px;">We have activated the <strong>Customer Safe-Fallback mode</strong>. Your customers will now receive a scheduled maintenance message to protect your brand image.</p>
-          <a href="https://clawlink-six.vercel.app/dashboard" style="display: inline-block; background-color: #ef4444; color: #ffffff; text-decoration: none; padding: 14px 28px; border-radius: 8px; font-weight: bold; margin-top: 20px;">Renew / Upgrade Immediately</a>
+          <a href="https://www.clawlinkai.com/dashboard" style="display: inline-block; background-color: #ef4444; color: #ffffff; text-decoration: none; padding: 14px 28px; border-radius: 8px; font-weight: bold; margin-top: 20px;">Renew / Upgrade Immediately</a>
           <p style="color: #666666; font-size: 12px; margin-top: 40px;">© 2026 ClawLink Inc. All rights reserved.</p>
         </div>
       `;

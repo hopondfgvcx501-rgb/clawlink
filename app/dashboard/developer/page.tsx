@@ -54,7 +54,7 @@ export default function DeveloperHub() {
     return <div className="min-h-screen bg-[#0A0A0B] flex items-center justify-center text-yellow-500 font-mono animate-pulse">INITIALIZING DEVELOPER ENVIRONMENT...</div>;
   }
 
-  const apiUrl = "https://clawlink-six.vercel.app/api/v1/chat";
+  const apiUrl = "https://www.clawlinkai.com/api/v1/chat";
 
   return (
     <div className="min-h-screen bg-[#0A0A0B] text-white p-6 md:p-12 font-sans selection:bg-yellow-500/30">
