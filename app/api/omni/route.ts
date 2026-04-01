@@ -56,10 +56,17 @@ async function callOpenAI(models: string[], systemPrompt: string, history: any[]
 // ==========================================
 // 🥈 HELPER 2: GOOGLE (GEMINI)
 // ==========================================
-async function callGemini(models: string[], systemPrompt: string, prompt: string, key: string | null) {
+async function callGemini(models: string[], systemPrompt: string, history: any[], prompt: string, key: string | null) {
   const geminiKey = key || process.env.GEMINI_API_KEY || "";
   const finalSystemPrompt = `${ENTERPRISE_GUARDRAIL}\n\n${systemPrompt || ""}`;
   
+  // 🧠 Added Memory Array Logic to Gemini Omni
+  const contents = history.map(msg => ({
+      role: msg.role === "assistant" ? "model" : "user",
+      parts: [{ text: msg.content }]
+  }));
+  contents.push({ role: "user", parts: [{ text: prompt }] });
+
   for (const model of models) {
     try {
       console.log(`🟢 [OMNI-NEXUS] Trying Gemini Model: ${model}`);
@@ -67,13 +74,14 @@ async function callGemini(models: string[], systemPrompt: string, prompt: string
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          contents: [{ parts: [{ text: `${finalSystemPrompt ? `System Rules: ${finalSystemPrompt}\n\n` : ''}User Query: ${prompt}` }] }]
+          system_instruction: { parts: { text: finalSystemPrompt } },
+          contents: contents
         }),
       });
 
       if (res.ok) {
         const data = await res.json();
-        if (data.candidates && data.candidates[0].content.parts[0].text) {
+        if (data.candidates && data.candidates[0]?.content?.parts[0]?.text) {
            return { success: true, provider: "gemini", model: model, reply: data.candidates[0].content.parts[0].text };
         }
       } else {
@@ -137,7 +145,6 @@ export async function POST(req: Request) {
 
     console.log(`⚡ [OMNI-NEXUS] Request intercepted. Engaging Deep Fallback Matrix... (ForceCheap: ${forceCheap})`);
 
-    // Tiered Models based on cost/capability
     const geminiModelsCheap = ["gemini-1.5-flash-8b", "gemini-1.5-flash"];
     const geminiModelsPremium = ["gemini-1.5-pro", "gemini-1.5-flash"];
     
@@ -147,30 +154,26 @@ export async function POST(req: Request) {
     const claudeModelsCheap = ["claude-3-haiku-20240307"];
     const claudeModelsPremium = ["claude-3-opus-20240229", "claude-3-5-sonnet-20240620", "claude-3-haiku-20240307"];
 
-    // Default to a balanced approach if words aren't passed
     const isComplexQuery = userWords > 150;
 
     // ======================================================================
-    // 🧠 SMART COST-SAVING ROUTE (When forceCheap is true from Webhooks/Widget OR simple query)
+    // 🧠 SMART COST-SAVING ROUTE
     // ======================================================================
     if (forceCheap || (!isComplexQuery && !forceCheap)) {
       console.log(`💰 [OMNI-NEXUS] Optimal Routing Active. (ForceCheap: ${forceCheap}, Complex: ${isComplexQuery})`);
       
-      // Try Gemini Cheap first
-      const geminiResult = await callGemini(geminiModelsCheap, systemPrompt, prompt, apiKey);
+      const geminiResult = await callGemini(geminiModelsCheap, systemPrompt, history, prompt, apiKey);
       if (geminiResult.success) {
         console.log(`✅ [OMNI-NEXUS] Success via ${geminiResult.provider} (${geminiResult.model})`);
         return NextResponse.json(geminiResult);
       }
 
-      // If Gemini fails, fallback to OpenAI Mini
       const gptResult = await callOpenAI(openAIModelsCheap, systemPrompt, history, prompt, apiKey);
       if (gptResult.success) {
         console.log(`✅ [OMNI-NEXUS] Backup Success via ${gptResult.provider} (${gptResult.model})`);
         return NextResponse.json(gptResult);
       }
       
-      // Last resort cheap Claude
       const claudeResult = await callAnthropic(claudeModelsCheap, history, systemPrompt, prompt, apiKey);
       if (claudeResult.success) {
          console.log(`✅ [OMNI-NEXUS] Backup Success via ${claudeResult.provider} (${claudeResult.model})`);
@@ -183,37 +186,25 @@ export async function POST(req: Request) {
     else {
       console.log("💎 [OMNI-NEXUS] Complex Query Detected. Engaging Premium Tier Models.");
       
-      // ----------------------------------------------------------------------
-      // PRIORITY 1: CLAUDE PREMIUM (Best for complex reasoning)
-      // ----------------------------------------------------------------------
       const claudeResult = await callAnthropic(claudeModelsPremium, history, systemPrompt, prompt, apiKey);
       if (claudeResult.success) {
         console.log(`✅ [OMNI-NEXUS] Success via ${claudeResult.provider} (${claudeResult.model})`);
         return NextResponse.json(claudeResult);
       }
 
-      // ----------------------------------------------------------------------
-      // PRIORITY 2: OPENAI PREMIUM
-      // ----------------------------------------------------------------------
       const openAIResult = await callOpenAI(openAIModelsPremium, systemPrompt, history, prompt, apiKey);
       if (openAIResult.success) {
         console.log(`✅ [OMNI-NEXUS] Success via ${openAIResult.provider} (${openAIResult.model})`);
         return NextResponse.json(openAIResult);
       }
 
-      // ----------------------------------------------------------------------
-      // PRIORITY 3: GEMINI PREMIUM (Reliable Fallback)
-      // ----------------------------------------------------------------------
-      const geminiResult = await callGemini(geminiModelsPremium, systemPrompt, prompt, apiKey);
+      const geminiResult = await callGemini(geminiModelsPremium, systemPrompt, history, prompt, apiKey);
       if (geminiResult.success) {
         console.log(`✅ [OMNI-NEXUS] Success via ${geminiResult.provider} (${geminiResult.model})`);
         return NextResponse.json(geminiResult);
       }
     }
 
-    // ----------------------------------------------------------------------
-    // 🚨 ABSOLUTE FAILURE (All Tiers & Models Exhausted)
-    // ----------------------------------------------------------------------
     console.error("❌ [OMNI-NEXUS] CRITICAL: Entire Fallback Matrix Exhausted. No providers available.");
     return NextResponse.json({ 
       success: false, 
