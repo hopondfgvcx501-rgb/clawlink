@@ -1,21 +1,21 @@
 import type { Metadata } from "next";
-import Providers from "./providers"; // 👈 Yahan se curly brackets { } hata diye!
+import Providers from "./providers"; // Removed curly brackets {} for default export
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "ClawLink | AI Agent Deployer",
-  description: "One-click deploy your own 24/7 active AI agent on Telegram and Meta Cloud under 30 seconds. Powered by GPT, Claude, and Gemini.",
+  title: "ClawLink | 1-Click OpenClaw Deploy & 24/7 AI Agent in 30s",
+  description: "Launch your 24/7 AI Agent in just 30 seconds. Experience true 1-click OpenClaw deployment powered by our bulletproof Omni-Fallback Engine (Claude 🔄 GPT-4o 🔄 Gemini). Zero downtime, infinite scale.",
   manifest: "/manifest.json",
   icons: {
     apple: "/icon-192x192.png",
   },
   metadataBase: new URL("https://www.clawlinkai.com"),
   verification: {
-    google: "QgkpU_LPUkzu-FGEhCXL-kTRLY8_e_FmptmJmj0ddUU",
+    google: "QgkpU_LPUkzu-FGEhCXL-kTRLY8_e_FmptmJmj0ddUU", // Google Search Console Verification ID
   },
   openGraph: {
-    title: "ClawLink Enterprise AI",
-    description: "Deploy auto-fallback AI bots on Telegram & WhatsApp instantly.",
+    title: "ClawLink | 1-Click OpenClaw Deploy & 24/7 AI Agent",
+    description: "Launch your 24/7 AI Agent in just 30 seconds. Powered by our bulletproof Omni-Fallback Engine (Claude 🔄 GPT-4o 🔄 Gemini).",
     url: "https://www.clawlinkai.com",
     siteName: "ClawLink",
     images: [
@@ -31,8 +31,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "ClawLink | Enterprise AI",
-    description: "One-click deploy your own 24/7 active AI agent under 30 seconds.",
+    title: "ClawLink | 1-Click OpenClaw Deploy",
+    description: "Launch your 24/7 AI Agent in just 30 seconds. Powered by our bulletproof Omni-Fallback Engine. Zero downtime, infinite scale.",
     images: ["https://images.unsplash.com/photo-1633356122544-f134324a6cee?q=80&w=1200&auto=format&fit=crop"],
   },
 };
