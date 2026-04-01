@@ -45,9 +45,21 @@ export async function POST(req: NextRequest) {
 
       if (userEmail) {
         let aiProvider = "openai";
-        if (rawModel.includes("claude") || rawModel.includes("anthropic")) aiProvider = "anthropic";
-        else if (rawModel.includes("gemini") || rawModel.includes("google")) aiProvider = "google";
-        else if (rawModel.includes("omni") || rawModel.includes("multi_model") || rawModel.includes("nexus")) aiProvider = "multi_model";
+        // 🚀 THE NEW MASTER MAPPER: Find exact engine version
+        let exactModelVersion = "gpt-4o-mini"; // Default fallback
+
+        if (rawModel.includes("claude") || rawModel.includes("anthropic")) {
+            aiProvider = "anthropic";
+            exactModelVersion = "claude-3-opus-20240229"; // Replace with your exact claude version if different
+        }
+        else if (rawModel.includes("gemini") || rawModel.includes("google")) {
+            aiProvider = "google";
+            exactModelVersion = "gemini-1.5-flash-8b"; // 👈 Your exact Gemini version
+        }
+        else if (rawModel.includes("omni") || rawModel.includes("multi_model") || rawModel.includes("nexus")) {
+            aiProvider = "multi_model";
+            exactModelVersion = "omni-nexus-engine";
+        }
 
         // 🚀 MASTER PRICING UPGRADE LIMITS
         let isUnlimited = false;
@@ -66,7 +78,7 @@ export async function POST(req: NextRequest) {
             newExpiryDate.setDate(newExpiryDate.getDate() + 30); 
         }
 
-        // 🚀 SURGICAL FIX 2: Force inject `selected_channel` and all Keys into DB Payload
+        // 🚀 SURGICAL FIX 2: Force inject `selected_channel` and `current_model_version`
         const payload: any = {
             plan: planName,            
             is_unlimited: isUnlimited, 
@@ -74,10 +86,11 @@ export async function POST(req: NextRequest) {
             monthly_message_limit: monthlyLimit,
             plan_expiry_date: newExpiryDate.toISOString(),
             plan_status: 'Active',
-            selected_channel: selectedChannel // <--- THE MISSING LINK FIXED!
+            selected_channel: selectedChannel, 
+            current_model_version: exactModelVersion // <--- 🚀 BOOM! THE ULTIMATE FIX!
         };
 
-        // 🚀 FORCE SAVE ALL TOKENS (No data lost anymore)
+        // 🚀 FORCE SAVE ALL TOKENS
         if (notes.telegram_token) payload.telegram_token = notes.telegram_token;
         if (notes.whatsapp_token) payload.whatsapp_token = notes.whatsapp_token;
         if (notes.whatsapp_phone_id) payload.whatsapp_phone_id = notes.whatsapp_phone_id;
@@ -98,7 +111,6 @@ export async function POST(req: NextRequest) {
         if (notes.whatsapp_token) { botIdentifier = notes.whatsapp_token; botColumn = "whatsapp_token"; }
 
         if (isRenewal) {
-            // Renewal Logic: Find exact bot and update
             let query = supabase.from("user_configs").select("id").eq("email", userEmail);
             if (botColumn && botIdentifier) { query = query.eq(botColumn, botIdentifier); } 
             else { query = query.order("created_at", { ascending: false }); }
@@ -110,7 +122,6 @@ export async function POST(req: NextRequest) {
                 await supabase.from("user_configs").update(payload).eq("id", latestBot.id);
             }
         } else if (botIdentifier && botColumn) {
-            // New Purchase Logic (With specific channel/token)
             const { data } = await supabase.from("user_configs").select("id").eq("email", userEmail).eq(botColumn, botIdentifier).limit(1);
             const existingBot = data?.[0];
 
@@ -125,7 +136,6 @@ export async function POST(req: NextRequest) {
                 });
             }
         } else {
-            // New Purchase Logic (Without token or Widget selected)
             const { data } = await supabase.from("user_configs").select("id").eq("email", userEmail).limit(1);
             if (data && data[0]) {
                  await supabase.from("user_configs").update(payload).eq("id", data[0].id);
