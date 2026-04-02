@@ -20,6 +20,18 @@ export async function OPTIONS() {
     return new NextResponse(null, { status: 204, headers: corsHeaders });
 }
 
+// =========================================================================
+// 🛡️ SECURITY LOCK: ENTERPRISE DATA SANITIZER (XSS & Injection Blocker)
+// =========================================================================
+function sanitizeInput(input: string | null | undefined): string {
+    if (!input) return "";
+    return input
+        .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, "") // Remove malicious scripts
+        .replace(/<[^>]*>?/gm, "") // Remove HTML tags
+        .replace(/--/g, "") // Prevent SQL comment injection
+        .trim();
+}
+
 const ENTERPRISE_GUARDRAIL = `
 CRITICAL INSTRUCTION: You are an Enterprise AI Support Agent. 
 1. ANTI-HALLUCINATION LOCK: You must ONLY use the provided Company Knowledge to answer questions. 
@@ -33,7 +45,8 @@ CRITICAL INSTRUCTION: You are an Enterprise AI Support Agent.
 // =========================================================================
 export async function GET(req: Request) {
     const { searchParams } = new URL(req.url);
-    const email = searchParams.get("id"); 
+    // 🛡️ Sanitize the incoming ID/Email to prevent URL manipulation attacks
+    const email = sanitizeInput(searchParams.get("id")); 
 
     if (!email) {
         return new NextResponse("console.error('[ClawLink Widget] Missing Account ID.');", {
@@ -300,15 +313,21 @@ async function generateEmbedding(text: string) {
 // =========================================================================
 export async function POST(req: Request) {
     try {
-        const { email, message, audio, sessionId } = await req.json();
+        const body = await req.json();
 
-        let userText = message;
-        let crmLogMessage = message;
+        // 🛡️ SECURITY LOCK: Sanitize everything coming from the public internet
+        const email = sanitizeInput(body.email);
+        const rawMessage = body.message ? sanitizeInput(body.message) : "";
+        const sessionId = sanitizeInput(body.sessionId);
+        const audio = body.audio; // Base64 audio string
+
+        let userText = rawMessage;
+        let crmLogMessage = rawMessage;
 
         if (audio) {
             const transcription = await transcribeAudio(audio);
             if (transcription) {
-                userText = transcription;
+                userText = sanitizeInput(transcription);
                 crmLogMessage = `🎤 [Voice Note]: "${userText}"`;
             } else {
                 return NextResponse.json({ success: true, reply: "Sorry, I couldn't process your voice clearly. Could you type it?" }, { headers: corsHeaders });
@@ -319,14 +338,13 @@ export async function POST(req: Request) {
             return NextResponse.json({ success: false, error: "Missing required fields" }, { status: 400, headers: corsHeaders });
         }
 
-        // 🚀 SURGICAL FIX: Fetch ANY config associated with the user, prioritize the widget one if it exists, else use the default account constraints
+        // 🚀 SURGICAL FIX: Fetch ANY config associated with the user
         const { data: configList } = await supabase.from("user_configs").select("*").eq("email", email).order("created_at", { ascending: false }).limit(5);
         
         if (!configList || configList.length === 0) {
             return NextResponse.json({ success: false, error: "Configuration not found" }, { status: 404, headers: corsHeaders });
         }
 
-        // Try to find a widget specific config, if not just use their most recently created account config
         let config = configList.find(c => c.selected_channel === 'widget') || configList[0];
 
         const isUnlimited = config.is_unlimited || config.plan_name === "max" || config.plan_name === "ultra_max";
@@ -353,7 +371,7 @@ export async function POST(req: Request) {
                     query_embedding: queryVector, match_threshold: 0.65, match_count: 3, p_user_email: email
                 });
                 if (matchedDocs && matchedDocs.length > 0) {
-                    customKnowledge = matchedDocs.map((doc: any) => doc.content).join("\n\n");
+                    customKnowledge = matchedDocs.map((doc: any) => sanitizeInput(doc.content)).join("\n\n");
                 }
             }
         } catch (e) {}
@@ -367,8 +385,15 @@ export async function POST(req: Request) {
             .limit(5);
 
         let memoryHistory = "";
+        let historyArray: any[] = []; // Array for Omni fallback
         if (pastChats && pastChats.length > 0) {
-            memoryHistory = pastChats.reverse().map(chat => `${chat.sender_type.toUpperCase()}: ${chat.message}`).join("\n");
+            const reversed = pastChats.reverse();
+            memoryHistory = reversed.map(chat => `${chat.sender_type.toUpperCase()}: ${chat.message}`).join("\n");
+            
+            historyArray = reversed.map(chat => ({
+                role: chat.sender_type === "bot" ? "assistant" : "user",
+                content: chat.message
+            }));
         }
 
         const systemPrompt = config.system_prompt_widget || config.system_prompt || "You are a helpful AI assistant.";
@@ -395,53 +420,94 @@ export async function POST(req: Request) {
 
         const words = userText.split(/\s+/).length;
         const usageRatio = isUnlimited ? 0 : (messagesUsed / (monthlyLimit || 1)) * 100;
-        
-        const CHEAP_MODEL = "gemini-1.5-flash";
-        const MEDIUM_MODEL = "gpt-4o-mini";
-        const EXPENSIVE_MODEL = "claude-3-5-sonnet-20240620";
+        const forceCheap = !isUnlimited && usageRatio >= 80;
 
-        let targetProvider = "google";
-        let targetModel = CHEAP_MODEL;
-
+        // =========================================================================
+        // 🔒 THE MASTER OMNI ROUTER (Secure Internal Fetch for Web Widget)
+        // =========================================================================
         if (provider === "omni") {
-            if (usageRatio >= 80) {
-                targetProvider = "google"; targetModel = CHEAP_MODEL; 
-            } else if (usageRatio >= 60) {
-                if (words < 40) { targetProvider = "google"; targetModel = CHEAP_MODEL; }
-                else { targetProvider = "openai"; targetModel = MEDIUM_MODEL; }
-            } else {
-                if (words < 40) { targetProvider = "google"; targetModel = CHEAP_MODEL; }
-                else if (words < 150) { targetProvider = "openai"; targetModel = MEDIUM_MODEL; }
-                else { targetProvider = "anthropic"; targetModel = EXPENSIVE_MODEL; } 
-            }
-        } else {
-            if (usageRatio >= 80) {
-                targetProvider = "google"; targetModel = CHEAP_MODEL;
-            } else {
-                targetProvider = provider;
-                if (provider === "openai") targetModel = words < 40 ? "gpt-4o-mini" : "gpt-4o";
-                else if (provider === "anthropic") targetModel = words < 40 ? "claude-3-haiku-20240307" : "claude-3-5-sonnet-20240620";
-                else targetModel = "gemini-1.5-flash";
+            try {
+                const baseUrl = process.env.NEXT_PUBLIC_APP_URL || new URL(req.url).origin;
+                const engineRes = await fetch(`${baseUrl}/api/omni`, {
+                    method: "POST",
+                    headers: {
+                        "Authorization": `Bearer ${process.env.CLAWLINK_MASTER_SECRET}`,
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        prompt: userText,
+                        systemPrompt: `${ENTERPRISE_GUARDRAIL}\n\nSystem Instructions: ${systemPrompt}\n\nCompany Knowledge Base:\n${customKnowledge ? customKnowledge : "No specific company data found."}`,
+                        history: historyArray,
+                        apiKey: config.user_api_key,
+                        forceCheap: forceCheap,
+                        userWords: words
+                    })
+                });
+
+                const engineData = await engineRes.json();
+                
+                if (engineRes.ok && engineData.success) {
+                    aiResponse = engineData.reply;
+                    wasSuccessful = true;
+                } else {
+                    console.error("❌ [Widget Webhook] Omni Engine failed. Engaging Local Local logic.");
+                }
+            } catch (err) {
+                 console.error("Master fetch failed, proceeding to internal widget matrix.");
             }
         }
 
-        try {
-            if (targetProvider === "anthropic") aiResponse = await callClaude(targetModel, fullContext);
-            else if (targetProvider === "openai") aiResponse = await callOpenAI(targetModel, fullContext);
-            else aiResponse = await callGemini(targetModel, fullContext);
-            wasSuccessful = true;
-        } catch (err1) {
-            console.error(`[Widget AI Error] ${targetModel} failed. Routing to GPT Mini...`);
+        // =========================================================================
+        // ⚡ LOCAL EXECUTION & FALLBACK ENGINE (Runs if not Omni, or Omni fails)
+        // =========================================================================
+        if (!wasSuccessful) {
+            const CHEAP_MODEL = "gemini-1.5-flash";
+            const MEDIUM_MODEL = "gpt-4o-mini";
+            const EXPENSIVE_MODEL = "claude-3-5-sonnet-20240620";
+
+            let targetProvider = "google";
+            let targetModel = CHEAP_MODEL;
+
+            if (provider === "omni") {
+                if (usageRatio >= 80) {
+                    targetProvider = "google"; targetModel = CHEAP_MODEL; 
+                } else if (usageRatio >= 60) {
+                    if (words < 40) { targetProvider = "google"; targetModel = CHEAP_MODEL; }
+                    else { targetProvider = "openai"; targetModel = MEDIUM_MODEL; }
+                } else {
+                    if (words < 40) { targetProvider = "google"; targetModel = CHEAP_MODEL; }
+                    else if (words < 150) { targetProvider = "openai"; targetModel = MEDIUM_MODEL; }
+                    else { targetProvider = "anthropic"; targetModel = EXPENSIVE_MODEL; } 
+                }
+            } else {
+                if (usageRatio >= 80) {
+                    targetProvider = "google"; targetModel = CHEAP_MODEL;
+                } else {
+                    targetProvider = provider;
+                    if (provider === "openai") targetModel = words < 40 ? "gpt-4o-mini" : "gpt-4o";
+                    else if (provider === "anthropic") targetModel = words < 40 ? "claude-3-haiku-20240307" : "claude-3-5-sonnet-20240620";
+                    else targetModel = "gemini-1.5-flash";
+                }
+            }
+
             try {
-                aiResponse = await callOpenAI(MEDIUM_MODEL, fullContext);
+                if (targetProvider === "anthropic") aiResponse = await callClaude(targetModel, fullContext);
+                else if (targetProvider === "openai") aiResponse = await callOpenAI(targetModel, fullContext);
+                else aiResponse = await callGemini(targetModel, fullContext);
                 wasSuccessful = true;
-            } catch (err2) {
-                console.error(`[Widget AI Error] GPT Mini failed. Routing to Gemini Flash...`);
+            } catch (err1) {
+                console.error(`[Widget AI Error] ${targetModel} failed. Routing to GPT Mini...`);
                 try {
-                    aiResponse = await callGemini(CHEAP_MODEL, fullContext);
+                    aiResponse = await callOpenAI(MEDIUM_MODEL, fullContext);
                     wasSuccessful = true;
-                } catch (err3) {
-                    console.error(`[Widget AI Error] All providers failed.`);
+                } catch (err2) {
+                    console.error(`[Widget AI Error] GPT Mini failed. Routing to Gemini Flash...`);
+                    try {
+                        aiResponse = await callGemini(CHEAP_MODEL, fullContext);
+                        wasSuccessful = true;
+                    } catch (err3) {
+                        console.error(`[Widget AI Error] All providers failed.`);
+                    }
                 }
             }
         }

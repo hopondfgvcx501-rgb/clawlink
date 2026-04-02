@@ -14,6 +14,19 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
 const supabase = createClient(supabaseUrl, supabaseKey);
 
+// =========================================================================
+// 🛡️ SECURITY LOCK 1: ENTERPRISE DATA SANITIZER (Video Point 3)
+// Prevents SQL Injection & XSS attacks from Telegram messages or URL params
+// =========================================================================
+function sanitizeInput(input: string | null | undefined): string {
+    if (!input) return "";
+    return input
+        .replace(/<[^>]*>?/gm, "") // Remove HTML tags
+        .replace(/--/g, "") // Prevent SQL comment injection
+        .replace(/;/g, "") // Prevent SQL statement chaining
+        .trim();
+}
+
 // 🛡️ ENTERPRISE GUARDRAIL: Adaptive Master Persona & RAG Enforcement
 const ENTERPRISE_GUARDRAIL = `
 CRITICAL INSTRUCTION: You are an Advanced AI Support Agent operating on the ClawLink Engine.
@@ -144,13 +157,14 @@ export async function POST(req: Request) {
             return NextResponse.json({ success: true }); 
         }
 
-        const chatId = body.message.chat.id.toString();
-        const customerName = body.message.from.first_name || "Customer";
+        // 🛡️ Sanitize Chat ID & Customer Name
+        const chatId = sanitizeInput(body.message.chat.id.toString());
+        const customerName = sanitizeInput(body.message.from.first_name || "Customer");
 
-        // 🚀 FIXED: AGENCY MODEL ROUTING (Identify Bot by Token or Email)
+        // 🚀 FIXED: AGENCY MODEL ROUTING & 🛡️ SECURITY SANITIZATION
         const { searchParams } = new URL(req.url);
-        const urlToken = searchParams.get("token");
-        const rawEmail = searchParams.get("email");
+        const urlToken = sanitizeInput(searchParams.get("token"));
+        const rawEmail = sanitizeInput(searchParams.get("email"));
 
         let configQuery = supabase.from("user_configs").select("*");
         
@@ -163,9 +177,12 @@ export async function POST(req: Request) {
         }
 
         // Use limit(1).single() to prevent crashes if multiple rows match email
-        const { data: config } = await configQuery.limit(1).single();
+        const { data: config, error: configError } = await configQuery.limit(1).single();
         
-        if (!config || !config.telegram_token) return NextResponse.json({ success: true });
+        if (configError || !config || !config.telegram_token) {
+            console.warn("⚠️ [Webhook Gatekeeper] Invalid token or email access attempt.");
+            return NextResponse.json({ success: true });
+        }
 
         const ownerEmail = config.email;
         const configId = config.id; 
@@ -219,12 +236,14 @@ export async function POST(req: Request) {
                 });
                 return NextResponse.json({ success: true });
             }
-            userText = transcription;
+            // 🛡️ Sanitize Audio Transcription
+            userText = sanitizeInput(transcription);
             crmLogMessage = `🎤 [Voice Note]: "${userText}"`;
         } else {
             if (body.message.text === "/start") return NextResponse.json({ success: true });
             
-            let rawUserText = body.message.text;
+            // 🛡️ Sanitize User Text Input
+            let rawUserText = sanitizeInput(body.message.text);
             userText = rawUserText.length > 800 ? rawUserText.substring(0, 800) + "..." : rawUserText;
             crmLogMessage = userText;
         }
@@ -242,7 +261,7 @@ export async function POST(req: Request) {
                     query_embedding: queryVector, match_threshold: 0.65, match_count: 3, p_user_email: ownerEmail
                 });
                 if (matchedDocs && matchedDocs.length > 0) {
-                    customKnowledge = matchedDocs.map((doc: any) => doc.content).join("\n\n");
+                    customKnowledge = matchedDocs.map((doc: any) => sanitizeInput(doc.content)).join("\n\n");
                 }
             }
         } catch (e) {}

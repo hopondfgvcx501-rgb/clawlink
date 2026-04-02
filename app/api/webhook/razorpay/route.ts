@@ -8,6 +8,23 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
 const supabase = createClient(supabaseUrl, supabaseKey);
 
+// 🛡️ SECURITY & MONITORING ALERT SYSTEM (No Silent Failures)
+async function sendTelegramAdminAlert(message: string) {
+    const token = process.env.TELEGRAM_BOT_TOKEN;
+    const adminChatId = process.env.TELEGRAM_ADMIN_CHAT_ID;
+    if (token && adminChatId) {
+        try {
+            await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ chat_id: adminChatId, text: message })
+            });
+        } catch (e) {
+            console.error("Failed to send admin alert:", e);
+        }
+    }
+}
+
 export async function POST(req: NextRequest) {
   try {
     const rawBody = await req.text();
@@ -16,6 +33,7 @@ export async function POST(req: NextRequest) {
 
     if (!webhookSecret || !signature) {
       console.error("🚨 RAZORPAY WEBHOOK ERROR: Missing signature or secret");
+      await sendTelegramAdminAlert("⚠️ [SECURITY ALERT] Razorpay Webhook hit without signature or secret. Possible probing attempt by a hacker.");
       return NextResponse.json({ error: "Unauthorized access" }, { status: 400 });
     }
 
@@ -26,6 +44,7 @@ export async function POST(req: NextRequest) {
 
     if (expectedSignature !== signature) {
       console.error("🚨 RAZORPAY WEBHOOK ERROR: Invalid Cryptographic Signature");
+      await sendTelegramAdminAlert("🚨 [HACK ATTEMPT] Invalid Razorpay Signature detected! Someone is trying to fake a payment and upgrade their account.");
       return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
     }
 
@@ -110,43 +129,49 @@ export async function POST(req: NextRequest) {
         if (notes.telegram_token) { botIdentifier = notes.telegram_token; botColumn = "telegram_token"; }
         if (notes.whatsapp_token) { botIdentifier = notes.whatsapp_token; botColumn = "whatsapp_token"; }
 
-        if (isRenewal) {
-            let query = supabase.from("user_configs").select("id").eq("email", userEmail);
-            if (botColumn && botIdentifier) { query = query.eq(botColumn, botIdentifier); } 
-            else { query = query.order("created_at", { ascending: false }); }
+        // 🛡️ Safe DB Updating with Admin Alerts
+        try {
+            if (isRenewal) {
+                let query = supabase.from("user_configs").select("id").eq("email", userEmail);
+                if (botColumn && botIdentifier) { query = query.eq(botColumn, botIdentifier); } 
+                else { query = query.order("created_at", { ascending: false }); }
 
-            const { data } = await query.limit(1);
-            const latestBot = data?.[0];
+                const { data } = await query.limit(1);
+                const latestBot = data?.[0];
 
-            if (latestBot) {
-                await supabase.from("user_configs").update(payload).eq("id", latestBot.id);
-            }
-        } else if (botIdentifier && botColumn) {
-            const { data } = await supabase.from("user_configs").select("id").eq("email", userEmail).eq(botColumn, botIdentifier).limit(1);
-            const existingBot = data?.[0];
+                if (latestBot) {
+                    await supabase.from("user_configs").update(payload).eq("id", latestBot.id);
+                }
+            } else if (botIdentifier && botColumn) {
+                const { data } = await supabase.from("user_configs").select("id").eq("email", userEmail).eq(botColumn, botIdentifier).limit(1);
+                const existingBot = data?.[0];
 
-            if (existingBot) {
-                await supabase.from("user_configs").update(payload).eq("id", existingBot.id);
+                if (existingBot) {
+                    await supabase.from("user_configs").update(payload).eq("id", existingBot.id);
+                } else {
+                    await supabase.from("user_configs").insert({ 
+                        ...payload, 
+                        email: userEmail,
+                        tokens_used: 0,
+                        messages_used_this_month: 0 
+                    });
+                }
             } else {
-                await supabase.from("user_configs").insert({ 
-                    ...payload, 
-                    email: userEmail,
-                    tokens_used: 0,
-                    messages_used_this_month: 0 
-                });
+                const { data } = await supabase.from("user_configs").select("id").eq("email", userEmail).limit(1);
+                if (data && data[0]) {
+                     await supabase.from("user_configs").update(payload).eq("id", data[0].id);
+                } else {
+                     await supabase.from("user_configs").insert({
+                        ...payload,
+                        email: userEmail,
+                        tokens_used: 0,
+                        messages_used_this_month: 0 
+                     });
+                }
             }
-        } else {
-            const { data } = await supabase.from("user_configs").select("id").eq("email", userEmail).limit(1);
-            if (data && data[0]) {
-                 await supabase.from("user_configs").update(payload).eq("id", data[0].id);
-            } else {
-                 await supabase.from("user_configs").insert({
-                    ...payload,
-                    email: userEmail,
-                    tokens_used: 0,
-                    messages_used_this_month: 0 
-                 });
-            }
+        } catch (dbError: any) {
+            console.error("DB Update Failed:", dbError);
+            await sendTelegramAdminAlert(`🔴 [CRITICAL ERROR] Payment successful for ${userEmail}, but Database update FAILED! Please manually upgrade their plan.`);
         }
 
         try {
@@ -158,12 +183,19 @@ export async function POST(req: NextRequest) {
                 status: "PAID",
                 razorpay_order_id: paymentEntity.order_id
             });
-        } catch (invoiceError) {}
+            
+            // 🎉 SEND SUCCESS MESSAGE TO FOUNDER!
+            await sendTelegramAdminAlert(`💰 [NEW PAYMENT] Boom! ${userEmail} just paid for the ${planName.toUpperCase()} plan! ClawLink is growing! 🚀`);
+        } catch (invoiceError) {
+            await sendTelegramAdminAlert(`⚠️ [WARNING] Payment captured for ${userEmail} but failed to save in billing_history table.`);
+        }
       }
     }
 
     return NextResponse.json({ success: true });
   } catch (error: any) {
+    console.error("Razorpay Webhook Error:", error);
+    await sendTelegramAdminAlert(`🔴 [RAZORPAY WEBHOOK CRASH]: ${error.message || "Unknown server error during payment capture."}`);
     return NextResponse.json({ error: "Server processing failed" }, { status: 500 });
   }
 }

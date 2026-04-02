@@ -1,18 +1,23 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { getToken } from "next-auth/jwt"; // 🛡️ THE MASTER SECURITY LOCK
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-export async function GET(req: Request) {
+export async function GET(req: NextRequest) {
   try {
-    const { searchParams } = new URL(req.url);
-    const email = searchParams.get("email");
-
-    if (!email) {
-      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+    // 🛡️ SECURITY LOCK: Verify Session First
+    const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
+    
+    if (!token || !token.email) {
+      console.error("🚨 [SECURITY BREACH] Unauthenticated Billing GET attempt blocked.");
+      return NextResponse.json({ success: false, error: "Unauthorized. Invalid Session." }, { status: 401 });
     }
+
+    // 🔥 Overwrite user input with cryptographic token email
+    const email = token.email.toLowerCase();
 
     const { data, error } = await supabase
       .from("billing_history")

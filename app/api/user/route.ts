@@ -1,5 +1,6 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { getToken } from "next-auth/jwt"; // 🛡️ THE MASTER SECURITY LOCK
 
 // 🚨 CRITICAL FIX: No Caching! Always fetch fresh data.
 export const dynamic = "force-dynamic";
@@ -10,15 +11,21 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
 const supabase = createClient(supabaseUrl, supabaseKey);
 
+// ============================================================================
 // 1. GET: Fetch User Stats for Dashboard (BILLION-USER SMART FILTERING)
-export async function GET(req: Request) {
+// ============================================================================
+export async function GET(req: NextRequest) {
   try {
-    const { searchParams } = new URL(req.url);
-    const email = (searchParams.get("email") || "").toLowerCase();
-
-    if (!email) {
-      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+    // 🛡️ SECURITY LOCK: Check Encrypted Browser Session (NO FAKE EMAILS ALLOWED)
+    const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
+    
+    if (!token || !token.email) {
+      console.error("🚨 [SECURITY BREACH] Unauthenticated GET attempt blocked.");
+      return NextResponse.json({ success: false, error: "Unauthorized. Invalid Session." }, { status: 401 });
     }
+
+    // 🔥 Override any frontend input with the CRYPTOGRAPHICALLY SECURE email
+    const email = token.email.toLowerCase();
 
     // Fetch all records for the email
     const { data, error } = await supabase
@@ -56,9 +63,6 @@ export async function GET(req: Request) {
     let totalUsed = 0;
     let activeTelegram = false;
     let activeWhatsapp = false;
-    let tgToken = primaryBot.telegram_token || null;
-    let waToken = primaryBot.whatsapp_token || null;
-    let waPhoneId = primaryBot.whatsapp_phone_id || null;
 
     // Scan all bots to aggregate tokens and check active channels
     for (const bot of validBots) {
@@ -124,13 +128,22 @@ export async function GET(req: Request) {
   }
 }
 
+// ============================================================================
 // 2. POST: Save User Onboarding Data (PREVENT BLANK ROW BUG)
-export async function POST(req: Request) {
+// ============================================================================
+export async function POST(req: NextRequest) {
     try {
-        const body = await req.json();
-        const { email, selectedModel, selectedChannel, plan, telegram_token, whatsapp_phone_id } = body;
+        // 🛡️ SECURITY LOCK: Verify Session First
+        const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
+        if (!token || !token.email) {
+            return NextResponse.json({ success: false, error: "Unauthorized. Invalid Session." }, { status: 401 });
+        }
 
-        if (!email) return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+        const body = await req.json();
+        const { selectedModel, selectedChannel, plan, telegram_token, whatsapp_phone_id } = body;
+
+        // 🔥 USE THE CRYPTO EMAIL ONLY
+        const email = token.email.toLowerCase();
 
         let aiProvider = "openai";
         if (selectedModel) {
@@ -141,7 +154,7 @@ export async function POST(req: Request) {
         }
 
         // 🚀 THE MULTI-BOT LOCK: Match EXACTLY by Token. If token matches -> Overwrite. If new Token -> Create New Row!
-        let query = supabase.from("user_configs").select("id").eq("email", email.toLowerCase());
+        let query = supabase.from("user_configs").select("id").eq("email", email);
         
         if (telegram_token) {
             query = query.eq("telegram_token", telegram_token);
@@ -162,7 +175,7 @@ export async function POST(req: Request) {
             }).eq("id", existingUser.id);
         } else {
             await supabase.from("user_configs").insert({
-                email: email.toLowerCase(),
+                email: email,
                 selected_model: selectedModel,
                 selected_channel: selectedChannel || "widget",
                 ai_provider: aiProvider,
@@ -181,13 +194,22 @@ export async function POST(req: Request) {
     }
 }
 
+// ============================================================================
 // 3. PUT: Update AI Persona dynamically
-export async function PUT(req: Request) {
+// ============================================================================
+export async function PUT(req: NextRequest) {
   try {
-    const body = await req.json();
-    const { email, systemPrompt, selectedModel, selectedChannel, channel, telegram_token, whatsapp_phone_id } = body;
+    // 🛡️ SECURITY LOCK: Verify Session First
+    const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
+    if (!token || !token.email) {
+        return NextResponse.json({ success: false, error: "Unauthorized. Invalid Session." }, { status: 401 });
+    }
 
-    if (!email) return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+    const body = await req.json();
+    const { systemPrompt, selectedModel, selectedChannel, channel, telegram_token, whatsapp_phone_id } = body;
+
+    // 🔥 USE THE CRYPTO EMAIL ONLY
+    const email = token.email.toLowerCase();
 
     const updateData: any = {};
     let targetColumn = "";
@@ -212,7 +234,7 @@ export async function PUT(req: Request) {
 
     if (Object.keys(updateData).length === 0) return NextResponse.json({ success: true, message: "Nothing to update" });
 
-    let query = supabase.from("user_configs").update(updateData).eq("email", email.toLowerCase());
+    let query = supabase.from("user_configs").update(updateData).eq("email", email);
     
     // 🚀 FIXED: Only update the SPECIFIC bot's persona using exact Token! (Never overwrite other bots)
     if (telegram_token) query = query.eq("telegram_token", telegram_token);

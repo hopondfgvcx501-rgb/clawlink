@@ -14,6 +14,18 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
 const supabase = createClient(supabaseUrl, supabaseKey);
 
+// =========================================================================
+// 🛡️ SECURITY LOCK 1: ENTERPRISE DATA SANITIZER (Prevents Injection)
+// =========================================================================
+function sanitizeInput(input: string | null | undefined): string {
+    if (!input) return "";
+    return input
+        .replace(/<[^>]*>?/gm, "") // Remove HTML tags
+        .replace(/--/g, "") // Prevent SQL comment injection
+        .replace(/;/g, "") // Prevent SQL statement chaining
+        .trim();
+}
+
 // 🛡️ ENTERPRISE GUARDRAIL: Adaptive Master Persona & RAG Enforcement
 const ENTERPRISE_GUARDRAIL = `
 CRITICAL INSTRUCTION: You are an Advanced AI Support Agent operating on the ClawLink Engine.
@@ -23,7 +35,7 @@ CRITICAL INSTRUCTION: You are an Advanced AI Support Agent operating on the Claw
 `;
 
 // =========================================================================
-// 1. GET REQUEST: META WEBHOOK VERIFICATION
+// 1. GET REQUEST: META WEBHOOK VERIFICATION (DO NOT TOUCH)
 // =========================================================================
 export async function GET(req: Request) {
     const url = new URL(req.url);
@@ -129,17 +141,21 @@ export async function POST(req: Request) {
 
         const value = body.entry[0].changes[0].value;
         const message = value.messages[0];
-        const customerName = value.contacts?.[0]?.profile?.name || "Customer";
+        
+        // 🛡️ Sanitize Chat ID & Customer Name
+        const customerName = sanitizeInput(value.contacts?.[0]?.profile?.name || "Customer");
 
         if (message.type !== "text") return NextResponse.json({ success: true });
 
-        chatId = message.from; 
-        let rawUserText = message.text.body;
+        chatId = sanitizeInput(message.from); 
+        
+        // 🛡️ Sanitize User Text
+        let rawUserText = sanitizeInput(message.text.body);
         
         // ✂️ COST CONTROL: Cut message if it's suspiciously long
         const userText = rawUserText.length > 800 ? rawUserText.substring(0, 800) + "..." : rawUserText;
         
-        phoneNumberId = value.metadata.phone_number_id; 
+        phoneNumberId = sanitizeInput(value.metadata.phone_number_id); 
 
         const now = Date.now();
         const lastMessageTime = rateLimitMap.get(chatId) || 0;
@@ -161,6 +177,7 @@ export async function POST(req: Request) {
         const userEmail = config.email;
 
         const systemPrompt = config.system_prompt_whatsapp || config.system_prompt || "You are a helpful AI assistant on WhatsApp.";
+        const userApiKey = config.user_api_key;
         
         let rawProvider = (config.ai_provider || config.selected_model || "openai").toLowerCase();
         let provider = "openai"; 
@@ -197,7 +214,7 @@ export async function POST(req: Request) {
                     query_embedding: queryVector, match_threshold: 0.65, match_count: 3, p_user_email: userEmail
                 });
                 if (matchedDocs && matchedDocs.length > 0) {
-                    customKnowledge = matchedDocs.map((doc: any) => doc.content).join("\n\n");
+                    customKnowledge = matchedDocs.map((doc: any) => sanitizeInput(doc.content)).join("\n\n");
                 }
             }
         } catch (e) {}
@@ -227,81 +244,122 @@ export async function POST(req: Request) {
         });
 
         // =========================================================================
-        // 8. 🧠 CLAWLINK PROFIT MAXIMIZER & SMART FALLBACK ENGINE
+        // 8. 🧠 CLAWLINK PROFIT MAXIMIZER & SMART FALLBACK ENGINE (WITH SECURE FETCH)
         // =========================================================================
         let aiResponse = "Hello! Our AI assistant is currently undergoing a brief scheduled maintenance. Please leave your query and our human support team will get back to you shortly.";
         let wasSuccessful = false;
 
         const words = userText.split(/\s+/).length;
         const usageRatio = isUnlimited ? 0 : (tokensUsed / tokensAllocated) * 100;
-        
-        const GEMINI_CHEAP = "gemini-1.5-flash-8b";
-        const GEMINI_MID = "gemini-1.5-flash";
-        const GEMINI_PREMIUM = "gemini-1.5-pro";
-        
-        const GPT_CHEAP = "gpt-4o-mini";
-        const GPT_MID = "gpt-4o";
-        const GPT_PREMIUM = "gpt-4-turbo"; 
-        
-        const CLAUDE_CHEAP = "claude-3-haiku-20240307";
-        const CLAUDE_MID = "claude-3-5-sonnet-20240620";
-        const CLAUDE_PREMIUM = "claude-3-opus-20240229";
+        const forceCheap = !isUnlimited && usageRatio >= 80;
 
-        let targetProvider = provider;
-        let targetModel = "";
-
+        // 🚀 THE MASTER OMNI ROUTER (Secure Internal Fetch)
         if (provider === "omni") {
-            if (usageRatio >= 80) {
-                targetProvider = "google"; targetModel = GEMINI_CHEAP; 
-            } else if (usageRatio >= 60) {
-                targetProvider = "openai"; targetModel = words < 40 ? GPT_CHEAP : GPT_MID;
-            } else {
-                if (words < 40) { targetProvider = "google"; targetModel = GEMINI_MID; }
-                else if (words < 150) { targetProvider = "openai"; targetModel = GPT_MID; }
-                else { targetProvider = "anthropic"; targetModel = CLAUDE_PREMIUM; } 
-            }
-        } else {
-            if (usageRatio >= 85) {
-                if (provider === "openai") targetModel = GPT_CHEAP;
-                else if (provider === "anthropic") targetModel = CLAUDE_CHEAP;
-                else targetModel = GEMINI_CHEAP;
-            } else {
-                if (provider === "openai") targetModel = words < 40 ? GPT_CHEAP : (words > 150 ? GPT_PREMIUM : GPT_MID);
-                else if (provider === "anthropic") targetModel = words < 40 ? CLAUDE_CHEAP : (words > 150 ? CLAUDE_PREMIUM : CLAUDE_MID);
-                else targetModel = words < 40 ? GEMINI_CHEAP : (words > 150 ? GEMINI_PREMIUM : GEMINI_MID);
+            try {
+                const baseUrl = process.env.NEXT_PUBLIC_APP_URL || new URL(req.url).origin;
+                
+                // 🔒 Call the Master Engine with the Secret Key
+                const engineRes = await fetch(`${baseUrl}/api/omni`, {
+                    method: "POST",
+                    headers: {
+                        "Authorization": `Bearer ${process.env.CLAWLINK_MASTER_SECRET}`,
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        prompt: userText,
+                        systemPrompt: fullSystemContext,
+                        history: historyArray,
+                        apiKey: userApiKey,
+                        forceCheap: forceCheap,
+                        userWords: words
+                    })
+                });
+
+                const engineData = await engineRes.json();
+                
+                if (engineRes.ok && engineData.success) {
+                    aiResponse = engineData.reply;
+                    wasSuccessful = true;
+                } else {
+                    console.error("❌ [WhatsApp Webhook] Omni Engine failed. Falling back to local internal logic.", engineData);
+                    throw new Error("Omni Engine Failed. Engaging Local Webhook Fallback.");
+                }
+            } catch (err) {
+                 // If the Master Engine fails, it smoothly falls through to the local webhook logic below
+                 console.error("Master fetch failed, proceeding to internal webhook matrix.");
             }
         }
 
-        // ⚡ EXECUTION & FALLBACK ENGINE
-        try {
-            if (targetProvider === "anthropic") aiResponse = await callClaude(targetModel, fullSystemContext, historyArray, userText);
-            else if (targetProvider === "openai") aiResponse = await callOpenAI(targetModel, fullSystemContext, historyArray, userText);
-            else aiResponse = await callGemini(targetModel, fullSystemContext, historyArray, userText);
-            wasSuccessful = true;
-        } catch (err1) {
-            console.error(`[WhatsApp AI Error] ${targetModel} failed.`);
+        // ⚡ LOCAL EXECUTION & FALLBACK ENGINE (Runs if NOT Omni, or if Omni fetch fails)
+        if (!wasSuccessful) {
+            const GEMINI_CHEAP = "gemini-1.5-flash-8b";
+            const GEMINI_MID = "gemini-1.5-flash";
+            const GEMINI_PREMIUM = "gemini-1.5-pro";
             
+            const GPT_CHEAP = "gpt-4o-mini";
+            const GPT_MID = "gpt-4o";
+            const GPT_PREMIUM = "gpt-4-turbo"; 
+            
+            const CLAUDE_CHEAP = "claude-3-haiku-20240307";
+            const CLAUDE_MID = "claude-3-5-sonnet-20240620";
+            const CLAUDE_PREMIUM = "claude-3-opus-20240229";
+
+            let targetProvider = provider;
+            let targetModel = "";
+
             if (provider === "omni") {
-                console.log("[Omni Fallback] Routing to GPT-4o-mini...");
-                try {
-                    aiResponse = await callOpenAI(GPT_CHEAP, fullSystemContext, historyArray, userText);
-                    wasSuccessful = true;
-                } catch (err2) {
-                    console.log("[Omni Fallback 2] Routing to Gemini Flash...");
-                    try {
-                        aiResponse = await callGemini(GEMINI_CHEAP, fullSystemContext, historyArray, userText);
-                        wasSuccessful = true;
-                    } catch (err3) { console.error("[Omni] All cross-provider fallbacks failed."); }
+                // If we are here, it means the fetch to /api/omni failed. Use local omni fallback.
+                if (usageRatio >= 80) {
+                    targetProvider = "google"; targetModel = GEMINI_CHEAP; 
+                } else if (usageRatio >= 60) {
+                    targetProvider = "openai"; targetModel = words < 40 ? GPT_CHEAP : GPT_MID;
+                } else {
+                    if (words < 40) { targetProvider = "google"; targetModel = GEMINI_MID; }
+                    else if (words < 150) { targetProvider = "openai"; targetModel = GPT_MID; }
+                    else { targetProvider = "anthropic"; targetModel = CLAUDE_PREMIUM; } 
                 }
             } else {
-                console.log(`[Intra-Provider Fallback] ${provider} downgrading to cheaper model...`);
-                try {
-                    if (provider === "anthropic") aiResponse = await callClaude(CLAUDE_CHEAP, fullSystemContext, historyArray, userText);
-                    else if (provider === "openai") aiResponse = await callOpenAI(GPT_CHEAP, fullSystemContext, historyArray, userText);
-                    else aiResponse = await callGemini(GEMINI_CHEAP, fullSystemContext, historyArray, userText);
-                    wasSuccessful = true;
-                } catch (err2) {
-                    console.error(`[Intra-Provider] Fallback failed for ${provider}.`);
+                if (usageRatio >= 85) {
+                    if (provider === "openai") targetModel = GPT_CHEAP;
+                    else if (provider === "anthropic") targetModel = CLAUDE_CHEAP;
+                    else targetModel = GEMINI_CHEAP;
+                } else {
+                    if (provider === "openai") targetModel = words < 40 ? GPT_CHEAP : (words > 150 ? GPT_PREMIUM : GPT_MID);
+                    else if (provider === "anthropic") targetModel = words < 40 ? CLAUDE_CHEAP : (words > 150 ? CLAUDE_PREMIUM : CLAUDE_MID);
+                    else targetModel = words < 40 ? GEMINI_CHEAP : (words > 150 ? GEMINI_PREMIUM : GEMINI_MID);
+                }
+            }
+
+            try {
+                if (targetProvider === "anthropic") aiResponse = await callClaude(targetModel, fullSystemContext, historyArray, userText);
+                else if (targetProvider === "openai") aiResponse = await callOpenAI(targetModel, fullSystemContext, historyArray, userText);
+                else aiResponse = await callGemini(targetModel, fullSystemContext, historyArray, userText);
+                wasSuccessful = true;
+            } catch (err1) {
+                console.error(`[WhatsApp AI Error] ${targetModel} failed.`);
+                
+                if (provider === "omni") {
+                    console.log("[Omni Fallback] Routing to GPT-4o-mini...");
+                    try {
+                        aiResponse = await callOpenAI(GPT_CHEAP, fullSystemContext, historyArray, userText);
+                        wasSuccessful = true;
+                    } catch (err2) {
+                        console.log("[Omni Fallback 2] Routing to Gemini Flash...");
+                        try {
+                            aiResponse = await callGemini(GEMINI_CHEAP, fullSystemContext, historyArray, userText);
+                            wasSuccessful = true;
+                        } catch (err3) { console.error("[Omni] All cross-provider fallbacks failed."); }
+                    }
+                } else {
+                    console.log(`[Intra-Provider Fallback] ${provider} downgrading to cheaper model...`);
+                    try {
+                        if (provider === "anthropic") aiResponse = await callClaude(CLAUDE_CHEAP, fullSystemContext, historyArray, userText);
+                        else if (provider === "openai") aiResponse = await callOpenAI(GPT_CHEAP, fullSystemContext, historyArray, userText);
+                        else aiResponse = await callGemini(GEMINI_CHEAP, fullSystemContext, historyArray, userText);
+                        wasSuccessful = true;
+                    } catch (err2) {
+                        console.error(`[Intra-Provider] Fallback failed for ${provider}.`);
+                    }
                 }
             }
         }
@@ -329,6 +387,18 @@ export async function POST(req: Request) {
         return NextResponse.json({ success: true });
 
     } catch (error: any) {
+        // Add Telegram Admin Logging if you want to track Meta webhook crashes too!
+        try {
+            const token = process.env.TELEGRAM_BOT_TOKEN; 
+            const adminChatId = process.env.TELEGRAM_ADMIN_CHAT_ID; // Setup in .env
+            if (adminChatId && token) {
+                await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+                    method: "POST", headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ chat_id: adminChatId, text: `⚠️ [WHATSAPP CRASH]: ${error.message || "Unknown"}` })
+                });
+            }
+        } catch (e) {}
+        
         return NextResponse.json({ success: true }); 
     }
 }

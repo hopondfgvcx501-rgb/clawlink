@@ -10,6 +10,13 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 
 export async function POST(req: Request) {
   try {
+    // 🛑 SECURITY LOCK: Check API Secret
+    const authHeader = req.headers.get("authorization");
+    if (authHeader !== `Bearer ${process.env.CLAWLINK_MASTER_SECRET}`) {
+      console.error("🚨 [SECURITY BREACH] Unauthorized access attempt to AI Route!");
+      return NextResponse.json({ success: false, reply: "Access Denied." }, { status: 401 });
+    }
+
     const { email, message, platform, userPhoneOrChatId } = await req.json();
 
     if (!email || !message) {

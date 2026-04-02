@@ -136,6 +136,13 @@ async function callAnthropic(models: string[], history: any[], systemPrompt: str
 // ==========================================
 export async function POST(req: Request) {
   try {
+    // 🛑 SECURITY LOCK: Check API Secret
+    const authHeader = req.headers.get("authorization");
+    if (authHeader !== `Bearer ${process.env.CLAWLINK_MASTER_SECRET}`) {
+      console.error("🚨 [SECURITY BREACH] Unauthorized access attempt to Omni Engine!");
+      return NextResponse.json({ error: "Access Denied. Invalid Master Secret." }, { status: 401 });
+    }
+
     const body = await req.json();
     const { prompt, systemPrompt, history = [], apiKey = null, forceCheap = false, userWords = 0 } = body;
 

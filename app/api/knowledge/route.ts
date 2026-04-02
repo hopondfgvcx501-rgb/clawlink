@@ -1,5 +1,6 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { getToken } from "next-auth/jwt"; // 🛡️ THE MASTER SECURITY LOCK
 
 export const dynamic = "force-dynamic";
 
@@ -40,12 +41,18 @@ async function generateEmbedding(text: string) {
 }
 
 // 1. FETCH ALL KNOWLEDGE BLOCKS
-export async function GET(req: Request) {
+export async function GET(req: NextRequest) {
   try {
-    const { searchParams } = new URL(req.url);
-    const email = searchParams.get("email");
+    // 🛡️ SECURITY LOCK: Verify Session First
+    const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
+    
+    if (!token || !token.email) {
+      console.error("🚨 [SECURITY BREACH] Unauthenticated Knowledge GET attempt blocked.");
+      return NextResponse.json({ success: false, error: "Unauthorized. Invalid Session." }, { status: 401 });
+    }
 
-    if (!email) return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+    // 🔥 Overwrite user input with cryptographic token email
+    const email = token.email.toLowerCase();
 
     const { data, error } = await supabase
       .from("knowledge_base")
@@ -62,11 +69,21 @@ export async function GET(req: Request) {
 }
 
 // 2. INJECT NEW KNOWLEDGE INTO VECTOR DB
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
-    const { email, text } = await req.json();
+    // 🛡️ SECURITY LOCK: Verify Session First
+    const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
+    
+    if (!token || !token.email) {
+      return NextResponse.json({ success: false, error: "Unauthorized. Invalid Session." }, { status: 401 });
+    }
 
-    if (!email || !text) {
+    const { text } = await req.json();
+
+    // 🔥 Overwrite user input with cryptographic token email
+    const email = token.email.toLowerCase();
+
+    if (!text) {
       return NextResponse.json({ success: false, error: "Missing data payload" }, { status: 400 });
     }
 
