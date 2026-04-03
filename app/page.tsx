@@ -76,10 +76,12 @@ const Telegram_Icon = ({ size = 26 }: { size?: number }) => (
   </svg>
 );
 
+// FIXED: Using Inline SVG for WhatsApp Business instead of Image to ensure it renders immediately and overrides cache
 const WhatsApp_Icon = ({ size = 26 }: { size?: number }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="transform-gpu">
-    <path d="M12.004 0C5.376 0 .004 5.373.004 12c0 2.12.552 4.116 1.528 5.864L0 24l6.296-1.508c1.7.884 3.64 1.396 5.708 1.396 6.628 0 12-5.373 12-12S18.632 0 12.004 0z" fill="#25D366"/>
-    <path d="M19.16 16.544c-.312.884-1.504 1.636-2.584 1.832-.82.152-1.888.24-5.384-1.208-4.224-1.744-6.952-6.044-7.16-6.32-.208-.276-1.708-2.268-1.708-4.324 0-2.056 1.072-3.072 1.452-3.484.38-.412.828-.516 1.104-.516.276 0 .552.004.8.016.256.012.604-.1 1.02.908.432 1.04 2.556 1.144 2.748.092.192.152.416.016.696-.136.28-.208.452-.416.696-.208.244-.436.528-.624.712-.208.208-.424.432-.18.804.244.372 1.088 1.748 2.332 2.86 1.6 1.432 2.94 1.872 3.324 2.064.384.192.608.164.84-.108.232-.272 1.004-1.168 1.276-1.568.272-.4.544-.332.892-.204.348.128 2.204 1.04 2.58 1.232.376.192.624.288.716.448.092.16.092.932-.22 1.816z" fill="#fff"/>
+  <svg width={size} height={size} viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" className="transform-gpu">
+    <rect width="100" height="100" rx="24" fill="#25D366"/>
+    <path fill="#ffffff" d="M50 15c-19.3 0-35 15.7-35 35 0 6.2 1.6 12.2 4.7 17.5L15 85l17.5-4.7c5.3 3.1 11.3 4.7 17.5 4.7 19.3 0 35-15.7 35-35S69.3 15 50 15zm0 63.8c-5.2 0-10.4-1.4-15-4.1l-1.1-.6-11.1 2.9 2.9-10.8-.7-1.1c-2.9-4.7-4.5-10.1-4.5-15.6 0-16.2 13.2-29.4 29.4-29.4s29.4 13.2 29.4 29.4-13.2 29.4-29.4 29.4z"/>
+    <path fill="#ffffff" d="M42 34h9.5c5.5 0 8.5 2.5 8.5 5.5s-2.8 4.2-5.5 4.8c4 1 7 3.5 7 7.5 0 5.5-5.5 7.2-10 7.2H42V34zm5 5.5v7h4c2 0 4-1 4-3.5s-2-3.5-4-3.5h-4zm0 11v8h4.5c3 0 4.5-1.5 4.5-4s-2-4-4.5-4H47z"/>
   </svg>
 );
 
@@ -88,7 +90,7 @@ const Discord_Icon = () => (
 );
 
 const Instagram_Icon = () => (
-  <div className="w-[22px] h-[22px] rounded-lg bg-gradient-to-tr from-[#f09433] via-[#e6683c] to-[#bc1888] flex items-center justify-center"><div className="w-[14px] h-[14px] border-[2px] border-white rounded-[4px] flex items-center justify-center"><div className="w-[5px] h-[5px] bg-white rounded-full"/></div></div>
+  <div className="w-[22px] h-[22px] rounded-lg bg-gradient-to-tr from-[#f09433] via-[#e6683c] to-[#bc1888] flex items-center justify-center transform-gpu"><div className="w-[14px] h-[14px] border-[2px] border-white rounded-[4px] flex items-center justify-center"><div className="w-[5px] h-[5px] bg-white rounded-full"/></div></div>
 );
 
 const Google_Icon = () => (
@@ -294,7 +296,8 @@ export default function Home() {
   }, []);
 
   const handleOpenIntegration = (ch: string) => {
-    if (ch === "discord" || ch === "instagram") return;
+    // 🚀 Instagram is now LIVE! Only block Discord and Slack
+    if (ch === "discord" || ch === "slack") return;
     setActiveChannel(ch); setIsTelegramModalOpen(true);
   };
   const handleOpenPricing = (ch: string) => { setActiveChannel(ch); setShowPricingPopup(true); };
@@ -303,8 +306,9 @@ export default function Home() {
     if (activeChannel === "telegram" && !telegramToken.trim()) {
       alert("Please enter a valid Telegram API Token."); return;
     }
-    if (activeChannel === "whatsapp" && (!telegramToken.trim() || !waPhoneId.trim() || !waPhoneNumber.trim())) {
-      alert("Please enter API Token, Phone Number ID AND your WhatsApp Number."); return;
+    // Added instagram logic for token check
+    if ((activeChannel === "whatsapp" || activeChannel === "instagram") && (!telegramToken.trim() || !waPhoneId.trim())) {
+      alert("Please enter API Token and Account ID."); return;
     }
     setIsVerifying(true);
     try {
@@ -361,7 +365,7 @@ export default function Home() {
               is_renewal: "false",
               // 🚀 CRITICAL: SENDS EXACT BOT IDENTIFIER TO DB WEBHOOK TO ENSURE CORRECT INSERTION/UPDATE
               telegram_token: activeChannel === "telegram" ? telegramToken : "",
-              whatsapp_phone_id: activeChannel === "whatsapp" ? waPhoneId : "",
+              whatsapp_phone_id: (activeChannel === "whatsapp" || activeChannel === "instagram") ? waPhoneId : "",
               whatsapp_number: activeChannel === "whatsapp" ? waPhoneNumber : "",
               selected_channel: activeChannel
             }
@@ -408,6 +412,8 @@ export default function Home() {
       } else { 
         window.open("https://api.whatsapp.com/", "_blank"); 
       }
+    } else if (activeChannel === "instagram") {
+        window.open("https://www.instagram.com/", "_blank"); 
     } else { 
       window.open(botLink || "https://t.me/BotFather", "_blank"); 
     }
@@ -671,15 +677,17 @@ export default function Home() {
               <div className="w-[22px] h-[22px] rounded-full flex items-center justify-center shrink-0"><WhatsApp_Icon size={22}/></div>
               <div className="flex flex-col min-w-0 max-sm:items-center max-sm:w-full"><span className="ptx-name text-gray-800">WhatsApp</span></div>
             </button>
+            
+            {/* 🚀 CRITICAL FIX: Instagram is now active and clickable! */}
+            <button data-spring onClick={()=>!isTokenSaved && setActiveChannel("instagram")} disabled={isTokenSaved && activeChannel!=="instagram"}
+              className={[pillBase, chanActive("instagram") ? "!border-[#e6683c] shadow-[0_0_0_3px_rgba(230,104,60,0.2),0_2px_8px_rgba(0,0,0,0.12)]" : "", isTokenSaved && activeChannel!=="instagram" ? "opacity-25 pointer-events-none" : ""].join(" ")}>
+              <div className="w-[22px] h-[22px] rounded-full flex items-center justify-center shrink-0"><Instagram_Icon/></div>
+              <div className="flex flex-col min-w-0 max-sm:items-center max-sm:w-full"><span className="ptx-name text-gray-800">Instagram</span></div>
+            </button>
 
             <div className={[pillBase, isTokenSaved?"opacity-20":"opacity-35", "cursor-not-allowed pointer-events-none"].join(" ")}>
               <div className="w-[22px] h-[22px] rounded-full flex items-center justify-center shrink-0"><Discord_Icon/></div>
               <div className="flex flex-col min-w-0 max-sm:items-center max-sm:w-full"><span className="ptx-name text-gray-700">Discord</span><span className="ptx-soon">SOON</span></div>
-            </div>
-
-            <div className={[pillBase, isTokenSaved?"opacity-20":"opacity-35", "cursor-not-allowed pointer-events-none"].join(" ")}>
-              <div className="w-[22px] h-[22px] rounded-full flex items-center justify-center shrink-0" style={{background:"linear-gradient(135deg,#f09433,#bc1888)"}}><Instagram_Icon/></div>
-              <div className="flex flex-col min-w-0 max-sm:items-center max-sm:w-full"><span className="ptx-name text-gray-700">Instagram</span><span className="ptx-soon">SOON</span></div>
             </div>
 
             <div className={[pillBase, isTokenSaved?"opacity-20":"opacity-35", "cursor-not-allowed pointer-events-none"].join(" ")}>
@@ -743,7 +751,7 @@ export default function Home() {
                 {!isTokenSaved ? (
                   <button data-ripple data-spring onClick={()=>handleOpenIntegration(activeChannel)}
                     className={`relative overflow-hidden w-full bg-white text-black font-black py-4 rounded-2xl text-[14px] uppercase tracking-widest shadow-[0_0_32px_rgba(255,255,255,0.15)] ${btn} hover:scale-[1.03]`}>
-                    Connect {activeChannel === "telegram" ? "Telegram" : activeChannel === "whatsapp" ? "WhatsApp" : activeChannel} →
+                    Connect {activeChannel === "telegram" ? "Telegram" : activeChannel === "whatsapp" ? "WhatsApp" : "Instagram"} →
                   </button>
                 ) : (
                   <button data-ripple data-spring onClick={()=>handleOpenPricing(activeChannel)}
@@ -984,9 +992,9 @@ export default function Home() {
               <div className="w-full md:w-1/2 p-7 md:p-10 flex flex-col justify-start overflow-y-auto nsb">
                 <div className="flex items-center gap-4 mb-6">
                   <div className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0" style={{background:"rgba(255,255,255,0.05)",border:"1px solid rgba(255,255,255,0.09)"}}>
-                    {activeChannel==="telegram" ? <Telegram_Icon size={26}/> : <WhatsApp_Icon size={26}/>}
+                    {activeChannel==="telegram" ? <Telegram_Icon size={26}/> : activeChannel==="whatsapp" ? <WhatsApp_Icon size={26}/> : <Instagram_Icon/>}
                   </div>
-                  <h2 className="text-[1.3rem] font-bold text-white">Connect {activeChannel==="telegram"?"Telegram":"WhatsApp"}</h2>
+                  <h2 className="text-[1.3rem] font-bold text-white">Connect {activeChannel==="telegram"?"Telegram":activeChannel==="whatsapp"?"WhatsApp":"Instagram"}</h2>
                 </div>
 
                 {activeChannel==="telegram" ? (
@@ -1021,32 +1029,32 @@ export default function Home() {
                   <>
                     <ol className="space-y-2.5 text-[12px] text-gray-400 list-decimal pl-5 mb-5 leading-relaxed">
                       <li>Log in to <strong className="text-white">Meta Developer Console</strong></li>
-                      <li>Create <strong className="text-white">Business App</strong> → activate <strong className="text-white">WhatsApp Module</strong></li>
-                      <li>Register & verify phone in <strong className="text-white">API Setup</strong></li>
+                      <li>Create <strong className="text-white">Business App</strong> → activate <strong className="text-white">{activeChannel === "whatsapp" ? "WhatsApp" : "Messenger"} Module</strong></li>
+                      <li>Register & verify account in <strong className="text-white">API Setup</strong></li>
                       <li><strong className="text-white">System Users</strong> → generate <strong className="text-white">Permanent Access Token</strong></li>
                       <li>Set Webhook URL under <strong className="text-white">Configuration</strong></li>
                       <li>Enter Callback URL + Verify Token below</li>
                     </ol>
                     <div className="flex gap-3 mb-6">
                       <a href="https://developers.facebook.com/apps/" target="_blank" rel="noopener noreferrer"
-                        className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-[12px] font-bold w-fit ${btn} hover:scale-[1.03] text-[#25D366]`}
-                        style={{background:"rgba(37,211,102,0.08)",border:"1px solid rgba(37,211,102,0.2)"}}>
+                        className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-[12px] font-bold w-fit ${btn} hover:scale-[1.03] ${activeChannel==="whatsapp"?"text-[#25D366]":"text-[#e6683c]"}`}
+                        style={{background:activeChannel==="whatsapp"?"rgba(37,211,102,0.08)":"rgba(230,104,60,0.08)",border:`1px solid ${activeChannel==="whatsapp"?"rgba(37,211,102,0.2)":"rgba(230,104,60,0.2)"}`}}>
                         <ExternalLink className="w-3.5 h-3.5"/> Open Meta Developer Console
                       </a>
                     </div>
                     <div className="p-5 rounded-2xl" style={{background:"rgba(255,255,255,0.03)",border:"1px solid rgba(255,255,255,0.07)"}}>
                       
                       {/* 🚀 CLAWLINK WEBHOOK COPY SECTION */}
-                      <div className="mb-6 p-4 rounded-xl" style={{background:"rgba(0,0,0,0.3)", border:"1px dashed rgba(37,211,102,0.3)"}}>
-                        <p className="text-[11px] font-bold text-[#25D366] mb-3 flex items-center gap-2">
+                      <div className="mb-6 p-4 rounded-xl" style={{background:"rgba(0,0,0,0.3)", border:`1px dashed ${activeChannel==="whatsapp"?"rgba(37,211,102,0.3)":"rgba(230,104,60,0.3)"}`}}>
+                        <p className={`text-[11px] font-bold mb-3 flex items-center gap-2 ${activeChannel==="whatsapp"?"text-[#25D366]":"text-[#e6683c]"}`}>
                           🔗 Step 1: Copy these to Meta Webhook
                         </p>
                         
                         <div className="mb-3">
                           <label className="block text-[9px] font-bold uppercase tracking-widest text-gray-500 mb-1.5">Webhook URL</label>
                           <div className="flex items-center gap-2">
-                            <input readOnly value="https://www.clawlinkai.com/api/webhook/whatsapp" className="w-full bg-black/50 text-gray-300 p-2.5 rounded-lg text-[11px] border border-white/10 outline-none font-mono" />
-                            <button type="button" onClick={() => copyToClipboard("https://www.clawlinkai.com/api/webhook/whatsapp")} className="bg-white/10 hover:bg-white/20 text-white px-4 py-2.5 rounded-lg text-[11px] font-bold transition-all">Copy</button>
+                            <input readOnly value={`https://www.clawlinkai.com/api/webhook/${activeChannel}`} className="w-full bg-black/50 text-gray-300 p-2.5 rounded-lg text-[11px] border border-white/10 outline-none font-mono" />
+                            <button type="button" onClick={() => copyToClipboard(`https://www.clawlinkai.com/api/webhook/${activeChannel}`)} className="bg-white/10 hover:bg-white/20 text-white px-4 py-2.5 rounded-lg text-[11px] font-bold transition-all">Copy</button>
                           </div>
                         </div>
 
@@ -1060,23 +1068,29 @@ export default function Home() {
                       </div>
                       {/* 🚀 END CLAWLINK WEBHOOK COPY SECTION */}
 
-                      <label className="block text-[9px] font-bold uppercase tracking-widest text-gray-400 mb-3">Phone Number ID</label>
+                      <label className="block text-[9px] font-bold uppercase tracking-widest text-gray-400 mb-3">{activeChannel==="whatsapp"?"Phone Number ID":"Instagram Account ID"}</label>
                       <input type="text" value={waPhoneId} onChange={e=>setWaPhoneId(e.target.value)} placeholder="e.g. 1044727838716942"
                         className="w-full px-4 py-3.5 rounded-xl text-[13px] text-white font-mono mb-4 outline-none transition-colors duration-150"
                         style={{background:"#07070A",border:"1px solid rgba(255,255,255,0.09)"}}
-                        onFocus={e=>(e.target.style.borderColor="rgba(37,211,102,0.5)")}
+                        onFocus={e=>(e.target.style.borderColor=activeChannel==="whatsapp"?"rgba(37,211,102,0.5)":"rgba(230,104,60,0.5)")}
                         onBlur={e =>(e.target.style.borderColor="rgba(255,255,255,0.09)")}/>
-                      <label className="block text-[9px] font-bold uppercase tracking-widest text-gray-400 mb-3">WhatsApp Number (For Direct Open)</label>
-                      <input type="text" value={waPhoneNumber} onChange={e=>setWaPhoneNumber(e.target.value)} placeholder="+1 234 567 890"
-                        className="w-full px-4 py-3.5 rounded-xl text-[13px] text-white font-mono mb-4 outline-none transition-colors duration-150"
-                        style={{background:"#07070A",border:"1px solid rgba(255,255,255,0.09)"}}
-                        onFocus={e=>(e.target.style.borderColor="rgba(37,211,102,0.5)")}
-                        onBlur={e =>(e.target.style.borderColor="rgba(255,255,255,0.09)")}/>
+                      
+                      {activeChannel === "whatsapp" && (
+                          <>
+                              <label className="block text-[9px] font-bold uppercase tracking-widest text-gray-400 mb-3">WhatsApp Number (For Direct Open)</label>
+                              <input type="text" value={waPhoneNumber} onChange={e=>setWaPhoneNumber(e.target.value)} placeholder="+1 234 567 890"
+                                className="w-full px-4 py-3.5 rounded-xl text-[13px] text-white font-mono mb-4 outline-none transition-colors duration-150"
+                                style={{background:"#07070A",border:"1px solid rgba(255,255,255,0.09)"}}
+                                onFocus={e=>(e.target.style.borderColor="rgba(37,211,102,0.5)")}
+                                onBlur={e =>(e.target.style.borderColor="rgba(255,255,255,0.09)")}/>
+                          </>
+                      )}
+
                       <label className="block text-[9px] font-bold uppercase tracking-widest text-gray-400 mb-3">Permanent API Token</label>
                       <input type="password" value={telegramToken} onChange={e=>setTelegramToken(e.target.value)} placeholder="EAABwzL…"
                         className="w-full px-4 py-3.5 rounded-xl text-[13px] text-white font-mono mb-5 outline-none transition-colors duration-150"
                         style={{background:"#07070A",border:"1px solid rgba(255,255,255,0.09)"}}
-                        onFocus={e=>(e.target.style.borderColor="rgba(37,211,102,0.5)")}
+                        onFocus={e=>(e.target.style.borderColor=activeChannel==="whatsapp"?"rgba(37,211,102,0.5)":"rgba(230,104,60,0.5)")}
                         onBlur={e =>(e.target.style.borderColor="rgba(255,255,255,0.09)")}/>
                       <button data-ripple data-spring onClick={handleSaveToken} disabled={isVerifying}
                         className={`relative overflow-hidden w-full font-black py-4 rounded-xl text-[13px] uppercase tracking-widest ${btn} hover:scale-[1.02] disabled:opacity-50 disabled:pointer-events-none`}
@@ -1094,8 +1108,8 @@ export default function Home() {
                     <div className="w-10 h-1.5 rounded-full bg-black/50"/>
                   </div>
                   <div className="p-4 pt-8 flex items-center gap-3 z-10" style={{background:"rgba(15,15,18,0.95)",backdropFilter:"blur(12px)",borderBottom:"1px solid rgba(255,255,255,0.05)"}}>
-                    <div className={`w-9 h-9 rounded-full flex items-center justify-center ${activeChannel==="telegram"?"bg-[#2AABEE]":"bg-[#25D366]"}`}>
-                      {activeChannel==="telegram"?<Telegram_Icon size={20}/>:<WhatsApp_Icon size={20}/>}
+                    <div className={`w-9 h-9 rounded-full flex items-center justify-center ${activeChannel==="telegram"?"bg-[#2AABEE]":activeChannel==="whatsapp"?"bg-[#25D366]":""}`} style={{background:activeChannel==="instagram"?"linear-gradient(135deg,#f09433,#bc1888)":undefined}}>
+                      {activeChannel==="telegram"?<Telegram_Icon size={20}/>:activeChannel==="whatsapp"?<WhatsApp_Icon size={20}/>:<Instagram_Icon/>}
                     </div>
                     <div>
                       <p className="text-white text-[12px] font-bold flex items-center gap-1">
@@ -1122,14 +1136,14 @@ export default function Home() {
                       </>
                     ) : (
                       <div className="flex flex-col gap-3 h-full justify-start pb-4">
-                        <GuideStep delay={.1} step="1" title="Create App" desc="Select Business Type in Meta Developer Console."/>
-                        <GuideStep delay={.2} step="2" title="Add Number" desc="Register your phone number in API Setup."/>
+                        <GuideStep delay={.1} step="1" title="Create App" desc={`Select Business Type in Meta Developer Console for ${activeChannel}.`}/>
+                        <GuideStep delay={.2} step="2" title="Link Account" desc={`Register your ${activeChannel} account in API Setup.`}/>
                         <GuideStep delay={.3} step="3" title="Generate Token" desc="Create System User & get Permanent Access Token."/>
                         <GuideStep delay={.4} step="4" title="Link Webhook" desc="Enter Webhook URL & Verify Token."/>
                         <GuideStep delay={.5} step="5" title="Subscribe" desc="Enable 'messages' webhook subscription."/>
                         <motion.div initial={{opacity:0,scale:.9}} animate={{opacity:1,scale:1}} transition={{delay:.6,duration:.18}}
-                          className="mt-3 p-3 rounded-xl text-center mx-auto w-[90%]" style={{background:"rgba(37,211,102,0.08)",border:"1px solid rgba(37,211,102,0.22)"}}>
-                          <span className="text-[#25D366] font-bold text-[11px] flex items-center justify-center gap-2">
+                          className="mt-3 p-3 rounded-xl text-center mx-auto w-[90%]" style={{background:activeChannel==="whatsapp"?"rgba(37,211,102,0.08)":"rgba(230,104,60,0.08)",border:`1px solid ${activeChannel==="whatsapp"?"rgba(37,211,102,0.22)":"rgba(230,104,60,0.22)"}`}}>
+                          <span className={`font-bold text-[11px] flex items-center justify-center gap-2 ${activeChannel==="whatsapp"?"text-[#25D366]":"text-[#e6683c]"}`}>
                             <Zap className="w-3 h-3"/> Infrastructure Linked
                           </span>
                         </motion.div>
