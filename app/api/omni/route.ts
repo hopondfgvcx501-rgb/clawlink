@@ -19,6 +19,8 @@ CRITICAL INSTRUCTION: You are an Enterprise AI Support Agent.
 async function callOpenAI(models: string[], systemPrompt: string, history: any[], prompt: string, key: string | null) {
   const apiKey = key || process.env.OPENAI_API_KEY || "";
   const finalSystemPrompt = `${ENTERPRISE_GUARDRAIL}\n\n${systemPrompt || "You are a highly advanced AI assistant."}`;
+  
+  // 🧠 Safe Memory Integration for OpenAI
   const formattedMessages = [
     { role: "system", content: finalSystemPrompt },
     ...history,
@@ -60,12 +62,20 @@ async function callGemini(models: string[], systemPrompt: string, history: any[]
   const geminiKey = key || process.env.GEMINI_API_KEY || "";
   const finalSystemPrompt = `${ENTERPRISE_GUARDRAIL}\n\n${systemPrompt || ""}`;
   
-  // 🧠 Added Memory Array Logic to Gemini Omni
-  const contents = history.map(msg => ({
-      role: msg.role === "assistant" ? "model" : "user",
-      parts: [{ text: msg.content }]
-  }));
-  contents.push({ role: "user", parts: [{ text: prompt }] });
+  // 🧠 BULLETPROOF GEMINI MEMORY COMPACTOR
+  let contents: any[] = [];
+  let lastRole = "";
+  for (const msg of history) {
+      const currentRole = msg.role === "assistant" ? "model" : "user";
+      if (currentRole === lastRole) {
+          contents[contents.length - 1].parts[0].text += "\n" + msg.content;
+      } else {
+          contents.push({ role: currentRole, parts: [{ text: msg.content }] });
+          lastRole = currentRole;
+      }
+  }
+  if (lastRole === "user") contents[contents.length - 1].parts[0].text += "\n" + prompt;
+  else contents.push({ role: "user", parts: [{ text: prompt }] });
 
   for (const model of models) {
     try {
@@ -100,6 +110,23 @@ async function callGemini(models: string[], systemPrompt: string, history: any[]
 async function callAnthropic(models: string[], history: any[], systemPrompt: string, prompt: string, key: string | null) {
   const apiKey = key || process.env.ANTHROPIC_API_KEY || "";
   const finalSystemPrompt = `${ENTERPRISE_GUARDRAIL}\n\n${systemPrompt || "You are a highly advanced AI assistant."}`;
+  
+  // 🧠 BULLETPROOF CLAUDE MEMORY COMPACTOR
+  let mergedMessages: any[] = [];
+  let lastRole = "";
+  for (const msg of history) {
+      if (msg.role === lastRole) {
+          mergedMessages[mergedMessages.length - 1].content += "\n" + msg.content;
+      } else {
+          mergedMessages.push({ role: msg.role, content: msg.content });
+          lastRole = msg.role;
+      }
+  }
+  if (lastRole === "user") mergedMessages[mergedMessages.length - 1].content += "\n" + prompt;
+  else mergedMessages.push({ role: "user", content: prompt });
+
+  if (mergedMessages.length > 0 && mergedMessages[0].role !== "user") mergedMessages.shift();
+
   for (const model of models) {
     try {
       console.log(`🔴 [OMNI-NEXUS] Trying Anthropic Model: ${model}`);
@@ -114,7 +141,7 @@ async function callAnthropic(models: string[], history: any[], systemPrompt: str
           model: model,
           max_tokens: 1024,
           system: finalSystemPrompt,
-          messages: [...history, { role: "user", content: prompt }]
+          messages: mergedMessages
         }),
       });
 
