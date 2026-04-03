@@ -52,7 +52,7 @@ export async function GET(req: Request) {
 }
 
 // =========================================================================
-// 🚀 AI HELPER FUNCTIONS (NOW WITH LONG-TERM MEMORY ARRAYS)
+// 🚀 AI HELPER FUNCTIONS (NOW WITH BULLETPROOF MEMORY ARRAYS)
 // =========================================================================
 async function generateEmbedding(text: string) {
     if (!process.env.GEMINI_API_KEY) return null;
@@ -70,12 +70,20 @@ async function generateEmbedding(text: string) {
 async function callGemini(model: string, systemPrompt: string, history: any[], userText: string) {
     if (!process.env.GEMINI_API_KEY) throw new Error("API_KEY missing");
     
-    // 🧠 Proper Gemini Context Array formatting
-    const contents = history.map(msg => ({
-        role: msg.role === "assistant" ? "model" : "user",
-        parts: [{ text: msg.content }]
-    }));
-    contents.push({ role: "user", parts: [{ text: userText }] });
+    // 🧠 BULLETPROOF GEMINI MEMORY COMPACTOR (Prevents 400 Crashes)
+    let contents: any[] = [];
+    let lastRole = "";
+    for (const msg of history) {
+        const currentRole = msg.role === "assistant" ? "model" : "user";
+        if (currentRole === lastRole) {
+            contents[contents.length - 1].parts[0].text += "\n" + msg.content;
+        } else {
+            contents.push({ role: currentRole, parts: [{ text: msg.content }] });
+            lastRole = currentRole;
+        }
+    }
+    if (lastRole === "user") contents[contents.length - 1].parts[0].text += "\n" + userText;
+    else contents.push({ role: "user", parts: [{ text: userText }] });
 
     const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${process.env.GEMINI_API_KEY}`, {
         method: "POST", headers: { "Content-Type": "application/json" },
@@ -92,7 +100,6 @@ async function callGemini(model: string, systemPrompt: string, history: any[], u
 async function callOpenAI(model: string, systemPrompt: string, history: any[], userText: string) {
     if (!process.env.OPENAI_API_KEY) throw new Error("API_KEY missing");
     
-    // 🧠 Proper OpenAI Context Array formatting
     const messages = [
         { role: "system", content: systemPrompt },
         ...history,
@@ -110,13 +117,31 @@ async function callOpenAI(model: string, systemPrompt: string, history: any[], u
 
 async function callClaude(model: string, systemPrompt: string, history: any[], userText: string) {
     if (!process.env.ANTHROPIC_API_KEY) throw new Error("API_KEY missing");
+    
+    // 🧠 BULLETPROOF CLAUDE MEMORY COMPACTOR
+    let mergedMessages: any[] = [];
+    let lastRole = "";
+    for (const msg of history) {
+        if (msg.role === lastRole) {
+            mergedMessages[mergedMessages.length - 1].content += "\n" + msg.content;
+        } else {
+            mergedMessages.push({ role: msg.role, content: msg.content });
+            lastRole = msg.role;
+        }
+    }
+    if (lastRole === "user") mergedMessages[mergedMessages.length - 1].content += "\n" + userText;
+    else mergedMessages.push({ role: "user", content: userText });
+
+    // Anthropic strictly requires first message to be 'user'
+    if (mergedMessages.length > 0 && mergedMessages[0].role !== "user") mergedMessages.shift();
+
     const res = await fetch("https://api.anthropic.com/v1/messages", {
         method: "POST", headers: { "Content-Type": "application/json", "x-api-key": process.env.ANTHROPIC_API_KEY, "anthropic-version": "2023-06-01" },
         body: JSON.stringify({ 
             model: model, 
             max_tokens: 1024, 
             system: systemPrompt,
-            messages: [...history, { role: "user", content: userText }] 
+            messages: mergedMessages 
         })
     });
     const data = await res.json();
@@ -228,12 +253,13 @@ export async function POST(req: Request) {
             .order("created_at", { ascending: false })
             .limit(20); 
 
-        // 🧠 Format history into Array instead of one big string
+        // 🧠 Format history into Array instead of one big string (Safe Fallback added)
         let historyArray: any[] = [];
         if (pastChats && pastChats.length > 0) {
             historyArray = pastChats.reverse().map(chat => ({
                 role: chat.sender_type === "bot" ? "assistant" : "user",
-                content: chat.message
+                // Safe-fallback to prevent empty string API crashes
+                content: chat.message ? chat.message.trim() : " "
             }));
         }
 

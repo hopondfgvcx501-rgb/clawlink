@@ -11,6 +11,7 @@ const COOLDOWN_MS = 1500; // Ultra-fast Telegram cooldown
 
 // 🚀 INITIALIZE SUPABASE
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
+// 🛑 MASTER KEY LOCK: If this is missing in Vercel, RLS blocks chat history (Memory fails!)
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
 const supabase = createClient(supabaseUrl, supabaseKey);
 
@@ -36,7 +37,7 @@ CRITICAL INSTRUCTION: You are an Advanced AI Support Agent operating on the Claw
 `;
 
 // =========================================================================
-// 🚀 AI & RAG HELPER FUNCTIONS (UPGRADED WITH MEMORY ARRAYS)
+// 🚀 AI & RAG HELPER FUNCTIONS (UPGRADED WITH BULLETPROOF MEMORY ARRAYS)
 // =========================================================================
 async function generateEmbedding(text: string, key: string | null) {
     const apiKey = key || process.env.GEMINI_API_KEY;
@@ -64,12 +65,20 @@ async function callGemini(model: string, systemPrompt: string, history: any[], u
     const apiKey = key || process.env.GEMINI_API_KEY;
     if (!apiKey) throw new Error("API_KEY missing");
     
-    // 🧠 Proper Gemini Context Array
-    const contents = history.map(msg => ({
-        role: msg.role === "assistant" ? "model" : "user",
-        parts: [{ text: msg.content }]
-    }));
-    contents.push({ role: "user", parts: [{ text: userText }] });
+    // 🧠 Proper Gemini Context Array (With Anti-Crash Compactor)
+    let contents: any[] = [];
+    let lastRole = "";
+    for (const msg of history) {
+        const currentRole = msg.role === "assistant" ? "model" : "user";
+        if (currentRole === lastRole) {
+            contents[contents.length - 1].parts[0].text += "\n" + msg.content;
+        } else {
+            contents.push({ role: currentRole, parts: [{ text: msg.content }] });
+            lastRole = currentRole;
+        }
+    }
+    if (lastRole === "user") contents[contents.length - 1].parts[0].text += "\n" + userText;
+    else contents.push({ role: "user", parts: [{ text: userText }] });
 
     const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
         method: "POST", headers: { "Content-Type": "application/json" },
@@ -106,13 +115,30 @@ async function callOpenAI(model: string, systemPrompt: string, history: any[], u
 async function callClaude(model: string, systemPrompt: string, history: any[], userText: string, key: string | null) {
     const apiKey = key || process.env.ANTHROPIC_API_KEY;
     if (!apiKey) throw new Error("API_KEY missing");
+    
+    // 🧠 Proper Claude Context Array (With Anti-Crash Compactor)
+    let mergedMessages: any[] = [];
+    let lastRole = "";
+    for (const msg of history) {
+        if (msg.role === lastRole) {
+            mergedMessages[mergedMessages.length - 1].content += "\n" + msg.content;
+        } else {
+            mergedMessages.push({ role: msg.role, content: msg.content });
+            lastRole = msg.role;
+        }
+    }
+    if (lastRole === "user") mergedMessages[mergedMessages.length - 1].content += "\n" + userText;
+    else mergedMessages.push({ role: "user", content: userText });
+
+    if (mergedMessages.length > 0 && mergedMessages[0].role !== "user") mergedMessages.shift();
+
     const res = await fetch("https://api.anthropic.com/v1/messages", {
         method: "POST", headers: { "Content-Type": "application/json", "x-api-key": apiKey, "anthropic-version": "2023-06-01" },
         body: JSON.stringify({ 
             model: model, 
             max_tokens: 1024, 
             system: systemPrompt,
-            messages: [...history, { role: "user", content: userText }] 
+            messages: mergedMessages 
         })
     });
     const data = await res.json();
@@ -275,12 +301,12 @@ export async function POST(req: Request) {
             .order("created_at", { ascending: false })
             .limit(20);
 
-        // 🧠 Format history into Array instead of one big string
+        // 🧠 Format history into Array instead of one big string (Safe Fallback added)
         let historyArray: any[] = [];
         if (pastChats && pastChats.length > 0) {
             historyArray = pastChats.reverse().map(chat => ({
                 role: chat.sender_type === "bot" ? "assistant" : "user",
-                content: chat.message
+                content: chat.message ? chat.message.trim() : " "
             }));
         }
 
@@ -300,7 +326,7 @@ export async function POST(req: Request) {
         const usageRatio = isUnlimited ? 0 : (tokensUsed / tokensAllocated) * 100;
         
         const GEMINI_CHEAP = "gemini-1.5-flash-8b"; 
-        const GEMINI_MID = "gemini-1.5-flash";      
+        const GEMINI_MID = "gemini-1.5-flash";       
         const GEMINI_PREMIUM = "gemini-1.5-pro";    
         
         const GPT_CHEAP = "gpt-4o-mini";
