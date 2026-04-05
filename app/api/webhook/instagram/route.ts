@@ -43,32 +43,31 @@ export async function POST(req: Request) {
         // 🟢 SCENARIO A: Direct Messages (DMs)
         if (entry.messaging && entry.messaging[0]) {
             const webhookEvent = entry.messaging[0];
-            const senderId = webhookEvent.sender.id;
+            const senderId = webhookEvent.sender?.id;
             const userText = webhookEvent.message?.text;
 
             // Ignore echoes or empty messages to save API cost
-            if (!userText || webhookEvent.message?.is_echo) {
-                return NextResponse.json({ success: true }, { status: 200 });
+            if (userText && !webhookEvent.message?.is_echo) {
+                // Fire and Forget pattern (Bypasses Meta 20s limit)
+                processDynamicAI(senderId, accountId, userText, "dm", req).catch(console.error);
             }
-
-            // Fire and Forget pattern (Bypasses Meta 20s limit)
-            processDynamicAI(senderId, accountId, userText, "dm", req).catch(console.error);
         }
 
-        // 🔵 SCENARIO B: Post Comments (Auto-DM Trigger)
+        // 🔵 SCENARIO B: Post Comments (Auto-DM Trigger) - FIXED FOR META GRAPH API
         if (entry.changes && entry.changes[0]) {
-            const change = entry.changes[0].value;
-            if (change.item === "comment" && change.verb === "add") {
-                const commentId = change.id;
-                const userText = change.text;
-                const senderId = change.from?.id;
+            const change = entry.changes[0];
+            
+            // Checking strictly for "comments" field based on Meta Docs
+            if (change.field === "comments") {
+                const commentValue = change.value;
+                const commentId = commentValue?.id;
+                const userText = commentValue?.text;
+                const senderId = commentValue?.from?.id;
 
-                // Ignore if the bot itself commented
-                if (senderId === accountId || !userText) {
-                     return NextResponse.json({ success: true }, { status: 200 });
+                // 🛡️ ANTI-LOOP: Ignore if the bot itself commented or text is missing
+                if (senderId && userText && senderId !== accountId) {
+                    processDynamicAI(senderId, accountId, userText, "comment", req, commentId).catch(console.error);
                 }
-
-                processDynamicAI(senderId, accountId, userText, "comment", req, commentId).catch(console.error);
             }
         }
 
@@ -99,11 +98,11 @@ async function processDynamicAI(senderId: string, accountId: string, text: strin
         return;
     }
 
-    const metaApiToken = config.telegram_token;
+    const metaApiToken = config.telegram_token; // The IG Token saved in DB
     
-    // 🔄 DYNAMIC ROUTING LOGIC (The Founder's Masterstroke)
-    const aiProvider = config.ai_provider || "multi_model"; 
-    const isOmni = aiProvider === "multi_model";
+    // 🔄 DYNAMIC ROUTING LOGIC (Fixed to use selected_model from your DB)
+    const aiProvider = config.selected_model || "multi_model"; 
+    const isOmni = aiProvider === "multi_model" || aiProvider === "omni";
     const targetEndpoint = isOmni ? "/api/omni" : "/api/ai";
 
     console.log(`🧭 [IG-ROUTER] Routing to: ${targetEndpoint} (Model: ${aiProvider})`);
@@ -133,10 +132,10 @@ async function processDynamicAI(senderId: string, accountId: string, text: strin
             "Content-Type": "application/json" 
         },
         body: JSON.stringify({
-            prompt: type === "comment" ? `User commented on a post: "${text}". Reply to them to check their DM.` : text,
+            prompt: type === "comment" ? `A user commented on a post: "${text}". Reply to them in short and ask them to check their DM.` : text,
             systemPrompt: config.system_prompt || "You are an Enterprise AI Agent for Instagram. Be concise, use emojis.",
             history: historyArray,
-            apiKey: config.user_api_key,
+            apiKey: config.user_api_key, // Uses their custom key if normal model
             model: isOmni ? undefined : aiProvider // Send specific model to /api/ai
         })
     });
@@ -155,13 +154,14 @@ async function processDynamicAI(senderId: string, accountId: string, text: strin
             })
         });
     } else if (type === "comment") {
-        // Reply publicly to comment
+        // Step A: Reply publicly to comment
         await fetch(`https://graph.facebook.com/v18.0/${commentId}/replies?access_token=${metaApiToken}`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ message: "Check your DM! I've sent you the details right now. 🚀" })
+            body: JSON.stringify({ message: "Check your DM! I've sent you the details. 🚀" })
         });
-        // Send actual response to DM
+        
+        // Step B: Send actual response to DM secretly
         await fetch(`https://graph.facebook.com/v18.0/me/messages?access_token=${metaApiToken}`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
