@@ -1,13 +1,16 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
-// 🛡️ Bypassing Meta Timeouts: Edge runtime is fast, but we ensure quick responses.
-export const maxDuration = 45; 
+// Bypassing timeouts: Edge runtime is fast, but we ensure quick responses.
+export const maxDuration = 45;
 
-const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
+const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
 
 // ==========================================
-// 1. GET: Meta Webhook Verification (The Main Gate)
+// 1. GET: Webhook Verification
 // ==========================================
 export async function GET(req: Request) {
     const { searchParams } = new URL(req.url);
@@ -15,22 +18,23 @@ export async function GET(req: Request) {
     const token = searchParams.get("hub.verify_token");
     const challenge = searchParams.get("hub.challenge");
 
-    // Standard verification for ClawLink International Users
     if (mode === "subscribe" && token === "clawlinkmeta2026") {
-        console.log("✅ [IG-WEBHOOK] Meta Verification Success!");
+        console.log("[IG-WEBHOOK] Verification successful.");
         return new NextResponse(challenge, { status: 200 });
     }
     return new NextResponse("Forbidden", { status: 403 });
 }
 
 // ==========================================
-// 2. POST: The 98% Compliant Traffic Handler
+// 2. POST: Traffic Handler
 // ==========================================
 export async function POST(req: Request) {
     try {
         const body = await req.json();
 
-        // 🛡️ META COMPLIANCE: If it's not a valid entry, ignore immediately.
+        // Log incoming payload for debugging purposes
+        console.log("[IG-WEBHOOK] Incoming payload received.");
+
         if (body.object !== "instagram" && body.object !== "page") {
             return NextResponse.json({ success: true }, { status: 200 });
         }
@@ -38,76 +42,72 @@ export async function POST(req: Request) {
         const entry = body.entry?.[0];
         if (!entry) return NextResponse.json({ success: true }, { status: 200 });
 
-        const accountId = entry.id; // The B2B Client's Instagram Account ID
+        const accountId = entry.id; // The client's Instagram Account ID
 
-        // 🟢 SCENARIO A: Direct Messages (DMs)
+        // SCENARIO A: Direct Messages
         if (entry.messaging && entry.messaging[0]) {
             const webhookEvent = entry.messaging[0];
             const senderId = webhookEvent.sender?.id;
             const userText = webhookEvent.message?.text;
 
-            // Ignore echoes or empty messages to save API cost
             if (userText && !webhookEvent.message?.is_echo) {
-                // Fire and Forget pattern (Bypasses Meta 20s limit)
                 processDynamicAI(senderId, accountId, userText, "dm", req).catch(console.error);
             }
         }
 
-        // 🔵 SCENARIO B: Post Comments (Auto-DM Trigger) - FIXED FOR META GRAPH API
+        // SCENARIO B: Post Comments
         if (entry.changes && entry.changes[0]) {
             const change = entry.changes[0];
             
-            // Checking strictly for "comments" field based on Meta Docs
             if (change.field === "comments") {
                 const commentValue = change.value;
                 const commentId = commentValue?.id;
                 const userText = commentValue?.text;
                 const senderId = commentValue?.from?.id;
 
-                // 🛡️ ANTI-LOOP: Ignore if the bot itself commented or text is missing
+                // Ignore if the bot itself commented
                 if (senderId && userText && senderId !== accountId) {
                     processDynamicAI(senderId, accountId, userText, "comment", req, commentId).catch(console.error);
                 }
             }
         }
 
-        // 🛡️ META RULE 1: ALWAYS RETURN 200 OK INSTANTLY!
         return NextResponse.json({ success: true }, { status: 200 });
 
     } catch (error) {
-        console.error("🚨 [IG-WEBHOOK] Fatal Error:", error);
+        console.error("[IG-WEBHOOK] Fatal Error:", error);
         return NextResponse.json({ success: true }, { status: 200 });
     }
 }
 
 // ==========================================
-// 🧠 3. THE DYNAMIC ENGINE ROUTER (Global Logic)
+// 3. Dynamic Engine Router
 // ==========================================
 async function processDynamicAI(senderId: string, accountId: string, text: string, type: "dm" | "comment", req: Request, commentId?: string) {
-    console.log(`⚡ [IG-PROCESSOR] Intercepted ${type} from ${senderId}`);
+    console.log(`[IG-PROCESSOR] Intercepted ${type} from user ${senderId}`);
 
-    // 1. Identify B2B Client in Database
-    const { data: config } = await supabase
+    // Identify client using dedicated Instagram columns
+    const { data: config, error: dbError } = await supabase
         .from("user_configs")
         .select("*")
-        .eq("whatsapp_phone_id", accountId)
+        .eq("instagram_account_id", accountId)
         .single();
 
-    if (!config || !config.telegram_token) {
-        console.error("❌ [IG-PROCESSOR] Unregistered Account ID:", accountId);
+    if (dbError || !config || !config.instagram_token) {
+        console.error(`[IG-PROCESSOR] Unregistered Account ID or missing token: ${accountId}`);
         return;
     }
 
-    const metaApiToken = config.telegram_token; // The IG Token saved in DB
+    const metaApiToken = config.instagram_token; 
     
-    // 🔄 DYNAMIC ROUTING LOGIC (Fixed to use selected_model from your DB)
+    // Dynamic routing logic
     const aiProvider = config.selected_model || "multi_model"; 
     const isOmni = aiProvider === "multi_model" || aiProvider === "omni";
     const targetEndpoint = isOmni ? "/api/omni" : "/api/ai";
 
-    console.log(`🧭 [IG-ROUTER] Routing to: ${targetEndpoint} (Model: ${aiProvider})`);
+    console.log(`[IG-ROUTER] Routing traffic to endpoint: ${targetEndpoint} using model: ${aiProvider}`);
 
-    // 2. Fetch Client's AI Memory (Last 10 messages)
+    // Fetch chat history
     const { data: history } = await supabase
         .from("chat_history")
         .select("sender_type, message")
@@ -120,10 +120,14 @@ async function processDynamicAI(senderId: string, accountId: string, text: strin
         content: c.message || " "
     }));
 
-    // 3. Trigger The Selected AI Engine
+    // Trigger AI Engine
     const protocol = req.headers.get("x-forwarded-proto") || "http";
     const host = req.headers.get("host");
     const baseUrl = `${protocol}://${host}`;
+
+    const promptText = type === "comment" 
+        ? `A user commented on an Instagram post: "${text}". Reply to them concisely and advise them to check their DMs.` 
+        : text;
 
     const engineRes = await fetch(`${baseUrl}${targetEndpoint}`, {
         method: "POST",
@@ -132,18 +136,18 @@ async function processDynamicAI(senderId: string, accountId: string, text: strin
             "Content-Type": "application/json" 
         },
         body: JSON.stringify({
-            prompt: type === "comment" ? `A user commented on a post: "${text}". Reply to them in short and ask them to check their DM.` : text,
-            systemPrompt: config.system_prompt || "You are an Enterprise AI Agent for Instagram. Be concise, use emojis.",
+            prompt: promptText,
+            systemPrompt: config.system_prompt || "You are an AI Assistant for Instagram. Keep responses concise.",
             history: historyArray,
-            apiKey: config.user_api_key, // Uses their custom key if normal model
-            model: isOmni ? undefined : aiProvider // Send specific model to /api/ai
+            apiKey: config.user_api_key,
+            model: isOmni ? undefined : aiProvider 
         })
     });
 
     const engineData = await engineRes.json();
-    const aiReply = engineData.reply || "I'm currently undergoing maintenance. Be back shortly!";
+    const aiReply = engineData.reply || "Service currently unavailable. Please try again later.";
 
-    // 4. Send Response via Meta Graph API v18.0
+    // Send response via Meta Graph API
     if (type === "dm") {
         await fetch(`https://graph.facebook.com/v18.0/me/messages?access_token=${metaApiToken}`, {
             method: "POST",
@@ -154,14 +158,14 @@ async function processDynamicAI(senderId: string, accountId: string, text: strin
             })
         });
     } else if (type === "comment") {
-        // Step A: Reply publicly to comment
+        // Reply publicly to the comment
         await fetch(`https://graph.facebook.com/v18.0/${commentId}/replies?access_token=${metaApiToken}`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ message: "Check your DM! I've sent you the details. 🚀" })
+            body: JSON.stringify({ message: "Please check your DMs for more details." })
         });
         
-        // Step B: Send actual response to DM secretly
+        // Send actual response to DM
         await fetch(`https://graph.facebook.com/v18.0/me/messages?access_token=${metaApiToken}`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -172,11 +176,11 @@ async function processDynamicAI(senderId: string, accountId: string, text: strin
         });
     }
 
-    // 5. Save everything to Supabase for Memory & Analytics
+    // Save history to database
     await supabase.from("chat_history").insert([
         { email: config.email, platform: "instagram", platform_chat_id: senderId, sender_type: "user", message: text },
         { email: config.email, platform: "instagram", platform_chat_id: senderId, sender_type: "bot", message: aiReply }
     ]);
     
-    console.log("✅ [IG-PROCESSOR] Flow Complete.");
+    console.log("[IG-PROCESSOR] Workflow executed successfully.");
 }
