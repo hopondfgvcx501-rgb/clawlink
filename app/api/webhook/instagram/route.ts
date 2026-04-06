@@ -52,7 +52,8 @@ export async function POST(req: Request) {
             console.log(`[IG-WEBHOOK] Processing DM from ${senderId}. Text: "${userText}"`);
 
             if (userText && !webhookEvent.message?.is_echo) {
-                processDynamicAI(senderId, accountId, userText, "dm", req).catch(console.error);
+                // FIXED: Added await to prevent Vercel from killing the background process
+                await processDynamicAI(senderId, accountId, userText, "dm", req);
             } else {
                  console.log("[IG-WEBHOOK] Message is an echo or empty. Ignoring.");
             }
@@ -71,7 +72,8 @@ export async function POST(req: Request) {
                 console.log(`[IG-WEBHOOK] Processing Comment from ${senderId}. Text: "${userText}"`);
 
                 if (senderId && userText && senderId !== accountId) {
-                    processDynamicAI(senderId, accountId, userText, "comment", req, commentId).catch(console.error);
+                    // FIXED: Added await to prevent Vercel from killing the background process
+                    await processDynamicAI(senderId, accountId, userText, "comment", req, commentId);
                 } else {
                      console.log("[IG-WEBHOOK] Comment is from bot itself or missing text. Ignoring.");
                 }
@@ -81,7 +83,7 @@ export async function POST(req: Request) {
         return NextResponse.json({ success: true }, { status: 200 });
 
     } catch (error) {
-        console.error("[IG-WEBHOOK] Fatal Error:", error);
+        console.error("[IG-WEBHOOK] Fatal Error in POST handler:", error);
         return NextResponse.json({ success: true }, { status: 200 });
     }
 }
@@ -140,19 +142,29 @@ async function processDynamicAI(senderId: string, accountId: string, text: strin
 
     console.log(`[IG-ROUTER] Triggering AI Engine with prompt: "${promptText}"`);
 
+    // FIXED: Unified Payload Matrix to support BOTH /api/omni and /api/ai endpoints seamlessly
+    const payloadData = {
+        // Fields for Omni Engine
+        prompt: promptText,
+        systemPrompt: config.system_prompt || "You are an AI Assistant for Instagram. Keep responses concise.",
+        history: historyArray,
+        apiKey: config.user_api_key,
+        model: isOmni ? undefined : aiProvider,
+        
+        // Fields for Standard AI Engine
+        email: config.email,
+        message: promptText,
+        platform: "instagram",
+        userPhoneOrChatId: senderId
+    };
+
     const engineRes = await fetch(`${baseUrl}${targetEndpoint}`, {
         method: "POST",
         headers: { 
             "Authorization": `Bearer ${process.env.CLAWLINK_MASTER_SECRET}`,
             "Content-Type": "application/json" 
         },
-        body: JSON.stringify({
-            prompt: promptText,
-            systemPrompt: config.system_prompt || "You are an AI Assistant for Instagram. Keep responses concise.",
-            history: historyArray,
-            apiKey: config.user_api_key,
-            model: isOmni ? undefined : aiProvider 
-        })
+        body: JSON.stringify(payloadData)
     });
 
     const engineData = await engineRes.json();
@@ -160,8 +172,10 @@ async function processDynamicAI(senderId: string, accountId: string, text: strin
     
     console.log(`[IG-ROUTER] AI Engine returned reply: "${aiReply}"`);
 
+    // FIXED: Capturing and logging Meta Graph API response for deep debugging
     if (type === "dm") {
-        await fetch(`https://graph.facebook.com/v18.0/me/messages?access_token=${metaApiToken}`, {
+        console.log(`[IG-PROCESSOR] Attempting to send DM back to user via Meta Graph API...`);
+        const metaRes = await fetch(`https://graph.facebook.com/v18.0/me/messages?access_token=${metaApiToken}`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -169,14 +183,22 @@ async function processDynamicAI(senderId: string, accountId: string, text: strin
                 message: { text: aiReply }
             })
         });
+        
+        const metaResponseData = await metaRes.json();
+        console.log(`[IG-PROCESSOR] Meta Graph API Response Data:`, JSON.stringify(metaResponseData, null, 2));
+
     } else if (type === "comment") {
-        await fetch(`https://graph.facebook.com/v18.0/${commentId}/replies?access_token=${metaApiToken}`, {
+        console.log(`[IG-PROCESSOR] Attempting to reply to comment and send DM...`);
+        
+        const commentRes = await fetch(`https://graph.facebook.com/v18.0/${commentId}/replies?access_token=${metaApiToken}`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ message: "Please check your DMs for more details." })
         });
+        const commentResponseData = await commentRes.json();
+        console.log(`[IG-PROCESSOR] Meta Comment API Response:`, JSON.stringify(commentResponseData));
         
-        await fetch(`https://graph.facebook.com/v18.0/me/messages?access_token=${metaApiToken}`, {
+        const dmRes = await fetch(`https://graph.facebook.com/v18.0/me/messages?access_token=${metaApiToken}`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -184,6 +206,8 @@ async function processDynamicAI(senderId: string, accountId: string, text: strin
                 message: { text: aiReply }
             })
         });
+        const dmResponseData = await dmRes.json();
+        console.log(`[IG-PROCESSOR] Meta Follow-up DM API Response:`, JSON.stringify(dmResponseData));
     }
 
     await supabase.from("chat_history").insert([
