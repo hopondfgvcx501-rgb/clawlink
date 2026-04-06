@@ -32,8 +32,8 @@ export async function POST(req: Request) {
     try {
         const body = await req.json();
 
-        // Log incoming payload for debugging purposes
-        console.log("[IG-WEBHOOK] Incoming payload received.");
+        // Log incoming payload for debugging
+        console.log("[IG-WEBHOOK] Incoming payload:", JSON.stringify(body, null, 2));
 
         if (body.object !== "instagram" && body.object !== "page") {
             return NextResponse.json({ success: true }, { status: 200 });
@@ -86,19 +86,19 @@ export async function POST(req: Request) {
 async function processDynamicAI(senderId: string, accountId: string, text: string, type: "dm" | "comment", req: Request, commentId?: string) {
     console.log(`[IG-PROCESSOR] Intercepted ${type} from user ${senderId}`);
 
-    // Identify client using dedicated Instagram columns
+    // Fetch config using existing columns mapped for Instagram
     const { data: config, error: dbError } = await supabase
         .from("user_configs")
         .select("*")
-        .eq("instagram_account_id", accountId)
+        .eq("whatsapp_phone_id", accountId)
         .single();
 
-    if (dbError || !config || !config.instagram_token) {
+    if (dbError || !config || !config.telegram_token) {
         console.error(`[IG-PROCESSOR] Unregistered Account ID or missing token: ${accountId}`);
         return;
     }
 
-    const metaApiToken = config.instagram_token; 
+    const metaApiToken = config.telegram_token; 
     
     // Dynamic routing logic
     const aiProvider = config.selected_model || "multi_model"; 
