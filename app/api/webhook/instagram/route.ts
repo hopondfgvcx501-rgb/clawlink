@@ -32,7 +32,6 @@ export async function POST(req: Request) {
     try {
         const body = await req.json();
 
-        // Log incoming payload for debugging
         console.log("[IG-WEBHOOK] Incoming payload:", JSON.stringify(body, null, 2));
 
         if (body.object !== "instagram" && body.object !== "page") {
@@ -42,7 +41,7 @@ export async function POST(req: Request) {
         const entry = body.entry?.[0];
         if (!entry) return NextResponse.json({ success: true }, { status: 200 });
 
-        const accountId = entry.id; // The client's Instagram Account ID
+        const accountId = entry.id; // The 15-digit Instagram Account ID
 
         // SCENARIO A: Direct Messages
         if (entry.messaging && entry.messaging[0]) {
@@ -65,7 +64,6 @@ export async function POST(req: Request) {
                 const userText = commentValue?.text;
                 const senderId = commentValue?.from?.id;
 
-                // Ignore if the bot itself commented
                 if (senderId && userText && senderId !== accountId) {
                     processDynamicAI(senderId, accountId, userText, "comment", req, commentId).catch(console.error);
                 }
@@ -86,19 +84,19 @@ export async function POST(req: Request) {
 async function processDynamicAI(senderId: string, accountId: string, text: string, type: "dm" | "comment", req: Request, commentId?: string) {
     console.log(`[IG-PROCESSOR] Intercepted ${type} from user ${senderId}`);
 
-    // Fetch config using existing columns mapped for Instagram
+    // 🔥 ISOLATED ARCHITECTURE: Searching only in the dedicated Instagram column
     const { data: config, error: dbError } = await supabase
         .from("user_configs")
         .select("*")
-        .eq("whatsapp_phone_id", accountId)
+        .eq("instagram_account_id", accountId)
         .single();
 
-    if (dbError || !config || !config.telegram_token) {
+    if (dbError || !config || !config.instagram_token) {
         console.error(`[IG-PROCESSOR] Unregistered Account ID or missing token: ${accountId}`);
         return;
     }
 
-    const metaApiToken = config.telegram_token; 
+    const metaApiToken = config.instagram_token; 
     
     // Dynamic routing logic
     const aiProvider = config.selected_model || "multi_model"; 
@@ -107,7 +105,6 @@ async function processDynamicAI(senderId: string, accountId: string, text: strin
 
     console.log(`[IG-ROUTER] Routing traffic to endpoint: ${targetEndpoint} using model: ${aiProvider}`);
 
-    // Fetch chat history
     const { data: history } = await supabase
         .from("chat_history")
         .select("sender_type, message")
@@ -120,7 +117,6 @@ async function processDynamicAI(senderId: string, accountId: string, text: strin
         content: c.message || " "
     }));
 
-    // Trigger AI Engine
     const protocol = req.headers.get("x-forwarded-proto") || "http";
     const host = req.headers.get("host");
     const baseUrl = `${protocol}://${host}`;
@@ -147,7 +143,6 @@ async function processDynamicAI(senderId: string, accountId: string, text: strin
     const engineData = await engineRes.json();
     const aiReply = engineData.reply || "Service currently unavailable. Please try again later.";
 
-    // Send response via Meta Graph API
     if (type === "dm") {
         await fetch(`https://graph.facebook.com/v18.0/me/messages?access_token=${metaApiToken}`, {
             method: "POST",
@@ -158,14 +153,12 @@ async function processDynamicAI(senderId: string, accountId: string, text: strin
             })
         });
     } else if (type === "comment") {
-        // Reply publicly to the comment
         await fetch(`https://graph.facebook.com/v18.0/${commentId}/replies?access_token=${metaApiToken}`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ message: "Please check your DMs for more details." })
         });
         
-        // Send actual response to DM
         await fetch(`https://graph.facebook.com/v18.0/me/messages?access_token=${metaApiToken}`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -176,7 +169,6 @@ async function processDynamicAI(senderId: string, accountId: string, text: strin
         });
     }
 
-    // Save history to database
     await supabase.from("chat_history").insert([
         { email: config.email, platform: "instagram", platform_chat_id: senderId, sender_type: "user", message: text },
         { email: config.email, platform: "instagram", platform_chat_id: senderId, sender_type: "bot", message: aiReply }
