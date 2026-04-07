@@ -172,9 +172,11 @@ async function processDynamicAI(senderId: string, accountId: string, text: strin
     
     console.log(`[IG-ROUTER] AI Engine returned reply: "${aiReply}"`);
 
-    // FIXED: Capturing and logging Meta Graph API response for deep debugging
+    // 🚨 ULTIMATE DEBUG HACK: Error ko seedha Database mein save karenge
+    let finalDbMessage = aiReply;
+
     if (type === "dm") {
-        console.log(`[IG-PROCESSOR] Attempting to send DM back to user via Meta Graph API...`);
+        console.log(`[IG-PROCESSOR] Attempting to send DM...`);
         const metaRes = await fetch(`https://graph.facebook.com/v18.0/me/messages?access_token=${metaApiToken}`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -185,18 +187,18 @@ async function processDynamicAI(senderId: string, accountId: string, text: strin
         });
         
         const metaResponseData = await metaRes.json();
-        console.log(`[IG-PROCESSOR] Meta Graph API Response Data:`, JSON.stringify(metaResponseData, null, 2));
+        
+        // Agar Meta ne message drop kiya, toh error Supabase mein save hoga!
+        if (metaResponseData.error) {
+             finalDbMessage = `[META ERROR] Code: ${metaResponseData.error.code} | Type: ${metaResponseData.error.type} | Msg: ${metaResponseData.error.message}`;
+        }
 
     } else if (type === "comment") {
-        console.log(`[IG-PROCESSOR] Attempting to reply to comment and send DM...`);
-        
         const commentRes = await fetch(`https://graph.facebook.com/v18.0/${commentId}/replies?access_token=${metaApiToken}`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ message: "Please check your DMs for more details." })
         });
-        const commentResponseData = await commentRes.json();
-        console.log(`[IG-PROCESSOR] Meta Comment API Response:`, JSON.stringify(commentResponseData));
         
         const dmRes = await fetch(`https://graph.facebook.com/v18.0/me/messages?access_token=${metaApiToken}`, {
             method: "POST",
@@ -207,12 +209,15 @@ async function processDynamicAI(senderId: string, accountId: string, text: strin
             })
         });
         const dmResponseData = await dmRes.json();
-        console.log(`[IG-PROCESSOR] Meta Follow-up DM API Response:`, JSON.stringify(dmResponseData));
+        if (dmResponseData.error) {
+             finalDbMessage = `[META ERROR] Code: ${dmResponseData.error.code} | Msg: ${dmResponseData.error.message}`;
+        }
     }
 
+    // Database mein finalDbMessage save hoga (Ya toh asli AI reply, ya fir Meta ka Error)
     await supabase.from("chat_history").insert([
         { email: config.email, platform: "instagram", platform_chat_id: senderId, sender_type: "user", message: text },
-        { email: config.email, platform: "instagram", platform_chat_id: senderId, sender_type: "bot", message: aiReply }
+        { email: config.email, platform: "instagram", platform_chat_id: senderId, sender_type: "bot", message: finalDbMessage }
     ]);
     
     console.log("[IG-PROCESSOR] Workflow executed successfully.");
