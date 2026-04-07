@@ -112,7 +112,7 @@ async function processDynamicAI(senderId: string, accountId: string, text: strin
         return;
     }
 
-    const metaApiToken = config.instagram_token; 
+    const metaApiToken = config.instagram_token.trim();
     
     const aiProvider = config.selected_model || "multi_model"; 
     const isOmni = aiProvider === "multi_model" || aiProvider === "omni";
