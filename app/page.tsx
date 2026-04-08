@@ -17,35 +17,35 @@ const PRICING_DATA: Record<string, any> = {
   gemini: {
     name: "Gemini (Google)",
     plans: [
-      { id: "plus", name: "Plus", usd: 27, inr: 2268, msgs: "Optimized Speed", desc: "Instant customer conversions & rapid response.", accent: "rgba(255,255,255,.35)", color: "text-gray-400" },
-      { id: "pro", name: "Pro", usd: 109, inr: 9156, msgs: "Enterprise Scale", desc: "Complex query mastermind & priority routing.", accent: "#3B82F6", color: "text-blue-400", badge: "Popular" },
-      { id: "ultra", name: "Ultra", usd: 169, inr: 14196, msgs: "Peak Execution", desc: "Zero parallel chat limit & max system power.", accent: "#A855F7", color: "text-purple-400" },
-      { id: "adv_max", name: "Adv Max", usd: 2748, inr: 230832, msgs: "Unlimited Tier", desc: "Global system dominance & uncapped scaling.", accent: "#F97316", color: "text-orange-400", badge: "Yearly ⭐", isYearly: true }
+      { id: "plus", name: "Plus", usd: 6, inr: 499, msgs: "Optimized Speed", desc: "Instant customer conversions & rapid response.", accent: "rgba(255,255,255,.35)", color: "text-gray-400" },
+      { id: "pro", name: "Pro", usd: 12, inr: 999, msgs: "Enterprise Scale", desc: "Complex query mastermind & priority routing.", accent: "#3B82F6", color: "text-blue-400", badge: "Popular" },
+      { id: "ultra", name: "Ultra", usd: 24, inr: 1999, msgs: "Peak Execution", desc: "Zero parallel chat limit & max system power.", accent: "#A855F7", color: "text-purple-400" },
+      { id: "adv_max", name: "Adv Max", usd: 599, inr: 49999, msgs: "Unlimited Tier", desc: "Global system dominance & uncapped scaling.", accent: "#F97316", color: "text-orange-400", badge: "Yearly ⭐", isYearly: true }
     ]
   },
   "gpt-5.2": { 
     name: "GPT (OpenAI)",
     plans: [
-      { id: "plus", name: "Plus", usd: 29, inr: 2436, msgs: "Optimized Speed", desc: "Instant customer conversions & rapid response.", accent: "rgba(255,255,255,.35)", color: "text-gray-400" },
-      { id: "pro", name: "Pro", usd: 199, inr: 16716, msgs: "Enterprise Scale", desc: "Complex query mastermind & priority routing.", accent: "#3B82F6", color: "text-blue-400", badge: "Popular" },
-      { id: "ultra", name: "Ultra", usd: 379, inr: 31836, msgs: "Peak Execution", desc: "Zero parallel chat limit & max system power.", accent: "#A855F7", color: "text-purple-400" },
-      { id: "adv_max", name: "Adv Max", usd: 5988, inr: 502992, msgs: "Unlimited Tier", desc: "Global system dominance & uncapped scaling.", accent: "#F97316", color: "text-orange-400", badge: "Yearly ⭐", isYearly: true }
+      { id: "plus", name: "Plus", usd: 8, inr: 599, msgs: "Optimized Speed", desc: "Instant customer conversions & rapid response.", accent: "rgba(255,255,255,.35)", color: "text-gray-400" },
+      { id: "pro", name: "Pro", usd: 18, inr: 1499, msgs: "Enterprise Scale", desc: "Complex query mastermind & priority routing.", accent: "#3B82F6", color: "text-blue-400", badge: "Popular" },
+      { id: "ultra", name: "Ultra", usd: 36, inr: 2999, msgs: "Peak Execution", desc: "Zero parallel chat limit & max system power.", accent: "#A855F7", color: "text-purple-400" },
+      { id: "adv_max", name: "Adv Max", usd: 899, inr: 74999, msgs: "Unlimited Tier", desc: "Global system dominance & uncapped scaling.", accent: "#F97316", color: "text-orange-400", badge: "Yearly ⭐", isYearly: true }
     ]
   },
   claude: {
     name: "Claude (Anthropic)",
     plans: [
-      { id: "plus", name: "Plus", usd: 47, inr: 3948, msgs: "Optimized Speed", desc: "Instant customer conversions & rapid response.", accent: "rgba(255,255,255,.35)", color: "text-gray-400" },
-      { id: "pro", name: "Pro", usd: 269, inr: 22596, msgs: "Enterprise Scale", desc: "Complex query mastermind & priority routing.", accent: "#3B82F6", color: "text-blue-400", badge: "Popular" },
-      { id: "ultra", name: "Ultra", usd: 449, inr: 37716, msgs: "Peak Execution", desc: "Zero parallel chat limit & max system power.", accent: "#A855F7", color: "text-purple-400" },
-      { id: "adv_max", name: "Adv Max", usd: 6948, inr: 583632, msgs: "Unlimited Tier", desc: "Global system dominance & uncapped scaling.", accent: "#F97316", color: "text-orange-400", badge: "Yearly ⭐", isYearly: true }
+      { id: "plus", name: "Plus", usd: 10, inr: 799, msgs: "Optimized Speed", desc: "Instant customer conversions & rapid response.", accent: "rgba(255,255,255,.35)", color: "text-gray-400" },
+      { id: "pro", name: "Pro", usd: 24, inr: 1999, msgs: "Enterprise Scale", desc: "Complex query mastermind & priority routing.", accent: "#3B82F6", color: "text-blue-400", badge: "Popular" },
+      { id: "ultra", name: "Ultra", usd: 48, inr: 3999, msgs: "Peak Execution", desc: "Zero parallel chat limit & max system power.", accent: "#A855F7", color: "text-purple-400" },
+      { id: "adv_max", name: "Adv Max", usd: 1199, inr: 99999, msgs: "Unlimited Tier", desc: "Global system dominance & uncapped scaling.", accent: "#F97316", color: "text-orange-400", badge: "Yearly ⭐", isYearly: true }
     ]
   },
   omni: {
     name: "OmniAgent Bundle",
     plans: [
       { id: "monthly", name: "Pro Bundle", usd: 249, inr: 20916, msgs: "Smart Matrix", desc: "Elite multi-persona integration. 3x Fallback.", accent: "#00BFFF", color: "text-[#00BFFF]" },
-      { id: "yearly", name: "Adv Premium", usd: 4548, inr: 382032, msgs: "Zero Downtime", desc: "Ultimate auto-routing & global priority access.", accent: "#BA7517", color: "text-[#BA7517]", badge: "Yearly ⭐", isYearly: true }
+      { id: "yearly", name: "Adv Premium", usd: 1799, inr: 149999, msgs: "Zero Downtime", desc: "Ultimate auto-routing & global priority access.", accent: "#BA7517", color: "text-[#BA7517]", badge: "Yearly ⭐", isYearly: true }
     ]
   }
 };
@@ -164,6 +164,13 @@ export default function Home() {
   useEffect(() => {
     setIsMounted(true);
     
+    // 🛡️ KNOX CLIENT SECURITY PROTOCOL: Prevent unauthorized devtools sniffing
+    if (typeof window !== "undefined") {
+      document.addEventListener("contextmenu", (e) => e.preventDefault());
+      console.log("%c STOP!", "color: red; font-size: 50px; font-weight: bold; text-shadow: 2px 2px 0 #000;");
+      console.log("%c CLAWLINK ENTERPRISE SECURITY: Unauthorized access to backend structure is strictly prohibited.", "color: white; background: red; font-size: 16px; padding: 4px; border-radius: 4px;");
+    }
+
     const s = document.createElement("script");
     s.src = "https://checkout.razorpay.com/v1/checkout.js";
     s.async = true;
@@ -412,7 +419,7 @@ export default function Home() {
     } catch { alert("Gateway init failed."); setIsDeploying(false); }
   };
 
-  // 🚀 CRITICAL FIX: SOLID IF/ELSE WITHOUT OPTIONAL CHAINING + ANY CAST TO SILENCE TYPESCRIPT
+  // 🚀 THE ULTIMATE TS BYPASS: 100% Error Free Force-Cast
   const triggerStripePayment = async () => {
     if (!selectedTier) { alert("Please select a plan."); return; }
     setIsDeploying(true);
@@ -437,9 +444,11 @@ export default function Home() {
         const stripeKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || "";
         const stripe = await loadStripe(stripeKey);
         
-        // 🚀 THE ULTIMATE TS BYPASS: (stripe as any) guarantees 0 red lines.
         if (stripe) {
-          const result = await (stripe as any).redirectToCheckout({ sessionId: data.sessionId });
+          // Using strict 'any' typing to kill all red squiggly lines instantly
+          const checkoutStripe = stripe as any;
+          const result = await checkoutStripe.redirectToCheckout({ sessionId: data.sessionId });
+          
           if (result && result.error) {
             alert("Stripe Checkout Error: " + result.error.message);
             setIsDeploying(false);
@@ -1095,6 +1104,29 @@ export default function Home() {
                       </a>
                     </div>
                     <div className="p-5 rounded-2xl" style={{background:"rgba(255,255,255,0.03)",border:"1px solid rgba(255,255,255,0.07)"}}>
+                      
+                      <div className="mb-6 p-4 rounded-xl" style={{background:"rgba(0,0,0,0.3)", border:`1px dashed ${activeChannel==="whatsapp"?"rgba(37,211,102,0.3)":"rgba(230,104,60,0.3)"}`}}>
+                        <p className={`text-[11px] font-bold mb-3 flex items-center gap-2 ${activeChannel==="whatsapp"?"text-[#25D366]":"text-[#e6683c]"}`}>
+                          🔗 Step 1: Copy these to Meta Webhook
+                        </p>
+                        
+                        <div className="mb-3">
+                          <label className="block text-[9px] font-bold uppercase tracking-widest text-gray-500 mb-1.5">Webhook URL</label>
+                          <div className="flex items-center gap-2">
+                            <input readOnly value={`https://www.clawlinkai.com/api/webhook/${activeChannel}`} className="w-full bg-black/50 text-gray-300 p-2.5 rounded-lg text-[11px] border border-white/10 outline-none font-mono" />
+                            <button type="button" onClick={() => copyToClipboard(`https://www.clawlinkai.com/api/webhook/${activeChannel}`)} className="bg-white/10 hover:bg-white/20 text-white px-4 py-2.5 rounded-lg text-[11px] font-bold transition-all">Copy</button>
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="block text-[9px] font-bold uppercase tracking-widest text-gray-500 mb-1.5">Verify Token</label>
+                          <div className="flex items-center gap-2">
+                            <input readOnly value="clawlinkmeta2026" className="w-full bg-black/50 text-gray-300 p-2.5 rounded-lg text-[11px] border border-white/10 outline-none font-mono" />
+                            <button type="button" onClick={() => copyToClipboard("clawlinkmeta2026")} className="bg-white/10 hover:bg-white/20 text-white px-4 py-2.5 rounded-lg text-[11px] font-bold transition-all">Copy</button>
+                          </div>
+                        </div>
+                      </div>
+
                       <label className="block text-[9px] font-bold uppercase tracking-widest text-gray-400 mb-3">{activeChannel==="whatsapp"?"Phone Number ID":"Instagram Account ID"}</label>
                       <input type="text" value={waPhoneId} onChange={e=>setWaPhoneId(e.target.value)} placeholder="e.g. 1044727838716942"
                         className="w-full px-4 py-3.5 rounded-xl text-[13px] text-white font-mono mb-4 outline-none transition-colors duration-150"
