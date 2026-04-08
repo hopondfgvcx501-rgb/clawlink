@@ -52,7 +52,6 @@ export async function POST(req: Request) {
             console.log(`[IG-WEBHOOK] Processing DM from ${senderId}. Text: "${userText}"`);
 
             if (userText && !webhookEvent.message?.is_echo) {
-                // FIXED: Added await to prevent Vercel from killing the background process
                 await processDynamicAI(senderId, accountId, userText, "dm", req);
             } else {
                  console.log("[IG-WEBHOOK] Message is an echo or empty. Ignoring.");
@@ -72,7 +71,6 @@ export async function POST(req: Request) {
                 console.log(`[IG-WEBHOOK] Processing Comment from ${senderId}. Text: "${userText}"`);
 
                 if (senderId && userText && senderId !== accountId) {
-                    // FIXED: Added await to prevent Vercel from killing the background process
                     await processDynamicAI(senderId, accountId, userText, "comment", req, commentId);
                 } else {
                      console.log("[IG-WEBHOOK] Comment is from bot itself or missing text. Ignoring.");
@@ -142,16 +140,12 @@ async function processDynamicAI(senderId: string, accountId: string, text: strin
 
     console.log(`[IG-ROUTER] Triggering AI Engine with prompt: "${promptText}"`);
 
-    // FIXED: Unified Payload Matrix to support BOTH /api/omni and /api/ai endpoints seamlessly
     const payloadData = {
-        // Fields for Omni Engine
         prompt: promptText,
         systemPrompt: config.system_prompt || "You are an AI Assistant for Instagram. Keep responses concise.",
         history: historyArray,
         apiKey: config.user_api_key,
         model: isOmni ? undefined : aiProvider,
-        
-        // Fields for Standard AI Engine
         email: config.email,
         message: promptText,
         platform: "instagram",
@@ -172,12 +166,14 @@ async function processDynamicAI(senderId: string, accountId: string, text: strin
     
     console.log(`[IG-ROUTER] AI Engine returned reply: "${aiReply}"`);
 
-    // 🚨 ULTIMATE DEBUG HACK: Error ko seedha Database mein save karenge
+    // 🚨 ULTIMATE DEBUG HACK + ACCOUNT ID FIX
     let finalDbMessage = aiReply;
 
     if (type === "dm") {
-        console.log(`[IG-PROCESSOR] Attempting to send DM...`);
-        const metaRes = await fetch(`https://graph.facebook.com/v18.0/me/messages?access_token=${metaApiToken}`, {
+        console.log(`[IG-PROCESSOR] Attempting to send DM through Account ${accountId}...`);
+        
+        // 🚀 FIXED: URL mein 'me' ki jagah '${accountId}' laga diya hai
+        const metaRes = await fetch(`https://graph.facebook.com/v18.0/${accountId}/messages?access_token=${metaApiToken}`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -188,7 +184,6 @@ async function processDynamicAI(senderId: string, accountId: string, text: strin
         
         const metaResponseData = await metaRes.json();
         
-        // Agar Meta ne message drop kiya, toh error Supabase mein save hoga!
         if (metaResponseData.error) {
              finalDbMessage = `[META ERROR] Code: ${metaResponseData.error.code} | Type: ${metaResponseData.error.type} | Msg: ${metaResponseData.error.message}`;
         }
@@ -200,7 +195,8 @@ async function processDynamicAI(senderId: string, accountId: string, text: strin
             body: JSON.stringify({ message: "Please check your DMs for more details." })
         });
         
-        const dmRes = await fetch(`https://graph.facebook.com/v18.0/me/messages?access_token=${metaApiToken}`, {
+        // 🚀 FIXED: URL mein 'me' ki jagah '${accountId}' laga diya hai
+        const dmRes = await fetch(`https://graph.facebook.com/v18.0/${accountId}/messages?access_token=${metaApiToken}`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -214,7 +210,6 @@ async function processDynamicAI(senderId: string, accountId: string, text: strin
         }
     }
 
-    // Database mein finalDbMessage save hoga (Ya toh asli AI reply, ya fir Meta ka Error)
     await supabase.from("chat_history").insert([
         { email: config.email, platform: "instagram", platform_chat_id: senderId, sender_type: "user", message: text },
         { email: config.email, platform: "instagram", platform_chat_id: senderId, sender_type: "bot", message: finalDbMessage }
