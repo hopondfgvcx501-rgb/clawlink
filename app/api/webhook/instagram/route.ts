@@ -172,8 +172,8 @@ async function processDynamicAI(senderId: string, accountId: string, text: strin
     if (type === "dm") {
         console.log(`[IG-PROCESSOR] Attempting to send DM via Graph API...`);
         
-        // FIXED: Routing exclusively through Instagram Account ID, not '/me/'
-        const metaRes = await fetch(`https://graph.facebook.com/v18.0/${accountId}/messages?access_token=${metaApiToken}`, {
+        // 🚀 THE FINAL FIX: Reverted to '/me/messages' because the EAAW Page Token requires this endpoint.
+        const metaRes = await fetch(`https://graph.facebook.com/v18.0/me/messages?access_token=${metaApiToken}`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -195,8 +195,8 @@ async function processDynamicAI(senderId: string, accountId: string, text: strin
             body: JSON.stringify({ message: "Please check your DMs for more details." })
         });
         
-        // FIXED: Routing exclusively through Instagram Account ID
-        const dmRes = await fetch(`https://graph.facebook.com/v18.0/${accountId}/messages?access_token=${metaApiToken}`, {
+        // 🚀 THE FINAL FIX: Reverted to '/me/messages'
+        const dmRes = await fetch(`https://graph.facebook.com/v18.0/me/messages?access_token=${metaApiToken}`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
