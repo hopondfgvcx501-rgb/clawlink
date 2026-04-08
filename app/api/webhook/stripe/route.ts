@@ -4,7 +4,7 @@ import { createClient } from "@supabase/supabase-js";
 
 // Initialize Stripe API
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-    apiVersion: "2023-10-16",
+    apiVersion: "2026-03-25.dahlia", // 🚀 Updated here too
 });
 
 // Initialize Supabase Client with Service Role for admin bypass
