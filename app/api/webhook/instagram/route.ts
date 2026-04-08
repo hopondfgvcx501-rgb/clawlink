@@ -25,7 +25,6 @@ export async function POST(req: Request) {
     try {
         const body = await req.json();
 
-        // 🚀 ENHANCED LOGGING
         console.log("================ IG WEBHOOK TRIGGERED ================");
         console.log("[IG-WEBHOOK] Full Payload:", JSON.stringify(body, null, 2));
 
@@ -110,7 +109,7 @@ async function processDynamicAI(senderId: string, accountId: string, text: strin
         return;
     }
 
-    // Fix: Trim token to prevent OAuth format errors
+    // Clean the token to prevent OAuth parsing errors
     const metaApiToken = config.instagram_token.trim();
     
     const aiProvider = config.selected_model || "multi_model"; 
@@ -167,14 +166,14 @@ async function processDynamicAI(senderId: string, accountId: string, text: strin
     
     console.log(`[IG-ROUTER] AI Engine returned reply: "${aiReply}"`);
 
-    // 🚨 DEBUG PROTOCOL: Capture Meta API responses and write directly to DB
+    // DEBUG PROTOCOL: Capture Meta API responses and write directly to DB
     let finalDbMessage = aiReply;
 
     if (type === "dm") {
         console.log(`[IG-PROCESSOR] Attempting to send DM via Graph API...`);
         
-        // 🚀 ROUTING FIX: Using '/me/messages' to match the capability of the Facebook Page Token (EAAW...)
-        const metaRes = await fetch(`https://graph.facebook.com/v18.0/me/messages?access_token=${metaApiToken}`, {
+        // FIXED: Routing exclusively through Instagram Account ID, not '/me/'
+        const metaRes = await fetch(`https://graph.facebook.com/v18.0/${accountId}/messages?access_token=${metaApiToken}`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -185,7 +184,6 @@ async function processDynamicAI(senderId: string, accountId: string, text: strin
         
         const metaResponseData = await metaRes.json();
         
-        // Intercept Meta delivery errors and log them into Supabase chat_history for debugging
         if (metaResponseData.error) {
              finalDbMessage = `[META ERROR] Code: ${metaResponseData.error.code} | Type: ${metaResponseData.error.type} | Msg: ${metaResponseData.error.message}`;
         }
@@ -197,8 +195,8 @@ async function processDynamicAI(senderId: string, accountId: string, text: strin
             body: JSON.stringify({ message: "Please check your DMs for more details." })
         });
         
-        // 🚀 ROUTING FIX: Using '/me/messages' here as well
-        const dmRes = await fetch(`https://graph.facebook.com/v18.0/me/messages?access_token=${metaApiToken}`, {
+        // FIXED: Routing exclusively through Instagram Account ID
+        const dmRes = await fetch(`https://graph.facebook.com/v18.0/${accountId}/messages?access_token=${metaApiToken}`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -212,7 +210,7 @@ async function processDynamicAI(senderId: string, accountId: string, text: strin
         }
     }
 
-    // Persist final execution state (Standard AI reply OR Meta API Error String)
+    // Persist final execution state
     await supabase.from("chat_history").insert([
         { email: config.email, platform: "instagram", platform_chat_id: senderId, sender_type: "user", message: text },
         { email: config.email, platform: "instagram", platform_chat_id: senderId, sender_type: "bot", message: finalDbMessage }
