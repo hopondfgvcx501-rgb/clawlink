@@ -110,6 +110,7 @@ async function processDynamicAI(senderId: string, accountId: string, text: strin
         return;
     }
 
+    // Fix: Trim token to prevent OAuth format errors
     const metaApiToken = config.instagram_token.trim();
     
     const aiProvider = config.selected_model || "multi_model"; 
@@ -166,14 +167,14 @@ async function processDynamicAI(senderId: string, accountId: string, text: strin
     
     console.log(`[IG-ROUTER] AI Engine returned reply: "${aiReply}"`);
 
-    // 🚨 ULTIMATE DEBUG HACK + ACCOUNT ID FIX
+    // 🚨 DEBUG PROTOCOL: Capture Meta API responses and write directly to DB
     let finalDbMessage = aiReply;
 
     if (type === "dm") {
-        console.log(`[IG-PROCESSOR] Attempting to send DM through Account ${accountId}...`);
+        console.log(`[IG-PROCESSOR] Attempting to send DM via Graph API...`);
         
-        // 🚀 FIXED: URL mein 'me' ki jagah '${accountId}' laga diya hai
-        const metaRes = await fetch(`https://graph.facebook.com/v18.0/${accountId}/messages?access_token=${metaApiToken}`, {
+        // 🚀 ROUTING FIX: Using '/me/messages' to match the capability of the Facebook Page Token (EAAW...)
+        const metaRes = await fetch(`https://graph.facebook.com/v18.0/me/messages?access_token=${metaApiToken}`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -184,6 +185,7 @@ async function processDynamicAI(senderId: string, accountId: string, text: strin
         
         const metaResponseData = await metaRes.json();
         
+        // Intercept Meta delivery errors and log them into Supabase chat_history for debugging
         if (metaResponseData.error) {
              finalDbMessage = `[META ERROR] Code: ${metaResponseData.error.code} | Type: ${metaResponseData.error.type} | Msg: ${metaResponseData.error.message}`;
         }
@@ -195,8 +197,8 @@ async function processDynamicAI(senderId: string, accountId: string, text: strin
             body: JSON.stringify({ message: "Please check your DMs for more details." })
         });
         
-        // 🚀 FIXED: URL mein 'me' ki jagah '${accountId}' laga diya hai
-        const dmRes = await fetch(`https://graph.facebook.com/v18.0/${accountId}/messages?access_token=${metaApiToken}`, {
+        // 🚀 ROUTING FIX: Using '/me/messages' here as well
+        const dmRes = await fetch(`https://graph.facebook.com/v18.0/me/messages?access_token=${metaApiToken}`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -210,6 +212,7 @@ async function processDynamicAI(senderId: string, accountId: string, text: strin
         }
     }
 
+    // Persist final execution state (Standard AI reply OR Meta API Error String)
     await supabase.from("chat_history").insert([
         { email: config.email, platform: "instagram", platform_chat_id: senderId, sender_type: "user", message: text },
         { email: config.email, platform: "instagram", platform_chat_id: senderId, sender_type: "bot", message: finalDbMessage }
