@@ -10,10 +10,11 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: 'always',
       priority: 1,
     },
+    // 🚀 NAYA PROGRAMMATIC SEO PAGE (HIGH PRIORITY)
     {
-      url: `${baseUrl}/dashboard`,
+      url: `${baseUrl}/whatsapp-ai-bot`,
       lastModified: new Date(),
-      changeFrequency: 'daily',
+      changeFrequency: 'weekly',
       priority: 0.9,
     },
     {
