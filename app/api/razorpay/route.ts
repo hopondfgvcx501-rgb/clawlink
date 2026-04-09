@@ -1,12 +1,21 @@
 import { NextResponse } from "next/server";
 import Razorpay from "razorpay";
 
+/* ─── 🚀 BACKEND SINGLE SOURCE OF TRUTH (HACKER-PROOF PRICING) ─── */
+const SECURE_PRICING: Record<string, any> = {
+  "gemini": { plus: 499, pro: 999, ultra: 1999, adv_max: 49999 },
+  "gpt-5.2": { plus: 599, pro: 1499, ultra: 2999, adv_max: 74999 },
+  "claude": { plus: 799, pro: 1999, ultra: 3999, adv_max: 99999 },
+  "omni": { monthly: 20916, yearly: 149999 },
+  "multi_model": { monthly: 20916, yearly: 149999 } // Alias for Omni
+};
+
 export async function POST(req: Request) {
   try {
-    const { amount, currency, email, planName, selectedModel, planType, notes: frontendNotes } = await req.json();
+    const { email, planName, selectedModel, planType, notes: frontendNotes } = await req.json();
 
-    if (!email) {
-        return NextResponse.json({ error: "User Email is required" }, { status: 400 });
+    if (!email || !planName || !selectedModel) {
+        return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
 
     const keyId = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
@@ -22,24 +31,33 @@ export async function POST(req: Request) {
       key_secret: keySecret,
     });
 
+    // 🔒 SECURITY CHECK: Lookup actual INR price from backend, completely IGNORE frontend amount
+    const safeModel = SECURE_PRICING[selectedModel] ? selectedModel : "gpt-5.2";
+    const secureInrPrice = SECURE_PRICING[safeModel][planName.toLowerCase()];
+
+    if (!secureInrPrice) {
+      return NextResponse.json({ error: "Invalid plan or model selected" }, { status: 400 });
+    }
+
     // 🔒 SURGICAL FIX: Razorpay strictly expects integers in PAISE.
-    const safeAmount = Math.round(amount * 100);
+    const safeAmount = secureInrPrice * 100;
 
     // 🚀 SURGICAL FIX: Dynamically merge all frontendNotes to prevent Data Drop!
     const options = {
       amount: safeAmount, 
-      currency: currency || "INR", 
+      currency: "INR", 
       receipt: `receipt_${Date.now()}`,
       notes: {
         email: email,
         plan_name: planName || "Unknown",
-        selected_model: selectedModel || "google", // Ensure this is explicitly set from frontend
+        selected_model: safeModel,
         plan_type: planType || "NEW",
         ...frontendNotes // <--- THIS SAVES EVERYTHING! (is_renewal, token, channel, etc)
       }
     };
 
     const order = await razorpay.orders.create(options);
+    console.log(`[RAZORPAY-ORDER] Created for ${email} | Amount: ₹${secureInrPrice}`);
     
     return NextResponse.json(order);
   } catch (error: any) {
