@@ -5,6 +5,44 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "ClawLink | 1-Click OpenClaw Deploy & 24/7 AI Agent in 30s",
   description: "1-Click deploy your 24/7 OpenClaw Personal AI Assistant globally on WhatsApp, Telegram & Insta in 30s. Zero technical complexity. Customize via dashboard!",
+  
+  // 🚀 THE ULTIMATE SEO KEYWORD MATRIX
+  keywords: [
+    // Brand & Core Product
+    "ClawLink", "ClawLink AI", "OpenClaw", "OpenClaw deploy", "1-click OpenClaw", "OpenClaw alternative",
+    
+    // Broad AI Agent Terms
+    "AI Agent", "Personal AI Assistant", "Create AI Agent", "Deploy AI Agent", "AI automation SaaS",
+    
+    // Platform Specific (Super High Search Volume)
+    "WhatsApp Bot", "WhatsApp AI Agent", "Automate WhatsApp messages", "WhatsApp customer support bot",
+    "Telegram Bot", "Telegram AI Agent", "Telegram crypto bot", "Automate Telegram",
+    "Instagram AI Bot", "Instagram DM automation", "Insta auto reply AI",
+    
+    // Tech & Models
+    "No code AI bot", "GPT-4o bot", "Claude 3 bot", "Gemini Flash bot", "Omni fallback AI",
+    
+    // Competitor Alternative Keywords
+    "ManyChat alternative", "AI Chatbot builder", "Custom AI chatbot", "Enterprise AI agent"
+  ],
+  
+  // 🚀 TELLS GOOGLE TO STRICTLY INDEX THIS PAGE
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
+  
+  authors: [{ name: "ClawLink" }],
+  creator: "ClawLink",
+  publisher: "ClawLink Inc.",
+  
   manifest: "/manifest.json",
   icons: {
     icon: "/icon-192x192.png",

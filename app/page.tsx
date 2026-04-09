@@ -51,18 +51,18 @@ const PRICING_DATA: Record<string, any> = {
 };
 
 /* ─── Icons — FIXED INLINE SVGS FOR BETTER VISIBILITY ────────── */
-const OpenAI_Icon  = () => <Image src="/logos/openai.svg"  alt="OpenAI"  width={26} height={26} className="transform-gpu" />;
-const Claude_Icon  = () => <Image src="/logos/claude.svg"  alt="Claude"  width={26} height={26} className="transform-gpu" />;
-const Gemini_Icon  = () => <Image src="/logos/gemini.svg"  alt="Gemini"  width={26} height={26} className="transform-gpu" />;
+const OpenAI_Icon  = () => <Image src="/logos/openai.svg"  alt="GPT-4o OpenAI Agent Icon"  width={26} height={26} className="transform-gpu" />;
+const Claude_Icon  = () => <Image src="/logos/claude.svg"  alt="Claude 3 Anthropic AI Icon"  width={26} height={26} className="transform-gpu" />;
+const Gemini_Icon  = () => <Image src="/logos/gemini.svg"  alt="Gemini Google AI Bot Icon"  width={26} height={26} className="transform-gpu" />;
 
 const Llama_Icon = () => (
-  <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-800 transform-gpu">
+  <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-label="Meta Llama 4 AI Builder" className="text-gray-800 transform-gpu">
     <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/>
   </svg>
 );
 
 const Omni_Icon = () => (
-  <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#00BFFF" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+  <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#00BFFF" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-label="OmniAgent 3x AI Fallback Matrix">
     <path d="M12 4.5C10 4.5 8 5.5 7.5 7.5 6 7.5 4.5 8.5 4.5 10.5 4 11.5 4 13 5 14 4.5 15.5 5.5 17 7 17.5 7.5 19 9 20 10.5 20H12"/>
     <path d="M12 4.5C14 4.5 16 5.5 16.5 7.5 18 7.5 19.5 8.5 19.5 10.5 20 11.5 20 13 19 14 19.5 15.5 18.5 17 17 17.5 16.5 19 15 20 13.5 20H12"/>
     <line x1="12" y1="4.5" x2="12" y2="20"/><circle cx="8.5" cy="10.5" r="1" fill="#00BFFF" stroke="none"/><circle cx="15.5" cy="10.5" r="1" fill="#00BFFF" stroke="none"/><circle cx="7.5" cy="14.5" r="1" fill="#00BFFF" stroke="none"/><circle cx="16.5" cy="14.5" r="1" fill="#00BFFF" stroke="none"/>
@@ -71,14 +71,14 @@ const Omni_Icon = () => (
 );
 
 const Telegram_Icon = ({ size = 26 }: { size?: number }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="transform-gpu">
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="Telegram Bot API Builder" className="transform-gpu">
     <path d="M12 24c6.627 0 12-5.373 12-12S18.627 0 12 0 0 5.373 0 12s5.373 12 12 12z" fill="#2AABEE"/>
     <path d="M5.425 11.871L16.48 7.61c.526-.196 1.006.124.819.86l-1.892 8.92c-.167.755-.615.939-1.242.593L10.73 15.45l-1.657 1.588c-.183.183-.338.338-.692.338l.245-3.528 6.425-5.8c.28-.249-.06-.388-.435-.138L6.68 12.89l-3.417-1.066c-.744-.233-.759-.745.155-1.103z" fill="#fff"/>
   </svg>
 );
 
 const WhatsApp_Icon = ({ size = 26 }: { size?: number }) => (
-  <svg width={size} height={size} viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" className="transform-gpu">
+  <svg width={size} height={size} viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-label="WhatsApp Cloud API Automation" className="transform-gpu">
     <rect width="100" height="100" rx="24" fill="#25D366"/>
     <path fill="#ffffff" d="M50 15c-19.3 0-35 15.7-35 35 0 6.2 1.6 12.2 4.7 17.5L15 85l17.5-4.7c5.3 3.1 11.3 4.7 17.5 4.7 19.3 0 35-15.7 35-35S69.3 15 50 15zm0 63.8c-5.2 0-10.4-1.4-15-4.1l-1.1-.6-11.1 2.9 2.9-10.8-.7-1.1c-2.9-4.7-4.5-10.1-4.5-15.6 0-16.2 13.2-29.4 29.4-29.4s29.4 13.2 29.4 29.4-13.2 29.4-29.4 29.4z"/>
     <path fill="#ffffff" d="M42 34h9.5c5.5 0 8.5 2.5 8.5 5.5s-2.8 4.2-5.5 4.8c4 1 7 3.5 7 7.5 0 5.5-5.5 7.2-10 7.2H42V34zm5 5.5v7h4c2 0 4-1 4-3.5s-2-3.5-4-3.5h-4zm0 11v8h4.5c3 0 4.5-1.5 4.5-4s-2-4-4.5-4H47z"/>
@@ -86,15 +86,15 @@ const WhatsApp_Icon = ({ size = 26 }: { size?: number }) => (
 );
 
 const Discord_Icon = () => (
-  <svg viewBox="0 0 24 24" width="22" height="22" fill="#5865F2" className="transform-gpu"><path d="M20.3 5.4c-1.6-.7-3.4-1.2-5.2-1.5-.2.4-.4.9-.6 1.3-1.9-.3-3.8-.3-5.7 0-.2-.4-.4-.9-.6-1.3-1.8.3-3.6.8-5.2 1.5-3.3 4.9-4.2 9.7-3.3 14.4 2.2 1.6 4.3 2.6 6.4 3.2.5-.7 1-1.5 1.4-2.3-1.2-.5-2.4-1.1-3.5-1.8.3-.2.6-.4.9-.7 4.6 2.1 9.7 2.1 14.3 0 .3.2.6.5.9.7-1.1.7-2.3 1.3-3.5 1.8.4.8.9 1.6 1.4 2.3 2.1-.6 4.2-1.6 6.4-3.2 1-5.1.1-10-3.2-14.4z"/></svg>
+  <svg viewBox="0 0 24 24" width="22" height="22" fill="#5865F2" aria-label="Discord AI Chatbot Deployment" className="transform-gpu"><path d="M20.3 5.4c-1.6-.7-3.4-1.2-5.2-1.5-.2.4-.4.9-.6 1.3-1.9-.3-3.8-.3-5.7 0-.2-.4-.4-.9-.6-1.3-1.8.3-3.6.8-5.2 1.5-3.3 4.9-4.2 9.7-3.3 14.4 2.2 1.6 4.3 2.6 6.4 3.2.5-.7 1-1.5 1.4-2.3-1.2-.5-2.4-1.1-3.5-1.8.3-.2.6-.4.9-.7 4.6 2.1 9.7 2.1 14.3 0 .3.2.6.5.9.7-1.1.7-2.3 1.3-3.5 1.8.4.8.9 1.6 1.4 2.3 2.1-.6 4.2-1.6 6.4-3.2 1-5.1.1-10-3.2-14.4z"/></svg>
 );
 
 const Instagram_Icon = () => (
-  <div className="w-[22px] h-[22px] rounded-lg bg-gradient-to-tr from-[#f09433] via-[#e6683c] to-[#bc1888] flex items-center justify-center transform-gpu"><div className="w-[14px] h-[14px] border-[2px] border-white rounded-[4px] flex items-center justify-center"><div className="w-[5px] h-[5px] bg-white rounded-full"/></div></div>
+  <div aria-label="Instagram DM Automation AI Agent" className="w-[22px] h-[22px] rounded-lg bg-gradient-to-tr from-[#f09433] via-[#e6683c] to-[#bc1888] flex items-center justify-center transform-gpu"><div className="w-[14px] h-[14px] border-[2px] border-white rounded-[4px] flex items-center justify-center"><div className="w-[5px] h-[5px] bg-white rounded-full"/></div></div>
 );
 
 const Google_Icon = () => (
-  <svg viewBox="0 0 24 24" width="22" height="22" className="transform-gpu">
+  <svg viewBox="0 0 24 24" width="22" height="22" aria-label="Google OAuth Sign In" className="transform-gpu">
     <path fill="#EA4335" d="M5.266 9.765A7.077 7.077 0 0112 4.909c1.69 0 3.218.6 4.418 1.582L19.91 3C17.782 1.145 15.055 0 12 0 7.27 0 3.198 2.698 1.24 6.65l4.026 3.115Z"/>
     <path fill="#34A853" d="M16.04 18.013c-1.09.703-2.474 1.078-4.04 1.078a7.077 7.077 0 01-6.723-4.823l-4.04 3.067A11.965 11.965 0 0012 24c2.933 0 5.735-1.043 7.834-3l-3.793-2.987Z"/>
     <path fill="#4A90E2" d="M19.834 21c2.195-2.048 3.62-5.096 3.62-9 0-.71-.109-1.473-.272-2.182H12v4.637h6.436c-.317 1.559-1.17 2.766-2.395 3.558L19.834 21Z"/>
@@ -315,7 +315,6 @@ export default function Home() {
   }, []);
 
   const handleOpenIntegration = (ch: string) => {
-    // 🚀 Instagram is now LIVE! Only block Discord and Slack
     if (ch === "discord" || ch === "slack") return;
     setActiveChannel(ch); setIsTelegramModalOpen(true);
   };
@@ -419,7 +418,6 @@ export default function Home() {
     } catch { alert("Gateway init failed."); setIsDeploying(false); }
   };
 
-  // 🚀 THE ULTIMATE TS BYPASS: 100% Error Free Force-Cast
   const triggerStripePayment = async () => {
     if (!selectedTier) { alert("Please select a plan."); return; }
     setIsDeploying(true);
@@ -445,7 +443,6 @@ export default function Home() {
         const stripe = await loadStripe(stripeKey);
         
         if (stripe) {
-          // Using strict 'any' typing to kill all red squiggly lines instantly
           const checkoutStripe = stripe as any;
           const result = await checkoutStripe.redirectToCheckout({ sessionId: data.sessionId });
           
@@ -485,11 +482,12 @@ export default function Home() {
 
   const copyToClipboard = (t: string) => { navigator.clipboard.writeText(t); alert("Copied!"); };
 
-  const row1 = ["📅 Productivity & Meetings","📄 Write contracts & NDAs","📊 Create presentations","🔄 Negotiate refunds","🛒 Shopping & Research","👥 Team & Monitoring"];
-  const row2 = ["📅 Schedule meetings","💼 Finance, Tax & Payroll","💰 Do your taxes with AI","🎯 Screen & prioritize leads","🧾 Track expenses","👔 Write job descriptions"];
-  const row3 = ["✉️ Email & Documents","📨 Read & summarize emails","🧮 Run payroll calculations","🏷️ Find coupons automatically","📈 Track OKRs & KPIs","📰 Monitor smart alerts"];
-  const row4 = ["⏰ Notify before meetings","🌍 Sync time zones","📄 Generate invoices","🔍 Compare product specs","🕵️ Research competitors","🚫 Filter cold outreach"];
-  const row5 = ["📅 Plan your week","📝 Take meeting notes","🔍 Find best prices","📢 Draft social media posts","📈 Sales, Marketing & Hiring","🤖 AI Automation"];
+  // 🚀 SEO ADVANCED: The Marquee Keyword Engine
+  const row1 = ["📅 Productivity & Meetings", "🤖 Create WhatsApp AI Agent", "📊 Create presentations", "💬 Instagram DM Automation", "🛒 Shopping & Research", "👥 Team & Monitoring"];
+  const row2 = ["📅 Schedule meetings", "🧠 OpenClaw Alternative", "💰 Do your taxes with AI", "🎯 Telegram Crypto Bot", "🧾 Track expenses", "👔 Write job descriptions"];
+  const row3 = ["✉️ Email & Documents", "📨 Read & summarize emails", "🤖 No-Code AI Bot Builder", "🏷️ Find coupons automatically", "📈 Track OKRs & KPIs", "💬 WhatsApp Customer Support"];
+  const row4 = ["⏰ Notify before meetings", "🌍 Sync time zones", "🚀 GPT-4o Bot Creator", "🔍 Compare product specs", "🕵️ Research competitors", "⚡ Omni-Fallback Engine"];
+  const row5 = ["📅 Plan your week", "📝 Take meeting notes", "🤖 Claude 3 Bot Integration", "📢 Draft social media posts", "📈 Sales, Marketing & Hiring", "🤖 Auto Message AI"];
 
   if (!isMounted) return null;
 
@@ -635,12 +633,12 @@ export default function Home() {
            style={{background:"radial-gradient(circle,rgba(168,85,247,0.07) 0%,transparent 70%)"}}/>
 
       {/* ══ NAV ══ */}
-      <nav id="clnav"
+      <nav id="clnav" aria-label="Main Navigation"
         className="fixed top-0 left-0 right-0 z-[100] h-[56px] flex items-center justify-between px-4 md:px-10 transition-colors duration-200"
         style={{backdropFilter:"blur(12px)",WebkitBackdropFilter:"blur(12px)",
                 background:"rgba(7,7,10,0.4)",borderBottom:"1px solid rgba(255,255,255,0.055)"}}>
 
-        <svg width="130" height="22" viewBox="0 0 152 26" fill="none" className="shrink-0 cursor-pointer transition-transform hover:scale-105" onClick={() => router.push("/")}>
+        <svg aria-label="ClawLink Home" width="130" height="22" viewBox="0 0 152 26" fill="none" className="shrink-0 cursor-pointer transition-transform hover:scale-105" onClick={() => router.push("/")}>
           <defs>
             <linearGradient id="cg" x1="0" y1="0" x2="0" y2="26" gradientUnits="userSpaceOnUse">
               <stop stopColor="#fff"/><stop offset="1" stopColor="rgba(255,255,255,.65)"/>
@@ -658,14 +656,14 @@ export default function Home() {
         <div className="flex items-center gap-3 md:gap-5">
           {status === "authenticated" && (
             <div className="hidden md:flex items-center gap-3">
-              <img src={session?.user?.image || "https://ui-avatars.com/api/?name=User&background=random"} className="w-7 h-7 rounded-full border border-white/20 ring-1 ring-white/10" alt="av"/>
-              <button onClick={()=>signOut()}
+              <img src={session?.user?.image || "https://ui-avatars.com/api/?name=User&background=random"} className="w-7 h-7 rounded-full border border-white/20 ring-1 ring-white/10" alt="User Avatar"/>
+              <button aria-label="Sign out of ClawLink" onClick={()=>signOut()}
                 className={`flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-gray-500 hover:text-white ${btn}`}>
                 <LogOut className="w-3 h-3"/> Logout
               </button>
             </div>
           )}
-          <button data-spring onClick={()=>setIsSupportModalOpen(true)}
+          <button aria-label="Contact ClawLink Support" data-spring onClick={()=>setIsSupportModalOpen(true)}
             className={`flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-gray-500 hover:text-white ${btn}`}>
             <MessageSquare className="w-3.5 h-3.5"/>
             <span className="hidden sm:inline">Contact Support</span>
@@ -684,11 +682,11 @@ export default function Home() {
         </div>
 
         <h1 className="anim-h1 text-[clamp(2.4rem,6.5vw,5rem)] font-black leading-[1.03] tracking-[-0.04em] mb-4 text-white">
-          Deploy <span className="grad-text">OpenClaw</span><br/>Under 30 Seconds
+          Deploy <span className="grad-text">OpenClaw AI Bots</span><br/>Under 30 Seconds
         </h1>
 
         <p className="anim-sub text-gray-300 text-[15px] max-w-[460px] mb-8 leading-[1.8]">
-          Avoid all technical complexity — one-click deploy your own 24/7 active OpenClaw instance. No code. No servers. Just results.
+          Avoid all technical complexity — one-click deploy your own 24/7 active Personal AI Assistant for WhatsApp, Telegram & Instagram. No code. No servers. Just results.
         </p>
 
         <div className="anim-card card-shimmer tilt-el relative w-full max-w-[700px] rounded-[22px] p-5 md:p-7 mb-7 overflow-hidden"
@@ -697,31 +695,31 @@ export default function Home() {
 
           <p className="text-[9px] font-bold tracking-[.15em] uppercase text-gray-400 mb-3 text-left">Choose your AI model</p>
           <div className="grid grid-cols-5 gap-[6px] mb-5">
-            <button data-spring onClick={()=>{ if(!isTokenSaved){ setActiveModel("gpt-5.2"); }}} disabled={isTokenSaved && activeModel!=="gpt-5.2"}
+            <button aria-label="Select GPT-4o Model" data-spring onClick={()=>{ if(!isTokenSaved){ setActiveModel("gpt-5.2"); }}} disabled={isTokenSaved && activeModel!=="gpt-5.2"}
               className={[pillBase, modelActive("gpt-5.2") ? "!border-blue-500 shadow-[0_0_0_3px_rgba(59,130,246,0.2),0_2px_8px_rgba(0,0,0,0.12)]" : "", isTokenSaved && activeModel!=="gpt-5.2" ? "opacity-25 pointer-events-none" : ""].join(" ")}>
               <div className="w-[22px] h-[22px] rounded-[5px] flex items-center justify-center shrink-0 bg-[#f0fdf4]"><OpenAI_Icon/></div>
               <div className="flex flex-col min-w-0 max-sm:items-center max-sm:w-full"><span className="ptx-name" style={{color:"#10a37f"}}>GPT-4o</span></div>
             </button>
 
-            <button data-spring onClick={()=>{ if(!isTokenSaved){ setActiveModel("claude"); }}} disabled={isTokenSaved && activeModel!=="claude"}
+            <button aria-label="Select Claude 3 Model" data-spring onClick={()=>{ if(!isTokenSaved){ setActiveModel("claude"); }}} disabled={isTokenSaved && activeModel!=="claude"}
               className={[pillBase, modelActive("claude") ? "!border-blue-500 shadow-[0_0_0_3px_rgba(59,130,246,0.2),0_2px_8px_rgba(0,0,0,0.12)]" : "", isTokenSaved && activeModel!=="claude" ? "opacity-25 pointer-events-none" : ""].join(" ")}>
               <div className="w-[22px] h-[22px] rounded-[5px] flex items-center justify-center shrink-0 bg-[#fdf5f2]"><Claude_Icon/></div>
               <div className="flex flex-col min-w-0 max-sm:items-center max-sm:w-full"><span className="ptx-name" style={{color:"#d97757"}}>Claude</span><span className="ptx-sub" style={{color:"#d97757"}}>Sonnet</span></div>
             </button>
 
-            <button data-spring onClick={()=>{ if(!isTokenSaved){ setActiveModel("gemini"); }}} disabled={isTokenSaved && activeModel!=="gemini"}
+            <button aria-label="Select Gemini Model" data-spring onClick={()=>{ if(!isTokenSaved){ setActiveModel("gemini"); }}} disabled={isTokenSaved && activeModel!=="gemini"}
               className={[pillBase, modelActive("gemini") ? "!border-blue-500 shadow-[0_0_0_3px_rgba(59,130,246,0.2),0_2px_8px_rgba(0,0,0,0.12)]" : "", isTokenSaved && activeModel!=="gemini" ? "opacity-25 pointer-events-none" : ""].join(" ")}>
               <div className="w-[22px] h-[22px] rounded-[5px] flex items-center justify-center shrink-0 bg-[#eff2ff]"><Gemini_Icon/></div>
               <div className="flex flex-col min-w-0 max-sm:items-center max-sm:w-full"><span className="ptx-name" style={{color:"#648af5"}}>Gemini</span><span className="ptx-sub" style={{color:"#648af5"}}>Pro</span></div>
             </button>
 
-            <button data-spring onClick={()=>{ if(!isTokenSaved){ setActiveModel("omni"); }}} disabled={isTokenSaved && activeModel!=="omni"}
+            <button aria-label="Select OmniAgent Fallback Model" data-spring onClick={()=>{ if(!isTokenSaved){ setActiveModel("omni"); }}} disabled={isTokenSaved && activeModel!=="omni"}
               className={[pillBase, modelActive("omni") ? "!border-[#00bfff] shadow-[0_0_0_3px_rgba(0,191,255,0.2),0_2px_8px_rgba(0,0,0,0.12)]" : "", isTokenSaved && activeModel!=="omni" ? "opacity-25 pointer-events-none" : ""].join(" ")}>
               <div className="w-[22px] h-[22px] rounded-[5px] flex items-center justify-center shrink-0 bg-[#e8f9ff]"><Omni_Icon/></div>
               <div className="flex flex-col min-w-0 max-sm:items-center max-sm:w-full"><span className="ptx-name" style={{color:"#0369a1",fontSize:"9.5px"}}>Omni 3</span><span className="ptx-sub" style={{color:"#00bfff"}}>Nexus</span></div>
             </button>
 
-            <div className={[pillBase, "opacity-30 cursor-not-allowed pointer-events-none"].join(" ")}>
+            <div className={[pillBase, "opacity-30 cursor-not-allowed pointer-events-none"].join(" ")} aria-label="Llama 4 coming soon">
               <div className="w-[22px] h-[22px] rounded-[5px] flex items-center justify-center shrink-0 bg-gray-100"><Llama_Icon/></div>
               <div className="flex flex-col min-w-0 max-sm:items-center max-sm:w-full"><span className="ptx-name text-gray-600">Llama 4</span><span className="ptx-soon" style={{animation:"bpulse 1.8s ease-in-out infinite"}}>SOON</span></div>
             </div>
@@ -729,30 +727,30 @@ export default function Home() {
 
           <p className="text-[9px] font-bold tracking-[.15em] uppercase text-gray-400 mb-3 text-left">Select your channel</p>
           <div className="grid grid-cols-5 gap-[6px] mb-5">
-            <button data-spring onClick={()=>!isTokenSaved && setActiveChannel("telegram")} disabled={isTokenSaved && activeChannel!=="telegram"}
+            <button aria-label="Connect Telegram AI Bot" data-spring onClick={()=>!isTokenSaved && setActiveChannel("telegram")} disabled={isTokenSaved && activeChannel!=="telegram"}
               className={[pillBase, chanActive("telegram") ? "!border-[#2aabee] shadow-[0_0_0_3px_rgba(42,171,238,0.2),0_2px_8px_rgba(0,0,0,0.12)]" : "", isTokenSaved && activeChannel!=="telegram" ? "opacity-25 pointer-events-none" : ""].join(" ")}>
               <div className="w-[22px] h-[22px] rounded-full flex items-center justify-center shrink-0"><Telegram_Icon size={22}/></div>
               <div className="flex flex-col min-w-0 max-sm:items-center max-sm:w-full"><span className="ptx-name text-gray-800">Telegram</span></div>
             </button>
 
-            <button data-spring onClick={()=>!isTokenSaved && setActiveChannel("whatsapp")} disabled={isTokenSaved && activeChannel!=="whatsapp"}
+            <button aria-label="Connect WhatsApp AI Agent" data-spring onClick={()=>!isTokenSaved && setActiveChannel("whatsapp")} disabled={isTokenSaved && activeChannel!=="whatsapp"}
               className={[pillBase, chanActive("whatsapp") ? "!border-[#25d366] shadow-[0_0_0_3px_rgba(37,211,102,0.2),0_2px_8px_rgba(0,0,0,0.12)]" : "", isTokenSaved && activeChannel!=="whatsapp" ? "opacity-25 pointer-events-none" : ""].join(" ")}>
               <div className="w-[22px] h-[22px] rounded-full flex items-center justify-center shrink-0"><WhatsApp_Icon size={22}/></div>
               <div className="flex flex-col min-w-0 max-sm:items-center max-sm:w-full"><span className="ptx-name text-gray-800">WhatsApp</span></div>
             </button>
             
-            <button data-spring onClick={()=>!isTokenSaved && setActiveChannel("instagram")} disabled={isTokenSaved && activeChannel!=="instagram"}
+            <button aria-label="Connect Instagram Auto Reply Bot" data-spring onClick={()=>!isTokenSaved && setActiveChannel("instagram")} disabled={isTokenSaved && activeChannel!=="instagram"}
               className={[pillBase, chanActive("instagram") ? "!border-[#e6683c] shadow-[0_0_0_3px_rgba(230,104,60,0.2),0_2px_8px_rgba(0,0,0,0.12)]" : "", isTokenSaved && activeChannel!=="instagram" ? "opacity-25 pointer-events-none" : ""].join(" ")}>
               <div className="w-[22px] h-[22px] rounded-full flex items-center justify-center shrink-0"><Instagram_Icon/></div>
               <div className="flex flex-col min-w-0 max-sm:items-center max-sm:w-full"><span className="ptx-name text-gray-800">Instagram</span></div>
             </button>
 
-            <div className={[pillBase, isTokenSaved?"opacity-20":"opacity-35", "cursor-not-allowed pointer-events-none"].join(" ")}>
+            <div aria-label="Discord Bot Coming Soon" className={[pillBase, isTokenSaved?"opacity-20":"opacity-35", "cursor-not-allowed pointer-events-none"].join(" ")}>
               <div className="w-[22px] h-[22px] rounded-full flex items-center justify-center shrink-0"><Discord_Icon/></div>
               <div className="flex flex-col min-w-0 max-sm:items-center max-sm:w-full"><span className="ptx-name text-gray-700">Discord</span><span className="ptx-soon">SOON</span></div>
             </div>
 
-            <div className={[pillBase, isTokenSaved?"opacity-20":"opacity-35", "cursor-not-allowed pointer-events-none"].join(" ")}>
+            <div aria-label="Slack Bot Coming Soon" className={[pillBase, isTokenSaved?"opacity-20":"opacity-35", "cursor-not-allowed pointer-events-none"].join(" ")}>
               <div className="w-[22px] h-[22px] rounded-full flex items-center justify-center shrink-0 bg-[#4a154b]">
                 <svg viewBox="0 0 24 24" width="13" height="13" fill="white"><path d="M5.04 15.44a2.52 2.52 0 01-5.04 0 2.52 2.52 0 012.52-2.52h2.52v2.52zm1.26 0a2.52 2.52 0 015.04 0v6.3a2.52 2.52 0 01-5.04 0v-6.3zM8.56 5.04a2.52 2.52 0 010-5.04 2.52 2.52 0 012.52 2.52v2.52H8.56zm0 1.26a2.52 2.52 0 010 5.04H2.26a2.52 2.52 0 010-5.04h6.3z"/></svg>
               </div>
@@ -767,11 +765,11 @@ export default function Home() {
                 style={{background:"rgba(34,197,94,0.06)",border:"1px solid rgba(34,197,94,0.2)"}}>
                 <p className="text-[15px] font-bold text-white mb-4">🚀 Your Bot is Live!</p>
                 <div className="flex flex-col sm:flex-row justify-center gap-3">
-                  <button data-ripple data-spring onClick={openLiveBotHandler}
+                  <button aria-label="Open Live Bot" data-ripple data-spring onClick={openLiveBotHandler}
                     className={`relative overflow-hidden bg-white text-black font-black uppercase tracking-widest px-7 py-3.5 rounded-xl text-sm ${btn} hover:scale-[1.03] shadow-[0_0_20px_rgba(255,255,255,0.2)]`}>
                     <span className="mt">Open Live Bot</span>
                   </button>
-                  <button data-spring onClick={()=>router.push("/dashboard")}
+                  <button aria-label="Go to Dashboard" data-spring onClick={()=>router.push("/dashboard")}
                     className={`flex items-center justify-center gap-2 text-white font-bold px-7 py-3.5 rounded-xl text-sm ${btn} hover:scale-[1.03]`}
                     style={{background:"rgba(255,255,255,0.06)",border:"1px solid rgba(255,255,255,0.12)"}}>
                     <Activity className="w-4 h-4"/> Live Dashboard
@@ -781,7 +779,7 @@ export default function Home() {
 
             ) : status === "unauthenticated" ? (
               <motion.div key="login" initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} transition={{duration:.12}}>
-                <button data-ripple data-spring onClick={()=>signIn("google")}
+                <button aria-label="Login with Google" data-ripple data-spring onClick={()=>signIn("google")}
                   className={`relative overflow-hidden w-full bg-white text-gray-800 py-4 rounded-[1.75rem] flex items-center justify-center gap-3 text-[17px] font-bold shadow-[0_0_32px_rgba(255,255,255,0.15)] ${btn} hover:scale-[1.03]`}>
                   <Google_Icon/> Login via Google & Deploy
                 </button>
@@ -796,13 +794,13 @@ export default function Home() {
                 <div className="flex items-center justify-between px-4 py-3 rounded-2xl"
                   style={{background:"rgba(0,0,0,0.45)",border:"1px solid rgba(255,255,255,0.07)"}}>
                   <div className="flex items-center gap-3 min-w-0">
-                    <img src={session?.user?.image || "https://ui-avatars.com/api/?name=User&background=random"} className="w-9 h-9 rounded-full border border-white/20 shrink-0" alt="av"/>
+                    <img src={session?.user?.image || "https://ui-avatars.com/api/?name=User&background=random"} className="w-9 h-9 rounded-full border border-white/20 shrink-0" alt="User Profile"/>
                     <div className="min-w-0">
                       <p className="text-[13px] font-bold text-white leading-none truncate">{session?.user?.name}</p>
                       <p className="text-[10px] text-gray-400 font-mono mt-[3px] truncate">{session?.user?.email}</p>
                     </div>
                   </div>
-                  <button data-spring onClick={()=>signOut()}
+                  <button aria-label="Sign Out" data-spring onClick={()=>signOut()}
                     className={`flex items-center gap-1 text-[10px] font-bold uppercase tracking-widest text-gray-400 hover:text-red-400 shrink-0 ml-2 ${btn}`}>
                     <LogOut className="w-3.5 h-3.5"/>
                     <span className="hidden sm:inline">Logout</span>
@@ -810,12 +808,12 @@ export default function Home() {
                 </div>
 
                 {!isTokenSaved ? (
-                  <button data-ripple data-spring onClick={()=>handleOpenIntegration(activeChannel)}
+                  <button aria-label={`Connect ${activeChannel}`} data-ripple data-spring onClick={()=>handleOpenIntegration(activeChannel)}
                     className={`relative overflow-hidden w-full bg-white text-black font-black py-4 rounded-2xl text-[14px] uppercase tracking-widest shadow-[0_0_32px_rgba(255,255,255,0.15)] ${btn} hover:scale-[1.03]`}>
                     Connect {activeChannel === "telegram" ? "Telegram" : activeChannel === "whatsapp" ? "WhatsApp" : "Instagram"} →
                   </button>
                 ) : (
-                  <button data-ripple data-spring onClick={()=>handleOpenPricing(activeChannel)}
+                  <button aria-label="Deploy AI Agent" data-ripple data-spring onClick={()=>handleOpenPricing(activeChannel)}
                     className={`mag-el relative overflow-hidden w-full font-black py-4 rounded-2xl text-[14px] uppercase tracking-widest flex items-center justify-center gap-2 ${btn} hover:scale-[1.03] bg-gradient-to-r from-blue-600 to-purple-600 text-white blue-glow`}>
                     <Zap className="w-5 h-5 shrink-0"/>
                     <span className="mt">Deploy Your AI Agent Now</span>
@@ -827,7 +825,7 @@ export default function Home() {
         </div>
 
         <div className="anim-stats grid grid-cols-3 w-full max-w-[580px] border border-white/[0.07] rounded-[18px] overflow-hidden">
-          {[["30s","Deploy time"],["5+","AI models"],["24/7","Always active"]].map(([n,l])=>(
+          {[["30s","Deploy time"],["5+","AI models"],["24/7","Always active"]].map(([n,l]) => (
             <div key={n} className="stat-hover flex flex-col items-center py-5 px-2 transition-colors duration-150 hover:bg-white/[0.04]"
               style={{background:"rgba(255,255,255,0.022)",borderRight:"1px solid rgba(255,255,255,0.06)"}}>
               <span className="text-[1.9rem] font-black leading-none grad-text">{n}</span>
@@ -880,7 +878,7 @@ export default function Home() {
 
           <div className="grid grid-cols-1 md:grid-cols-[2fr_1fr_1fr] gap-[1px] rounded-t-[20px] overflow-hidden bg-white/[0.05] border border-white/[0.06] border-b-0">
             {[
-              {bg:"rgba(59,130,246,.09)", e:"🌐",t:"Omnichannel Deployment",  d:"Deploy across Telegram, WhatsApp, and your website simultaneously. Switch channels in seconds.",tag:"Multi-platform"},
+              {bg:"rgba(59,130,246,.09)", e:"🌐",t:"Omnichannel Deployment",  d:"Deploy an AI Agent across Telegram, WhatsApp, and Instagram simultaneously. Switch channels in seconds.",tag:"Multi-platform"},
               {bg:"rgba(168,85,247,.09)",e:"🎙️",t:"Voice Intelligence",      d:"Whisper AI transcribes voice notes and replies naturally in real-time.",tag:"Whisper AI"},
               {bg:"rgba(234,179,8,.09)", e:"📢",t:"Broadcast Engine",         d:"Blast targeted promos to thousands instantly. Zero extra cost.",tag:"Mass Outreach"},
             ].map(({bg,e,t,d,tag})=>(
@@ -896,7 +894,7 @@ export default function Home() {
           <div className="grid grid-cols-1 md:grid-cols-[1fr_2fr] gap-[1px] bg-white/[0.05] border border-white/[0.06] border-t-0 border-b-0">
             {[
               {bg:"rgba(34,197,94,.09)", e:"🗃️",t:"Enterprise RAG Memory",      d:"Inject catalog, FAQs, brand voice into Vector DB. Your agent knows your business inside out.",tag:"Vector DB"},
-              {bg:"rgba(0,191,255,.09)", e:"🧠",t:"OmniAgent — 3x AI Fallback", d:"Routes between GPT-5.2, Claude Opus, and Gemini Flash in real-time. 0% downtime. Llama 4 coming as 4th fallback.",tag:"0% Downtime"},
+              {bg:"rgba(0,191,255,.09)", e:"🧠",t:"OmniAgent — 3x AI Fallback", d:"Routes between GPT-5.2, Claude Opus, and Gemini Flash in real-time. 0% downtime. The ultimate OpenClaw alternative.",tag:"0% Downtime"},
             ].map(({bg,e,t,d,tag})=>(
               <div key={t} className="fi-card bg-[#0A0A0D] p-6 md:p-8 hover:bg-[#0F0F14] transition-colors duration-150">
                 <div className="icon-lift w-[44px] h-[44px] rounded-[13px] flex items-center justify-center mb-5 text-[20px]" style={{background:bg}}>{e}</div>
@@ -929,7 +927,7 @@ export default function Home() {
         <div className="max-w-[1100px] mx-auto">
           <div className="sr-up text-center mb-14">
             <p className="text-[9.5px] font-bold tracking-[.15em] uppercase text-orange-500 mb-2">Comparison</p>
-            <h2 className="text-[clamp(1.8rem,3.5vw,2.8rem)] font-black tracking-[-0.035em] text-white">Traditional Method vs ClawLink</h2>
+            <h2 className="text-[clamp(1.8rem,3.5vw,2.8rem)] font-black tracking-[-0.035em] text-white">Traditional Setup vs ClawLink AI Bot Builder</h2>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-[1.55fr_1fr] gap-5">
             <div className="sr-left rounded-[18px] overflow-hidden" style={{border:"1px solid rgba(255,255,255,0.07)"}}>
@@ -939,8 +937,8 @@ export default function Home() {
               {[
                 ["Purchasing local virtual machine","15 min"],["Creating SSH keys and storing securely","10 min"],
                 ["Connecting to the server via SSH","5 min"],["Installing Node.js and NPM","5 min"],
-                ["Installing OpenClaw","7 min"],["Setting up OpenClaw","10 min"],
-                ["Connecting to AI provider","4 min"],["Pairing with Telegram","4 min"],
+                ["Installing OpenClaw manually","7 min"],["Setting up OpenClaw database","10 min"],
+                ["Connecting to AI provider","4 min"],["Pairing with Telegram / WhatsApp API","4 min"],
               ].map(([l,t])=>(
                 <div key={l} className="flex justify-between items-center px-5 py-3.5 transition-colors duration-150 hover:bg-white/[0.015]" style={{borderBottom:"1px solid rgba(255,255,255,0.04)"}}>
                   <span className="text-[12.5px] text-gray-400">{l}</span>
@@ -958,7 +956,7 @@ export default function Home() {
               <p className="font-black leading-none mb-1 text-[3.4rem] grad-text" style={{letterSpacing:"-.04em"}}>ClawLink</p>
               <p className="text-[2.6rem] font-black text-white leading-none mb-5" style={{letterSpacing:"-.03em"}}>&lt;30 sec</p>
               <p className="text-[12px] text-gray-400 max-w-[220px] leading-[1.85]">Pick a model, connect your channel, deploy. All infrastructure handled for you.</p>
-              <button data-ripple data-spring onClick={()=>document.getElementById("hero")?.scrollIntoView({behavior:"smooth"})}
+              <button aria-label="Start Building Free Now" data-ripple data-spring onClick={()=>document.getElementById("hero")?.scrollIntoView({behavior:"smooth"})}
                 className={`mag-el relative overflow-hidden mt-7 px-8 py-3.5 rounded-[12px] text-[13px] font-black text-white uppercase tracking-wider ${btn} hover:scale-[1.05] orange-glow`}
                 style={{background:"linear-gradient(135deg,#f97316,#ea6a00)"}}>
                 <span className="mt">Start Free Now →</span>
@@ -971,7 +969,7 @@ export default function Home() {
       {/* ══ MARQUEE ══ */}
       <section className="relative z-10 py-24 overflow-hidden" style={{background:"#07070A",borderTop:"1px solid rgba(255,255,255,0.04)"}}>
         <div className="sr-up text-center mb-14 px-4">
-          <p className="text-[9.5px] font-bold tracking-[.15em] uppercase text-orange-500 mb-2">50+ Use Cases</p>
+          <p className="text-[9.5px] font-bold tracking-[.15em] uppercase text-orange-500 mb-2">50+ AI Use Cases</p>
           <h2 className="text-[clamp(2rem,5vw,3.6rem)] font-black tracking-[-0.04em] text-white">Thousands of Use Cases</h2>
           <p className="text-orange-400/60 font-serif italic text-[14px] mt-2">Your agent handles complex tasks around the clock.</p>
         </div>
@@ -984,7 +982,7 @@ export default function Home() {
       {/* ══ FOOTER ══ */}
       <footer className="relative z-10 pt-24 pb-12 px-6 md:px-14" style={{background:"#040405",borderTop:"1px solid rgba(255,255,255,0.05)"}}>
         <h2 className="sr-up text-[clamp(2.2rem,5vw,4rem)] font-black tracking-[-0.04em] mb-6 text-white" style={{fontFamily:"Georgia,serif",lineHeight:1.06}}>Deploy. Automate. Relax.</h2>
-        <button data-ripple data-spring onClick={()=>document.getElementById("hero")?.scrollIntoView({behavior:"smooth"})}
+        <button aria-label="Get Started with ClawLink" data-ripple data-spring onClick={()=>document.getElementById("hero")?.scrollIntoView({behavior:"smooth"})}
           className={`mag-el sr-up relative overflow-hidden px-10 py-4 rounded-[13px] text-[14px] font-black text-black mb-20 uppercase tracking-wider ${btn} hover:scale-[1.05] orange-glow`}
           style={{background:"linear-gradient(135deg,#FFA87A,#F97316)"}}>
           <span className="mt">Get Started Free →</span>
@@ -993,7 +991,6 @@ export default function Home() {
           <span>© 2026 ClawLink Inc. All rights reserved.</span>
           <span className="hidden md:block uppercase tracking-widest text-[10px]">© 2026 CLAWLINK INC. GLOBAL AI SAAS INFRASTRUCTURE.</span>
           <div className="flex flex-wrap justify-center gap-4 md:gap-6">
-            {/* 🚀 ADDED THE REFUND POLICY HERE */}
             {[["Privacy Policy","/privacy"], ["Terms of Service","/terms"], ["Refund Policy", "/refund"], ["Documentation","/docs"]].map(([l,h])=>(
               <a key={h} href={h} className="hover:text-gray-400 transition-colors duration-150">{l}</a>
             ))}
@@ -1009,7 +1006,7 @@ export default function Home() {
               className="w-full max-w-md p-7 rounded-[1.75rem] relative"
               style={{background:"#0F0F12",border:"1px solid rgba(255,255,255,0.09)",boxShadow:"0 0 80px rgba(0,0,0,0.8)"}}>
               <div className="absolute top-0 left-[20%] right-[20%] h-px" style={{background:"linear-gradient(90deg,transparent,rgba(249,115,22,0.4),transparent)"}}/>
-              <button data-spring onClick={()=>setIsSupportModalOpen(false)}
+              <button aria-label="Close Support Modal" data-spring onClick={()=>setIsSupportModalOpen(false)}
                 className={`absolute top-5 right-5 p-2 rounded-full text-gray-500 hover:text-white ${btn}`} style={{background:"rgba(255,255,255,0.05)"}}>
                 <X className="w-4 h-4"/>
               </button>
@@ -1031,7 +1028,7 @@ export default function Home() {
                   </div>
                 ))}
               </div>
-              <button data-ripple data-spring onClick={()=>setIsSupportModalOpen(false)}
+              <button aria-label="Close Support Modal" data-ripple data-spring onClick={()=>setIsSupportModalOpen(false)}
                 className={`relative overflow-hidden w-full mt-6 bg-white text-black font-bold py-3.5 rounded-xl text-[13px] uppercase tracking-widest ${btn} hover:bg-gray-100`}>
                 Close
               </button>
@@ -1047,7 +1044,7 @@ export default function Home() {
               className="w-full max-w-[1000px] flex flex-col md:flex-row overflow-hidden rounded-3xl relative"
               style={{background:"#0F0F12",border:"1px solid rgba(255,255,255,0.09)",boxShadow:"0 0 100px rgba(0,0,0,0.9)",maxHeight:"92vh"}}>
               <div className="absolute top-0 left-[20%] right-[20%] h-px" style={{background:"linear-gradient(90deg,transparent,rgba(249,115,22,0.4),transparent)"}}/>
-              <button data-spring onClick={()=>setIsTelegramModalOpen(false)} className={`absolute top-4 right-4 z-20 p-2 rounded-full text-gray-500 hover:text-white ${btn}`} style={{background:"rgba(255,255,255,0.05)"}}>
+              <button aria-label="Close Connect Modal" data-spring onClick={()=>setIsTelegramModalOpen(false)} className={`absolute top-4 right-4 z-20 p-2 rounded-full text-gray-500 hover:text-white ${btn}`} style={{background:"rgba(255,255,255,0.05)"}}>
                 <X className="w-4 h-4"/>
               </button>
 
@@ -1075,12 +1072,12 @@ export default function Home() {
                     </a>
                     <div className="p-5 rounded-2xl" style={{background:"rgba(255,255,255,0.03)",border:"1px solid rgba(255,255,255,0.07)"}}>
                       <label className="block text-[9px] font-bold uppercase tracking-widest text-gray-400 mb-3">API Access Token</label>
-                      <input type="password" value={telegramToken} onChange={e=>setTelegramToken(e.target.value)} placeholder="Enter Verification Token…"
+                      <input aria-label="Enter Telegram Token" type="password" value={telegramToken} onChange={e=>setTelegramToken(e.target.value)} placeholder="Enter Verification Token…"
                         className="w-full px-4 py-3.5 rounded-xl text-[13px] text-white font-mono mb-5 outline-none transition-colors duration-150"
                         style={{background:"#07070A",border:"1px solid rgba(255,255,255,0.09)"}}
                         onFocus={e=>(e.target.style.borderColor="rgba(249,115,22,0.5)")}
                         onBlur={e =>(e.target.style.borderColor="rgba(255,255,255,0.09)")}/>
-                      <button data-ripple data-spring onClick={handleSaveToken} disabled={isVerifying}
+                      <button aria-label="Verify API Token" data-ripple data-spring onClick={handleSaveToken} disabled={isVerifying}
                         className={`relative overflow-hidden w-full font-black py-4 rounded-xl text-[13px] uppercase tracking-widest ${btn} hover:scale-[1.02] disabled:opacity-50 disabled:pointer-events-none`}
                         style={{background:isVerifying?"rgba(255,255,255,0.1)":"#fff",color:isVerifying?"#666":"#000"}}>
                         {isVerifying?"Verifying…":"Verify & Save Token"}
@@ -1114,22 +1111,22 @@ export default function Home() {
                         <div className="mb-3">
                           <label className="block text-[9px] font-bold uppercase tracking-widest text-gray-500 mb-1.5">Webhook URL</label>
                           <div className="flex items-center gap-2">
-                            <input readOnly value={`https://www.clawlinkai.com/api/webhook/${activeChannel}`} className="w-full bg-black/50 text-gray-300 p-2.5 rounded-lg text-[11px] border border-white/10 outline-none font-mono" />
-                            <button type="button" onClick={() => copyToClipboard(`https://www.clawlinkai.com/api/webhook/${activeChannel}`)} className="bg-white/10 hover:bg-white/20 text-white px-4 py-2.5 rounded-lg text-[11px] font-bold transition-all">Copy</button>
+                            <input aria-label="Webhook URL" readOnly value={`https://www.clawlinkai.com/api/webhook/${activeChannel}`} className="w-full bg-black/50 text-gray-300 p-2.5 rounded-lg text-[11px] border border-white/10 outline-none font-mono" />
+                            <button aria-label="Copy Webhook URL" type="button" onClick={() => copyToClipboard(`https://www.clawlinkai.com/api/webhook/${activeChannel}`)} className="bg-white/10 hover:bg-white/20 text-white px-4 py-2.5 rounded-lg text-[11px] font-bold transition-all">Copy</button>
                           </div>
                         </div>
 
                         <div>
                           <label className="block text-[9px] font-bold uppercase tracking-widest text-gray-500 mb-1.5">Verify Token</label>
                           <div className="flex items-center gap-2">
-                            <input readOnly value="clawlinkmeta2026" className="w-full bg-black/50 text-gray-300 p-2.5 rounded-lg text-[11px] border border-white/10 outline-none font-mono" />
-                            <button type="button" onClick={() => copyToClipboard("clawlinkmeta2026")} className="bg-white/10 hover:bg-white/20 text-white px-4 py-2.5 rounded-lg text-[11px] font-bold transition-all">Copy</button>
+                            <input aria-label="Verify Token" readOnly value="clawlinkmeta2026" className="w-full bg-black/50 text-gray-300 p-2.5 rounded-lg text-[11px] border border-white/10 outline-none font-mono" />
+                            <button aria-label="Copy Verify Token" type="button" onClick={() => copyToClipboard("clawlinkmeta2026")} className="bg-white/10 hover:bg-white/20 text-white px-4 py-2.5 rounded-lg text-[11px] font-bold transition-all">Copy</button>
                           </div>
                         </div>
                       </div>
 
                       <label className="block text-[9px] font-bold uppercase tracking-widest text-gray-400 mb-3">{activeChannel==="whatsapp"?"Phone Number ID":"Instagram Account ID"}</label>
-                      <input type="text" value={waPhoneId} onChange={e=>setWaPhoneId(e.target.value)} placeholder="e.g. 1044727838716942"
+                      <input aria-label="Phone or Account ID" type="text" value={waPhoneId} onChange={e=>setWaPhoneId(e.target.value)} placeholder="e.g. 1044727838716942"
                         className="w-full px-4 py-3.5 rounded-xl text-[13px] text-white font-mono mb-4 outline-none transition-colors duration-150"
                         style={{background:"#07070A",border:"1px solid rgba(255,255,255,0.09)"}}
                         onFocus={e=>(e.target.style.borderColor=activeChannel==="whatsapp"?"rgba(37,211,102,0.5)":"rgba(230,104,60,0.5)")}
@@ -1138,7 +1135,7 @@ export default function Home() {
                       {activeChannel === "whatsapp" && (
                           <>
                               <label className="block text-[9px] font-bold uppercase tracking-widest text-gray-400 mb-3">WhatsApp Number (For Direct Open)</label>
-                              <input type="text" value={waPhoneNumber} onChange={e=>setWaPhoneNumber(e.target.value)} placeholder="+1 234 567 890"
+                              <input aria-label="WhatsApp Number" type="text" value={waPhoneNumber} onChange={e=>setWaPhoneNumber(e.target.value)} placeholder="+1 234 567 890"
                                 className="w-full px-4 py-3.5 rounded-xl text-[13px] text-white font-mono mb-4 outline-none transition-colors duration-150"
                                 style={{background:"#07070A",border:"1px solid rgba(255,255,255,0.09)"}}
                                 onFocus={e=>(e.target.style.borderColor="rgba(37,211,102,0.5)")}
@@ -1147,12 +1144,12 @@ export default function Home() {
                       )}
 
                       <label className="block text-[9px] font-bold uppercase tracking-widest text-gray-400 mb-3">Permanent API Token</label>
-                      <input type="password" value={telegramToken} onChange={e=>setTelegramToken(e.target.value)} placeholder="EAABwzL…"
+                      <input aria-label="API Access Token" type="password" value={telegramToken} onChange={e=>setTelegramToken(e.target.value)} placeholder="EAABwzL…"
                         className="w-full px-4 py-3.5 rounded-xl text-[13px] text-white font-mono mb-5 outline-none transition-colors duration-150"
                         style={{background:"#07070A",border:"1px solid rgba(255,255,255,0.09)"}}
                         onFocus={e=>(e.target.style.borderColor=activeChannel==="whatsapp"?"rgba(37,211,102,0.5)":"rgba(230,104,60,0.5)")}
                         onBlur={e =>(e.target.style.borderColor="rgba(255,255,255,0.09)")}/>
-                      <button data-ripple data-spring onClick={handleSaveToken} disabled={isVerifying}
+                      <button aria-label="Verify and Save API Token" data-ripple data-spring onClick={handleSaveToken} disabled={isVerifying}
                         className={`relative overflow-hidden w-full font-black py-4 rounded-xl text-[13px] uppercase tracking-widest ${btn} hover:scale-[1.02] disabled:opacity-50 disabled:pointer-events-none`}
                         style={{background:isVerifying?"rgba(255,255,255,0.1)":"#fff",color:isVerifying?"#666":"#000"}}>
                         {isVerifying?"Verifying…":"Verify & Save"}
@@ -1226,7 +1223,7 @@ export default function Home() {
               style={{background:"#0F0F12",border:"1px solid rgba(255,255,255,0.09)",boxShadow:"0 0 100px rgba(0,0,0,0.9)",maxHeight:"92vh"}}>
               <div className="absolute top-0 left-[20%] right-[20%] h-px" style={{background:"linear-gradient(90deg,transparent,rgba(249,115,22,0.4),transparent)"}}/>
               {!isDeploying && (
-                <button data-spring onClick={()=>setShowPricingPopup(false)} className={`absolute top-5 right-5 p-2 rounded-full text-gray-500 hover:text-white ${btn}`} style={{background:"rgba(255,255,255,0.05)"}}>
+                <button aria-label="Close Pricing Modal" data-spring onClick={()=>setShowPricingPopup(false)} className={`absolute top-5 right-5 p-2 rounded-full text-gray-500 hover:text-white ${btn}`} style={{background:"rgba(255,255,255,0.05)"}}>
                   <X className="w-4 h-4"/>
                 </button>
               )}
@@ -1298,7 +1295,7 @@ export default function Home() {
               {/* 🚀 CRITICAL FIX: DYNAMIC PAYMENT BUTTON (RAZORPAY FOR INDIA, STRIPE FOR GLOBAL) */}
               <div className="flex flex-col sm:flex-row gap-4 w-full max-w-lg mx-auto">
                 {currency === "INR" ? (
-                  <button data-ripple data-spring onClick={triggerRazorpayPayment} disabled={isDeploying || !selectedTier}
+                  <button aria-label="Pay with Razorpay" data-ripple data-spring onClick={triggerRazorpayPayment} disabled={isDeploying || !selectedTier}
                     className={`relative overflow-hidden w-full font-black py-4 rounded-xl uppercase tracking-widest flex justify-center items-center gap-2 transition-all duration-150 ${btn}
                       ${!selectedTier ? "cursor-not-allowed opacity-40 bg-gray-800 text-gray-500"
                         : activeModel === "omni"
@@ -1307,7 +1304,7 @@ export default function Home() {
                     {isDeploying ? "Deploying Infrastructure…" : !selectedTier ? "Select a Tier" : `Pay with Razorpay — ${currencySymbol}${getCurrentPrice().toLocaleString()}`}
                   </button>
                 ) : (
-                  <button data-ripple data-spring onClick={triggerStripePayment} disabled={isDeploying || !selectedTier}
+                  <button aria-label="Pay with Stripe" data-ripple data-spring onClick={triggerStripePayment} disabled={isDeploying || !selectedTier}
                     className={`relative overflow-hidden w-full font-black py-4 rounded-xl uppercase tracking-widest flex justify-center items-center gap-2 transition-all duration-150 ${btn}
                       ${!selectedTier ? "cursor-not-allowed opacity-40 bg-gray-800 text-gray-500"
                         : "bg-[#635BFF] text-white hover:bg-[#4b45d6] hover:scale-[1.02] shadow-[0_0_24px_rgba(99,91,255,0.4)]"}`}>
@@ -1326,7 +1323,7 @@ export default function Home() {
             <motion.div initial={{opacity:0,y:14,scale:.92}} animate={{opacity:1,y:0,scale:1}} exit={{opacity:0,y:14,scale:.92}} transition={{duration:.12,ease:"easeOut"}}
               className="w-72 md:w-80 p-5 rounded-2xl mb-3 relative" style={{background:"#0F0F12",border:"1px solid rgba(255,255,255,0.09)",boxShadow:"0 0 48px rgba(0,0,0,0.8)"}}>
               <div className="absolute top-0 left-[15%] right-[15%] h-px" style={{background:"linear-gradient(90deg,transparent,rgba(249,115,22,0.35),transparent)"}}/>
-              <button data-spring onClick={()=>setIsHelpOpen(false)} className={`absolute top-3.5 right-3.5 text-gray-500 hover:text-white ${btn}`}><X className="w-4 h-4"/></button>
+              <button aria-label="Close Help Chat" data-spring onClick={()=>setIsHelpOpen(false)} className={`absolute top-3.5 right-3.5 text-gray-500 hover:text-white ${btn}`}><X className="w-4 h-4"/></button>
               {helpStatus==="sent" ? (
                 <div className="py-8 text-center flex flex-col items-center">
                   <div className="w-11 h-11 rounded-full flex items-center justify-center mb-3" style={{background:"rgba(34,197,94,0.12)"}}><CheckCircle2 className="w-5 h-5 text-green-400"/></div>
@@ -1343,15 +1340,15 @@ export default function Home() {
                     </div>
                   </div>
                   <div className="space-y-3">
-                    <input type="email" placeholder="Your email" value={helpEmail} onChange={e=>setHelpEmail(e.target.value)}
+                    <input aria-label="Your Email" type="email" placeholder="Your email" value={helpEmail} onChange={e=>setHelpEmail(e.target.value)}
                       className="w-full px-3 py-2.5 rounded-xl text-[12px] text-white outline-none transition-colors duration-150"
                       style={{background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.07)"}}
                       onFocus={e=>(e.target.style.borderColor="rgba(59,130,246,0.5)")} onBlur={e =>(e.target.style.borderColor="rgba(255,255,255,0.07)")}/>
-                    <textarea placeholder="How can we help?" rows={3} value={helpMessage} onChange={e=>setHelpMessage(e.target.value)}
+                    <textarea aria-label="Your Message" placeholder="How can we help?" rows={3} value={helpMessage} onChange={e=>setHelpMessage(e.target.value)}
                       className="w-full px-3 py-2.5 rounded-xl text-[12px] text-white outline-none resize-none transition-colors duration-150"
                       style={{background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.07)"}}
                       onFocus={e=>(e.target.style.borderColor="rgba(59,130,246,0.5)")} onBlur={e =>(e.target.style.borderColor="rgba(255,255,255,0.07)")}/>
-                    <button data-ripple data-spring onClick={handleSendHelpRequest} disabled={helpStatus==="sending"}
+                    <button aria-label="Send Message" data-ripple data-spring onClick={handleSendHelpRequest} disabled={helpStatus==="sending"}
                       className={`relative overflow-hidden w-full bg-blue-600 hover:bg-blue-500 text-white font-bold text-[12px] py-2.5 rounded-xl flex items-center justify-center gap-2 ${btn}`}>
                       {helpStatus==="sending"?"Sending…":<><Send className="w-3 h-3"/>Send Message</>}
                     </button>
@@ -1361,7 +1358,7 @@ export default function Home() {
             </motion.div>
           )}
         </AnimatePresence>
-        <motion.button whileHover={{scale:1.1}} whileTap={{scale:.9}} onClick={()=>setIsHelpOpen(!isHelpOpen)}
+        <motion.button aria-label="Toggle Help Widget" whileHover={{scale:1.1}} whileTap={{scale:.9}} onClick={()=>setIsHelpOpen(!isHelpOpen)}
           className="w-14 h-14 text-white rounded-full flex items-center justify-center transition-all duration-150 transform-gpu"
           style={{background:"linear-gradient(135deg,#3B82F6,#7C3AED)",boxShadow:"0 0 28px rgba(59,130,246,0.5)"}}>
           {isHelpOpen ? <X className="w-6 h-6"/> : <MessageCircle className="w-6 h-6"/>}
