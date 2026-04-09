@@ -13,6 +13,7 @@ import {
 import { useRouter } from "next/navigation";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import Script from "next/script";
+import { loadStripe } from "@stripe/stripe-js"; // 🚀 STRIPE FRONTEND INTEGRATION
 
 /* ─── 🚀 NEW MASTER PRICING CONFIG (FROM LATEST PDF - MARGIN 90%+) ────────── */
 const PRICING_DATA: Record<string, any> = {
@@ -89,9 +90,23 @@ export default function Dashboard() {
       router.push("/");
     }
 
+    // 🛡️ KNOX CLIENT SECURITY PROTOCOL: Prevent unauthorized devtools sniffing
+    if (typeof window !== "undefined") {
+      document.addEventListener("contextmenu", (e) => e.preventDefault());
+      console.log("%c STOP!", "color: red; font-size: 50px; font-weight: bold; text-shadow: 2px 2px 0 #000;");
+      console.log("%c CLAWLINK ENTERPRISE SECURITY: Unauthorized access to backend structure is strictly prohibited.", "color: white; background: red; font-size: 16px; padding: 4px; border-radius: 4px;");
+    }
+
     try {
-      const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
-      if (tz === "Asia/Calcutta" || tz === "Asia/Kolkata") { setCurrency("INR"); setCurrencySymbol("₹"); }
+      const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || "";
+      const lang = navigator.language || "";
+      if (tz.includes("Calcutta") || tz.includes("Kolkata") || tz.includes("Asia/Colombo") || lang.includes("-IN") || lang === "hi") { 
+        setCurrency("INR"); 
+        setCurrencySymbol("₹"); 
+      } else {
+        setCurrency("USD");
+        setCurrencySymbol("$");
+      }
     } catch {}
 
     if (session?.user?.email) {
@@ -162,60 +177,102 @@ export default function Dashboard() {
     if (!session?.user?.email) return;
     setIsRenewing(true);
 
-    try {
-      const amount = currency === "INR" ? activePlanObj.inr : activePlanObj.usd;
+    if (currency === "INR") {
+      try {
+        const amount = activePlanObj.inr;
 
-      const res = await fetch("/api/razorpay", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          email: session.user.email,
-          planName: activePlanObj.id, 
-          planType: "RENEWAL", 
-          amount: amount,
-          currency: currency,
-          notes: {
+        const res = await fetch("/api/razorpay", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ 
             email: session.user.email,
-            plan_name: activePlanObj.id,
-            is_renewal: "true",
-            telegram_token: userData?.telegram_token || "",
-            whatsapp_phone_id: userData?.whatsapp_phone_id || "",
-            whatsapp_number: userData?.whatsapp_number || "",
-            selected_channel: userData?.selected_channel || "widget"
+            planName: activePlanObj.id, 
+            planType: "RENEWAL", 
+            amount: amount,
+            currency: currency,
+            notes: {
+              email: session.user.email,
+              plan_name: activePlanObj.id,
+              is_renewal: "true",
+              telegram_token: userData?.telegram_token || "",
+              whatsapp_phone_id: userData?.whatsapp_phone_id || "",
+              whatsapp_number: userData?.whatsapp_number || "",
+              selected_channel: userData?.selected_channel || "widget"
+            }
+          }),
+        });
+        
+        const orderData = await res.json();
+        
+        if (!orderData.orderId && !orderData.id) throw new Error("Order creation failed");
+        
+        const options = {
+          key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || process.env.NEXT_PUBLIC_RAZORPAY_KEY,
+          amount: orderData.amount,
+          currency: orderData.currency || "INR",
+          name: "ClawLink AI",
+          description: `Renewing to ${activePlanObj.name.toUpperCase()} Plan`,
+          order_id: orderData.orderId || orderData.id,
+          handler: function (response: any) {
+            alert("Payment Successful! Your AI Agent has been upgraded/renewed.");
+            window.location.reload();
+          },
+          prefill: {
+            email: session.user.email,
+            name: session.user.name || "Agent",
+          },
+          theme: { color: "#f97316" },
+        };
+        
+        const rzp = new (window as any).Razorpay(options);
+        rzp.open();
+        setShowPlanModal(false); 
+      } catch (error) {
+        console.error("Renewal Error:", error);
+        alert("Failed to initiate payment. Please check your connection.");
+      } finally {
+        setIsRenewing(false);
+      }
+    } else {
+      // 🚀 STRIPE PAYMENT FOR GLOBAL USERS WITH ULTIMATE TS BYPASS
+      try {
+        const res = await fetch("/api/stripe", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            planTier: activePlanObj.id,
+            email: session.user.email,
+            amount: activePlanObj.usd,
+            currency: currency.toLowerCase(),
+            model: exactModel,
+            isRenewal: true
+          }),
+        });
+        
+        const data = await res.json();
+        
+        if (data.sessionId) {
+          const stripeKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || "";
+          const stripe = await loadStripe(stripeKey);
+          
+          if (stripe) {
+            // Force bypass any TypeScript errors on redirectToCheckout
+            const checkoutStripe = stripe as any;
+            const result = await checkoutStripe.redirectToCheckout({ sessionId: data.sessionId });
+            if (result && result.error) {
+              alert("Stripe Checkout Error: " + result.error.message);
+            }
+          } else {
+            alert("Stripe failed to initialize. Please check your network connection.");
           }
-        }),
-      });
-      
-      const orderData = await res.json();
-      
-      if (!orderData.orderId && !orderData.id) throw new Error("Order creation failed");
-      
-      const options = {
-        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || process.env.NEXT_PUBLIC_RAZORPAY_KEY,
-        amount: orderData.amount,
-        currency: orderData.currency || "INR",
-        name: "ClawLink AI",
-        description: `Renewing to ${activePlanObj.name.toUpperCase()} Plan`,
-        order_id: orderData.orderId || orderData.id,
-        handler: function (response: any) {
-          alert("Payment Successful! Your AI Agent has been upgraded/renewed.");
-          window.location.reload();
-        },
-        prefill: {
-          email: session.user.email,
-          name: session.user.name || "Agent",
-        },
-        theme: { color: "#f97316" },
-      };
-      
-      const rzp = new (window as any).Razorpay(options);
-      rzp.open();
-      setShowPlanModal(false); 
-    } catch (error) {
-      console.error("Renewal Error:", error);
-      alert("Failed to initiate payment. Please check your connection.");
-    } finally {
-      setIsRenewing(false);
+        } else {
+          alert("Stripe Error: " + data.error);
+        }
+      } catch (error) {
+        alert("Stripe initialization failed.");
+      } finally {
+        setIsRenewing(false);
+      }
     }
   };
 
@@ -361,7 +418,7 @@ export default function Dashboard() {
   const totalMsgs = (stats?.platformStats?.whatsapp || 0) + (stats?.platformStats?.telegram || 0) + (stats?.platformStats?.web || 0);
 
   const getModelDisplayName = () => {
-    if (isOmniActive) return "🌌 OmniAgent Nexus";
+    if (isOmniActive) return "🌌 Omni 3 Nexus";
     if (pricingKey === "claude") return "Claude 3 (Opus 4.6)";
     if (pricingKey === "gemini") return "Gemini 3 (Flash)";
     if (pricingKey === "gpt-5.2" || exactModel.includes("gpt") || exactModel.includes("openai")) return "GPT-5.2 (Turbo)";
