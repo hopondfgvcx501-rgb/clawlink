@@ -993,7 +993,8 @@ export default function Home() {
           <span>© 2026 ClawLink Inc. All rights reserved.</span>
           <span className="hidden md:block uppercase tracking-widest text-[10px]">© 2026 CLAWLINK INC. GLOBAL AI SAAS INFRASTRUCTURE.</span>
           <div className="flex flex-wrap justify-center gap-4 md:gap-6">
-            {[["Privacy Policy","/privacy"],["Terms of Service","/terms"],["Documentation","/docs"]].map(([l,h])=>(
+            {/* 🚀 ADDED THE REFUND POLICY HERE */}
+            {[["Privacy Policy","/privacy"], ["Terms of Service","/terms"], ["Refund Policy", "/refund"], ["Documentation","/docs"]].map(([l,h])=>(
               <a key={h} href={h} className="hover:text-gray-400 transition-colors duration-150">{l}</a>
             ))}
           </div>
