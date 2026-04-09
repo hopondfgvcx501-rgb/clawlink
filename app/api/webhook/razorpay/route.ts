@@ -8,7 +8,7 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-// 🛡️ SECURITY & MONITORING ALERT SYSTEM (No Silent Failures)
+// SECURITY & MONITORING ALERT SYSTEM
 async function sendTelegramAdminAlert(message: string) {
     const token = process.env.TELEGRAM_BOT_TOKEN;
     const adminChatId = process.env.TELEGRAM_ADMIN_CHAT_ID;
@@ -20,7 +20,7 @@ async function sendTelegramAdminAlert(message: string) {
                 body: JSON.stringify({ chat_id: adminChatId, text: message })
             });
         } catch (e) {
-            console.error("Failed to send admin alert:", e);
+            console.error("[TELEGRAM_ALERT_FAILED] Failed to dispatch admin alert.", e);
         }
     }
 }
@@ -32,20 +32,21 @@ export async function POST(req: NextRequest) {
     const webhookSecret = process.env.RAZORPAY_WEBHOOK_SECRET;
 
     if (!webhookSecret || !signature) {
-      console.error("🚨 RAZORPAY WEBHOOK ERROR: Missing signature or secret");
-      await sendTelegramAdminAlert("⚠️ [SECURITY ALERT] Razorpay Webhook hit without signature or secret. Possible probing attempt by a hacker.");
-      return NextResponse.json({ error: "Unauthorized access" }, { status: 400 });
+      console.error("[RAZORPAY_WEBHOOK_ERROR] Missing cryptographic signature or secret environment variable.");
+      await sendTelegramAdminAlert("🚨 [SECURITY ALERT] Razorpay Webhook accessed without signature. Potential unauthorized intrusion attempt.");
+      return NextResponse.json({ error: "Unauthorized request" }, { status: 400 });
     }
 
+    // Cryptographic validation to prevent payload spoofing
     const expectedSignature = crypto
       .createHmac("sha256", webhookSecret)
       .update(rawBody)
       .digest("hex");
 
     if (expectedSignature !== signature) {
-      console.error("🚨 RAZORPAY WEBHOOK ERROR: Invalid Cryptographic Signature");
-      await sendTelegramAdminAlert("🚨 [HACK ATTEMPT] Invalid Razorpay Signature detected! Someone is trying to fake a payment and upgrade their account.");
-      return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
+      console.error("[RAZORPAY_WEBHOOK_ERROR] Cryptographic signature mismatch detected.");
+      await sendTelegramAdminAlert("🚨 [HACK ATTEMPT] Razorpay cryptographic signature mismatch detected. Payload rejected to prevent unauthorized upgrade.");
+      return NextResponse.json({ error: "Validation Failed" }, { status: 400 });
     }
 
     const event = JSON.parse(rawBody);
@@ -56,39 +57,48 @@ export async function POST(req: NextRequest) {
       const notes = paymentEntity.notes || {};
       const userEmail = (notes.email || paymentEntity.email || "").toLowerCase(); 
       const planName = (notes.plan_name || "plus").toLowerCase();
-      const rawModel = (notes.selected_model || "openai").toLowerCase();
+      const rawModel = (notes.selected_model || "gpt-5.2").toLowerCase();
       
-      // 🚀 SURGICAL FIX 1: Extract EXACT channel from Razorpay notes
       const selectedChannel = (notes.selected_channel || "widget").toLowerCase();
       const isRenewal = notes.is_renewal === "true" || notes.plan_type === "RENEWAL";
 
       if (userEmail) {
+        // 1. Establish Master Mapping for AI Providers and Exact Engine Versions
         let aiProvider = "openai";
-        // 🚀 THE NEW MASTER MAPPER: Find exact engine version
-        let exactModelVersion = "gpt-4o-mini"; // Default fallback
+        let exactModelVersion = "gpt-4o-mini"; 
 
         if (rawModel.includes("claude") || rawModel.includes("anthropic")) {
             aiProvider = "anthropic";
-            exactModelVersion = "claude-3-opus-20240229"; // Replace with your exact claude version if different
+            exactModelVersion = "claude-3-opus-20240229";
         }
         else if (rawModel.includes("gemini") || rawModel.includes("google")) {
             aiProvider = "google";
-            exactModelVersion = "gemini-1.5-flash-8b"; // 👈 Your exact Gemini version
+            exactModelVersion = "gemini-1.5-flash-8b";
         }
         else if (rawModel.includes("omni") || rawModel.includes("multi_model") || rawModel.includes("nexus")) {
             aiProvider = "multi_model";
             exactModelVersion = "omni-nexus-engine";
         }
 
-        // 🚀 MASTER PRICING UPGRADE LIMITS
+        // 2. Establish Strict Tier Limits
         let isUnlimited = false;
         let tokensAllocated = 2000000; 
         let monthlyLimit = 1500;
 
-        if (planName === "pro") { tokensAllocated = 5000000; monthlyLimit = 3000; } 
-        else if (planName === "ultra") { tokensAllocated = 10000000; monthlyLimit = 5000; }
-        else if (planName === "adv_max" || planName === "yearly") { isUnlimited = true; tokensAllocated = 99999999; monthlyLimit = 7000; }
-        else if (planName === "monthly") { tokensAllocated = 5000000; monthlyLimit = 3000; }
+        if (planName === "pro") { 
+            tokensAllocated = 5000000; 
+            monthlyLimit = 3000; 
+        } else if (planName === "ultra") { 
+            tokensAllocated = 10000000; 
+            monthlyLimit = 5000; 
+        } else if (planName === "adv_max" || planName === "yearly") { 
+            isUnlimited = true; 
+            tokensAllocated = 99999999; 
+            monthlyLimit = 7000; 
+        } else if (planName === "monthly") { 
+            tokensAllocated = 5000000; 
+            monthlyLimit = 3000; 
+        }
 
         const newExpiryDate = new Date();
         if (planName === "adv_max" || planName === "yearly") {
@@ -97,7 +107,7 @@ export async function POST(req: NextRequest) {
             newExpiryDate.setDate(newExpiryDate.getDate() + 30); 
         }
 
-        // 🚀 SURGICAL FIX 2: Force inject `selected_channel` and `current_model_version`
+        // 3. Secure Payload Generation
         const payload: any = {
             plan: planName,            
             is_unlimited: isUnlimited, 
@@ -106,10 +116,10 @@ export async function POST(req: NextRequest) {
             plan_expiry_date: newExpiryDate.toISOString(),
             plan_status: 'Active',
             selected_channel: selectedChannel, 
-            current_model_version: exactModelVersion // <--- 🚀 BOOM! THE ULTIMATE FIX!
+            current_model_version: exactModelVersion 
         };
 
-        // 🚀 FORCE SAVE ALL TOKENS
+        // Extract sensitive credential tokens strictly from verified payload
         if (notes.telegram_token) payload.telegram_token = notes.telegram_token;
         if (notes.whatsapp_token) payload.whatsapp_token = notes.whatsapp_token;
         if (notes.whatsapp_phone_id) payload.whatsapp_phone_id = notes.whatsapp_phone_id;
@@ -129,7 +139,7 @@ export async function POST(req: NextRequest) {
         if (notes.telegram_token) { botIdentifier = notes.telegram_token; botColumn = "telegram_token"; }
         if (notes.whatsapp_token) { botIdentifier = notes.whatsapp_token; botColumn = "whatsapp_token"; }
 
-        // 🛡️ Safe DB Updating with Admin Alerts
+        // 4. Secure Database Update Execution
         try {
             if (isRenewal) {
                 let query = supabase.from("user_configs").select("id").eq("email", userEmail);
@@ -170,10 +180,11 @@ export async function POST(req: NextRequest) {
                 }
             }
         } catch (dbError: any) {
-            console.error("DB Update Failed:", dbError);
-            await sendTelegramAdminAlert(`🔴 [CRITICAL ERROR] Payment successful for ${userEmail}, but Database update FAILED! Please manually upgrade their plan.`);
+            console.error("[RAZORPAY_PROVISIONING_ERROR] Configuration update failed:", dbError);
+            await sendTelegramAdminAlert(`🔴 [CRITICAL ERROR] Payment captured for ${userEmail}, but database update FAILED. Manual system configuration required.`);
         }
 
+        // 5. Record Immutable Ledger Entry
         try {
             await supabase.from("billing_history").insert({
                 email: userEmail,
@@ -184,18 +195,17 @@ export async function POST(req: NextRequest) {
                 razorpay_order_id: paymentEntity.order_id
             });
             
-            // 🎉 SEND SUCCESS MESSAGE TO FOUNDER!
-            await sendTelegramAdminAlert(`💰 [NEW PAYMENT] Boom! ${userEmail} just paid for the ${planName.toUpperCase()} plan! ClawLink is growing! 🚀`);
+            await sendTelegramAdminAlert(`💵 [PAYMENT RECEIVED] Razorpay transaction verified. Account ${userEmail} initialized on ${planName.toUpperCase()} plan.`);
         } catch (invoiceError) {
-            await sendTelegramAdminAlert(`⚠️ [WARNING] Payment captured for ${userEmail} but failed to save in billing_history table.`);
+            await sendTelegramAdminAlert(`⚠️ [WARNING] Payment captured for ${userEmail} but failed to record in billing_history ledger.`);
         }
       }
     }
 
     return NextResponse.json({ success: true });
   } catch (error: any) {
-    console.error("Razorpay Webhook Error:", error);
-    await sendTelegramAdminAlert(`🔴 [RAZORPAY WEBHOOK CRASH]: ${error.message || "Unknown server error during payment capture."}`);
+    console.error("[RAZORPAY_WEBHOOK_FATAL] Processing error:", error);
+    await sendTelegramAdminAlert(`🔴 [RAZORPAY WEBHOOK CRASH]: Internal server error during payment processing. Investigate immediately.`);
     return NextResponse.json({ error: "Server processing failed" }, { status: 500 });
   }
 }
