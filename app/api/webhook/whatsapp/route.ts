@@ -93,7 +93,7 @@ async function callGemini(model: string, systemPrompt: string, history: any[], u
         })
     });
     const data = await res.json();
-    if (!res.ok) throw new Error(data.error?.message || "Gemini Error");
+    if (!res.ok) throw new Error("Provider Error: Gemini API rejected the request.");
     return data.candidates[0].content.parts[0].text;
 }
 
@@ -111,7 +111,7 @@ async function callOpenAI(model: string, systemPrompt: string, history: any[], u
         body: JSON.stringify({ model: model, messages: messages })
     });
     const data = await res.json();
-    if (!res.ok) throw new Error(data.error?.message || "OpenAI Error");
+    if (!res.ok) throw new Error("Provider Error: OpenAI API rejected the request.");
     return data.choices[0].message.content;
 }
 
@@ -145,7 +145,7 @@ async function callClaude(model: string, systemPrompt: string, history: any[], u
         })
     });
     const data = await res.json();
-    if (!res.ok) throw new Error(data.error?.message || "Claude Error");
+    if (!res.ok) throw new Error("Provider Error: Anthropic API rejected the request.");
     return data.content[0].text;
 }
 
@@ -212,9 +212,9 @@ export async function POST(req: Request) {
         else if (rawProvider.includes("gemini") || rawProvider.includes("google")) provider = "google";
 
         // ==========================================
-        // 🛑 THE GATEKEEPER (Expiry & Limits Check)
+        // 🛑 THE GATEKEEPER (Expiry & Limits Check) - SURGICALLY UPDATED
         // ==========================================
-        const isUnlimited = config.is_unlimited || config.plan_name === "max" || config.plan_name === "ultra_max" || config.plan_name === "pro";
+        const isUnlimited = config.is_unlimited || config.plan === "adv_max" || config.plan === "yearly";
         const tokensUsed = config.tokens_used || 0;
         const tokensAllocated = config.tokens_allocated || 10000;
         
@@ -222,7 +222,7 @@ export async function POST(req: Request) {
         const isExpired = config.plan_expiry_date ? (new Date() > expiryDate) : false;
 
         if (isExpired || (!isUnlimited && tokensUsed >= tokensAllocated)) {
-            const maintenanceMsg = "Hello! Our AI assistant is currently undergoing a brief scheduled maintenance to serve you better. Please leave your query and our human support team will get back to you shortly. Thank you for your patience!";
+            const maintenanceMsg = "System Note: The AI assistant for this account is currently offline due to account limits. Please contact the administrator.";
                 
             await fetch(`https://graph.facebook.com/v18.0/${phoneNumberId}/messages`, {
                 method: "POST", headers: { "Content-Type": "application/json", "Authorization": `Bearer ${whatsappToken}` },
@@ -272,7 +272,7 @@ export async function POST(req: Request) {
         // =========================================================================
         // 8. 🧠 CLAWLINK PROFIT MAXIMIZER & SMART FALLBACK ENGINE (WITH SECURE FETCH)
         // =========================================================================
-        let aiResponse = "Hello! Our AI assistant is currently undergoing a brief scheduled maintenance. Please leave your query and our human support team will get back to you shortly.";
+        let aiResponse = "System is undergoing scheduled maintenance. Please try again later.";
         let wasSuccessful = false;
 
         const words = userText.split(/\s+/).length;
@@ -307,12 +307,12 @@ export async function POST(req: Request) {
                     aiResponse = engineData.reply;
                     wasSuccessful = true;
                 } else {
-                    console.error("❌ [WhatsApp Webhook] Omni Engine failed. Falling back to local internal logic.", engineData);
-                    throw new Error("Omni Engine Failed. Engaging Local Webhook Fallback.");
+                    console.error("[ROUTING_FAILURE] Omni Engine remote call failed. Engaging localized failsafe.");
+                    throw new Error("API Route Failure");
                 }
             } catch (err) {
                  // If the Master Engine fails, it smoothly falls through to the local webhook logic below
-                 console.error("Master fetch failed, proceeding to internal webhook matrix.");
+                 console.error("[FAILSAFE_ACTIVATED] Utilizing internal execution matrix.");
             }
         }
 
@@ -362,29 +362,29 @@ export async function POST(req: Request) {
                 else aiResponse = await callGemini(targetModel, fullSystemContext, historyArray, userText);
                 wasSuccessful = true;
             } catch (err1) {
-                console.error(`[WhatsApp AI Error] ${targetModel} failed.`);
+                console.error(`[EXECUTION_FAILURE] Primary model ${targetModel} rejected request.`);
                 
                 if (provider === "omni") {
-                    console.log("[Omni Fallback] Routing to GPT-4o-mini...");
+                    console.log("[OMNI_FALLBACK] Routing to secondary engine...");
                     try {
                         aiResponse = await callOpenAI(GPT_CHEAP, fullSystemContext, historyArray, userText);
                         wasSuccessful = true;
                     } catch (err2) {
-                        console.log("[Omni Fallback 2] Routing to Gemini Flash...");
+                        console.log("[OMNI_FALLBACK_2] Routing to tertiary engine...");
                         try {
                             aiResponse = await callGemini(GEMINI_CHEAP, fullSystemContext, historyArray, userText);
                             wasSuccessful = true;
-                        } catch (err3) { console.error("[Omni] All cross-provider fallbacks failed."); }
+                        } catch (err3) { console.error("[CRITICAL_FAILURE] Omni cross-provider fallback exhausted."); }
                     }
                 } else {
-                    console.log(`[Intra-Provider Fallback] ${provider} downgrading to cheaper model...`);
+                    console.log(`[INTRA_PROVIDER_FALLBACK] Downgrading to standard tier for ${provider}.`);
                     try {
                         if (provider === "anthropic") aiResponse = await callClaude(CLAUDE_CHEAP, fullSystemContext, historyArray, userText);
                         else if (provider === "openai") aiResponse = await callOpenAI(GPT_CHEAP, fullSystemContext, historyArray, userText);
                         else aiResponse = await callGemini(GEMINI_CHEAP, fullSystemContext, historyArray, userText);
                         wasSuccessful = true;
                     } catch (err2) {
-                        console.error(`[Intra-Provider] Fallback failed for ${provider}.`);
+                        console.error(`[CRITICAL_FAILURE] Intra-provider fallback failed for ${provider}.`);
                     }
                 }
             }
@@ -394,9 +394,10 @@ export async function POST(req: Request) {
         // 9. CHARGE TOKENS & SAVE AI RESPONSE (ISOLATED TRACKING)
         // ==========================================
         if (wasSuccessful) {
+            const calculatedTokens = Math.ceil((userText.length + aiResponse.length) / 3);
             const updatePayload: any = { messages_used_this_month: (config.messages_used_this_month || 0) + 1 };
             if (!isUnlimited) {
-                updatePayload.tokens_used = tokensUsed + 1;
+                updatePayload.tokens_used = tokensUsed + calculatedTokens; // Accurately drains tokens
             }
             await supabase.from("user_configs").update(updatePayload).eq("id", configId);
         }
@@ -413,6 +414,7 @@ export async function POST(req: Request) {
         return NextResponse.json({ success: true });
 
     } catch (error: any) {
+        console.error("[SYSTEM_FATAL] Webhook processing halted:", error);
         // Add Telegram Admin Logging if you want to track Meta webhook crashes too!
         try {
             const token = process.env.TELEGRAM_BOT_TOKEN; 
@@ -420,7 +422,7 @@ export async function POST(req: Request) {
             if (adminChatId && token) {
                 await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
                     method: "POST", headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ chat_id: adminChatId, text: `⚠️ [WHATSAPP CRASH]: ${error.message || "Unknown"}` })
+                    body: JSON.stringify({ chat_id: adminChatId, text: `⚠️ [WHATSAPP CRASH]: ${error.message || "Unknown Runtime Exception"}` })
                 });
             }
         } catch (e) {}
