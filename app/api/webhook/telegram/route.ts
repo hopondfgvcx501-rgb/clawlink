@@ -51,12 +51,12 @@ async function generateEmbedding(text: string, key: string | null) {
         const data = await res.json();
         
         if (!res.ok) {
-            console.error("Telegram Search Embedding Error:", data);
+            console.error("[EMBEDDING_ERROR] Telegram Search Embedding Error:", data);
             return null;
         }
         return data.embedding.values;
     } catch (e) {
-        console.error("Telegram Catch Error:", e);
+        console.error("[EMBEDDING_EXCEPTION] Telegram Catch Error:", e);
         return null;
     }
 }
@@ -88,7 +88,7 @@ async function callGemini(model: string, systemPrompt: string, history: any[], u
         })
     });
     const data = await res.json();
-    if (!res.ok) throw new Error("Gemini Error: " + JSON.stringify(data));
+    if (!res.ok) throw new Error("Provider Error: Gemini API rejected the request.");
     return data.candidates[0].content.parts[0].text;
 }
 
@@ -108,7 +108,7 @@ async function callOpenAI(model: string, systemPrompt: string, history: any[], u
         body: JSON.stringify({ model: model, messages: messages })
     });
     const data = await res.json();
-    if (!res.ok) throw new Error("OpenAI Error: " + JSON.stringify(data));
+    if (!res.ok) throw new Error("Provider Error: OpenAI API rejected the request.");
     return data.choices[0].message.content;
 }
 
@@ -142,7 +142,7 @@ async function callClaude(model: string, systemPrompt: string, history: any[], u
         })
     });
     const data = await res.json();
-    if (!res.ok) throw new Error("Claude Error: " + JSON.stringify(data));
+    if (!res.ok) throw new Error("Provider Error: Anthropic API rejected the request.");
     return data.content[0].text;
 }
 
@@ -152,7 +152,7 @@ async function transcribeAudio(fileId: string, botToken: string, key: string | n
     try {
         const fileRes = await fetch(`https://api.telegram.org/bot${botToken}/getFile?file_id=${fileId}`);
         const fileData = await fileRes.json();
-        if (!fileData.ok) throw new Error("Could not get file path");
+        if (!fileData.ok) throw new Error("Could not acquire file path from Telegram.");
         
         const filePath = fileData.result.file_path;
         const audioRes = await fetch(`https://api.telegram.org/file/bot${botToken}/${filePath}`);
@@ -206,7 +206,7 @@ export async function POST(req: Request) {
         const { data: config, error: configError } = await configQuery.limit(1).single();
         
         if (configError || !config || !config.telegram_token) {
-            console.warn("⚠️ [Webhook Gatekeeper] Invalid token or email access attempt.");
+            console.warn("[SECURITY_GUARD] Unauthorized webhook access attempt rejected.");
             return NextResponse.json({ success: true });
         }
 
@@ -226,9 +226,9 @@ export async function POST(req: Request) {
         else if (rawProvider.includes("gemini") || rawProvider.includes("google")) provider = "google";
 
         // ==========================================
-        // 🛑 THE GATEKEEPER (Expiry & Limits Check)
+        // 🛑 THE GATEKEEPER (Expiry & Limits Check) - SURGICALLY UPDATED
         // ==========================================
-        const isUnlimited = config.is_unlimited || config.plan_name === "max" || config.plan_name === "ultra_max" || config.plan_name === "pro";
+        const isUnlimited = config.is_unlimited || config.plan === "adv_max" || config.plan === "yearly";
         const tokensUsed = config.tokens_used || 0;
         const tokensAllocated = config.tokens_allocated || 10000;
         
@@ -236,7 +236,7 @@ export async function POST(req: Request) {
         const isExpired = config.plan_expiry_date ? (new Date() > expiryDate) : false;
 
         if (isExpired || (!isUnlimited && tokensUsed >= tokensAllocated)) {
-            const maintenanceMsg = "Hello! Our AI assistant is currently undergoing a brief scheduled maintenance to serve you better. Please leave your query and our human support team will get back to you shortly. Thank you for your patience!";
+            const maintenanceMsg = "System Note: The AI assistant for this account is currently offline due to account limits. Please contact the administrator.";
                 
             await fetch(`https://api.telegram.org/bot${telegramToken}/sendMessage`, {
                 method: "POST", headers: { "Content-Type": "application/json" },
@@ -258,13 +258,13 @@ export async function POST(req: Request) {
             if (!transcription) {
                 await fetch(`https://api.telegram.org/bot${telegramToken}/sendMessage`, {
                     method: "POST", headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ chat_id: chatId, text: "I'm sorry, I couldn't process that voice note clearly. Could you please type your message?" })
+                    body: JSON.stringify({ chat_id: chatId, text: "System could not process the audio format. Please type your message." })
                 });
                 return NextResponse.json({ success: true });
             }
             // 🛡️ Sanitize Audio Transcription
             userText = sanitizeInput(transcription);
-            crmLogMessage = `🎤 [Voice Note]: "${userText}"`;
+            crmLogMessage = `[Voice Input]: "${userText}"`;
         } else {
             if (body.message.text === "/start") return NextResponse.json({ success: true });
             
@@ -319,7 +319,7 @@ export async function POST(req: Request) {
         // =========================================================================
         // 8. 🧠 CLAWLINK PROFIT MAXIMIZER & SMART FALLBACK ENGINE
         // =========================================================================
-        let aiResponse = "Hello! Our AI assistant is currently undergoing a brief scheduled maintenance. Please leave your query and our human support team will get back to you shortly.";
+        let aiResponse = "System is undergoing scheduled maintenance. Please try again later.";
         let wasSuccessful = false;
 
         const words = userText.split(/\s+/).length;
@@ -369,40 +369,41 @@ export async function POST(req: Request) {
             else aiResponse = await callGemini(targetModel, fullSystemContext, historyArray, userText, userApiKey);
             wasSuccessful = true;
         } catch (err1) {
-            console.error(`[AI Error] ${targetModel} failed.`);
+            console.error(`[EXECUTION_FAILURE] Primary model ${targetModel} rejected request.`);
             
             if (provider === "omni") {
-                console.log("[Omni Fallback] Routing to GPT-4o-mini...");
+                console.log("[OMNI_FALLBACK] Routing to secondary engine...");
                 try {
                     aiResponse = await callOpenAI(GPT_CHEAP, fullSystemContext, historyArray, userText, userApiKey);
                     wasSuccessful = true;
                 } catch (err2) {
-                    console.log("[Omni Fallback 2] Routing to Gemini Flash...");
+                    console.log("[OMNI_FALLBACK_2] Routing to tertiary engine...");
                     try {
                         aiResponse = await callGemini(GEMINI_CHEAP, fullSystemContext, historyArray, userText, userApiKey);
                         wasSuccessful = true;
-                    } catch (err3) { console.error("[Omni] All cross-provider fallbacks failed."); }
+                    } catch (err3) { console.error("[CRITICAL_FAILURE] Omni cross-provider fallback exhausted."); }
                 }
             } else {
-                console.log(`[Intra-Provider Fallback] ${provider} downgrading to cheaper model...`);
+                console.log(`[INTRA_PROVIDER_FALLBACK] Downgrading to standard tier for ${provider}.`);
                 try {
                     if (provider === "anthropic") aiResponse = await callClaude(CLAUDE_CHEAP, fullSystemContext, historyArray, userText, userApiKey);
                     else if (provider === "openai") aiResponse = await callOpenAI(GPT_CHEAP, fullSystemContext, historyArray, userText, userApiKey);
                     else aiResponse = await callGemini(GEMINI_CHEAP, fullSystemContext, historyArray, userText, userApiKey);
                     wasSuccessful = true;
                 } catch (err2) {
-                    console.error(`[Intra-Provider] Fallback failed for ${provider}.`);
+                    console.error(`[CRITICAL_FAILURE] Intra-provider fallback failed for ${provider}.`);
                 }
             }
         }
 
         // ==========================================
-        // 9. CHARGE TOKENS & SAVE RESPONSE (ISOLATED TRACKING)
+        // 9. CHARGE TOKENS & SAVE RESPONSE (SURGICALLY UPDATED)
         // ==========================================
         if (wasSuccessful) {
+            const calculatedTokens = Math.ceil((userText.length + aiResponse.length) / 3);
             const updatePayload: any = { messages_used_this_month: (config.messages_used_this_month || 0) + 1 };
             if (!isUnlimited) {
-                updatePayload.tokens_used = tokensUsed + 1;
+                updatePayload.tokens_used = tokensUsed + calculatedTokens;
             }
             await supabase.from("user_configs").update(updatePayload).eq("id", configId);
         }
@@ -419,7 +420,7 @@ export async function POST(req: Request) {
         return NextResponse.json({ success: true });
 
     } catch (error: any) {
-        console.error("Critical Webhook Error:", error); 
+        console.error("[SYSTEM_FATAL] Webhook processing halted:", error); 
         
         try {
             const body = await req.clone().json().catch(() => ({})); 
@@ -432,12 +433,12 @@ export async function POST(req: Request) {
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ 
                         chat_id: chatId, 
-                        text: `⚠️ [SYSTEM ERROR]: ${error.message || "Unknown Error Occurred"}` 
+                        text: `⚠️ [SYSTEM ERROR]: ${error.message || "Unknown Runtime Exception"}` 
                     })
                 });
             }
         } catch (e) {
-            console.error("Failed to send error to Telegram", e);
+            console.error("[TELEGRAM_ALERT_FAILED] Could not dispatch error log.", e);
         }
 
         return NextResponse.json({ success: true }); 

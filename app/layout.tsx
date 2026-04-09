@@ -1,12 +1,13 @@
 import type { Metadata } from "next";
-import Providers from "./providers"; // Removed curly brackets {} for default export
+import Providers from "./providers";
 import "./globals.css";
 
 export const metadata: Metadata = {
   title: "ClawLink | 1-Click OpenClaw Deploy & 24/7 AI Agent in 30s",
-  description: "Launch your 24/7 AI Agent in just 30 seconds. Experience true 1-click OpenClaw deployment powered by our bulletproof Omni-Fallback Engine (Claude 🔄 GPT-4o 🔄 Gemini). Zero downtime, infinite scale.",
+  description: "1-Click deploy your 24/7 OpenClaw Personal AI Assistant globally on WhatsApp, Telegram & Insta in 30s. Zero technical complexity. Customize via dashboard!",
   manifest: "/manifest.json",
   icons: {
+    icon: "/icon-192x192.png",
     apple: "/icon-192x192.png",
   },
   metadataBase: new URL("https://www.clawlinkai.com"),
@@ -15,7 +16,7 @@ export const metadata: Metadata = {
   },
   openGraph: {
     title: "ClawLink | 1-Click OpenClaw Deploy & 24/7 AI Agent",
-    description: "Launch your 24/7 AI Agent in just 30 seconds. Powered by our bulletproof Omni-Fallback Engine (Claude 🔄 GPT-4o 🔄 Gemini).",
+    description: "1-Click deploy your 24/7 OpenClaw Personal AI Assistant globally on WhatsApp, Telegram & Insta in 30s. Zero technical complexity. Customize via dashboard!",
     url: "https://www.clawlinkai.com",
     siteName: "ClawLink",
     images: [
@@ -32,7 +33,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "ClawLink | 1-Click OpenClaw Deploy",
-    description: "Launch your 24/7 AI Agent in just 30 seconds. Powered by our bulletproof Omni-Fallback Engine. Zero downtime, infinite scale.",
+    description: "1-Click deploy your 24/7 OpenClaw Personal AI Assistant globally on WhatsApp, Telegram & Insta in 30s. Zero technical complexity. Customize via dashboard!",
     images: ["https://images.unsplash.com/photo-1633356122544-f134324a6cee?q=80&w=1200&auto=format&fit=crop"],
   },
 };
