@@ -5,7 +5,7 @@
  * CLAWLINK ENTERPRISE COMMAND CENTER (DASHBOARD)
  * ==============================================================================================
  * @file app/dashboard/page.tsx
- * @version 9.4.8 (NBSP Cleaned & Strict TypeScript Compliant)
+ * @version 9.5.0 (Pricing Synced & UI Security Lock Disabled)
  * @description The central hub for users to monitor their AI Agents.
  * Enforces PLG by dynamically displaying current configuration and gating 
  * the "Go Live" (Payment) logic directly from this interface.
@@ -35,45 +35,54 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 
 /**
  * ==============================================================================================
- * ENTERPRISE PRICING MATRICES
+ * ENTERPRISE PRICING MATRICES (EXACT SYNC WITH LANDING PAGE)
  * ==============================================================================================
  */
 const PRICING_DATA: Record<string, any> = {
   gemini: {
     name: "Gemini (Google)",
     plans: [
-      { id: "plus", name: "Plus", usd: 27, inr: 2268, msgs: "Optimized Speed", desc: "Instant customer conversions & rapid response.", accent: "rgba(255,255,255,.35)", color: "text-gray-400" },
-      { id: "pro", name: "Pro", usd: 109, inr: 9156, msgs: "Enterprise Scale", desc: "Complex query mastermind & priority routing.", accent: "#3B82F6", color: "text-blue-400", badge: "Popular" },
-      { id: "ultra", name: "Ultra", usd: 169, inr: 14196, msgs: "Peak Execution", desc: "Zero parallel chat limit & max system power.", accent: "#A855F7", color: "text-purple-400" },
-      { id: "adv_max", name: "Adv Max", usd: 2748, inr: 230832, msgs: "Unlimited Tier", desc: "Global system dominance & uncapped scaling.", accent: "#F97316", color: "text-orange-400", badge: "Yearly ⭐", isYearly: true }
+      { id: "plus", name: "Plus", usd: 6, inr: 499, msgs: "Optimized Speed", desc: "Instant customer conversions & rapid response.", accent: "rgba(255,255,255,.35)", color: "text-gray-400" },
+      { id: "pro", name: "Pro", usd: 12, inr: 999, msgs: "Enterprise Scale", desc: "Complex query mastermind & priority routing.", accent: "#3B82F6", color: "text-blue-400", badge: "Popular" },
+      { id: "ultra", name: "Ultra", usd: 24, inr: 1999, msgs: "Peak Execution", desc: "Zero parallel chat limit & max system power.", accent: "#A855F7", color: "text-purple-400" },
+      { id: "adv_max", name: "Adv Max", usd: 599, inr: 49999, msgs: "Unlimited Tier", desc: "Global system dominance & uncapped scaling.", accent: "#F97316", color: "text-orange-400", badge: "Yearly ⭐", isYearly: true }
     ]
   },
   "gpt-5.2": { 
     name: "GPT (OpenAI)",
     plans: [
-      { id: "plus", name: "Plus", usd: 29, inr: 2436, msgs: "Optimized Speed", desc: "Instant customer conversions & rapid response.", accent: "rgba(255,255,255,.35)", color: "text-gray-400" },
-      { id: "pro", name: "Pro", usd: 199, inr: 16716, msgs: "Enterprise Scale", desc: "Complex query mastermind & priority routing.", accent: "#3B82F6", color: "text-blue-400", badge: "Popular" },
-      { id: "ultra", name: "Ultra", usd: 379, inr: 31836, msgs: "Peak Execution", desc: "Zero parallel chat limit & max system power.", accent: "#A855F7", color: "text-purple-400" },
-      { id: "adv_max", name: "Adv Max", usd: 5988, inr: 502992, msgs: "Unlimited Tier", desc: "Global system dominance & uncapped scaling.", accent: "#F97316", color: "text-orange-400", badge: "Yearly ⭐", isYearly: true }
+      { id: "plus", name: "Plus", usd: 8, inr: 599, msgs: "Optimized Speed", desc: "Instant customer conversions & rapid response.", accent: "rgba(255,255,255,.35)", color: "text-gray-400" },
+      { id: "pro", name: "Pro", usd: 18, inr: 1499, msgs: "Enterprise Scale", desc: "Complex query mastermind & priority routing.", accent: "#3B82F6", color: "text-blue-400", badge: "Popular" },
+      { id: "ultra", name: "Ultra", usd: 36, inr: 2999, msgs: "Peak Execution", desc: "Zero parallel chat limit & max system power.", accent: "#A855F7", color: "text-purple-400" },
+      { id: "adv_max", name: "Adv Max", usd: 899, inr: 74999, msgs: "Unlimited Tier", desc: "Global system dominance & uncapped scaling.", accent: "#F97316", color: "text-orange-400", badge: "Yearly ⭐", isYearly: true }
     ]
   },
   claude: {
     name: "Claude (Anthropic)",
     plans: [
-      { id: "plus", name: "Plus", usd: 47, inr: 3948, msgs: "Optimized Speed", desc: "Instant customer conversions & rapid response.", accent: "rgba(255,255,255,.35)", color: "text-gray-400" },
-      { id: "pro", name: "Pro", usd: 269, inr: 22596, msgs: "Enterprise Scale", desc: "Complex query mastermind & priority routing.", accent: "#3B82F6", color: "text-blue-400", badge: "Popular" },
-      { id: "ultra", name: "Ultra", usd: 449, inr: 37716, msgs: "Peak Execution", desc: "Zero parallel chat limit & max system power.", accent: "#A855F7", color: "text-purple-400" },
-      { id: "adv_max", name: "Adv Max", usd: 6948, inr: 583632, msgs: "Unlimited Tier", desc: "Global system dominance & uncapped scaling.", accent: "#F97316", color: "text-orange-400", badge: "Yearly ⭐", isYearly: true }
+      { id: "plus", name: "Plus", usd: 10, inr: 799, msgs: "Optimized Speed", desc: "Instant customer conversions & rapid response.", accent: "rgba(255,255,255,.35)", color: "text-gray-400" },
+      { id: "pro", name: "Pro", usd: 24, inr: 1999, msgs: "Enterprise Scale", desc: "Complex query mastermind & priority routing.", accent: "#3B82F6", color: "text-blue-400", badge: "Popular" },
+      { id: "ultra", name: "Ultra", usd: 48, inr: 3999, msgs: "Peak Execution", desc: "Zero parallel chat limit & max system power.", accent: "#A855F7", color: "text-purple-400" },
+      { id: "adv_max", name: "Adv Max", usd: 1199, inr: 99999, msgs: "Unlimited Tier", desc: "Global system dominance & uncapped scaling.", accent: "#F97316", color: "text-orange-400", badge: "Yearly ⭐", isYearly: true }
     ]
   },
   omni: {
     name: "OmniAgent Bundle",
     plans: [
       { id: "monthly", name: "Pro Bundle", usd: 249, inr: 20916, msgs: "Smart Matrix", desc: "Elite multi-persona integration. 3x Fallback.", accent: "#00BFFF", color: "text-[#00BFFF]" },
-      { id: "yearly", name: "Adv Premium", usd: 4548, inr: 382032, msgs: "Zero Downtime", desc: "Ultimate auto-routing & global priority access.", accent: "#BA7517", color: "text-[#BA7517]", badge: "Yearly ⭐", isYearly: true }
+      { id: "yearly", name: "Adv Premium", usd: 1799, inr: 149999, msgs: "Zero Downtime", desc: "Ultimate auto-routing & global priority access.", accent: "#BA7517", color: "text-[#BA7517]", badge: "Yearly ⭐", isYearly: true }
     ]
   }
 };
+
+/**
+ * Security Protocol disabled for Dashboard to prevent false positives from browser extensions
+ */
+class KnoxSecurityProtocol {
+  static initialize() {
+    return; // Disabled on frontend dashboard to allow smooth user experience
+  }
+}
 
 export default function Dashboard() {
   const { data: session, status } = useSession();
@@ -114,9 +123,7 @@ export default function Dashboard() {
       router.push("/");
     }
 
-    if (typeof window !== "undefined") {
-      document.addEventListener("contextmenu", (e) => e.preventDefault());
-    }
+    KnoxSecurityProtocol.initialize();
 
     try {
       const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || "";
@@ -563,7 +570,6 @@ export default function Dashboard() {
   };
 
   const btn = "transition-all duration-[120ms] ease-out active:scale-[0.93] transform-gpu will-change-transform";
-  const gridColsClass = isOmniActive ? "md:grid-cols-2 max-w-2xl" : "md:grid-cols-2 lg:grid-cols-4 max-w-5xl";
 
   return (
     <div className="w-full min-h-screen bg-[#07070A] text-[#E8E8EC] font-sans relative selection:bg-orange-500/30 overflow-y-auto custom-scrollbar flex flex-col">
@@ -590,7 +596,7 @@ export default function Dashboard() {
                 <p className="text-sm text-gray-400">Select a tier to activate your <span className="text-white font-bold">{getModelDisplayName()}</span> engine.</p>
               </div>
 
-              <div className={`grid grid-cols-1 gap-6 mb-8 mx-auto text-left ${gridColsClass}`}>
+              <div className={`grid grid-cols-1 md:grid-cols-${currentPricing?.plans?.length || 4} gap-6 mb-8 max-w-${isOmniActive ? '2xl' : '5xl'} mx-auto text-left`}>
                 {currentPricing?.plans?.map((plan: any) => {
                   const isActive = selectedRenewalPlan === plan.id;
                   return (
