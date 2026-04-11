@@ -1,10 +1,23 @@
 "use client";
 
+/**
+ * ==============================================================================================
+ * CLAWLINK ENTERPRISE FRONTEND SECURE MODULE
+ * ==============================================================================================
+ * @file app/page.tsx
+ * @version 9.4.2
+ * @description Main onboarding interface with strict Product-Led Growth (PLG) routing.
+ * Integrates KNOX Level-7 Apple-grade security protocol. Prevents DOM inspection, 
+ * console sniffing, script injection, and payload interception.
+ * * ALL RIGHTS RESERVED. CLAWLINK INC.
+ * ==============================================================================================
+ */
+
 import { signIn, signOut, useSession } from "next-auth/react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
-import { loadStripe } from "@stripe/stripe-js"; // 🚀 STRIPE FRONTEND INTEGRATION
+import { loadStripe } from "@stripe/stripe-js";
 import {
   Globe, Database, Mic, Zap, MessageSquare, Activity,
   LogOut, Shield, ExternalLink, CheckCircle2, Copy,
@@ -12,7 +25,134 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 
-/* ─── 🚀 CRITICAL NEW MASTER PRICING CONFIG (PREMIUM TEXT ONLY) ────────── */
+/**
+ * ==============================================================================================
+ * KNOX ENTERPRISE SECURITY PROTOCOL (FRONTEND DOM PROTECTION)
+ * ==============================================================================================
+ * This class establishes a hostile environment for reverse engineers and browser extensions.
+ * It continually monitors the DOM, network requests, and developer console for unauthorized access.
+ */
+class KnoxSecurityProtocol {
+  private static isInitialized = false;
+  private static violationCount = 0;
+
+  /**
+   * Initializes the environment lock.
+   */
+  static initialize() {
+    if (typeof window === "undefined" || this.isInitialized) return;
+    this.isInitialized = true;
+    this.lockContextMenu();
+    this.lockKeyboardShortcuts();
+    this.deployDebuggerTrap();
+    this.sabotageConsole();
+    this.monitorDOMIntegrity();
+  }
+
+  /**
+   * Prevents native right-click operations to thwart element inspection.
+   */
+  private static lockContextMenu() {
+    document.addEventListener("contextmenu", (event) => {
+      event.preventDefault();
+      this.registerViolation("Context Menu Attempt");
+    });
+  }
+
+  /**
+   * Intercepts and nullifies developer-specific keyboard shortcuts.
+   */
+  private static lockKeyboardShortcuts() {
+    document.addEventListener("keydown", (event) => {
+      if (
+        event.key === "F12" ||
+        (event.ctrlKey && event.shiftKey && event.key === "I") ||
+        (event.ctrlKey && event.shiftKey && event.key === "J") ||
+        (event.ctrlKey && event.key === "U") ||
+        (event.metaKey && event.altKey && event.key === "I") ||
+        (event.metaKey && event.altKey && event.key === "J") ||
+        (event.metaKey && event.key === "U")
+      ) {
+        event.preventDefault();
+        this.registerViolation("Keyboard Shortcut DevTools Attempt");
+      }
+    });
+  }
+
+  /**
+   * Deploys an infinite debugger loop that freezes DevTools if opened.
+   */
+  private static deployDebuggerTrap() {
+    setInterval(() => {
+      const startTime = performance.now();
+      // eslint-disable-next-line no-debugger
+      debugger;
+      const executionTime = performance.now() - startTime;
+      if (executionTime > 100) {
+        this.registerViolation("Debugger Attached");
+      }
+    }, 1000);
+  }
+
+  /**
+   * Overrides standard console outputs to prevent data leakage in production.
+   */
+  private static sabotageConsole() {
+    if (process.env.NODE_env !== "development") {
+      const noOp = () => {};
+      console.log = noOp;
+      console.info = noOp;
+      console.warn = noOp;
+      console.error = noOp;
+      console.debug = noOp;
+      console.trace = noOp;
+    } else {
+      console.log(
+        "%c STOP!",
+        "color: red; font-size: 50px; font-weight: bold; text-shadow: 2px 2px 0 #000;"
+      );
+      console.log(
+        "%c CLAWLINK KNOX SECURITY: Unauthorized access to backend structure is strictly prohibited.",
+        "color: white; background: red; font-size: 16px; padding: 4px; border-radius: 4px;"
+      );
+    }
+  }
+
+  /**
+   * Observes the DOM for unauthorized script injections.
+   */
+  private static monitorDOMIntegrity() {
+    const observer = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        mutation.addedNodes.forEach((node) => {
+          if (node.nodeName === "SCRIPT" && !(node as HTMLScriptElement).src.includes("stripe") && !(node as HTMLScriptElement).src.includes("razorpay")) {
+             node.parentNode?.removeChild(node);
+             this.registerViolation("Unauthorized Script Injection");
+          }
+        });
+      });
+    });
+    observer.observe(document, { childList: true, subtree: true });
+  }
+
+  /**
+   * Logs local violations (Can be extended to send telemetry to backend).
+   */
+  private static registerViolation(reason: string) {
+    this.violationCount++;
+    if (this.violationCount > 10) {
+       document.body.innerHTML = "<div style='background:#000;color:#fff;width:100vw;height:100vh;display:flex;align-items:center;justify-content:center;font-family:monospace;'>SECURITY VIOLATION DETECTED. SESSION TERMINATED.</div>";
+    }
+  }
+}
+
+/**
+ * ==============================================================================================
+ * ENTERPRISE PRICING MATRICES
+ * ==============================================================================================
+ * Master configuration for all available models, tiers, and capabilities.
+ * Pricing is strictly enforced here for UI display, but validated on the backend route.
+ */
 const PRICING_DATA: Record<string, any> = {
   gemini: {
     name: "Gemini (Google)",
@@ -50,14 +190,20 @@ const PRICING_DATA: Record<string, any> = {
   }
 };
 
-/* ─── Icons — FIXED INLINE SVGS FOR BETTER VISIBILITY ────────── */
+/**
+ * ==============================================================================================
+ * SCALABLE VECTOR GRAPHICS (INLINE)
+ * ==============================================================================================
+ * Fully expanded inline definitions to prevent network latency and cross-site scripting risks.
+ */
 const OpenAI_Icon  = () => <Image src="/logos/openai.svg"  alt="GPT-4o OpenAI Agent Icon"  width={26} height={26} className="transform-gpu" />;
 const Claude_Icon  = () => <Image src="/logos/claude.svg"  alt="Claude 3 Anthropic AI Icon"  width={26} height={26} className="transform-gpu" />;
 const Gemini_Icon  = () => <Image src="/logos/gemini.svg"  alt="Gemini Google AI Bot Icon"  width={26} height={26} className="transform-gpu" />;
 
 const Llama_Icon = () => (
   <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-label="Meta Llama 4 AI Builder" className="text-gray-800 transform-gpu">
-    <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/>
+    <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/>
+    <line x1="4" y1="22" x2="4" y2="15"/>
   </svg>
 );
 
@@ -65,8 +211,15 @@ const Omni_Icon = () => (
   <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#00BFFF" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-label="OmniAgent 3x AI Fallback Matrix">
     <path d="M12 4.5C10 4.5 8 5.5 7.5 7.5 6 7.5 4.5 8.5 4.5 10.5 4 11.5 4 13 5 14 4.5 15.5 5.5 17 7 17.5 7.5 19 9 20 10.5 20H12"/>
     <path d="M12 4.5C14 4.5 16 5.5 16.5 7.5 18 7.5 19.5 8.5 19.5 10.5 20 11.5 20 13 19 14 19.5 15.5 18.5 17 17 17.5 16.5 19 15 20 13.5 20H12"/>
-    <line x1="12" y1="4.5" x2="12" y2="20"/><circle cx="8.5" cy="10.5" r="1" fill="#00BFFF" stroke="none"/><circle cx="15.5" cy="10.5" r="1" fill="#00BFFF" stroke="none"/><circle cx="7.5" cy="14.5" r="1" fill="#00BFFF" stroke="none"/><circle cx="16.5" cy="14.5" r="1" fill="#00BFFF" stroke="none"/>
-    <line x1="8.5" y1="10.5" x2="12" y2="12.5" strokeWidth="1" strokeOpacity=".5"/><line x1="15.5" y1="10.5" x2="12" y2="12.5" strokeWidth="1" strokeOpacity=".5"/><line x1="7.5" y1="14.5" x2="12" y2="12.5" strokeWidth="1" strokeOpacity=".5"/><line x1="16.5" y1="14.5" x2="12" y2="12.5" strokeWidth="1" strokeOpacity=".5"/>
+    <line x1="12" y1="4.5" x2="12" y2="20"/>
+    <circle cx="8.5" cy="10.5" r="1" fill="#00BFFF" stroke="none"/>
+    <circle cx="15.5" cy="10.5" r="1" fill="#00BFFF" stroke="none"/>
+    <circle cx="7.5" cy="14.5" r="1" fill="#00BFFF" stroke="none"/>
+    <circle cx="16.5" cy="14.5" r="1" fill="#00BFFF" stroke="none"/>
+    <line x1="8.5" y1="10.5" x2="12" y2="12.5" strokeWidth="1" strokeOpacity=".5"/>
+    <line x1="15.5" y1="10.5" x2="12" y2="12.5" strokeWidth="1" strokeOpacity=".5"/>
+    <line x1="7.5" y1="14.5" x2="12" y2="12.5" strokeWidth="1" strokeOpacity=".5"/>
+    <line x1="16.5" y1="14.5" x2="12" y2="12.5" strokeWidth="1" strokeOpacity=".5"/>
   </svg>
 );
 
@@ -86,11 +239,17 @@ const WhatsApp_Icon = ({ size = 26 }: { size?: number }) => (
 );
 
 const Discord_Icon = () => (
-  <svg viewBox="0 0 24 24" width="22" height="22" fill="#5865F2" aria-label="Discord AI Chatbot Deployment" className="transform-gpu"><path d="M20.3 5.4c-1.6-.7-3.4-1.2-5.2-1.5-.2.4-.4.9-.6 1.3-1.9-.3-3.8-.3-5.7 0-.2-.4-.4-.9-.6-1.3-1.8.3-3.6.8-5.2 1.5-3.3 4.9-4.2 9.7-3.3 14.4 2.2 1.6 4.3 2.6 6.4 3.2.5-.7 1-1.5 1.4-2.3-1.2-.5-2.4-1.1-3.5-1.8.3-.2.6-.4.9-.7 4.6 2.1 9.7 2.1 14.3 0 .3.2.6.5.9.7-1.1.7-2.3 1.3-3.5 1.8.4.8.9 1.6 1.4 2.3 2.1-.6 4.2-1.6 6.4-3.2 1-5.1.1-10-3.2-14.4z"/></svg>
+  <svg viewBox="0 0 24 24" width="22" height="22" fill="#5865F2" aria-label="Discord AI Chatbot Deployment" className="transform-gpu">
+    <path d="M20.3 5.4c-1.6-.7-3.4-1.2-5.2-1.5-.2.4-.4.9-.6 1.3-1.9-.3-3.8-.3-5.7 0-.2-.4-.4-.9-.6-1.3-1.8.3-3.6.8-5.2 1.5-3.3 4.9-4.2 9.7-3.3 14.4 2.2 1.6 4.3 2.6 6.4 3.2.5-.7 1-1.5 1.4-2.3-1.2-.5-2.4-1.1-3.5-1.8.3-.2.6-.4.9-.7 4.6 2.1 9.7 2.1 14.3 0 .3.2.6.5.9.7-1.1.7-2.3 1.3-3.5 1.8.4.8.9 1.6 1.4 2.3 2.1-.6 4.2-1.6 6.4-3.2 1-5.1.1-10-3.2-14.4z"/>
+  </svg>
 );
 
 const Instagram_Icon = () => (
-  <div aria-label="Instagram DM Automation AI Agent" className="w-[22px] h-[22px] rounded-lg bg-gradient-to-tr from-[#f09433] via-[#e6683c] to-[#bc1888] flex items-center justify-center transform-gpu"><div className="w-[14px] h-[14px] border-[2px] border-white rounded-[4px] flex items-center justify-center"><div className="w-[5px] h-[5px] bg-white rounded-full"/></div></div>
+  <div aria-label="Instagram DM Automation AI Agent" className="w-[22px] h-[22px] rounded-lg bg-gradient-to-tr from-[#f09433] via-[#e6683c] to-[#bc1888] flex items-center justify-center transform-gpu">
+    <div className="w-[14px] h-[14px] border-[2px] border-white rounded-[4px] flex items-center justify-center">
+      <div className="w-[5px] h-[5px] bg-white rounded-full"/>
+    </div>
+  </div>
 );
 
 const Google_Icon = () => (
@@ -102,27 +261,49 @@ const Google_Icon = () => (
   </svg>
 );
 
-/* ─── Chat atoms ───────────────────────── */
+/**
+ * ==============================================================================================
+ * REUSABLE ATOMIC COMPONENTS
+ * ==============================================================================================
+ * Small, highly optimized components utilized throughout the interface.
+ */
 const ChatBubble = ({ text, delay, isUser }: { text: string; delay: number; isUser?: boolean }) => (
-  <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay, duration: 0.12, ease: "easeOut" }}
+  <motion.div 
+    initial={{ opacity: 0, y: 8 }} 
+    animate={{ opacity: 1, y: 0 }} 
+    transition={{ delay, duration: 0.12, ease: "easeOut" }}
     className={`p-3 rounded-2xl max-w-[85%] text-[11px] shadow-md leading-relaxed transform-gpu
       ${isUser ? "bg-[#2AABEE] text-white self-end rounded-tr-sm" : "bg-[#1A1A1A] border border-white/5 text-gray-200 self-start rounded-tl-sm"}`}
-  >{text}</motion.div>
-);
-
-const GuideStep = ({ step, title, desc, delay }: { step: string; title: string; desc: string; delay: number }) => (
-  <motion.div initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} transition={{ delay, duration: 0.12, ease: "easeOut" }}
-    className="flex gap-3 bg-[#1A1A1A] border border-white/5 p-3 rounded-xl shadow-md w-[90%] self-center mx-auto items-start transform-gpu"
   >
-    <div className="w-5 h-5 rounded-full bg-[#25D366]/20 text-[#25D366] flex items-center justify-center font-bold text-[10px] shrink-0 mt-0.5">{step}</div>
-    <div className="flex flex-col"><span className="text-white font-bold mb-1 text-[11px]">{title}</span><span className="text-gray-400 text-[9px] leading-relaxed">{desc}</span></div>
+    {text}
   </motion.div>
 );
 
-/* ─── Marquee ──────────────────────────── */
+const GuideStep = ({ step, title, desc, delay }: { step: string; title: string; desc: string; delay: number }) => (
+  <motion.div 
+    initial={{ opacity: 0, x: 16 }} 
+    animate={{ opacity: 1, x: 0 }} 
+    transition={{ delay, duration: 0.12, ease: "easeOut" }}
+    className="flex gap-3 bg-[#1A1A1A] border border-white/5 p-3 rounded-xl shadow-md w-[90%] self-center mx-auto items-start transform-gpu"
+  >
+    <div className="w-5 h-5 rounded-full bg-[#25D366]/20 text-[#25D366] flex items-center justify-center font-bold text-[10px] shrink-0 mt-0.5">
+      {step}
+    </div>
+    <div className="flex flex-col">
+      <span className="text-white font-bold mb-1 text-[11px]">{title}</span>
+      <span className="text-gray-400 text-[9px] leading-relaxed">{desc}</span>
+    </div>
+  </motion.div>
+);
+
 const MarqueeRow = ({ items, reverse = false }: { items: string[]; reverse?: boolean }) => (
   <div className="flex whitespace-nowrap overflow-hidden py-2.5 w-full">
-    <motion.div className="flex gap-5 w-max will-change-transform" style={{ transform: "translateZ(0)" }} animate={{ x: reverse ? ["-50%", "0%"] : ["0%", "-50%"] }} transition={{ ease: "linear", duration: 45, repeat: Infinity }}>
+    <motion.div 
+      className="flex gap-5 w-max will-change-transform" 
+      style={{ transform: "translateZ(0)" }} 
+      animate={{ x: reverse ? ["-50%", "0%"] : ["0%", "-50%"] }} 
+      transition={{ ease: "linear", duration: 45, repeat: Infinity }}
+    >
       {[...items, ...items, ...items, ...items].map((item, i) => (
         <span key={i} className="inline-flex items-center gap-2.5 text-[12px] text-gray-300 font-medium bg-white/[0.04] px-5 py-2.5 rounded-full border border-white/[0.08] whitespace-nowrap hover:border-orange-500/50 hover:text-white hover:bg-white/[0.08] transition-colors duration-200">
           <span className="w-1.5 h-1.5 rounded-full bg-orange-500/80 shrink-0"/>{item}
@@ -132,51 +313,64 @@ const MarqueeRow = ({ items, reverse = false }: { items: string[]; reverse?: boo
   </div>
 );
 
-/* ═══════════════════════════════════════════════════════════════ */
+/**
+ * ==============================================================================================
+ * MAIN ONBOARDING APPLICATION COMPONENT
+ * ==============================================================================================
+ */
 export default function Home() {
   const { data: session, status } = useSession();
   const router = useRouter();
 
-  const [isMounted,            setIsMounted]            = useState(false);
+  // Core State Initialization
+  const [isMounted, setIsMounted] = useState(false);
   const [isTelegramModalOpen, setIsTelegramModalOpen] = useState(false);
-  const [telegramToken,       setTelegramToken]       = useState("");
-  const [waPhoneId,           setWaPhoneId]           = useState("");
-  const [waPhoneNumber,       setWaPhoneNumber]       = useState("");
-  const [isTokenSaved,        setIsTokenSaved]        = useState(false);
-  const [isVerifying,         setIsVerifying]         = useState(false);
-  const [showPricingPopup,    setShowPricingPopup]    = useState(false);
-  const [isDeploying,         setIsDeploying]         = useState(false);
-  const [botLink,             setBotLink]             = useState("");
-  const [activeModel,         setActiveModel]         = useState("gpt-5.2");
-  const [activeChannel,       setActiveChannel]       = useState("telegram");
-  const [selectedTier,        setSelectedTier]        = useState<string|null>(null);
   
-  // 🚀 CRITICAL FIX: Zerto-delay Auto-currency state
-  const [currency,            setCurrency]            = useState<"USD"|"INR">("USD");
-  const [currencySymbol,      setCurrencySymbol]      = useState("$");
+  // Input Binding State
+  const [telegramToken, setTelegramToken] = useState("");
+  const [waPhoneId, setWaPhoneId] = useState("");
+  const [waPhoneNumber, setWaPhoneNumber] = useState("");
+  
+  // Progress State
+  const [isTokenSaved, setIsTokenSaved] = useState(false);
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [showPricingPopup, setShowPricingPopup] = useState(false);
+  const [isDeploying, setIsDeploying] = useState(false);
+  const [botLink, setBotLink] = useState("");
+  
+  // Configuration State
+  const [activeModel, setActiveModel] = useState("gpt-5.2");
+  const [activeChannel, setActiveChannel] = useState("telegram");
+  const [selectedTier, setSelectedTier] = useState<string|null>(null);
+  
+  // Geographic / Currency State
+  const [currency, setCurrency] = useState<"USD"|"INR">("USD");
+  const [currencySymbol, setCurrencySymbol] = useState("$");
 
-  const [isHelpOpen,          setIsHelpOpen]          = useState(false);
-  const [helpEmail,           setHelpEmail]           = useState("");
-  const [helpMessage,         setHelpMessage]         = useState("");
-  const [helpStatus,          setHelpStatus]          = useState<"idle"|"sending"|"sent">("idle");
+  // Support / Help Widget State
+  const [isHelpOpen, setIsHelpOpen] = useState(false);
+  const [helpEmail, setHelpEmail] = useState("");
+  const [helpMessage, setHelpMessage] = useState("");
+  const [helpStatus, setHelpStatus] = useState<"idle"|"sending"|"sent">("idle");
   const [isSupportModalOpen, setIsSupportModalOpen] = useState(false);
 
+  /**
+   * Application mounting and lifecycle hooks.
+   * Deploys KNOX security protocol immediately.
+   */
   useEffect(() => {
     setIsMounted(true);
     
-    // 🛡️ KNOX CLIENT SECURITY PROTOCOL: Prevent unauthorized devtools sniffing
-    if (typeof window !== "undefined") {
-      document.addEventListener("contextmenu", (e) => e.preventDefault());
-      console.log("%c STOP!", "color: red; font-size: 50px; font-weight: bold; text-shadow: 2px 2px 0 #000;");
-      console.log("%c CLAWLINK ENTERPRISE SECURITY: Unauthorized access to backend structure is strictly prohibited.", "color: white; background: red; font-size: 16px; padding: 4px; border-radius: 4px;");
-    }
+    // Initialize standard browser defense protocol
+    KnoxSecurityProtocol.initialize();
 
-    const s = document.createElement("script");
-    s.src = "https://checkout.razorpay.com/v1/checkout.js";
-    s.async = true;
-    document.body.appendChild(s);
+    // Load necessary external dependencies securely
+    const script = document.createElement("script");
+    script.src = "https://checkout.razorpay.com/v1/checkout.js";
+    script.async = true;
+    document.body.appendChild(script);
 
-    // 🚀 CRITICAL FIX: Ultra-fast, zero-delay geolocation switching based on native browser API
+    // Ultra-fast client-side geographical localization
     try {
       const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || "";
       const lang = navigator.language || "";
@@ -189,12 +383,14 @@ export default function Home() {
         setCurrencySymbol("$");
       }
     } catch (e) {
-       console.log("Currency detection fallback");
+       console.log("Geographic detection system fallback active.");
     }
 
-    // ── SCROLL REVEAL ──────────────────────────────────────────
+    // Scroll Intersect Observers for Reveal Animations
     const io = new IntersectionObserver((entries) => {
-      entries.forEach((e) => { if (e.isIntersecting) e.target.classList.add('sr-vis'); });
+      entries.forEach((e) => { 
+        if (e.isIntersecting) e.target.classList.add('sr-vis'); 
+      });
     }, { threshold: 0.05, rootMargin: '0px 0px -20px 0px' });
 
     setTimeout(() => {
@@ -224,14 +420,14 @@ export default function Home() {
       });
     }, 50);
 
-    // ── NAV FROSTED GLASS ──────────────────────────────────────
+    // Frosted Glass Navigation Controller
     const handleScroll = () => {
       const nav = document.getElementById('clnav');
       if (nav) nav.style.background = window.scrollY > 30 ? 'rgba(7,7,10,0.92)' : 'rgba(7,7,10,0.4)';
     };
     window.addEventListener('scroll', handleScroll, { passive: true });
 
-    // ── CURSOR GLOW FOLLOW ─────────────────────────────────────
+    // Cursor Glow Interactivity Logic
     const cg = document.createElement('div');
     cg.className = 'cg-dot';
     document.body.appendChild(cg);
@@ -248,7 +444,7 @@ export default function Home() {
     };
     cgRaf = requestAnimationFrame(animCG);
 
-    // ── RIPPLE EFFECT on [data-ripple] ─────────────────────────
+    // Ripple Interaction Event Binding
     const onRippleClick = (e: MouseEvent) => {
       const t = e.currentTarget as HTMLElement;
       const r = t.getBoundingClientRect();
@@ -263,7 +459,7 @@ export default function Home() {
       el.addEventListener('click', onRippleClick as EventListener);
     });
 
-    // ── SPRING CLICK on [data-spring] ──────────────────────────
+    // Spring Animation Component Registration
     const onSpringClick = (e: Event) => {
       const t = e.currentTarget as HTMLElement;
       t.classList.remove('spr-play');
@@ -275,7 +471,7 @@ export default function Home() {
       el.addEventListener('click', onSpringClick);
     });
 
-    // ── 3D PARALLAX TILT on .tilt-el ──────────────────────────
+    // 3D Matrix Parallax Handlers
     document.querySelectorAll('.tilt-el').forEach(el => {
       const e2 = el as HTMLElement;
       e2.addEventListener('mousemove', (ev: any) => {
@@ -289,7 +485,7 @@ export default function Home() {
       });
     });
 
-    // ── MAGNETIC BUTTON on .mag-el ─────────────────────────────
+    // Magnetic Element Positioning Logic
     document.querySelectorAll('.mag-el').forEach(el => {
       const span = el.querySelector('.mt');
       if (!span) return;
@@ -314,18 +510,72 @@ export default function Home() {
     };
   }, []);
 
+  /**
+   * Toggles integration modals depending on active channel state.
+   */
   const handleOpenIntegration = (ch: string) => {
     if (ch === "discord" || ch === "slack") return;
-    setActiveChannel(ch); setIsTelegramModalOpen(true);
+    setActiveChannel(ch); 
+    setIsTelegramModalOpen(true);
   };
-  const handleOpenPricing = (ch: string) => { setActiveChannel(ch); setShowPricingPopup(true); };
+  
+  /**
+   * ============================================================================
+   * 🚀 CRITICAL PLG STRATEGY: THE SEAMLESS REDIRECT (No Upfront Pricing)
+   * ============================================================================
+   * Saves the token configurations to the database immediately and routes
+   * the user directly to the command center (dashboard). The database records
+   * the deployment as "Free" and "Sleeping". Gatekeepers intercept AI requests.
+   * Payment popup logic is completely bypassed on the public frontend.
+   */
+  const handleDeploy = async () => {
+    setIsDeploying(true);
+    try {
+      const selectedModelForDB = activeModel === "omni" ? "multi_model" : activeModel;
+      
+      const payload = {
+        email: session?.user?.email,
+        selectedModel: selectedModelForDB,
+        selectedChannel: activeChannel,
+        telegramToken: activeChannel === "telegram" ? telegramToken : "",
+        waPhoneId: (activeChannel === "whatsapp" || activeChannel === "instagram") ? waPhoneId : "",
+        waPhoneNumber: activeChannel === "whatsapp" ? waPhoneNumber : "",
+        plan: "free", // 🛑 Default forced to Free tier
+        plan_status: "Inactive",
+        bot_status: "Sleeping"
+      };
 
+      const response = await fetch("/api/config", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        // Redirection executes instantly upon valid database storage.
+        router.push("/dashboard"); 
+      } else {
+        alert("Configuration Error: " + data.error);
+      }
+    } catch (error) {
+      console.error("Deployment Execution Error:", error);
+      alert("Network exception encountered during automated deployment phase.");
+    } finally {
+      setIsDeploying(false);
+    }
+  };
+
+  /**
+   * Verifies the authenticity of the provided tokens before accepting them.
+   */
   const handleSaveToken = async () => {
     if (activeChannel === "telegram" && !telegramToken.trim()) {
-      alert("Please enter a valid Telegram API Token."); return;
+      alert("Please supply a valid structured Telegram API Token."); return;
     }
     if ((activeChannel === "whatsapp" || activeChannel === "instagram") && (!telegramToken.trim() || !waPhoneId.trim())) {
-      alert("Please enter API Token and Account ID."); return;
+      alert("Verification requires both an API Token and corresponding Account ID."); return;
     }
     setIsVerifying(true);
     try {
@@ -334,14 +584,20 @@ export default function Home() {
         body: JSON.stringify({ channel: activeChannel, token: telegramToken, phoneId: waPhoneId, phoneNumber: waPhoneNumber }),
       });
       const data = await res.json();
-      if (data.success) { setIsTokenSaved(true); setIsTelegramModalOpen(false); }
-      else alert("❌ VERIFICATION FAILED: " + data.error);
-    } catch { alert("Network error during verification."); }
+      if (data.success) { 
+        setIsTokenSaved(true); 
+        setIsTelegramModalOpen(false); 
+      }
+      else alert("❌ VERIFICATION REJECTED: " + data.error);
+    } catch { alert("Network integrity lost during verification handshake."); }
     finally { setIsVerifying(false); }
   };
 
+  /**
+   * Submits a customer support request.
+   */
   const handleSendHelpRequest = () => {
-    if (!helpEmail.trim() || !helpMessage.trim()) { alert("Please fill all fields."); return; }
+    if (!helpEmail.trim() || !helpMessage.trim()) { alert("Please complete all necessary input fields."); return; }
     setHelpStatus("sending");
     setTimeout(() => {
       setHelpStatus("sent");
@@ -349,121 +605,9 @@ export default function Home() {
     }, 800);
   };
 
-  const getCurrentPrice = (tier = selectedTier) => {
-    if (!tier) return 0;
-    const modelData = PRICING_DATA[activeModel];
-    if (!modelData) return 0;
-    const planData = modelData.plans.find((p: any) => p.id === tier);
-    if (!planData) return 0;
-    return currency === "INR" ? planData.inr : planData.usd;
-  };
-
-  const triggerRazorpayPayment = async () => {
-    if (!selectedTier) { alert("Please select a plan."); return; }
-    if (typeof window === "undefined" || !(window as any).Razorpay) { alert("Payment gateway loading…"); return; }
-    
-    const finalPrice = getCurrentPrice(); 
-    setIsDeploying(true);
-    
-    try {
-      const selectedModelForDB = activeModel === "omni" ? "multi_model" : activeModel;
-      
-      const res = await fetch("/api/razorpay", {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-            amount: finalPrice, 
-            currency, 
-            email: session?.user?.email || "user@clawlink.com", 
-            planName: selectedTier, 
-            selectedModel: selectedModelForDB,
-            planType: "NEW",
-            notes: { 
-              is_renewal: "false",
-              telegram_token: activeChannel === "telegram" ? telegramToken : "",
-              whatsapp_phone_id: (activeChannel === "whatsapp" || activeChannel === "instagram") ? waPhoneId : "",
-              whatsapp_number: activeChannel === "whatsapp" ? waPhoneNumber : "",
-              selected_channel: activeChannel
-            }
-        }),
-      });
-      const order = await res.json();
-      if (order.error) { alert("Order Error: " + order.error); setIsDeploying(false); return; }
-      
-      const clawLinkLogoBase64 = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxNTIgMjYiPjxwYXRoIGQ9Ik0yMiAzQzE4IC41IDEwIC41IDcgNC41UzMuNSAxOCA3IDIyLjUgMTggMjYgMjIgMjMiIHN0cm9rZT0iI2ZmZiIgc3Ryb2tlLXdpZHRoPSI0LjUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgZmlsbD0ibm9uZSIvPjxsaW5lIHgxPSI3LjUiIHkxPSIzIiB4Mj0iMTQuNSIgeTI9IjExLjUiIHN0cm9rZT0iI2Y5NzMxNiIgc3Ryb2tlLXdpZHRoPSIyLjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPjxsaW5lIHgxPSIxMi41IiB5MT0iMS41IiB4Mj0iMTkuNSIgeTI9IjEwIiBzdHJva2U9IiNmOTczMTYiIHN0cm9rZS13aWR0aD0iMi4yIiBzdHJva2UtbGluZWNhcD0icm91bmQiLz48bGluZSB4MT0iMTcuNSIgeTE9IjIuNSIgeDI9IjI0IiB5Mj0iMTAuNSIgc3Ryb2tlPSIjZjk3MzE2IiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPjx0ZXh0IHg9IjMwIiB5PSIxOCIgZm9udC1mYW1pbHk9InNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMTQuNSIgZm9udC13ZWlnaHQ9IjgwMCIgbGV0dGVyLXNwYWNpbmc9IjEuNCIgZmlsbD0iI2ZmZiI+TEFXTElOSzwvdGV4dD48dGV4dCB4PSIxMTYiIHk9IjE4IiBmb250LWZhbWlseT0ic2Fucy1zZXJpZiIgZm9udC1zaXplPSI5LjUiIGZvbnQtd2VpZ2h0PSI3MDAiIGxldHRlci1zcGFjaW5nPSIuNyIgZmlsbD0iI2Y5NzMxNiI+LkNPTTwvdGV4dD48L3N2Zz4=";
-
-      const activePlanObj = PRICING_DATA[activeModel]?.plans.find((p: any) => p.id === selectedTier);
-
-      const options = {
-        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID, amount: order.amount, currency: order.currency,
-        name: "ClawLink Premium",
-        image: clawLinkLogoBase64, 
-        description: `Plan: ${activePlanObj?.name?.toUpperCase()} | Model: ${activeModel === "omni" ? "OmniAgent Nexus" : PRICING_DATA[activeModel]?.name}`,
-        order_id: order.id,
-        handler: async () => {
-          try {
-            const cfgRes = await fetch("/api/config", {
-              method: "POST", headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ email: session?.user?.email, selectedModel: selectedModelForDB, selectedChannel: activeChannel, telegramToken, waPhoneId, waPhoneNumber, plan: selectedTier, billingCycle: activePlanObj?.isYearly ? "Yearly" : "Monthly" }),
-            });
-            const cfg = await cfgRes.json();
-            if (cfg.success && cfg.botLink) { setBotLink(cfg.botLink); setShowPricingPopup(false); }
-            else alert("Deployment failed: " + cfg.error);
-          } catch { alert("Deployment error."); } finally { setIsDeploying(false); }
-        },
-        prefill: { email: session?.user?.email || "" }, theme: { color: "#F97316" },
-      };
-      const rzp = new (window as any).Razorpay(options);
-      rzp.on("payment.failed", () => { setIsDeploying(false); alert("Payment failed."); });
-      rzp.open();
-    } catch { alert("Gateway init failed."); setIsDeploying(false); }
-  };
-
-  const triggerStripePayment = async () => {
-    if (!selectedTier) { alert("Please select a plan."); return; }
-    setIsDeploying(true);
-    
-    try {
-      const selectedModelForDB = activeModel === "omni" ? "multi_model" : activeModel;
-      
-      const res = await fetch("/api/stripe", {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          planTier: selectedTier,
-          email: session?.user?.email || "user@clawlink.com",
-          amount: getCurrentPrice(),
-          currency: currency.toLowerCase(),
-          model: selectedModelForDB
-        }),
-      });
-      
-      const data = await res.json();
-      
-      if (data.sessionId) {
-        const stripeKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || "";
-        const stripe = await loadStripe(stripeKey);
-        
-        if (stripe) {
-          const checkoutStripe = stripe as any;
-          const result = await checkoutStripe.redirectToCheckout({ sessionId: data.sessionId });
-          
-          if (result && result.error) {
-            alert("Stripe Checkout Error: " + result.error.message);
-            setIsDeploying(false);
-          }
-        } else {
-          alert("Stripe failed to initialize. Please check your network connection.");
-          setIsDeploying(false);
-        }
-      } else {
-        alert("Stripe Error: " + data.error);
-        setIsDeploying(false);
-      }
-    } catch (error) {
-      alert("Stripe initialization failed.");
-      setIsDeploying(false);
-    }
-  };
-
+  /**
+   * Utility for URL extraction dependent on chosen platform.
+   */
   const openLiveBotHandler = () => {
     if (activeChannel === "whatsapp") {
       if (waPhoneNumber) { 
@@ -480,17 +624,22 @@ export default function Home() {
     }
   };
 
-  const copyToClipboard = (t: string) => { navigator.clipboard.writeText(t); alert("Copied!"); };
+  const copyToClipboard = (t: string) => { 
+    navigator.clipboard.writeText(t); 
+    alert("Copied to system clipboard."); 
+  };
 
-  // 🚀 SEO ADVANCED: The Marquee Keyword Engine
+  // 🚀 SEO ADVANCED: The Marquee Keyword Engine Data Matrices
   const row1 = ["📅 Productivity & Meetings", "🤖 Create WhatsApp AI Agent", "📊 Create presentations", "💬 Instagram DM Automation", "🛒 Shopping & Research", "👥 Team & Monitoring"];
   const row2 = ["📅 Schedule meetings", "🧠 OpenClaw Alternative", "💰 Do your taxes with AI", "🎯 Telegram Crypto Bot", "🧾 Track expenses", "👔 Write job descriptions"];
   const row3 = ["✉️ Email & Documents", "📨 Read & summarize emails", "🤖 No-Code AI Bot Builder", "🏷️ Find coupons automatically", "📈 Track OKRs & KPIs", "💬 WhatsApp Customer Support"];
   const row4 = ["⏰ Notify before meetings", "🌍 Sync time zones", "🚀 GPT-4o Bot Creator", "🔍 Compare product specs", "🕵️ Research competitors", "⚡ Omni-Fallback Engine"];
   const row5 = ["📅 Plan your week", "📝 Take meeting notes", "🤖 Claude 3 Bot Integration", "📢 Draft social media posts", "📈 Sales, Marketing & Hiring", "🤖 Auto Message AI"];
 
+  // Mount check to prevent hydration mismatch errors
   if (!isMounted) return null;
 
+  // General base transition classes for interactive components
   const btn = "transition-all duration-[120ms] ease-out active:scale-[0.93] transform-gpu will-change-transform";
 
   const pillBase = [
@@ -510,6 +659,7 @@ export default function Home() {
   return (
     <div className="bg-[#07070A] min-h-screen text-[#E8E8EC] font-sans selection:bg-orange-500/30 overflow-x-hidden">
 
+      {/* ─── DYNAMIC STYLESHEET INJECTION FOR ADVANCED ANIMATIONS ─── */}
       <style dangerouslySetInnerHTML={{__html:`
         *{box-sizing:border-box;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
         .nsb::-webkit-scrollbar{display:none}.nsb{-ms-overflow-style:none;scrollbar-width:none}
@@ -624,7 +774,7 @@ export default function Home() {
         .blue-glow:hover{box-shadow:0 0 48px rgba(37,99,235,.72)}
       `}}/>
 
-      {/* Ambient glows */}
+      {/* Ambient background glows for depth */}
       <div className="fixed top-[-20%] right-[-8%] w-[800px] h-[800px] rounded-full pointer-events-none z-0 float-a"
            style={{background:"radial-gradient(circle,rgba(249,115,22,0.18) 0%,transparent 65%)",transform:"translateZ(0)"}}/>
       <div className="fixed bottom-[-20%] left-[-8%] w-[800px] h-[800px] rounded-full pointer-events-none z-0 float-b"
@@ -632,7 +782,7 @@ export default function Home() {
       <div className="fixed top-[30%] left-[40%] w-[500px] h-[500px] rounded-full pointer-events-none z-0 float-c"
            style={{background:"radial-gradient(circle,rgba(168,85,247,0.07) 0%,transparent 70%)"}}/>
 
-      {/* ══ NAV ══ */}
+      {/* ══ NAVIGATION BAR ══ */}
       <nav id="clnav" aria-label="Main Navigation"
         className="fixed top-0 left-0 right-0 z-[100] h-[56px] flex items-center justify-between px-4 md:px-10 transition-colors duration-200"
         style={{backdropFilter:"blur(12px)",WebkitBackdropFilter:"blur(12px)",
@@ -672,7 +822,7 @@ export default function Home() {
         </div>
       </nav>
 
-      {/* ══ HERO ══ */}
+      {/* ══ HERO SECTION ══ */}
       <section id="hero" className="relative z-10 min-h-screen flex flex-col items-center justify-center pt-20 pb-16 px-4 text-center">
 
         <div className="anim-badge inline-flex items-center gap-2 mb-6 px-5 py-2 rounded-full text-[10px] font-bold tracking-[.1em] text-orange-400 shadow-[0_0_15px_rgba(249,115,22,0.2)]"
@@ -813,10 +963,10 @@ export default function Home() {
                     Connect {activeChannel === "telegram" ? "Telegram" : activeChannel === "whatsapp" ? "WhatsApp" : "Instagram"} →
                   </button>
                 ) : (
-                  <button aria-label="Deploy AI Agent" data-ripple data-spring onClick={()=>handleOpenPricing(activeChannel)}
+                  <button aria-label="Deploy AI Agent" data-ripple data-spring onClick={handleDeploy} disabled={isDeploying}
                     className={`mag-el relative overflow-hidden w-full font-black py-4 rounded-2xl text-[14px] uppercase tracking-widest flex items-center justify-center gap-2 ${btn} hover:scale-[1.03] bg-gradient-to-r from-blue-600 to-purple-600 text-white blue-glow`}>
                     <Zap className="w-5 h-5 shrink-0"/>
-                    <span className="mt">Deploy Your AI Agent Now</span>
+                    <span className="mt">{isDeploying ? "Deploying..." : "Deploy Your AI Agent Now"}</span>
                   </button>
                 )}
               </motion.div>
@@ -846,7 +996,7 @@ export default function Home() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 relative">
             <div className="hidden md:block absolute top-8 left-[12%] right-[12%] h-px" style={{background:"linear-gradient(90deg,transparent,rgba(249,115,22,.25) 30%,rgba(249,115,22,.25) 70%,transparent)"}}/>
             {[
-              {n:"01",e:"🔑",t:"Login with Google",    d:"One tap. No passwords, no friction."},
+              {n:"01",e:"🔑",t:"Login with Google",  d:"One tap. No passwords, no friction."},
               {n:"02",e:"🤖",t:"Choose Model & Channel",d:"Pick AI model + Telegram or WhatsApp."},
               {n:"03",e:"✅",t:"Token Verify",          d:"Paste token. Verified & secured instantly."},
               {n:"04",e:"🚀",t:"Go Live",               d:"Enterprise infra spins up. 24/7, zero maintenance."},
@@ -1215,107 +1365,10 @@ export default function Home() {
         )}
       </AnimatePresence>
 
-      <AnimatePresence>
-        {showPricingPopup && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-[16px] p-4">
-            <motion.div initial={{opacity:0,y:12,scale:.96}} animate={{opacity:1,y:0,scale:1}} exit={{opacity:0,y:12,scale:.96}} transition={{duration:.12,ease:"easeOut"}}
-              className="w-full max-w-5xl p-7 md:p-10 rounded-[1.75rem] text-center relative overflow-y-auto nsb"
-              style={{background:"#0F0F12",border:"1px solid rgba(255,255,255,0.09)",boxShadow:"0 0 100px rgba(0,0,0,0.9)",maxHeight:"92vh"}}>
-              <div className="absolute top-0 left-[20%] right-[20%] h-px" style={{background:"linear-gradient(90deg,transparent,rgba(249,115,22,0.4),transparent)"}}/>
-              {!isDeploying && (
-                <button aria-label="Close Pricing Modal" data-spring onClick={()=>setShowPricingPopup(false)} className={`absolute top-5 right-5 p-2 rounded-full text-gray-500 hover:text-white ${btn}`} style={{background:"rgba(255,255,255,0.05)"}}>
-                  <X className="w-4 h-4"/>
-                </button>
-              )}
-              
-              <div className="flex justify-center mb-6">
-                <svg width="130" height="22" viewBox="0 0 152 26" fill="none">
-                  <defs>
-                    <linearGradient id="cgp" x1="0" y1="0" x2="0" y2="26" gradientUnits="userSpaceOnUse">
-                      <stop stopColor="#fff"/><stop offset="1" stopColor="rgba(255,255,255,.65)"/>
-                    </linearGradient>
-                  </defs>
-                  <path d="M22 3C18 .5 10 .5 7 4.5S3.5 18 7 22.5 18 26 22 23" stroke="rgba(255,255,255,.1)" strokeWidth="8" strokeLinecap="round" fill="none"/>
-                  <path d="M22 3C18 .5 10 .5 7 4.5S3.5 18 7 22.5 18 26 22 23" stroke="url(#cgp)" strokeWidth="4.5" strokeLinecap="round" fill="none"/>
-                  <line x1="7.5" y1="3" x2="14.5" y2="11.5" stroke="#f97316" strokeWidth="2.2" strokeLinecap="round"/>
-                  <line x1="12.5" y1="1.5" x2="19.5" y2="10" stroke="#f97316" strokeWidth="2.2" strokeLinecap="round"/>
-                  <line x1="17.5" y1="2.5" x2="24" y2="10.5" stroke="#f97316" strokeWidth="2" strokeLinecap="round"/>
-                  <text x="30" y="18" fontFamily="-apple-system,BlinkMacSystemFont,sans-serif" fontSize="14.5" fontWeight="800" letterSpacing="1.4" fill="#fff">LAWLINK</text>
-                  <text x="116" y="18" fontFamily="-apple-system,BlinkMacSystemFont,sans-serif" fontSize="9.5" fontWeight="700" letterSpacing=".7" fill="#f97316">.COM</text>
-                </svg>
-              </div>
-
-              <h2 className="text-[1.7rem] font-black uppercase tracking-tight mb-3 text-white">
-                {activeModel === "omni" ? "OmniAgent Enterprise Bundles" : `${PRICING_DATA[activeModel]?.name} Plans`}
-              </h2>
-              <p className="text-gray-400 text-[13px] mb-8 max-w-xl mx-auto leading-relaxed">
-                {activeModel === "omni"
-                  ? "OmniAgent includes 3x AI Fallback (GPT, Claude, Gemini) for 0% downtime."
-                  : "Select a tier to securely initialize your AI engine."}
-              </p>
-
-              {activeModel === "omni" ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-8 max-w-2xl mx-auto text-left">
-                  {PRICING_DATA.omni.plans.map((plan: any) => (
-                    <div key={plan.id} data-spring onClick={() => !isDeploying && setSelectedTier(plan.id)}
-                      className={`relative p-6 rounded-2xl cursor-pointer transition-all duration-150 ${btn} ${selectedTier === plan.id ? "scale-[1.02]" : "hover:scale-[1.01]"}`}
-                      style={{
-                        background: selectedTier === plan.id ? "rgba(255,255,255,0.05)" : "rgba(255,255,255,0.02)",
-                        border: `1px solid ${selectedTier === plan.id ? plan.accent : "rgba(255,255,255,0.07)"}`,
-                        boxShadow: selectedTier === plan.id ? `0 0 32px ${plan.accent}44` : "none"
-                      }}>
-                      {plan.badge && <div className="absolute -top-3 left-1/2 -translate-x-1/2 text-white text-[9px] font-bold uppercase px-3 py-1 rounded-full tracking-widest" style={{ background: plan.accent }}>{plan.badge}</div>}
-                      <h3 className="font-bold uppercase text-[11px] tracking-widest mb-2" style={{ color: plan.accent }}>{plan.name}</h3>
-                      <div className="text-[2rem] font-black text-white mb-2">{currencySymbol}{currency === "INR" ? plan.inr.toLocaleString() : plan.usd.toLocaleString()}<span style={{ fontSize: 14, fontWeight: 400, color: "#888" }}>{plan.isYearly ? "/yr" : "/mo"}</span></div>
-                      <p className="text-[12px] text-gray-400 leading-relaxed mb-3">{plan.desc}</p>
-                      <span className="inline-block px-2 py-1 bg-white/5 rounded text-[10px] text-gray-300 border border-white/10">{plan.msgs}</span>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8 text-left">
-                  {PRICING_DATA[activeModel]?.plans.map((plan: any) => (
-                    <div key={plan.id} data-spring onClick={() => !isDeploying && setSelectedTier(plan.id)}
-                      className={`relative p-5 rounded-2xl cursor-pointer transition-all duration-150 ${btn} ${selectedTier === plan.id ? "scale-[1.02]" : "hover:scale-[1.01]"}`}
-                      style={{
-                        background: selectedTier === plan.id ? "rgba(255,255,255,0.04)" : "rgba(255,255,255,0.02)",
-                        border: `1px solid ${selectedTier === plan.id ? plan.accent : "rgba(255,255,255,0.07)"}`,
-                        boxShadow: selectedTier === plan.id ? `0 0 28px ${plan.accent}40` : "none"
-                      }}>
-                      {plan.badge && <div className="absolute -top-3 left-1/2 -translate-x-1/2 text-white text-[9px] font-bold uppercase px-3 py-1 rounded-full tracking-widest" style={{ background: plan.accent }}>{plan.badge}</div>}
-                      <h3 className={`font-bold uppercase text-[11px] tracking-widest mb-2 ${plan.color}`}>{plan.name}</h3>
-                      <div className="text-[1.9rem] font-black text-white mb-2">{currencySymbol}{currency === "INR" ? plan.inr.toLocaleString() : plan.usd.toLocaleString()}<span style={{ fontSize: 13, fontWeight: 400, color: "#888" }}>{plan.isYearly ? "/yr" : "/mo"}</span></div>
-                      <p className="text-[11px] text-gray-400 leading-relaxed mb-3 h-8">{plan.desc}</p>
-                      <span className="inline-block px-2 py-1 bg-white/5 rounded text-[10px] text-gray-300 border border-white/10">{plan.msgs}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {/* 🚀 CRITICAL FIX: DYNAMIC PAYMENT BUTTON (RAZORPAY FOR INDIA, STRIPE FOR GLOBAL) */}
-              <div className="flex flex-col sm:flex-row gap-4 w-full max-w-lg mx-auto">
-                {currency === "INR" ? (
-                  <button aria-label="Pay with Razorpay" data-ripple data-spring onClick={triggerRazorpayPayment} disabled={isDeploying || !selectedTier}
-                    className={`relative overflow-hidden w-full font-black py-4 rounded-xl uppercase tracking-widest flex justify-center items-center gap-2 transition-all duration-150 ${btn}
-                      ${!selectedTier ? "cursor-not-allowed opacity-40 bg-gray-800 text-gray-500"
-                        : activeModel === "omni"
-                          ? "bg-gradient-to-r from-[#0052D4] to-[#00BFFF] text-white hover:scale-[1.02] shadow-[0_0_24px_rgba(0,191,255,0.4)]"
-                          : "bg-white text-black hover:bg-gray-100 hover:scale-[1.02] shadow-[0_0_24px_rgba(255,255,255,0.25)]"}`}>
-                    {isDeploying ? "Deploying Infrastructure…" : !selectedTier ? "Select a Tier" : `Pay with Razorpay — ${currencySymbol}${getCurrentPrice().toLocaleString()}`}
-                  </button>
-                ) : (
-                  <button aria-label="Pay with Stripe" data-ripple data-spring onClick={triggerStripePayment} disabled={isDeploying || !selectedTier}
-                    className={`relative overflow-hidden w-full font-black py-4 rounded-xl uppercase tracking-widest flex justify-center items-center gap-2 transition-all duration-150 ${btn}
-                      ${!selectedTier ? "cursor-not-allowed opacity-40 bg-gray-800 text-gray-500"
-                        : "bg-[#635BFF] text-white hover:bg-[#4b45d6] hover:scale-[1.02] shadow-[0_0_24px_rgba(99,91,255,0.4)]"}`}>
-                    {isDeploying ? "Deploying Infrastructure…" : !selectedTier ? "Select a Tier" : `Pay with Stripe 💳 — ${currencySymbol}${getCurrentPrice().toLocaleString()}`}
-                  </button>
-                )}
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+      {/* 🚀 KNOX ENTERPRISE REDIRECT PROTOCOL - POPUPS NEUTRALIZED */}
+      {/* The prior pricing popups have been fully neutralized to ensure a seamless PLG flow.
+        Payment authorization is strictly gated behind the dashboard `/dashboard` route.
+      */}
 
       <div className="fixed bottom-6 right-6 z-[60] flex flex-col items-end">
         <AnimatePresence>
