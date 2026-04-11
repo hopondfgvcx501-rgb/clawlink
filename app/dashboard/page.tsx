@@ -5,7 +5,7 @@
  * CLAWLINK ENTERPRISE COMMAND CENTER (DASHBOARD)
  * ==============================================================================================
  * @file app/dashboard/page.tsx
- * @version 9.4.4 (TypeScript Strict-Mode Compliant)
+ * @version 9.4.5 (Vercel Build Fixed)
  * @description The central hub for users to monitor their AI Agents.
  * * ALL RIGHTS RESERVED. CLAWLINK INC.
  * ==============================================================================================
@@ -477,7 +477,6 @@ export default function Dashboard() {
     return "NOT SET";
   };
 
-  // 🚀 STRICT VERIFICATION UI
   const exactSelectedChannel = (userData?.selected_channel || "").toLowerCase();
   
   const hasTgToken = !!userData?.telegram_token && userData?.telegram_token !== "";
@@ -807,7 +806,7 @@ export default function Dashboard() {
               <span className="text-[10px] font-bold uppercase tracking-widest text-gray-500">System Capacity</span>
             </div>
             <h3 className="text-2xl font-black text-white relative z-10">
-              {(config?.tokens_used || 0).toLocaleString()}
+              {(userData?.tokens_used || 0).toLocaleString()}
             </h3>
             <p className="text-xs text-gray-400 mt-1 relative z-10">
               Tokens Consumed
