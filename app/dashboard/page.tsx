@@ -5,8 +5,10 @@
  * CLAWLINK ENTERPRISE COMMAND CENTER (DASHBOARD)
  * ==============================================================================================
  * @file app/dashboard/page.tsx
- * @version 9.4.5 (Vercel Build Fixed)
+ * @version 9.4.8 (NBSP Cleaned & Strict TypeScript Compliant)
  * @description The central hub for users to monitor their AI Agents.
+ * Enforces PLG by dynamically displaying current configuration and gating 
+ * the "Go Live" (Payment) logic directly from this interface.
  * * ALL RIGHTS RESERVED. CLAWLINK INC.
  * ==============================================================================================
  */
@@ -21,7 +23,7 @@ import Script from "next/script";
 import {
   LayoutDashboard, MessageSquare, BarChart3, Globe, Radio, Users,
   Zap, LogOut, CheckCircle2, Activity, ExternalLink, X, RefreshCcw,
-  Receipt, Download, Smartphone, BrainCircuit, Search, Crown, Copy, Check, Bot, Database, Save
+  Receipt, Download, Smartphone, BrainCircuit, Search, Crown, Copy, Check, Bot, Database, Save, ArrowUpRight, TrendingUp, Shield, Mail
 } from "lucide-react";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import Image from "next/image";
@@ -561,6 +563,7 @@ export default function Dashboard() {
   };
 
   const btn = "transition-all duration-[120ms] ease-out active:scale-[0.93] transform-gpu will-change-transform";
+  const gridColsClass = isOmniActive ? "md:grid-cols-2 max-w-2xl" : "md:grid-cols-2 lg:grid-cols-4 max-w-5xl";
 
   return (
     <div className="w-full min-h-screen bg-[#07070A] text-[#E8E8EC] font-sans relative selection:bg-orange-500/30 overflow-y-auto custom-scrollbar flex flex-col">
@@ -587,7 +590,7 @@ export default function Dashboard() {
                 <p className="text-sm text-gray-400">Select a tier to activate your <span className="text-white font-bold">{getModelDisplayName()}</span> engine.</p>
               </div>
 
-              <div className={`grid grid-cols-1 md:grid-cols-${currentPricing?.plans?.length || 4} gap-6 mb-8 max-w-${isOmniActive ? '2xl' : '5xl'} mx-auto text-left`}>
+              <div className={`grid grid-cols-1 gap-6 mb-8 mx-auto text-left ${gridColsClass}`}>
                 {currentPricing?.plans?.map((plan: any) => {
                   const isActive = selectedRenewalPlan === plan.id;
                   return (
@@ -823,7 +826,7 @@ export default function Dashboard() {
               <span className="text-[10px] font-bold uppercase tracking-widest text-gray-500">Total Leads</span>
             </div>
             <h3 className="text-3xl font-black text-white relative z-10">{(stats?.totalLeads || 0).toLocaleString()}</h3>
-            <p className="text-xs text-green-400 mt-1 flex items-center gap-1 relative z-10"><ArrowUpRight className="w-3 h-3"/> Captured Automatically</p>
+            <p className="text-xs text-green-400 mt-1 flex items-center gap-1 relative z-10"><TrendingUp className="w-3 h-3"/> Captured Automatically</p>
           </motion.div>
 
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25, delay: 0.6, ease: "easeOut" }} className="bg-[#111113] border border-white/5 p-6 rounded-[1.5rem] shadow-xl relative overflow-hidden group hover:border-white/10 transition-colors">
@@ -921,7 +924,7 @@ export default function Dashboard() {
             <p className="text-sm text-gray-400 mb-6 relative z-10">Train your AI with your specific business data. Paste product details, FAQs, or policies below to convert them into vectors.</p>
             
             {exactSelectedChannel && (exactSelectedChannel === "whatsapp" || exactSelectedChannel === "instagram") && (
-              <div className="mb-6 p-4 rounded-xl relative z-10" style={{background:"rgba(0,0,0,0.3)", border:`1px dashed ${exactSelectedChannel === 'whatsapp' ? 'rgba(37,211,102,0.3)' : 'rgba(236,72,153,0.3)'}`}}>
+              <div className="mb-6 p-4 rounded-xl relative z-10" style={{background: "rgba(0,0,0,0.3)", border: `1px dashed ${exactSelectedChannel === 'whatsapp' ? 'rgba(37,211,102,0.3)' : 'rgba(236,72,153,0.3)'}`}}>
                 <p className={`text-[11px] font-bold mb-3 flex items-center gap-2 ${exactSelectedChannel === 'whatsapp' ? 'text-[#25D366]' : 'text-pink-500'}`}>
                   🔗 Step 1: Copy these to Meta Webhook
                 </p>

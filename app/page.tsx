@@ -784,7 +784,7 @@ export default function Home() {
         </div>
 
         <h1 className="anim-h1 text-[clamp(2.4rem,6.5vw,5rem)] font-black leading-[1.03] tracking-[-0.04em] mb-4 text-white">
-          Deploy <span className="grad-text">OpenClaw AI Bots</span><br/>Under 30 Seconds
+          Deploy <span className="grad-text">OpenClaw AI Assistance</span><br/>Under 30 Seconds
         </h1>
 
         <p className="anim-sub text-gray-300 text-[15px] max-w-[460px] mb-8 leading-[1.8]">
