@@ -420,93 +420,66 @@ export async function POST(req: Request) {
 
         const words = userText.split(/\s+/).length;
         const usageRatio = isUnlimited ? 0 : (messagesUsed / (monthlyLimit || 1)) * 100;
-        const forceCheap = !isUnlimited && usageRatio >= 80;
+        
+        // 🚀 TIERED MODELS CONFIGURATION (2026 Latest)
+        const GEMINI_CHEAP = "gemini-3.1-flash-lite";
+        const GEMINI_MID = "gemini-3.1-flash";
+        const GEMINI_PREMIUM = "gemini-3.1-pro";
+        const GEMINI_FALLBACKS = [GEMINI_PREMIUM, GEMINI_MID, GEMINI_CHEAP];
+        
+        const GPT_CHEAP = "gpt-4.1-nano";
+        const GPT_MID = "gpt-5.2";
+        const GPT_PREMIUM = "gpt-5.4";
+        const GPT_FALLBACKS = [GPT_PREMIUM, GPT_MID, GPT_CHEAP];
+        
+        const CLAUDE_CHEAP = "claude-3-haiku";
+        const CLAUDE_MID = "claude-sonnet-4.6";
+        const CLAUDE_PREMIUM = "claude-opus-4.6";
+        const CLAUDE_FALLBACKS = [CLAUDE_PREMIUM, CLAUDE_MID, CLAUDE_CHEAP];
 
-        // =========================================================================
-        // 🔒 THE MASTER OMNI ROUTER (Secure Internal Fetch for Web Widget)
-        // =========================================================================
+        let targetProvider = provider;
+        let targetModel = "";
+
+        // 🧠 COMPLEXITY & BUDGET ROUTER
         if (provider === "omni") {
-            try {
-                const baseUrl = process.env.NEXT_PUBLIC_APP_URL || new URL(req.url).origin;
-                const engineRes = await fetch(`${baseUrl}/api/omni`, {
-                    method: "POST",
-                    headers: {
-                        "Authorization": `Bearer ${process.env.CLAWLINK_MASTER_SECRET}`,
-                        "Content-Type": "application/json"
-                    },
-                    body: JSON.stringify({
-                        prompt: userText,
-                        systemPrompt: `${ENTERPRISE_GUARDRAIL}\n\nSystem Instructions: ${systemPrompt}\n\nCompany Knowledge Base:\n${customKnowledge ? customKnowledge : "No specific company data found."}`,
-                        history: historyArray,
-                        apiKey: config.user_api_key,
-                        forceCheap: forceCheap,
-                        userWords: words
-                    })
-                });
-
-                const engineData = await engineRes.json();
-                
-                if (engineRes.ok && engineData.success) {
-                    aiResponse = engineData.reply;
-                    wasSuccessful = true;
-                } else {
-                    console.error("❌ [Widget Webhook] Omni Engine failed. Engaging Local Local logic.");
-                }
-            } catch (err) {
-                 console.error("Master fetch failed, proceeding to internal widget matrix.");
+            // OMNI BUNDLE (Cross-Provider allowed)
+            if (usageRatio >= 80) {
+                wasSuccessful = await attemptFetch(GEMINI_CHEAP, "google");
+                if(!wasSuccessful) wasSuccessful = await attemptFetch(GPT_CHEAP, "openai");
+                if(!wasSuccessful) wasSuccessful = await attemptFetch(CLAUDE_CHEAP, "anthropic");
+            } else if (usageRatio >= 60) {
+                wasSuccessful = await attemptFetch(words < 40 ? GPT_CHEAP : GPT_MID, "openai");
+                if(!wasSuccessful) wasSuccessful = await attemptFetch(GEMINI_MID, "google");
+            } else {
+                if (words < 40) wasSuccessful = await attemptFetch(GEMINI_MID, "google");
+                else if (words < 150) wasSuccessful = await attemptFetch(GPT_MID, "openai");
+                else wasSuccessful = await attemptFetch(CLAUDE_PREMIUM, "anthropic"); 
             }
-        }
-
-        // =========================================================================
-        // ⚡ LOCAL EXECUTION & FALLBACK ENGINE (Runs if not Omni, or Omni fails)
-        // =========================================================================
-        if (!wasSuccessful) {
-            const CHEAP_MODEL = "gemini-1.5-flash";
-            const MEDIUM_MODEL = "gpt-4o-mini";
-            const EXPENSIVE_MODEL = "claude-3-5-sonnet-20240620";
-
-            let targetProvider = "google";
-            let targetModel = CHEAP_MODEL;
-
-            if (provider === "omni") {
-                if (usageRatio >= 80) {
-                    targetProvider = "google"; targetModel = CHEAP_MODEL; 
-                } else if (usageRatio >= 60) {
-                    if (words < 40) { targetProvider = "google"; targetModel = CHEAP_MODEL; }
-                    else { targetProvider = "openai"; targetModel = MEDIUM_MODEL; }
-                } else {
-                    if (words < 40) { targetProvider = "google"; targetModel = CHEAP_MODEL; }
-                    else if (words < 150) { targetProvider = "openai"; targetModel = MEDIUM_MODEL; }
-                    else { targetProvider = "anthropic"; targetModel = EXPENSIVE_MODEL; } 
+            if(!wasSuccessful) wasSuccessful = await attemptFetch(GPT_CHEAP, "openai"); // Final Failsafe
+        } else {
+            // NORMAL PLAN (Single Provider Strict Logic)
+            if (provider === "anthropic") {
+                targetModel = (usageRatio >= 85 || words < 40) ? CLAUDE_CHEAP : (words > 150 ? CLAUDE_PREMIUM : CLAUDE_MID);
+                wasSuccessful = await attemptFetch(targetModel, "anthropic");
+                if(!wasSuccessful){
+                    for(const fallback of CLAUDE_FALLBACKS){
+                        if(fallback !== targetModel) { wasSuccessful = await attemptFetch(fallback, "anthropic"); if(wasSuccessful) break; }
+                    }
+                }
+            } else if (provider === "google") {
+                targetModel = (usageRatio >= 85 || words < 40) ? GEMINI_CHEAP : (words > 150 ? GEMINI_PREMIUM : GEMINI_MID);
+                wasSuccessful = await attemptFetch(targetModel, "google");
+                if(!wasSuccessful){
+                    for(const fallback of GEMINI_FALLBACKS){
+                        if(fallback !== targetModel) { wasSuccessful = await attemptFetch(fallback, "google"); if(wasSuccessful) break; }
+                    }
                 }
             } else {
-                if (usageRatio >= 80) {
-                    targetProvider = "google"; targetModel = CHEAP_MODEL;
-                } else {
-                    targetProvider = provider;
-                    if (provider === "openai") targetModel = words < 40 ? "gpt-4o-mini" : "gpt-4o";
-                    else if (provider === "anthropic") targetModel = words < 40 ? "claude-3-haiku-20240307" : "claude-3-5-sonnet-20240620";
-                    else targetModel = "gemini-1.5-flash";
-                }
-            }
-
-            try {
-                if (targetProvider === "anthropic") aiResponse = await callClaude(targetModel, fullContext);
-                else if (targetProvider === "openai") aiResponse = await callOpenAI(targetModel, fullContext);
-                else aiResponse = await callGemini(targetModel, fullContext);
-                wasSuccessful = true;
-            } catch (err1) {
-                console.error(`[Widget AI Error] ${targetModel} failed. Routing to GPT Mini...`);
-                try {
-                    aiResponse = await callOpenAI(MEDIUM_MODEL, fullContext);
-                    wasSuccessful = true;
-                } catch (err2) {
-                    console.error(`[Widget AI Error] GPT Mini failed. Routing to Gemini Flash...`);
-                    try {
-                        aiResponse = await callGemini(CHEAP_MODEL, fullContext);
-                        wasSuccessful = true;
-                    } catch (err3) {
-                        console.error(`[Widget AI Error] All providers failed.`);
+                targetModel = (usageRatio >= 85 || words < 40) ? GPT_CHEAP : (words > 150 ? GPT_PREMIUM : GPT_MID);
+                wasSuccessful = await attemptFetch(targetModel, "openai");
+                if(!wasSuccessful){
+                    for(const fallback of GPT_FALLBACKS){
+                        if(fallback !== targetModel) { wasSuccessful = await attemptFetch(fallback, "openai"); if(wasSuccessful) break; }
                     }
                 }
             }
@@ -529,6 +502,27 @@ export async function POST(req: Request) {
         });
 
         return NextResponse.json({ success: true, reply: aiResponse }, { headers: corsHeaders });
+
+        // ==========================================
+        // ⚡ EXECUTION HELPERS
+        // ==========================================
+        async function attemptFetch(modelName: string, prov: string): Promise<boolean> {
+            try {
+                if (prov === "google") {
+                    aiResponse = await callGemini(modelName, fullContext);
+                    return true;
+                } else if (prov === "anthropic") {
+                    aiResponse = await callClaude(modelName, fullContext);
+                    return true;
+                } else {
+                    aiResponse = await callOpenAI(modelName, fullContext);
+                    return true;
+                }
+            } catch (e) {
+                console.error(`[Widget AI Error] ${modelName} failed.`);
+                return false;
+            }
+        }
 
     } catch (error: any) {
         return NextResponse.json({ success: false, error: "Internal Server Error" }, { status: 500, headers: corsHeaders });
