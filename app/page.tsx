@@ -7,8 +7,8 @@
  * @file app/page.tsx
  * @version 9.4.2
  * @description Main onboarding interface with strict Product-Led Growth (PLG) routing.
- * Integrates KNOX Level-7 Apple-grade security protocol. Prevents DOM inspection, 
- * console sniffing, script injection, and payload interception.
+ * Integrates KNOX Level-7 Apple-grade security protocol. Prevents script injection 
+ * and payload interception (Developer inspection loops have been neutralized for testing).
  * * ALL RIGHTS RESERVED. CLAWLINK INC.
  * ==============================================================================================
  */
@@ -30,7 +30,7 @@ import Image from "next/image";
  * KNOX ENTERPRISE SECURITY PROTOCOL (FRONTEND DOM PROTECTION)
  * ==============================================================================================
  * This class establishes a hostile environment for reverse engineers and browser extensions.
- * It continually monitors the DOM, network requests, and developer console for unauthorized access.
+ * It continually monitors the DOM for unauthorized access.
  */
 class KnoxSecurityProtocol {
   private static isInitialized = false;
@@ -42,56 +42,8 @@ class KnoxSecurityProtocol {
   static initialize() {
     if (typeof window === "undefined" || this.isInitialized) return;
     this.isInitialized = true;
-    this.lockContextMenu();
-    this.lockKeyboardShortcuts();
-    this.deployDebuggerTrap();
     this.sabotageConsole();
     this.monitorDOMIntegrity();
-  }
-
-  /**
-   * Prevents native right-click operations to thwart element inspection.
-   */
-  private static lockContextMenu() {
-    document.addEventListener("contextmenu", (event) => {
-      event.preventDefault();
-      this.registerViolation("Context Menu Attempt");
-    });
-  }
-
-  /**
-   * Intercepts and nullifies developer-specific keyboard shortcuts.
-   */
-  private static lockKeyboardShortcuts() {
-    document.addEventListener("keydown", (event) => {
-      if (
-        event.key === "F12" ||
-        (event.ctrlKey && event.shiftKey && event.key === "I") ||
-        (event.ctrlKey && event.shiftKey && event.key === "J") ||
-        (event.ctrlKey && event.key === "U") ||
-        (event.metaKey && event.altKey && event.key === "I") ||
-        (event.metaKey && event.altKey && event.key === "J") ||
-        (event.metaKey && event.key === "U")
-      ) {
-        event.preventDefault();
-        this.registerViolation("Keyboard Shortcut DevTools Attempt");
-      }
-    });
-  }
-
-  /**
-   * Deploys an infinite debugger loop that freezes DevTools if opened.
-   */
-  private static deployDebuggerTrap() {
-    setInterval(() => {
-      const startTime = performance.now();
-      // eslint-disable-next-line no-debugger
-      debugger;
-      const executionTime = performance.now() - startTime;
-      if (executionTime > 100) {
-        this.registerViolation("Debugger Attached");
-      }
-    }, 1000);
   }
 
   /**
@@ -1364,11 +1316,6 @@ export default function Home() {
           </div>
         )}
       </AnimatePresence>
-
-      {/* 🚀 KNOX ENTERPRISE REDIRECT PROTOCOL - POPUPS NEUTRALIZED */}
-      {/* The prior pricing popups have been fully neutralized to ensure a seamless PLG flow.
-        Payment authorization is strictly gated behind the dashboard `/dashboard` route.
-      */}
 
       <div className="fixed bottom-6 right-6 z-[60] flex flex-col items-end">
         <AnimatePresence>
