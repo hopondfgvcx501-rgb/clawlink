@@ -5,7 +5,7 @@
  * CLAWLINK ENTERPRISE COMMAND CENTER (DASHBOARD)
  * ==============================================================================================
  * @file app/dashboard/page.tsx
- * @version 9.5.0 (Pricing Synced & UI Security Lock Disabled)
+ * @version 9.6.0 (Dynamic Plan & Live Channel Status)
  * @description The central hub for users to monitor their AI Agents.
  * Enforces PLG by dynamically displaying current configuration and gating 
  * the "Go Live" (Payment) logic directly from this interface.
@@ -35,54 +35,45 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 
 /**
  * ==============================================================================================
- * ENTERPRISE PRICING MATRICES (EXACT SYNC WITH LANDING PAGE)
+ * ENTERPRISE PRICING MATRICES
  * ==============================================================================================
  */
 const PRICING_DATA: Record<string, any> = {
   gemini: {
     name: "Gemini (Google)",
     plans: [
-      { id: "plus", name: "Plus", usd: 6, inr: 499, msgs: "Optimized Speed", desc: "Instant customer conversions & rapid response.", accent: "rgba(255,255,255,.35)", color: "text-gray-400" },
-      { id: "pro", name: "Pro", usd: 12, inr: 999, msgs: "Enterprise Scale", desc: "Complex query mastermind & priority routing.", accent: "#3B82F6", color: "text-blue-400", badge: "Popular" },
-      { id: "ultra", name: "Ultra", usd: 24, inr: 1999, msgs: "Peak Execution", desc: "Zero parallel chat limit & max system power.", accent: "#A855F7", color: "text-purple-400" },
-      { id: "adv_max", name: "Adv Max", usd: 599, inr: 49999, msgs: "Unlimited Tier", desc: "Global system dominance & uncapped scaling.", accent: "#F97316", color: "text-orange-400", badge: "Yearly ⭐", isYearly: true }
+      { id: "plus", name: "Plus", usd: 27, inr: 2268, msgs: "Optimized Speed", desc: "Instant customer conversions & rapid response.", accent: "rgba(255,255,255,.35)", color: "text-gray-400" },
+      { id: "pro", name: "Pro", usd: 109, inr: 9156, msgs: "Enterprise Scale", desc: "Complex query mastermind & priority routing.", accent: "#3B82F6", color: "text-blue-400", badge: "Popular" },
+      { id: "ultra", name: "Ultra", usd: 169, inr: 14196, msgs: "Peak Execution", desc: "Zero parallel chat limit & max system power.", accent: "#A855F7", color: "text-purple-400" },
+      { id: "adv_max", name: "Adv Max", usd: 2748, inr: 230832, msgs: "Unlimited Tier", desc: "Global system dominance & uncapped scaling.", accent: "#F97316", color: "text-orange-400", badge: "Yearly ⭐", isYearly: true }
     ]
   },
   "gpt-5.2": { 
     name: "GPT (OpenAI)",
     plans: [
-      { id: "plus", name: "Plus", usd: 8, inr: 599, msgs: "Optimized Speed", desc: "Instant customer conversions & rapid response.", accent: "rgba(255,255,255,.35)", color: "text-gray-400" },
-      { id: "pro", name: "Pro", usd: 18, inr: 1499, msgs: "Enterprise Scale", desc: "Complex query mastermind & priority routing.", accent: "#3B82F6", color: "text-blue-400", badge: "Popular" },
-      { id: "ultra", name: "Ultra", usd: 36, inr: 2999, msgs: "Peak Execution", desc: "Zero parallel chat limit & max system power.", accent: "#A855F7", color: "text-purple-400" },
-      { id: "adv_max", name: "Adv Max", usd: 899, inr: 74999, msgs: "Unlimited Tier", desc: "Global system dominance & uncapped scaling.", accent: "#F97316", color: "text-orange-400", badge: "Yearly ⭐", isYearly: true }
+      { id: "plus", name: "Plus", usd: 29, inr: 2436, msgs: "Optimized Speed", desc: "Instant customer conversions & rapid response.", accent: "rgba(255,255,255,.35)", color: "text-gray-400" },
+      { id: "pro", name: "Pro", usd: 199, inr: 16716, msgs: "Enterprise Scale", desc: "Complex query mastermind & priority routing.", accent: "#3B82F6", color: "text-blue-400", badge: "Popular" },
+      { id: "ultra", name: "Ultra", usd: 379, inr: 31836, msgs: "Peak Execution", desc: "Zero parallel chat limit & max system power.", accent: "#A855F7", color: "text-purple-400" },
+      { id: "adv_max", name: "Adv Max", usd: 5988, inr: 502992, msgs: "Unlimited Tier", desc: "Global system dominance & uncapped scaling.", accent: "#F97316", color: "text-orange-400", badge: "Yearly ⭐", isYearly: true }
     ]
   },
   claude: {
     name: "Claude (Anthropic)",
     plans: [
-      { id: "plus", name: "Plus", usd: 10, inr: 799, msgs: "Optimized Speed", desc: "Instant customer conversions & rapid response.", accent: "rgba(255,255,255,.35)", color: "text-gray-400" },
-      { id: "pro", name: "Pro", usd: 24, inr: 1999, msgs: "Enterprise Scale", desc: "Complex query mastermind & priority routing.", accent: "#3B82F6", color: "text-blue-400", badge: "Popular" },
-      { id: "ultra", name: "Ultra", usd: 48, inr: 3999, msgs: "Peak Execution", desc: "Zero parallel chat limit & max system power.", accent: "#A855F7", color: "text-purple-400" },
-      { id: "adv_max", name: "Adv Max", usd: 1199, inr: 99999, msgs: "Unlimited Tier", desc: "Global system dominance & uncapped scaling.", accent: "#F97316", color: "text-orange-400", badge: "Yearly ⭐", isYearly: true }
+      { id: "plus", name: "Plus", usd: 47, inr: 3948, msgs: "Optimized Speed", desc: "Instant customer conversions & rapid response.", accent: "rgba(255,255,255,.35)", color: "text-gray-400" },
+      { id: "pro", name: "Pro", usd: 269, inr: 22596, msgs: "Enterprise Scale", desc: "Complex query mastermind & priority routing.", accent: "#3B82F6", color: "text-blue-400", badge: "Popular" },
+      { id: "ultra", name: "Ultra", usd: 449, inr: 37716, msgs: "Peak Execution", desc: "Zero parallel chat limit & max system power.", accent: "#A855F7", color: "text-purple-400" },
+      { id: "adv_max", name: "Adv Max", usd: 6948, inr: 583632, msgs: "Unlimited Tier", desc: "Global system dominance & uncapped scaling.", accent: "#F97316", color: "text-orange-400", badge: "Yearly ⭐", isYearly: true }
     ]
   },
   omni: {
     name: "OmniAgent Bundle",
     plans: [
       { id: "monthly", name: "Pro Bundle", usd: 249, inr: 20916, msgs: "Smart Matrix", desc: "Elite multi-persona integration. 3x Fallback.", accent: "#00BFFF", color: "text-[#00BFFF]" },
-      { id: "yearly", name: "Adv Premium", usd: 1799, inr: 149999, msgs: "Zero Downtime", desc: "Ultimate auto-routing & global priority access.", accent: "#BA7517", color: "text-[#BA7517]", badge: "Yearly ⭐", isYearly: true }
+      { id: "yearly", name: "Adv Premium", usd: 4548, inr: 382032, msgs: "Zero Downtime", desc: "Ultimate auto-routing & global priority access.", accent: "#BA7517", color: "text-[#BA7517]", badge: "Yearly ⭐", isYearly: true }
     ]
   }
 };
-
-/**
- * Security Protocol disabled for Dashboard to prevent false positives from browser extensions
- */
-class KnoxSecurityProtocol {
-  static initialize() {
-    return; // Disabled on frontend dashboard to allow smooth user experience
-  }
-}
 
 export default function Dashboard() {
   const { data: session, status } = useSession();
@@ -123,7 +114,9 @@ export default function Dashboard() {
       router.push("/");
     }
 
-    KnoxSecurityProtocol.initialize();
+    if (typeof window !== "undefined") {
+      document.addEventListener("contextmenu", (e) => e.preventDefault());
+    }
 
     try {
       const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || "";
@@ -190,6 +183,11 @@ export default function Dashboard() {
     }
   };
 
+  /**
+   * ==============================================================================================
+   * CORE LOGIC: Dynamic State Evaluation
+   * ==============================================================================================
+   */
   const exactModel = (userData?.selected_model || userData?.ai_provider || "gpt-5.2").toLowerCase();
   
   let pricingKey = "gpt-5.2";
@@ -201,22 +199,25 @@ export default function Dashboard() {
   const currentPricing = PRICING_DATA[pricingKey] || PRICING_DATA["gpt-5.2"];
   
   const currentPlan = userData?.plan_tier?.toLowerCase() || userData?.plan?.toLowerCase() || "free";
-  const isFreePlan = currentPlan === "free";
+  const isFreePlan = currentPlan === "free" || currentPlan === "starter";
   
   let isExpired = false;
   if (userData?.plan_expiry_date) {
     isExpired = new Date() > new Date(userData.plan_expiry_date);
   }
 
+  const hasActivePlan = !isFreePlan && !isExpired && userData?.plan_status === "Active";
+  const isPremium = !isFreePlan;
+
   let primaryButtonText = "⚡ Go Live Now (Upgrade)";
   if (!isFreePlan && isExpired) {
     primaryButtonText = "🔄 Renew Plan";
-  } else if (!isFreePlan && !isExpired) {
+  } else if (hasActivePlan) {
     primaryButtonText = "✅ System Active";
   }
 
   const handlePrimaryAction = () => {
-    if (isFreePlan || isExpired) {
+    if (!hasActivePlan) {
       setShowPricingPopup(true);
     }
   };
@@ -475,7 +476,6 @@ export default function Dashboard() {
     );
   }
 
-  const isPremium = !isFreePlan;
   const totalMsgs = (stats?.platformStats?.whatsapp || 0) + (stats?.platformStats?.telegram || 0) + (stats?.platformStats?.web || 0);
 
   const getModelDisplayName = () => {
@@ -486,6 +486,7 @@ export default function Dashboard() {
     return "NOT SET";
   };
 
+  // 🚀 DYNAMIC LIVE CHANNEL INDICATOR LOGIC
   const exactSelectedChannel = (userData?.selected_channel || "").toLowerCase();
   
   const hasTgToken = !!userData?.telegram_token && userData?.telegram_token !== "";
@@ -498,11 +499,11 @@ export default function Dashboard() {
               name: "Telegram Agent", 
               bgLight: "bg-blue-500/5", 
               bgHover: "group-hover:bg-blue-500/10", 
-              dot: hasTgToken ? "bg-blue-400 animate-pulse" : "bg-yellow-500", 
-              text: "text-blue-400", 
+              dot: (hasTgToken && hasActivePlan) ? "bg-green-500 animate-pulse" : (hasTgToken ? "bg-yellow-500" : "bg-red-500"), 
+              text: (hasTgToken && hasActivePlan) ? "text-green-400" : "text-blue-400", 
               border: "border-blue-500/20", 
               iconBg: "bg-blue-500/10",
-              isLive: hasTgToken
+              isSetup: hasTgToken
           };
       }
       
@@ -511,11 +512,11 @@ export default function Dashboard() {
               name: "WhatsApp Cloud", 
               bgLight: "bg-green-500/5", 
               bgHover: "group-hover:bg-green-500/10", 
-              dot: hasWaId ? "bg-green-500 animate-pulse" : "bg-yellow-500", 
-              text: "text-green-500", 
+              dot: (hasWaId && hasActivePlan) ? "bg-green-500 animate-pulse" : (hasWaId ? "bg-yellow-500" : "bg-red-500"), 
+              text: (hasWaId && hasActivePlan) ? "text-green-400" : "text-green-500", 
               border: "border-green-500/20", 
               iconBg: "bg-green-500/10",
-              isLive: hasWaId
+              isSetup: hasWaId
           };
       }
 
@@ -524,11 +525,11 @@ export default function Dashboard() {
               name: "Instagram Agent", 
               bgLight: "bg-pink-500/5", 
               bgHover: "group-hover:bg-pink-500/10", 
-              dot: hasIgId ? "bg-pink-500 animate-pulse" : "bg-yellow-500", 
-              text: "text-pink-500", 
+              dot: (hasIgId && hasActivePlan) ? "bg-green-500 animate-pulse" : (hasIgId ? "bg-yellow-500" : "bg-red-500"), 
+              text: (hasIgId && hasActivePlan) ? "text-green-400" : "text-pink-500", 
               border: "border-pink-500/20", 
               iconBg: "bg-pink-500/10",
-              isLive: hasIgId
+              isSetup: hasIgId
           };
       }
 
@@ -540,12 +541,17 @@ export default function Dashboard() {
           text: "text-gray-500", 
           border: "border-gray-500/20", 
           iconBg: "bg-gray-500/10",
-          isLive: false
+          isSetup: false
       };
   };
   const primaryChannel = getPrimaryLiveChannel();
 
   const handleOpenLiveBot = async () => {
+    if (!hasActivePlan) {
+      alert("⚠️ Your agent is currently sleeping. Please upgrade or renew your plan to activate it.");
+      return;
+    }
+
     if (exactSelectedChannel === "telegram" && hasTgToken) {
       try {
         const res = await fetch(`https://api.telegram.org/bot${userData.telegram_token}/getMe`);
@@ -665,7 +671,7 @@ export default function Dashboard() {
         <div className="flex items-center gap-4">
           <button onClick={handleOpenLiveBot}
             className={`hidden sm:flex items-center gap-2 bg-white text-black hover:bg-gray-100 px-5 py-2.5 rounded-full font-black text-[11px] uppercase tracking-widest shadow-[0_0_20px_rgba(255,255,255,0.15)] ${btn}`}>
-            <Bot className="w-4 h-4" /> OPEN YOUR LIVE AGENT <ExternalLink className="w-3 h-3 ml-1" />
+            <Bot className="w-4 h-4" /> {hasActivePlan ? "OPEN LIVE BOT" : "TEST INTEGRATION"} <ExternalLink className="w-3 h-3 ml-1" />
           </button>
           <div className="hidden md:flex items-center bg-[#1A1A1A] border border-white/10 rounded-full px-4 py-2">
             <Search className="w-4 h-4 text-gray-500" />
@@ -694,7 +700,7 @@ export default function Dashboard() {
         </AnimatePresence>
 
         {/* 🚀 CRITICAL PLG GATEKEEPER UI */}
-        {(isFreePlan || isExpired) && (
+        {!hasActivePlan && (
           <div className="bg-[#1A1A24] border border-orange-500/30 p-5 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4 shadow-[0_0_30px_rgba(249,115,22,0.08)]">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-full bg-orange-500/20 flex items-center justify-center shrink-0">
@@ -729,7 +735,7 @@ export default function Dashboard() {
                 <Receipt className="w-5 h-5"/>
               </div>
             </div>
-            <button onClick={handlePrimaryAction} disabled={!isFreePlan && !isExpired} className={`relative z-10 w-full py-3 rounded-xl text-[11px] font-black uppercase tracking-widest transition-all ${isFreePlan || isExpired ? 'bg-white text-black hover:scale-[1.02] shadow-[0_0_15px_rgba(255,255,255,0.2)]' : 'bg-green-500/10 text-green-400 border border-green-500/20 cursor-default'}`}>
+            <button onClick={handlePrimaryAction} disabled={hasActivePlan} className={`relative z-10 w-full py-3 rounded-xl text-[11px] font-bold uppercase tracking-widest transition-all ${!hasActivePlan ? 'bg-white text-black hover:scale-[1.02] shadow-[0_0_15px_rgba(255,255,255,0.2)]' : 'bg-green-500/10 text-green-400 border border-green-500/20 cursor-default'}`}>
               {primaryButtonText}
             </button>
           </motion.div>
@@ -773,7 +779,7 @@ export default function Dashboard() {
                 {exactSelectedChannel && (
                   <p className={`text-[10px] font-mono mt-2 flex items-center gap-1.5 ${primaryChannel.isLive ? 'text-green-500' : 'text-yellow-500'}`}>
                     <span className={`w-1.5 h-1.5 rounded-full ${primaryChannel.dot}`}></span>
-                    {primaryChannel.isLive ? "Verified & Operational" : "Pending Setup"}
+                    {primaryChannel.isLive ? "Verified & Live 🟢" : (primaryChannel.isSetup ? "Sleeping (Needs Upgrade)" : "Pending Setup")}
                   </p>
                 )}
               </div>
@@ -782,7 +788,7 @@ export default function Dashboard() {
               </div>
             </div>
             <button onClick={handleOpenLiveBot} className={`relative z-10 w-full py-3 rounded-xl text-[11px] font-bold uppercase tracking-widest transition-all bg-white/5 text-gray-300 border border-white/10 hover:bg-white/10 flex items-center justify-center gap-2 ${btn}`}>
-               Test Integration <ExternalLink className="w-3 h-3"/>
+               {hasActivePlan ? "Open Live Bot" : "Test Integration"} <ExternalLink className="w-3 h-3"/>
             </button>
           </motion.div>
         </div>
