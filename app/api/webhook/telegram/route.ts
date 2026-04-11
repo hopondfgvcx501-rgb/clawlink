@@ -226,8 +226,20 @@ export async function POST(req: Request) {
         else if (rawProvider.includes("gemini") || rawProvider.includes("google")) provider = "google";
 
         // ==========================================
-        // 🛑 THE GATEKEEPER (Expiry & Limits Check) - SURGICALLY UPDATED
+        // 🛑 THE GATEKEEPER (Plan, Expiry & Limits Check) - SURGICALLY UPDATED
         // ==========================================
+        const currentPlan = (config.plan_tier || config.plan || "free").toLowerCase();
+        
+        if (currentPlan === "free" || currentPlan === "starter" || config.plan_status !== "Active") {
+            const sleepMsg = "🤖 *ClawLink AI:* This agent is currently sleeping. The owner needs to activate their plan in the dashboard to enable 24/7 autonomous replies.";
+            await fetch(`https://api.telegram.org/bot${telegramToken}/sendMessage`, {
+                method: "POST", headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ chat_id: chatId, text: sleepMsg, parse_mode: "Markdown" })
+            });
+            console.log(`[GATEKEEPER] Blocked unpaid bot message for token: ${telegramToken}`);
+            return NextResponse.json({ success: true });
+        }
+
         const isUnlimited = config.is_unlimited || config.plan === "adv_max" || config.plan === "yearly";
         const tokensUsed = config.tokens_used || 0;
         const tokensAllocated = config.tokens_allocated || 10000;

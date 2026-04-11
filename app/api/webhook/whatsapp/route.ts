@@ -43,7 +43,7 @@ export async function GET(req: Request) {
     const token = url.searchParams.get("hub.verify_token");
     const challenge = url.searchParams.get("hub.challenge");
 
-    const VERIFY_TOKEN = process.env.WHATSAPP_VERIFY_TOKEN || "ClawLinkMeta2026";
+    const VERIFY_TOKEN = process.env.WHATSAPP_VERIFY_TOKEN || "clawlinkmeta2026";
 
     if (mode === "subscribe" && token === VERIFY_TOKEN) {
         return new NextResponse(challenge, { status: 200 });
@@ -212,8 +212,20 @@ export async function POST(req: Request) {
         else if (rawProvider.includes("gemini") || rawProvider.includes("google")) provider = "google";
 
         // ==========================================
-        // 🛑 THE GATEKEEPER (Expiry & Limits Check) - SURGICALLY UPDATED
+        // 🛑 THE GATEKEEPER (Plan, Expiry & Limits Check) - SURGICALLY UPDATED
         // ==========================================
+        const currentPlan = (config.plan_tier || config.plan || "free").toLowerCase();
+        
+        if (currentPlan === "free" || currentPlan === "starter" || config.plan_status !== "Active") {
+            const sleepMsg = "🤖 *ClawLink AI:* This agent is currently sleeping. The owner needs to activate their plan in the dashboard to enable 24/7 autonomous replies.";
+            await fetch(`https://graph.facebook.com/v18.0/${phoneNumberId}/messages`, {
+                method: "POST", headers: { "Content-Type": "application/json", "Authorization": `Bearer ${whatsappToken}` },
+                body: JSON.stringify({ messaging_product: "whatsapp", to: chatId, text: { body: sleepMsg } })
+            });
+            console.log(`[GATEKEEPER] Blocked unpaid WA message for phone ID: ${phoneNumberId}`);
+            return NextResponse.json({ success: true });
+        }
+
         const isUnlimited = config.is_unlimited || config.plan === "adv_max" || config.plan === "yearly";
         const tokensUsed = config.tokens_used || 0;
         const tokensAllocated = config.tokens_allocated || 10000;

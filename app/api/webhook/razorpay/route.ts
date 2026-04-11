@@ -28,6 +28,54 @@ async function sendTelegramAdminAlert(message: string) {
 export async function POST(req: NextRequest) {
   try {
     const rawBody = await req.text();
+
+    // 🛑 ------------------------------------------------------------ 🛑
+    //                 THE GATEKEEPER LOGIC (FREE TIER CHECK)
+    // 🛑 ------------------------------------------------------------ 🛑
+    const url = new URL(req.url);
+    const botToken = url.searchParams.get("token"); 
+
+    if (botToken) {
+        try {
+            const update = JSON.parse(rawBody);
+            // Check if this is a normal message
+            if (update.message && update.message.text) {
+                const chatId = update.message.chat.id;
+
+                // 1. Fetch User Config from DB
+                const { data: userConfig } = await supabase
+                  .from("user_configs")
+                  .select("plan_tier, plan_status")
+                  .eq("telegram_token", botToken)
+                  .single();
+
+                if (userConfig) {
+                    const currentPlan = userConfig.plan_tier?.toLowerCase() || "free";
+                    
+                    // 2. Gatekeeper Check: If Free or Not Active -> Block & Warn
+                    if (currentPlan === "free" || currentPlan === "starter" || userConfig.plan_status !== "Active") {
+                      // Call Telegram API directly to send the warning message
+                      await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ 
+                            chat_id: chatId, 
+                            text: "🤖 *ClawLink AI:* This agent is currently sleeping. The owner needs to activate their plan in the dashboard to enable 24/7 autonomous replies.",
+                            parse_mode: "Markdown"
+                        }),
+                      });
+                      console.log(`[GATEKEEPER] Blocked unpaid bot message for token: ${botToken}`);
+                      // Return success so Telegram stops retrying
+                      return NextResponse.json({ success: true }); 
+                    }
+                }
+            }
+        } catch (e) {
+            console.error("[GATEKEEPER ERROR]", e);
+        }
+    }
+    // 🛑 ---------------- END GATEKEEPER LOGIC ------------------------ 🛑
+
     const signature = req.headers.get("x-razorpay-signature");
     const webhookSecret = process.env.RAZORPAY_WEBHOOK_SECRET;
 
@@ -110,6 +158,7 @@ export async function POST(req: NextRequest) {
         // 3. Secure Payload Generation
         const payload: any = {
             plan: planName,            
+            plan_tier: planName, // <-- ADDED THIS FOR THE GATEKEEPER
             is_unlimited: isUnlimited, 
             tokens_allocated: tokensAllocated,
             monthly_message_limit: monthlyLimit,
