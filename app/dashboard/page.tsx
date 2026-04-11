@@ -5,7 +5,7 @@
  * CLAWLINK ENTERPRISE COMMAND CENTER (DASHBOARD)
  * ==============================================================================================
  * @file app/dashboard/page.tsx
- * @version 9.6.0 (Dynamic Plan & Live Channel Status)
+ * @version 9.6.1 (TypeScript isLive Property Fixed)
  * @description The central hub for users to monitor their AI Agents.
  * Enforces PLG by dynamically displaying current configuration and gating 
  * the "Go Live" (Payment) logic directly from this interface.
@@ -486,7 +486,7 @@ export default function Dashboard() {
     return "NOT SET";
   };
 
-  // 🚀 DYNAMIC LIVE CHANNEL INDICATOR LOGIC
+  // 🚀 DYNAMIC LIVE CHANNEL INDICATOR LOGIC (BOTH isLive AND isSetup provided)
   const exactSelectedChannel = (userData?.selected_channel || "").toLowerCase();
   
   const hasTgToken = !!userData?.telegram_token && userData?.telegram_token !== "";
@@ -503,7 +503,8 @@ export default function Dashboard() {
               text: (hasTgToken && hasActivePlan) ? "text-green-400" : "text-blue-400", 
               border: "border-blue-500/20", 
               iconBg: "bg-blue-500/10",
-              isSetup: hasTgToken
+              isSetup: hasTgToken,
+              isLive: hasTgToken && hasActivePlan
           };
       }
       
@@ -516,7 +517,8 @@ export default function Dashboard() {
               text: (hasWaId && hasActivePlan) ? "text-green-400" : "text-green-500", 
               border: "border-green-500/20", 
               iconBg: "bg-green-500/10",
-              isSetup: hasWaId
+              isSetup: hasWaId,
+              isLive: hasWaId && hasActivePlan
           };
       }
 
@@ -529,7 +531,8 @@ export default function Dashboard() {
               text: (hasIgId && hasActivePlan) ? "text-green-400" : "text-pink-500", 
               border: "border-pink-500/20", 
               iconBg: "bg-pink-500/10",
-              isSetup: hasIgId
+              isSetup: hasIgId,
+              isLive: hasIgId && hasActivePlan
           };
       }
 
@@ -541,7 +544,8 @@ export default function Dashboard() {
           text: "text-gray-500", 
           border: "border-gray-500/20", 
           iconBg: "bg-gray-500/10",
-          isSetup: false
+          isSetup: false,
+          isLive: false
       };
   };
   const primaryChannel = getPrimaryLiveChannel();
@@ -576,6 +580,7 @@ export default function Dashboard() {
   };
 
   const btn = "transition-all duration-[120ms] ease-out active:scale-[0.93] transform-gpu will-change-transform";
+  const gridColsClass = isOmniActive ? "md:grid-cols-2 max-w-2xl" : "md:grid-cols-2 lg:grid-cols-4 max-w-5xl";
 
   return (
     <div className="w-full min-h-screen bg-[#07070A] text-[#E8E8EC] font-sans relative selection:bg-orange-500/30 overflow-y-auto custom-scrollbar flex flex-col">
@@ -602,7 +607,7 @@ export default function Dashboard() {
                 <p className="text-sm text-gray-400">Select a tier to activate your <span className="text-white font-bold">{getModelDisplayName()}</span> engine.</p>
               </div>
 
-              <div className={`grid grid-cols-1 md:grid-cols-${currentPricing?.plans?.length || 4} gap-6 mb-8 max-w-${isOmniActive ? '2xl' : '5xl'} mx-auto text-left`}>
+              <div className={`grid grid-cols-1 gap-6 mb-8 mx-auto text-left ${gridColsClass}`}>
                 {currentPricing?.plans?.map((plan: any) => {
                   const isActive = selectedRenewalPlan === plan.id;
                   return (
