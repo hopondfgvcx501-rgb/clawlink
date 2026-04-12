@@ -5,7 +5,7 @@
  * CLAWLINK ENTERPRISE FRONTEND SECURE MODULE
  * ==============================================================================================
  * @file app/page.tsx
- * @version 9.4.3 (LocalStorage Memory Engine Added)
+ * @version 9.4.4 (Auth-Gated Selection Logic Added)
  * @description Main onboarding interface with strict Product-Led Growth (PLG) routing.
  * Integrates KNOX Level-7 Apple-grade security protocol. Prevents script injection 
  * and payload interception (Developer inspection loops have been neutralized for testing).
@@ -245,28 +245,23 @@ export default function Home() {
   const { data: session, status } = useSession();
   const router = useRouter();
 
-  // Core State Initialization
   const [isMounted, setIsMounted] = useState(false);
   const [isTelegramModalOpen, setIsTelegramModalOpen] = useState(false);
   
-  // Input Binding State
   const [telegramToken, setTelegramToken] = useState("");
   const [waPhoneId, setWaPhoneId] = useState("");
   const [waPhoneNumber, setWaPhoneNumber] = useState("");
   
-  // Progress State
   const [isTokenSaved, setIsTokenSaved] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
   const [showPricingPopup, setShowPricingPopup] = useState(false);
   const [isDeploying, setIsDeploying] = useState(false);
   const [botLink, setBotLink] = useState("");
   
-  // Configuration State
   const [activeModel, setActiveModel] = useState("gpt-5.4 Pro");
   const [activeChannel, setActiveChannel] = useState("telegram");
   const [selectedTier, setSelectedTier] = useState<string|null>(null);
   
-  // Geographic / Currency State
   const [currency, setCurrency] = useState<"USD"|"INR">("USD");
   const [currencySymbol, setCurrencySymbol] = useState("$");
 
@@ -276,10 +271,7 @@ export default function Home() {
   const [helpStatus, setHelpStatus] = useState<"idle"|"sending"|"sent">("idle");
   const [isSupportModalOpen, setIsSupportModalOpen] = useState(false);
 
-  /**
-   * 🚀 NEW: LocalStorage Memory Engine
-   * Retains user selection even if Google OAuth forces a page reload.
-   */
+  // Load from local storage
   useEffect(() => {
     if (typeof window !== "undefined") {
       const savedModel = localStorage.getItem("clawlink_model");
@@ -289,7 +281,15 @@ export default function Home() {
     }
   }, []);
 
+  /**
+   * 🚀 AUTH-GATED SELECTION (GATEKEEPER LOGIC)
+   * Users cannot interact with the configuration options until they authenticate.
+   */
   const handleModelSelect = (modelId: string) => {
+    if (status !== "authenticated") {
+      alert("Please Login via Google first to configure your AI Agent!");
+      return;
+    }
     if (!isTokenSaved) {
       setActiveModel(modelId);
       if (typeof window !== "undefined") {
@@ -299,6 +299,10 @@ export default function Home() {
   };
 
   const handleChannelSelect = (channelId: string) => {
+    if (status !== "authenticated") {
+      alert("Please Login via Google first to configure your AI Agent!");
+      return;
+    }
     if (!isTokenSaved) {
       setActiveChannel(channelId);
       if (typeof window !== "undefined") {
@@ -804,7 +808,7 @@ export default function Home() {
               </motion.div>
 
             ) : status === "unauthenticated" ? (
-              <motion.div key="login" initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} transition={{duration:.12}}>
+              <motion.div key="login" id="login-section" initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} transition={{duration:.12}}>
                 <button aria-label="Login with Google" data-ripple data-spring onClick={()=>signIn("google")}
                   className={`relative overflow-hidden w-full bg-white text-gray-800 py-4 rounded-[1.75rem] flex items-center justify-center gap-3 text-[17px] font-bold shadow-[0_0_32px_rgba(255,255,255,0.15)] ${btn} hover:scale-[1.03]`}>
                   <Google_Icon/> Login via Google & Deploy
