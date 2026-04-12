@@ -95,7 +95,7 @@ export async function POST(req: Request) {
     // ==========================================
     // 🧠 THE ROUTER ALGORITHM
     // ==========================================
-    if (selectedModel.includes("multi_model") || selectedModel.includes("omni") || selectedModel.includes("nexus")) {
+    if (selectedModel.includes("omni") || selectedModel.includes("nexus")) {
         // 🔄 OMNI CROSS-PROVIDER ROUTING
         console.log(`[ROUTER] Omni Engine Active. Complexity: ${words} words, Usage: ${usageRatio.toFixed(2)}%`);
         if (usageRatio >= 80) {

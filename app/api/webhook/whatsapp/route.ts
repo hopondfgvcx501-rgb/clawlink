@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+ import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
 // 🚀 FIX: Removed external import to prevent Vercel build errors
@@ -204,15 +204,16 @@ export async function POST(req: Request) {
         const systemPrompt = config.system_prompt_whatsapp || config.system_prompt || "You are a helpful AI assistant on WhatsApp.";
         const userApiKey = config.user_api_key;
         
+        // 🚀 OMNI NAME ENFORCEMENT
         let rawProvider = (config.ai_provider || config.selected_model || "openai").toLowerCase();
         let provider = "openai"; 
         
-        if (rawProvider === "multi_model" || rawProvider === "omni") provider = "omni";
+        if (rawProvider.includes("omni") || rawProvider.includes("nexus")) provider = "omni";
         else if (rawProvider.includes("claude") || rawProvider.includes("anthropic")) provider = "anthropic";
         else if (rawProvider.includes("gemini") || rawProvider.includes("google")) provider = "google";
 
         // ==========================================
-        // 🛑 THE GATEKEEPER (Plan, Expiry & Limits Check) - SURGICALLY UPDATED
+        // 🛑 THE GATEKEEPER (Plan, Expiry & Limits Check) 
         // ==========================================
         const currentPlan = (config.plan_tier || config.plan || "free").toLowerCase();
         
@@ -256,7 +257,7 @@ export async function POST(req: Request) {
             }
         } catch (e) {}
 
-        // 🧠 MEMORY ENGINE UPGRADE: Fetch 20 messages (10 user, 10 bot)
+        // 🧠 MEMORY ENGINE
         const { data: pastChats } = await supabase
             .from("chat_history")
             .select("sender_type, message")
@@ -265,12 +266,10 @@ export async function POST(req: Request) {
             .order("created_at", { ascending: false })
             .limit(20); 
 
-        // 🧠 Format history into Array instead of one big string (Safe Fallback added)
         let historyArray: any[] = [];
         if (pastChats && pastChats.length > 0) {
             historyArray = pastChats.reverse().map(chat => ({
                 role: chat.sender_type === "bot" ? "assistant" : "user",
-                // Safe-fallback to prevent empty string API crashes
                 content: chat.message ? chat.message.trim() : " "
             }));
         }
@@ -282,7 +281,7 @@ export async function POST(req: Request) {
         });
 
         // =========================================================================
-        // 8. 🧠 CLAWLINK PROFIT MAXIMIZER & SMART FALLBACK ENGINE (WITH SECURE FETCH)
+        // 8. 🧠 CLAWLINK 2026 PROFIT MAXIMIZER & SMART FALLBACK ENGINE
         // =========================================================================
         let aiResponse = "System is undergoing scheduled maintenance. Please try again later.";
         let wasSuccessful = false;
@@ -291,12 +290,11 @@ export async function POST(req: Request) {
         const usageRatio = isUnlimited ? 0 : (tokensUsed / tokensAllocated) * 100;
         const forceCheap = !isUnlimited && usageRatio >= 80;
 
-        // 🚀 THE MASTER OMNI ROUTER (Secure Internal Fetch)
+        // 🚀 THE MASTER OMNI ROUTER 
         if (provider === "omni") {
             try {
                 const baseUrl = process.env.NEXT_PUBLIC_APP_URL || new URL(req.url).origin;
                 
-                // 🔒 Call the Master Engine with the Secret Key
                 const engineRes = await fetch(`${baseUrl}/api/omni`, {
                     method: "POST",
                     headers: {
@@ -323,30 +321,28 @@ export async function POST(req: Request) {
                     throw new Error("API Route Failure");
                 }
             } catch (err) {
-                 // If the Master Engine fails, it smoothly falls through to the local webhook logic below
                  console.error("[FAILSAFE_ACTIVATED] Utilizing internal execution matrix.");
             }
         }
 
         // ⚡ LOCAL EXECUTION & FALLBACK ENGINE (Runs if NOT Omni, or if Omni fetch fails)
         if (!wasSuccessful) {
-            const GEMINI_CHEAP = "gemini-1.5-flash-8b";
-            const GEMINI_MID = "gemini-1.5-flash";
-            const GEMINI_PREMIUM = "gemini-1.5-pro";
+            const GEMINI_CHEAP = "gemini-3.1-flash-lite";
+            const GEMINI_MID = "gemini-3.1-flash";
+            const GEMINI_PREMIUM = "gemini-3.1-pro";
             
-            const GPT_CHEAP = "gpt-4o-mini";
-            const GPT_MID = "gpt-4o";
-            const GPT_PREMIUM = "gpt-4-turbo"; 
+            const GPT_CHEAP = "gpt-4.1-nano";
+            const GPT_MID = "gpt-5.2";
+            const GPT_PREMIUM = "gpt-5.4"; 
             
-            const CLAUDE_CHEAP = "claude-3-haiku-20240307";
-            const CLAUDE_MID = "claude-3-5-sonnet-20240620";
-            const CLAUDE_PREMIUM = "claude-3-opus-20240229";
+            const CLAUDE_CHEAP = "claude-3-haiku";
+            const CLAUDE_MID = "claude-sonnet-4.6";
+            const CLAUDE_PREMIUM = "claude-opus-4.6";
 
             let targetProvider = provider;
             let targetModel = "";
 
             if (provider === "omni") {
-                // If we are here, it means the fetch to /api/omni failed. Use local omni fallback.
                 if (usageRatio >= 80) {
                     targetProvider = "google"; targetModel = GEMINI_CHEAP; 
                 } else if (usageRatio >= 60) {
@@ -403,13 +399,13 @@ export async function POST(req: Request) {
         }
 
         // ==========================================
-        // 9. CHARGE TOKENS & SAVE AI RESPONSE (ISOLATED TRACKING)
+        // 9. CHARGE TOKENS & SAVE AI RESPONSE
         // ==========================================
         if (wasSuccessful) {
             const calculatedTokens = Math.ceil((userText.length + aiResponse.length) / 3);
             const updatePayload: any = { messages_used_this_month: (config.messages_used_this_month || 0) + 1 };
             if (!isUnlimited) {
-                updatePayload.tokens_used = tokensUsed + calculatedTokens; // Accurately drains tokens
+                updatePayload.tokens_used = tokensUsed + calculatedTokens; 
             }
             await supabase.from("user_configs").update(updatePayload).eq("id", configId);
         }
@@ -427,10 +423,9 @@ export async function POST(req: Request) {
 
     } catch (error: any) {
         console.error("[SYSTEM_FATAL] Webhook processing halted:", error);
-        // Add Telegram Admin Logging if you want to track Meta webhook crashes too!
         try {
             const token = process.env.TELEGRAM_BOT_TOKEN; 
-            const adminChatId = process.env.TELEGRAM_ADMIN_CHAT_ID; // Setup in .env
+            const adminChatId = process.env.TELEGRAM_ADMIN_CHAT_ID; 
             if (adminChatId && token) {
                 await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
                     method: "POST", headers: { "Content-Type": "application/json" },

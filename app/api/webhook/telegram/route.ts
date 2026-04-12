@@ -198,7 +198,7 @@ export async function POST(req: Request) {
         let rawProvider = (config.ai_provider || config.selected_model || "openai").toLowerCase();
         let provider = "openai"; 
         
-        if (rawProvider === "multi_model" || rawProvider === "omni") provider = "omni";
+        if (rawProvider.includes("omni") || rawProvider.includes("nexus")) provider = "omni";
         else if (rawProvider.includes("claude") || rawProvider.includes("anthropic")) provider = "anthropic";
         else if (rawProvider.includes("gemini") || rawProvider.includes("google")) provider = "google";
 
