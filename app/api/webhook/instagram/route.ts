@@ -163,9 +163,9 @@ async function processDynamicAI(senderId: string, accountId: string, text: strin
         return; // HALT EXECUTION
     }
 
-    // ✅ PROCEED TO AI PROCESSING
-    const aiProvider = config.selected_model || "multi_model"; 
-    const isOmni = aiProvider === "multi_model" || aiProvider === "omni";
+    // ✅ PROCEED TO AI PROCESSING (CLEANED MULTI_MODEL)
+    const aiProvider = config.selected_model || "omni 3 nexus"; 
+    const isOmni = aiProvider.toLowerCase().includes("omni") || aiProvider.toLowerCase().includes("nexus");
     
     // 🔥 ROUTE SELECTION
     const targetEndpoint = isOmni ? "/api/omni" : "/api/ai";
