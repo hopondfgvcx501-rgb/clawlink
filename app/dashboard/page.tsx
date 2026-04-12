@@ -5,7 +5,7 @@
  * CLAWLINK ENTERPRISE COMMAND CENTER (DASHBOARD)
  * ==============================================================================================
  * @file app/dashboard/page.tsx
- * @version 9.6.2 (Fully Dynamic State Evaluation)
+ * @version 9.6.3 (Ultimate DB Mapping Fix)
  * @description The central hub for users to monitor their AI Agents.
  * Enforces PLG by dynamically displaying current configuration and gating 
  * the "Go Live" (Payment) logic directly from this interface.
@@ -35,7 +35,7 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 
 /**
  * ==============================================================================================
- * ENTERPRISE PRICING MATRICES
+ * ENTERPRISE PRICING MATRICES (2026 UPDATED NAMES)
  * ==============================================================================================
  */
 const PRICING_DATA: Record<string, any> = {
@@ -185,17 +185,23 @@ export default function Dashboard() {
 
   /**
    * ==============================================================================================
-   * CORE LOGIC: Dynamic State Evaluation (Future-Proof Model Display)
+   * CORE LOGIC: BULLETPROOF DATABASE MAPPING
    * ==============================================================================================
    */
-  // EXACTLY what the DB gives us, or fallback
-  const exactModel = userData?.ai_model || userData?.selected_model || "gpt-5.4 Pro";
+  // Checks all possible DB fields where the model might have been saved
+  const rawDbModel = String(userData?.ai_model || userData?.current_model_version || userData?.selected_model || userData?.ai_provider || "gpt").toLowerCase();
   
-  // Directly use the exact string to lookup pricing. If not found, fallback to GPT-5.4 Pro.
-  const currentPricing = PRICING_DATA[exactModel] || PRICING_DATA["gpt-5.4 Pro"];
-  
-  // Safe boolean check for Matrix badge
-  const isOmniActive = exactModel.toLowerCase().includes("omni") || exactModel.toLowerCase().includes("nexus");
+  let pricingKey = "gpt-5.4 Pro";
+  if (rawDbModel.includes("omni") || rawDbModel.includes("nexus") || rawDbModel.includes("multi")) {
+      pricingKey = "omni 3 nexus";
+  } else if (rawDbModel.includes("claude") || rawDbModel.includes("opus") || rawDbModel.includes("anthropic")) {
+      pricingKey = "Claude Opus 4.6";
+  } else if (rawDbModel.includes("gemini") || rawDbModel.includes("google")) {
+      pricingKey = "gemini 3.1 Pro";
+  }
+
+  const isOmniActive = pricingKey === "omni 3 nexus";
+  const currentPricing = PRICING_DATA[pricingKey] || PRICING_DATA["gpt-5.4 Pro"];
   
   const currentPlan = userData?.plan_tier?.toLowerCase() || userData?.plan?.toLowerCase() || "free";
   const isFreePlan = currentPlan === "free" || currentPlan === "starter";
@@ -305,7 +311,7 @@ export default function Dashboard() {
           email: session.user.email,
           amount: activePlanObj.usd,
           currency: "usd",
-          model: exactModel, // Sending the exact DB string
+          model: currentPricing.name, // Sends exactly "Claude Opus 4.6" etc.
           isRenewal: !isFreePlan
         }),
       });
@@ -477,7 +483,7 @@ export default function Dashboard() {
 
   const totalMsgs = (stats?.platformStats?.whatsapp || 0) + (stats?.platformStats?.telegram || 0) + (stats?.platformStats?.web || 0);
 
-  // 🚀 DYNAMIC LIVE CHANNEL INDICATOR LOGIC (BOTH isLive AND isSetup provided)
+  // 🚀 DYNAMIC LIVE CHANNEL INDICATOR LOGIC 
   const exactSelectedChannel = (userData?.selected_channel || "").toLowerCase();
   
   const hasTgToken = !!userData?.telegram_token && userData?.telegram_token !== "";
@@ -595,7 +601,7 @@ export default function Dashboard() {
                 <h2 className="text-2xl font-black text-white uppercase tracking-widest mb-2 flex items-center justify-center gap-2">
                   <Globe className="w-6 h-6 text-orange-500"/> SECURE DEPLOYMENT PLAN
                 </h2>
-                <p className="text-sm text-gray-400">Select a tier to activate your <span className="text-white font-bold">{exactModel}</span> engine.</p>
+                <p className="text-sm text-gray-400">Select a tier to activate your <span className="text-white font-bold">{currentPricing.name}</span> engine.</p>
               </div>
 
               <div className={`grid grid-cols-1 gap-6 mb-8 mx-auto text-left ${gridColsClass}`}>
@@ -743,7 +749,7 @@ export default function Dashboard() {
               <div>
                 <h3 className="text-gray-500 text-[10px] font-bold uppercase tracking-widest mb-1">Active AI Brain</h3>
                 <p className="text-xl font-black text-white font-sans tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-blue-400 mt-2 leading-tight">
-                  {exactModel}
+                  {currentPricing.name}
                 </p>
                 {isOmniActive ? (
                   <div className="mt-2 flex items-center gap-2">
