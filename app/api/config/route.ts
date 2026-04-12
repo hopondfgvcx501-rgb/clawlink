@@ -26,11 +26,10 @@ function sanitizeInput(input: string | null | undefined): string {
 }
 
 const IN_FILE_PRICING: Record<string, any> = {
-  "gemini": { plus: 6, pro: 12, ultra: 24, adv_max: 599 },
-  "gpt-5.2": { plus: 8, pro: 18, ultra: 36, adv_max: 899 },
-  "claude": { plus: 10, pro: 24, ultra: 48, adv_max: 1199 },
-  "omni": { monthly: 249, yearly: 1799 },
-  "multi_model": { monthly: 249, yearly: 1799 }
+  "gemini 3.1 Pro": { plus: 6, pro: 12, ultra: 24, adv_max: 599 },
+  "gpt-5.4 Pro": { plus: 8, pro: 18, ultra: 36, adv_max: 899 },
+  "Claude Opus 4.6": { plus: 10, pro: 24, ultra: 48, adv_max: 1199 },
+  "omni 3 nexus": { monthly: 249, yearly: 1799 }
 };
 
 export async function POST(req: Request) {
@@ -79,20 +78,20 @@ export async function POST(req: Request) {
     }
 
     let providerToSave = "openai";
-    let exactModelVersion = "gpt-4o-mini";
-    const safeModel = (selectedModel || "gpt-5.2").toLowerCase();
+    let exactModelVersion = "gpt-5.4 Pro";
+    const safeModel = (selectedModel || "gpt-5.4 Pro").toLowerCase();
 
-    if (safeModel.includes("multi_model") || safeModel.includes("omni") || safeModel.includes("nexus")) {
-        providerToSave = "multi_model"; exactModelVersion = "omni-nexus-engine";
-    } else if (safeModel.includes("claude") || safeModel.includes("anthropic")) {
-        providerToSave = "anthropic"; exactModelVersion = "claude-3-opus-20240229";
+    if (safeModel.includes("omni") || safeModel.includes("nexus")) {
+        providerToSave = "omni"; exactModelVersion = "omni 3 nexus";
+    } else if (safeModel.includes("claude") || safeModel.includes("anthropic") || safeModel.includes("opus")) {
+        providerToSave = "anthropic"; exactModelVersion = "Claude Opus 4.6";
     } else if (safeModel.includes("gemini") || safeModel.includes("google")) {
-        providerToSave = "google"; exactModelVersion = "gemini-1.5-flash-8b";
+        providerToSave = "google"; exactModelVersion = "gemini 3.1 Pro";
     }
 
-    // 🛡️ SAFELY BUILDING PAYLOAD (Avoiding strict new columns that might break DB)
+    // 🛡️ SAFELY BUILDING PAYLOAD 
     const payload: any = {
-        ai_model: safeModel,
+        ai_model: exactModelVersion,
         ai_provider: providerToSave,
         current_model_version: exactModelVersion,
         tokens_allocated: allocatedTokens,
@@ -113,7 +112,6 @@ export async function POST(req: Request) {
         payload.whatsapp_token = telegramToken; 
         if (waPhoneNumber) payload.whatsapp_number = waPhoneNumber;
     } else if (selectedChannel === "instagram" && waPhoneId) {
-        // We will try to save IG credentials safely
         payload.instagram_account_id = waPhoneId;
         payload.instagram_token = telegramToken; 
     }
@@ -129,17 +127,17 @@ export async function POST(req: Request) {
 
     if (existingData && existingData.length > 0) {
         const { error: updateError } = await supabase.from("user_configs").update(payload).eq("id", existingData[0].id);
-        if (updateError) throw new Error("DB Update Error: " + updateError.message); // Exact error pass
+        if (updateError) throw new Error("DB Update Error: " + updateError.message); 
     } else {
         const { error: insertError } = await supabase.from("user_configs").insert({
             ...payload, email: email, tokens_used: 0, messages_used_this_month: 0, created_at: new Date().toISOString()
         });
-        if (insertError) throw new Error("DB Insert Error: " + insertError.message); // Exact error pass
+        if (insertError) throw new Error("DB Insert Error: " + insertError.message); 
     }
 
     let invoiceAmount = 0;
     if (safePlan !== "free") {
-        const pricingGroup = IN_FILE_PRICING[providerToSave === "multi_model" ? "omni" : safeModel] || IN_FILE_PRICING["gpt-5.2"];
+        const pricingGroup = IN_FILE_PRICING[exactModelVersion] || IN_FILE_PRICING["gpt-5.4 Pro"];
         invoiceAmount = pricingGroup[safePlan] || pricingGroup["plus"] || 0;
         await supabase.from("billing_history").insert({
           email: email, plan_name: safePlan.toUpperCase(), amount: invoiceAmount.toString(), currency: "USD",
@@ -166,7 +164,6 @@ export async function POST(req: Request) {
 
   } catch (error: any) {
     console.error("[KNOX_API_FATAL] Configuration Error:", error.message);
-    // 🚨 YAHAN SE EXACT SUPABASE ERROR FRONTEND PAR JAYEGA
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }
