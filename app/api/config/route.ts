@@ -1,18 +1,16 @@
 /**
  * ==============================================================================================
- * CLAWLINK ENTERPRISE CONFIGURATION API (KNOX SECURED - CRASH PROOF)
+ * CLAWLINK ENTERPRISE CONFIGURATION API (KNOX SECURED - TEST MODE ACTIVE)
  * ==============================================================================================
  * @file app/api/config/route.ts
- * @description Securely provisions the user's database record under the "Free/Sleeping" 
- * state for PLG onboarding. Contains specific error pass-through logic for immediate 
- * infrastructure diagnostics.
+ * @description Securely provisions the user's database record. 
+ * CURRENT STATE: Testing Mode (Plus plan at ₹5 INR for CEO validation).
  * * ALL RIGHTS RESERVED. CLAWLINK INC.
  * ==============================================================================================
  */
 
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { sendEmail } from "../../lib/email"; 
 
 export const dynamic = "force-dynamic";
 
@@ -25,11 +23,15 @@ function sanitizeInput(input: string | null | undefined): string {
     return input.replace(/<[^>]*>?/gm, "").replace(/--/g, "").replace(/;/g, "").trim();
 }
 
+/**
+ * 🚀 TEST PRICING MATRIX (INR Mode for Plus Plan)
+ * Transition Note: Revert 'plus' values to USD standard ($6, $8, $10) post-testing.
+ */
 const IN_FILE_PRICING: Record<string, any> = {
-  "gemini 3.1 Pro": { plus: 6, pro: 12, ultra: 24, adv_max: 599 },
-  "gpt-5.4 Pro": { plus: 8, pro: 18, ultra: 36, adv_max: 899 },
-  "Claude Opus 4.6": { plus: 10, pro: 24, ultra: 48, adv_max: 1199 },
-  "omni 3 nexus": { monthly: 249, yearly: 1799 }
+  "gemini 3.1 Pro": { plus: 5, pro: 999, ultra: 1999, adv_max: 49999 },
+  "gpt-5.4 Pro": { plus: 5, pro: 1499, ultra: 2999, adv_max: 74999 },
+  "Claude Opus 4.6": { plus: 5, pro: 1999, ultra: 3999, adv_max: 99999 },
+  "omni 3 nexus": { monthly: 20916, yearly: 149999 }
 };
 
 export async function POST(req: Request) {
@@ -55,6 +57,7 @@ export async function POST(req: Request) {
     let monthlyMessages = 0;
     let isUnlimited = false;
 
+    // Token Allocation Logic
     if (safePlan === "plus" || safePlan === "starter") {
         allocatedTokens = 2000000; 
         monthlyMessages = 5000;
@@ -77,7 +80,7 @@ export async function POST(req: Request) {
         expiryDate.setDate(expiryDate.getDate() + 30);
     }
 
-    // 🚀 EXACT MATCH ROUTING: Maps UI selection perfectly to the Database 
+    // Exact Match Routing for 2026 Models
     let providerToSave = "openai";
     let exactModelVersion = "gpt-5.4 Pro";
     const safeModel = (selectedModel || "gpt-5.4 Pro").toLowerCase();
@@ -90,9 +93,10 @@ export async function POST(req: Request) {
         providerToSave = "google"; exactModelVersion = "gemini 3.1 Pro";
     }
 
-    // 🛡️ SAFELY BUILDING PAYLOAD 
+    // Full Database Payload Construction
     const payload: any = {
         ai_model: exactModelVersion,
+        selected_model: exactModelVersion, 
         ai_provider: providerToSave,
         current_model_version: exactModelVersion,
         tokens_allocated: allocatedTokens,
@@ -117,6 +121,7 @@ export async function POST(req: Request) {
         payload.instagram_token = telegramToken; 
     }
 
+    // Database Sync Execution
     const { data: existingData, error: lookupError } = await supabase
         .from("user_configs")
         .select("id")
@@ -136,13 +141,20 @@ export async function POST(req: Request) {
         if (insertError) throw new Error("DB Insert Error: " + insertError.message); 
     }
 
+    // Automated Invoice Generation (Testing Mode: INR)
     let invoiceAmount = 0;
     if (safePlan !== "free") {
         const pricingGroup = IN_FILE_PRICING[exactModelVersion] || IN_FILE_PRICING["gpt-5.4 Pro"];
         invoiceAmount = pricingGroup[safePlan] || pricingGroup["plus"] || 0;
+        
         await supabase.from("billing_history").insert({
-          email: email, plan_name: safePlan.toUpperCase(), amount: invoiceAmount.toString(), currency: "USD",
-          status: "PAID", payment_provider: "clawlink_direct", razorpay_order_id: "DEPLOY_" + Math.random().toString(36).substring(7).toUpperCase()
+          email: email, 
+          plan_name: safePlan.toUpperCase(), 
+          amount: invoiceAmount.toString(), 
+          currency: "INR", 
+          status: "PAID", 
+          payment_provider: "clawlink_direct", 
+          razorpay_order_id: "DEPLOY_TEST_" + Math.random().toString(36).substring(7).toUpperCase()
         });
     }
 
@@ -158,10 +170,10 @@ export async function POST(req: Request) {
     } else if (selectedChannel === "instagram") {
       botLink = "https://www.instagram.com/";
     } else if (selectedChannel === "widget") {
-      botLink = `https://www.clawlinkai.com/dashboard`;
+      botLink = `/dashboard`;
     }
 
-    return NextResponse.json({ success: true, botLink, message: "Enterprise configuration securely provisioned." });
+    return NextResponse.json({ success: true, botLink, message: "Enterprise configuration securely provisioned for testing." });
 
   } catch (error: any) {
     console.error("[KNOX_API_FATAL] Configuration Error:", error.message);
