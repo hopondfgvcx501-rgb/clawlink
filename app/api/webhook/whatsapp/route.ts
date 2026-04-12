@@ -1,4 +1,4 @@
- import { NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
 // 🚀 FIX: Removed external import to prevent Vercel build errors
@@ -202,14 +202,13 @@ export async function POST(req: Request) {
         const userEmail = config.email;
 
         const systemPrompt = config.system_prompt_whatsapp || config.system_prompt || "You are a helpful AI assistant on WhatsApp.";
-        const userApiKey = config.user_api_key;
         
-        // 🚀 OMNI NAME ENFORCEMENT
+        // 🚀 SMART PROVIDER DETECTION (Omni vs Normal)
         let rawProvider = (config.ai_provider || config.selected_model || "openai").toLowerCase();
         let provider = "openai"; 
         
         if (rawProvider.includes("omni") || rawProvider.includes("nexus")) provider = "omni";
-        else if (rawProvider.includes("claude") || rawProvider.includes("anthropic")) provider = "anthropic";
+        else if (rawProvider.includes("claude") || rawProvider.includes("anthropic") || rawProvider.includes("opus")) provider = "anthropic";
         else if (rawProvider.includes("gemini") || rawProvider.includes("google")) provider = "google";
 
         // ==========================================
@@ -227,11 +226,11 @@ export async function POST(req: Request) {
             return NextResponse.json({ success: true });
         }
 
-        const isUnlimited = config.is_unlimited || config.plan === "adv_max" || config.plan === "yearly";
+        const isUnlimited = config.is_unlimited || config.plan === "adv_max" || config.plan === "yearly" || currentPlan === "ultra";
         const tokensUsed = config.tokens_used || 0;
-        const tokensAllocated = config.tokens_allocated || 10000;
+        const tokensAllocated = config.tokens_allocated || config.available_tokens || 10000;
         
-        const expiryDate = new Date(config.plan_expiry_date);
+        const expiryDate = new Date(config.plan_expiry_date || new Date());
         const isExpired = config.plan_expiry_date ? (new Date() > expiryDate) : false;
 
         if (isExpired || (!isUnlimited && tokensUsed >= tokensAllocated)) {
@@ -281,119 +280,85 @@ export async function POST(req: Request) {
         });
 
         // =========================================================================
-        // 8. 🧠 CLAWLINK 2026 PROFIT MAXIMIZER & SMART FALLBACK ENGINE
+        // 8. 🧠 CLAWLINK 2026 DIRECT EXECUTION & SMART OMNI ROUTER
         // =========================================================================
         let aiResponse = "System is undergoing scheduled maintenance. Please try again later.";
         let wasSuccessful = false;
 
         const words = userText.split(/\s+/).length;
         const usageRatio = isUnlimited ? 0 : (tokensUsed / tokensAllocated) * 100;
-        const forceCheap = !isUnlimited && usageRatio >= 80;
 
-        // 🚀 THE MASTER OMNI ROUTER 
+        const GEMINI_CHEAP = "gemini-3.1-flash-lite";
+        const GEMINI_MID = "gemini-3.1-flash";
+        const GEMINI_PREMIUM = "gemini-3.1-pro";
+        
+        const GPT_CHEAP = "gpt-4.1-nano";
+        const GPT_MID = "gpt-5.2";
+        const GPT_PREMIUM = "gpt-5.4"; 
+        
+        const CLAUDE_CHEAP = "claude-3-haiku-20240307";
+        const CLAUDE_MID = "claude-sonnet-4.6";
+        const CLAUDE_PREMIUM = "claude-opus-4.6";
+
+        let targetProvider = provider;
+        let targetModel = "";
+
+        // 🚀 THE DECISION MATRIX (Omni vs Normal Models)
         if (provider === "omni") {
-            try {
-                const baseUrl = process.env.NEXT_PUBLIC_APP_URL || new URL(req.url).origin;
-                
-                const engineRes = await fetch(`${baseUrl}/api/omni`, {
-                    method: "POST",
-                    headers: {
-                        "Authorization": `Bearer ${process.env.CLAWLINK_MASTER_SECRET}`,
-                        "Content-Type": "application/json"
-                    },
-                    body: JSON.stringify({
-                        prompt: userText,
-                        systemPrompt: fullSystemContext,
-                        history: historyArray,
-                        apiKey: userApiKey,
-                        forceCheap: forceCheap,
-                        userWords: words
-                    })
-                });
-
-                const engineData = await engineRes.json();
-                
-                if (engineRes.ok && engineData.success) {
-                    aiResponse = engineData.reply;
-                    wasSuccessful = true;
-                } else {
-                    console.error("[ROUTING_FAILURE] Omni Engine remote call failed. Engaging localized failsafe.");
-                    throw new Error("API Route Failure");
-                }
-            } catch (err) {
-                 console.error("[FAILSAFE_ACTIVATED] Utilizing internal execution matrix.");
+            // Omni Logic: Best performance across ALL providers based on query complexity
+            if (usageRatio >= 80) {
+                targetProvider = "google"; targetModel = GEMINI_CHEAP; 
+            } else if (usageRatio >= 60) {
+                targetProvider = "openai"; targetModel = words < 40 ? GPT_CHEAP : GPT_MID;
+            } else {
+                if (words < 40) { targetProvider = "google"; targetModel = GEMINI_MID; }
+                else if (words < 150) { targetProvider = "openai"; targetModel = GPT_MID; }
+                else { targetProvider = "anthropic"; targetModel = CLAUDE_PREMIUM; } 
+            }
+        } else {
+            // Normal Logic: Strict adherence to the user's selected provider
+            if (usageRatio >= 85) {
+                if (provider === "openai") targetModel = GPT_CHEAP;
+                else if (provider === "anthropic") targetModel = CLAUDE_CHEAP;
+                else targetModel = GEMINI_CHEAP;
+            } else {
+                if (provider === "openai") targetModel = words < 40 ? GPT_CHEAP : (words > 150 ? GPT_PREMIUM : GPT_MID);
+                else if (provider === "anthropic") targetModel = words < 40 ? CLAUDE_CHEAP : (words > 150 ? CLAUDE_PREMIUM : CLAUDE_MID);
+                else targetModel = words < 40 ? GEMINI_CHEAP : (words > 150 ? GEMINI_PREMIUM : GEMINI_MID);
             }
         }
 
-        // ⚡ LOCAL EXECUTION & FALLBACK ENGINE (Runs if NOT Omni, or if Omni fetch fails)
-        if (!wasSuccessful) {
-            const GEMINI_CHEAP = "gemini-3.1-flash-lite";
-            const GEMINI_MID = "gemini-3.1-flash";
-            const GEMINI_PREMIUM = "gemini-3.1-pro";
+        // ⚡ DIRECT EXECUTION ENGINE (No external fetch loops!)
+        try {
+            if (targetProvider === "anthropic") aiResponse = await callClaude(targetModel, fullSystemContext, historyArray, userText);
+            else if (targetProvider === "openai") aiResponse = await callOpenAI(targetModel, fullSystemContext, historyArray, userText);
+            else aiResponse = await callGemini(targetModel, fullSystemContext, historyArray, userText);
+            wasSuccessful = true;
+        } catch (err1) {
+            console.error(`[EXECUTION_FAILURE] Primary model ${targetModel} rejected request.`);
             
-            const GPT_CHEAP = "gpt-4.1-nano";
-            const GPT_MID = "gpt-5.2";
-            const GPT_PREMIUM = "gpt-5.4"; 
-            
-            const CLAUDE_CHEAP = "claude-3-haiku";
-            const CLAUDE_MID = "claude-sonnet-4.6";
-            const CLAUDE_PREMIUM = "claude-opus-4.6";
-
-            let targetProvider = provider;
-            let targetModel = "";
-
+            // ⚡ FALLBACK LOGIC
             if (provider === "omni") {
-                if (usageRatio >= 80) {
-                    targetProvider = "google"; targetModel = GEMINI_CHEAP; 
-                } else if (usageRatio >= 60) {
-                    targetProvider = "openai"; targetModel = words < 40 ? GPT_CHEAP : GPT_MID;
-                } else {
-                    if (words < 40) { targetProvider = "google"; targetModel = GEMINI_MID; }
-                    else if (words < 150) { targetProvider = "openai"; targetModel = GPT_MID; }
-                    else { targetProvider = "anthropic"; targetModel = CLAUDE_PREMIUM; } 
+                console.log("[OMNI_FALLBACK] Routing to secondary engine...");
+                try {
+                    aiResponse = await callOpenAI(GPT_CHEAP, fullSystemContext, historyArray, userText);
+                    wasSuccessful = true;
+                } catch (err2) {
+                    console.log("[OMNI_FALLBACK_2] Routing to tertiary engine...");
+                    try {
+                        aiResponse = await callGemini(GEMINI_CHEAP, fullSystemContext, historyArray, userText);
+                        wasSuccessful = true;
+                    } catch (err3) { console.error("[CRITICAL_FAILURE] Omni cross-provider fallback exhausted."); }
                 }
             } else {
-                if (usageRatio >= 85) {
-                    if (provider === "openai") targetModel = GPT_CHEAP;
-                    else if (provider === "anthropic") targetModel = CLAUDE_CHEAP;
-                    else targetModel = GEMINI_CHEAP;
-                } else {
-                    if (provider === "openai") targetModel = words < 40 ? GPT_CHEAP : (words > 150 ? GPT_PREMIUM : GPT_MID);
-                    else if (provider === "anthropic") targetModel = words < 40 ? CLAUDE_CHEAP : (words > 150 ? CLAUDE_PREMIUM : CLAUDE_MID);
-                    else targetModel = words < 40 ? GEMINI_CHEAP : (words > 150 ? GEMINI_PREMIUM : GEMINI_MID);
-                }
-            }
-
-            try {
-                if (targetProvider === "anthropic") aiResponse = await callClaude(targetModel, fullSystemContext, historyArray, userText);
-                else if (targetProvider === "openai") aiResponse = await callOpenAI(targetModel, fullSystemContext, historyArray, userText);
-                else aiResponse = await callGemini(targetModel, fullSystemContext, historyArray, userText);
-                wasSuccessful = true;
-            } catch (err1) {
-                console.error(`[EXECUTION_FAILURE] Primary model ${targetModel} rejected request.`);
-                
-                if (provider === "omni") {
-                    console.log("[OMNI_FALLBACK] Routing to secondary engine...");
-                    try {
-                        aiResponse = await callOpenAI(GPT_CHEAP, fullSystemContext, historyArray, userText);
-                        wasSuccessful = true;
-                    } catch (err2) {
-                        console.log("[OMNI_FALLBACK_2] Routing to tertiary engine...");
-                        try {
-                            aiResponse = await callGemini(GEMINI_CHEAP, fullSystemContext, historyArray, userText);
-                            wasSuccessful = true;
-                        } catch (err3) { console.error("[CRITICAL_FAILURE] Omni cross-provider fallback exhausted."); }
-                    }
-                } else {
-                    console.log(`[INTRA_PROVIDER_FALLBACK] Downgrading to standard tier for ${provider}.`);
-                    try {
-                        if (provider === "anthropic") aiResponse = await callClaude(CLAUDE_CHEAP, fullSystemContext, historyArray, userText);
-                        else if (provider === "openai") aiResponse = await callOpenAI(GPT_CHEAP, fullSystemContext, historyArray, userText);
-                        else aiResponse = await callGemini(GEMINI_CHEAP, fullSystemContext, historyArray, userText);
-                        wasSuccessful = true;
-                    } catch (err2) {
-                        console.error(`[CRITICAL_FAILURE] Intra-provider fallback failed for ${provider}.`);
-                    }
+                console.log(`[INTRA_PROVIDER_FALLBACK] Downgrading to standard tier for ${provider}.`);
+                try {
+                    if (provider === "anthropic") aiResponse = await callClaude(CLAUDE_CHEAP, fullSystemContext, historyArray, userText);
+                    else if (provider === "openai") aiResponse = await callOpenAI(GPT_CHEAP, fullSystemContext, historyArray, userText);
+                    else aiResponse = await callGemini(GEMINI_CHEAP, fullSystemContext, historyArray, userText);
+                    wasSuccessful = true;
+                } catch (err2) {
+                    console.error(`[CRITICAL_FAILURE] Intra-provider fallback failed for ${provider}.`);
                 }
             }
         }

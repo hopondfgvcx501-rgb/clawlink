@@ -1,7 +1,18 @@
+/**
+ * ==============================================================================================
+ * CLAWLINK ENTERPRISE INSTAGRAM WEBHOOK (OMNI ENGINE)
+ * ==============================================================================================
+ * @file app/api/webhook/instagram/route.ts
+ * @description Handles Meta Graph API webhooks for Instagram DMs and Comments.
+ * Directly integrates the 2026 Omni-Routing engine to prevent self-fetch timeouts.
+ * * ALL RIGHTS RESERVED. CLAWLINK INC.
+ * ==============================================================================================
+ */
+
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
-export const runtime = "edge";
+// 🚀 REMOVED EDGE RUNTIME: Using standard Node serverless to prevent background task termination.
 export const dynamic = "force-dynamic";
 
 // 🚀 INITIALIZE SUPABASE
@@ -9,7 +20,7 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-// 🛡️ CORS HEADERS
+// 🛡️ CORS HEADERS FOR META
 const corsHeaders = {
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
@@ -20,25 +31,80 @@ export async function OPTIONS() {
     return new NextResponse(null, { status: 204, headers: corsHeaders });
 }
 
-// =========================================================================
-// 🛡️ SECURITY LOCK: ENTERPRISE DATA SANITIZER (XSS & Injection Blocker)
-// =========================================================================
 function sanitizeInput(input: string | null | undefined): string {
     if (!input) return "";
-    return input
-        .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, "") // Remove malicious scripts
-        .replace(/<[^>]*>?/gm, "") // Remove HTML tags
-        .replace(/--/g, "") // Prevent SQL comment injection
-        .trim();
+    return input.replace(/<[^>]*>?/gm, "").replace(/--/g, "").replace(/;/g, "").trim();
 }
 
 const ENTERPRISE_GUARDRAIL = `
-CRITICAL INSTRUCTION: You are an Enterprise AI Support Agent. 
-1. ANTI-HALLUCINATION LOCK: You must ONLY use the provided Company Knowledge to answer questions. 
-2. ZERO SPECULATION: If the answer is NOT explicitly written in the provided context, DO NOT guess, make up prices, or create policies.
-3. HUMAN HANDOFF: If the user asks something outside the Knowledge Base, or seems frustrated/angry, reply EXACTLY with: "I apologize, but I don't have that specific information. Let me connect you with a human support agent who can help you right away."
-4. TONE: Be professional, concise, and highly polite. Never argue with the customer.
+CRITICAL INSTRUCTION: You are an Enterprise AI Support Agent operating on Instagram. 
+1. Keep your responses concise, friendly, and formatted for social media (use emojis sparingly but effectively).
+2. If the user asks something outside the provided Knowledge Base, do NOT guess. Politely state: "I don't have that specific info right now, let me connect you with a human agent."
 `;
+
+// =========================================================================
+// 🧠 DIRECT AI MODEL CALLERS (Prevents 504 Gateway Timeouts)
+// =========================================================================
+async function callGemini(model: string, systemPrompt: string, history: any[], userText: string) {
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) throw new Error("API_KEY missing");
+    let contents: any[] = [];
+    let lastRole = "";
+    for (const msg of history) {
+        const currentRole = msg.role === "assistant" ? "model" : "user";
+        if (currentRole === lastRole) {
+            contents[contents.length - 1].parts[0].text += "\n" + msg.content;
+        } else {
+            contents.push({ role: currentRole, parts: [{ text: msg.content }] });
+            lastRole = currentRole;
+        }
+    }
+    if (lastRole === "user") contents[contents.length - 1].parts[0].text += "\n" + userText;
+    else contents.push({ role: "user", parts: [{ text: userText }] });
+
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ system_instruction: { parts: { text: systemPrompt } }, contents: contents })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error("Gemini API rejected the request.");
+    return data.candidates[0].content.parts[0].text;
+}
+
+async function callOpenAI(model: string, systemPrompt: string, history: any[], userText: string) {
+    const apiKey = process.env.OPENAI_API_KEY;
+    if (!apiKey) throw new Error("API_KEY missing");
+    const messages = [{ role: "system", content: systemPrompt }, ...history, { role: "user", content: userText }];
+    const res = await fetch("https://api.openai.com/v1/chat/completions", {
+        method: "POST", headers: { "Content-Type": "application/json", "Authorization": `Bearer ${apiKey}` },
+        body: JSON.stringify({ model: model, messages: messages })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error("OpenAI API rejected the request.");
+    return data.choices[0].message.content;
+}
+
+async function callClaude(model: string, systemPrompt: string, history: any[], userText: string) {
+    const apiKey = process.env.ANTHROPIC_API_KEY;
+    if (!apiKey) throw new Error("API_KEY missing");
+    let mergedMessages: any[] = [];
+    let lastRole = "";
+    for (const msg of history) {
+        if (msg.role === lastRole) mergedMessages[mergedMessages.length - 1].content += "\n" + msg.content;
+        else { mergedMessages.push({ role: msg.role, content: msg.content }); lastRole = msg.role; }
+    }
+    if (lastRole === "user") mergedMessages[mergedMessages.length - 1].content += "\n" + userText;
+    else mergedMessages.push({ role: "user", content: userText });
+    if (mergedMessages.length > 0 && mergedMessages[0].role !== "user") mergedMessages.shift();
+
+    const res = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST", headers: { "Content-Type": "application/json", "x-api-key": apiKey, "anthropic-version": "2023-06-01" },
+        body: JSON.stringify({ model: model, max_tokens: 1024, system: systemPrompt, messages: mergedMessages })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error("Anthropic API rejected the request.");
+    return data.content[0].text;
+}
 
 // =========================================================================
 // 1. 🌐 GET REQUEST: META WEBHOOK VERIFICATION
@@ -68,9 +134,7 @@ export async function POST(req: Request) {
         }
 
         const entry = body.entry?.[0];
-        if (!entry) {
-            return NextResponse.json({ success: true }, { status: 200 });
-        }
+        if (!entry) return NextResponse.json({ success: true }, { status: 200 });
 
         const accountId = entry.id; 
 
@@ -80,7 +144,8 @@ export async function POST(req: Request) {
             const userText = webhookEvent.message?.text;
             
             if (userText && !webhookEvent.message?.is_echo) {
-                await processDynamicAI(senderId, accountId, userText, "dm", req);
+                // Awaiting execution to ensure it finishes before Vercel kills the lambda
+                await processDynamicAI(senderId, accountId, userText, "dm");
             }
         }
 
@@ -88,18 +153,17 @@ export async function POST(req: Request) {
             const change = entry.changes[0];
             if (change.field === "comments") {
                 const commentValue = change.value;
-                const commentId = commentValue?.id;
                 const userText = commentValue?.text;
                 const senderId = commentValue?.from?.id;
+                const commentId = commentValue?.id;
 
                 if (senderId && userText && senderId !== accountId) {
-                    await processDynamicAI(senderId, accountId, userText, "comment", req, commentId);
+                    await processDynamicAI(senderId, accountId, userText, "comment", commentId);
                 }
             }
         }
 
         return NextResponse.json({ success: true }, { status: 200 });
-
     } catch (error) {
         console.error("[IG_WEBHOOK_FATAL] Error in POST handler:", error);
         return NextResponse.json({ success: true }, { status: 200 });
@@ -107,9 +171,9 @@ export async function POST(req: Request) {
 }
 
 // =========================================================================
-// 🧠 PROCESSOR: DYNAMIC AI ROUTING
+// 🧠 PROCESSOR: DYNAMIC AI ROUTING (OMNI-ENGINE)
 // =========================================================================
-async function processDynamicAI(senderId: string, accountId: string, text: string, type: "dm" | "comment", req: Request, commentId?: string) {
+async function processDynamicAI(senderId: string, accountId: string, text: string, type: "dm" | "comment", commentId?: string) {
     const { data: config, error: dbError } = await supabase
         .from("user_configs")
         .select("*")
@@ -128,7 +192,6 @@ async function processDynamicAI(senderId: string, accountId: string, text: strin
     // ==========================================
     const currentPlan = (config.plan_tier || config.plan || "free").toLowerCase();
 
-    // 1. GATEKEEPER CHECK: Free Tier or Inactive Plan
     if (currentPlan === "free" || currentPlan === "starter" || config.plan_status !== "Active") {
         console.warn(`[IG_GATEKEEPER] Unpaid or inactive account for ${config.email}. Blocking AI.`);
         const sleepMsg = "🤖 *ClawLink AI:* This agent is currently sleeping. The owner needs to activate their plan in the dashboard to enable 24/7 autonomous replies.";
@@ -139,15 +202,13 @@ async function processDynamicAI(senderId: string, accountId: string, text: strin
                 body: JSON.stringify({ recipient: { id: senderId }, message: { text: sleepMsg } })
             });
         }
-        return; // HALT EXECUTION
+        return; 
     }
 
-    // 2. TOKEN & EXPIRY LIMITS CHECK 
-    const isUnlimited = config.is_unlimited || config.plan === "adv_max" || config.plan === "yearly";
+    const isUnlimited = config.is_unlimited || currentPlan === "adv_max" || currentPlan === "yearly" || currentPlan === "ultra";
     const tokensUsed = config.tokens_used || 0;
-    const tokensAllocated = config.tokens_allocated || 10000;
-    
-    const expiryDate = new Date(config.plan_expiry_date);
+    const tokensAllocated = config.tokens_allocated || config.available_tokens || 10000;
+    const expiryDate = new Date(config.plan_expiry_date || new Date());
     const isExpired = config.plan_expiry_date ? (new Date() > expiryDate) : false;
 
     if (isExpired || (!isUnlimited && tokensUsed >= tokensAllocated)) {
@@ -160,104 +221,122 @@ async function processDynamicAI(senderId: string, accountId: string, text: strin
                 body: JSON.stringify({ recipient: { id: senderId }, message: { text: maintenanceMsg } })
             });
         }
-        return; // HALT EXECUTION
+        return; 
     }
 
-    // ✅ PROCEED TO AI PROCESSING (CLEANED MULTI_MODEL)
-    const aiProvider = config.selected_model || "omni 3 nexus"; 
-    const isOmni = aiProvider.toLowerCase().includes("omni") || aiProvider.toLowerCase().includes("nexus");
+    // ==========================================
+    // 🚀 INITIATE OMNI-ENGINE AI RESPONSE
+    // ==========================================
+    let rawProvider = (config.ai_provider || config.selected_model || "openai").toLowerCase();
+    let provider = "openai"; 
     
-    // 🔥 ROUTE SELECTION
-    const targetEndpoint = isOmni ? "/api/omni" : "/api/ai";
+    if (rawProvider.includes("omni") || rawProvider.includes("nexus")) provider = "omni";
+    else if (rawProvider.includes("claude") || rawProvider.includes("anthropic") || rawProvider.includes("opus")) provider = "anthropic";
+    else if (rawProvider.includes("gemini") || rawProvider.includes("google")) provider = "google";
 
-    const { data: history } = await supabase
+    const promptText = sanitizeInput(text);
+    const systemPrompt = config.system_prompt_instagram || config.system_prompt || "You are a professional, helpful, and concise AI agent for Instagram.";
+    const fullSystemContext = `${ENTERPRISE_GUARDRAIL}\n\nSystem Instructions: ${systemPrompt}`;
+
+    const { data: pastChats } = await supabase
         .from("chat_history")
         .select("sender_type, message")
+        .eq("email", config.email)
         .eq("platform_chat_id", senderId)
         .order("created_at", { ascending: false })
         .limit(10);
 
-    const historyArray = (history || []).reverse().map(c => ({
+    const historyArray = (pastChats || []).reverse().map(c => ({
         role: c.sender_type === "bot" ? "assistant" : "user",
-        content: c.message || " "
+        content: c.message ? c.message.trim() : " "
     }));
 
-    const protocol = req.headers.get("x-forwarded-proto") || "http";
-    const host = req.headers.get("host");
-    const baseUrl = `${protocol}://${host}`;
+    await supabase.from("chat_history").insert({ 
+        email: config.email, platform: "instagram", platform_chat_id: senderId, customer_name: "Instagram User", sender_type: "user", message: promptText 
+    });
 
-    const promptText = type === "comment" 
-        ? `A user commented on an Instagram post: "${text}". Reply to them concisely and advise them to check their DMs.` 
-        : text;
+    let aiResponse = "System is undergoing scheduled maintenance. Please try again later.";
+    let wasSuccessful = false;
 
-    const payloadData = {
-        prompt: promptText,
-        systemPrompt: config.system_prompt || "You are an AI Assistant for Instagram. Keep responses concise.",
-        history: historyArray,
-        apiKey: config.user_api_key,
-        model: isOmni ? undefined : aiProvider,
-        email: config.email,
-        message: promptText,
-        platform: "instagram",
-        userPhoneOrChatId: senderId
-    };
-
-    let aiReply = "Service currently unavailable.";
-    try {
-        const engineRes = await fetch(`${baseUrl}${targetEndpoint}`, {
-            method: "POST",
-            headers: { 
-                "Authorization": `Bearer ${process.env.CLAWLINK_MASTER_SECRET}`,
-                "Content-Type": "application/json" 
-            },
-            body: JSON.stringify(payloadData)
-        });
-
-        const engineData = await engineRes.json();
-        if (engineRes.ok && engineData.reply) {
-            aiReply = engineData.reply;
-        }
-    } catch (e) {
-        console.error("[IG_PROCESSOR_ERROR] Failed to communicate with internal AI engine:", e);
-    }
+    const words = promptText.split(/\s+/).length;
+    const usageRatio = isUnlimited ? 0 : (tokensUsed / tokensAllocated) * 100;
     
-    // 🚀 DEDUCT TOKENS AFTER SUCCESSFUL AI REPLY
-    const calculatedTokens = Math.ceil((promptText.length + aiReply.length) / 3);
-    const updatePayload: any = { messages_used_this_month: (config.messages_used_this_month || 0) + 1 };
-    if (!isUnlimited) updatePayload.tokens_used = tokensUsed + calculatedTokens;
-    await supabase.from("user_configs").update(updatePayload).eq("id", config.id);
+    const GEMINI_CHEAP = "gemini-3.1-flash-lite"; const GEMINI_MID = "gemini-3.1-flash"; const GEMINI_PREMIUM = "gemini-3.1-pro";    
+    const GPT_CHEAP = "gpt-4.1-nano"; const GPT_MID = "gpt-5.2"; const GPT_PREMIUM = "gpt-5.4"; 
+    const CLAUDE_CHEAP = "claude-3-haiku-20240307"; const CLAUDE_MID = "claude-sonnet-4.6"; const CLAUDE_PREMIUM = "claude-opus-4.6";
 
-    let finalDbMessage = aiReply;
+    let targetProvider = provider;
+    let targetModel = "";
+
+    if (provider === "omni") {
+        if (usageRatio >= 80) { targetProvider = "google"; targetModel = GEMINI_CHEAP; } 
+        else if (usageRatio >= 60) { targetProvider = "openai"; targetModel = words < 40 ? GPT_CHEAP : GPT_MID; } 
+        else {
+            if (words < 40) { targetProvider = "google"; targetModel = GEMINI_MID; }
+            else if (words < 150) { targetProvider = "openai"; targetModel = GPT_MID; }
+            else { targetProvider = "anthropic"; targetModel = CLAUDE_PREMIUM; } 
+        }
+    } else {
+        if (usageRatio >= 85) {
+            if (provider === "openai") targetModel = GPT_CHEAP;
+            else if (provider === "anthropic") targetModel = CLAUDE_CHEAP;
+            else targetModel = GEMINI_CHEAP;
+        } else {
+            if (provider === "openai") targetModel = words < 40 ? GPT_CHEAP : (words > 150 ? GPT_PREMIUM : GPT_MID);
+            else if (provider === "anthropic") targetModel = words < 40 ? CLAUDE_CHEAP : (words > 150 ? CLAUDE_PREMIUM : CLAUDE_MID);
+            else targetModel = words < 40 ? GEMINI_CHEAP : (words > 150 ? GEMINI_PREMIUM : GEMINI_MID);
+        }
+    }
+
+    try {
+        if (targetProvider === "anthropic") aiResponse = await callClaude(targetModel, fullSystemContext, historyArray, promptText);
+        else if (targetProvider === "openai") aiResponse = await callOpenAI(targetModel, fullSystemContext, historyArray, promptText);
+        else aiResponse = await callGemini(targetModel, fullSystemContext, historyArray, promptText);
+        wasSuccessful = true;
+    } catch (err1) {
+        console.error(`[EXECUTION_FAILURE] Primary model ${targetModel} rejected request. Defaulting to fallback.`);
+        try {
+            aiResponse = await callGemini(GEMINI_CHEAP, fullSystemContext, historyArray, promptText);
+            wasSuccessful = true;
+        } catch (fallbackErr) { console.error("Total Fallback Exhaustion"); }
+    }
+
+    if (wasSuccessful) {
+        const calculatedTokens = Math.ceil((promptText.length + aiResponse.length) / 3);
+        const updatePayload: any = { messages_used_this_month: (config.messages_used_this_month || 0) + 1 };
+        if (!isUnlimited) updatePayload.tokens_used = tokensUsed + calculatedTokens;
+        await supabase.from("user_configs").update(updatePayload).eq("id", config.id);
+    }
+
+    // ==========================================
+    // 📤 DISPATCH RESPONSE TO META GRAPH API
+    // ==========================================
+    let finalDbMessage = aiResponse;
 
     if (type === "dm") {
         const metaRes = await fetch(`https://graph.facebook.com/v18.0/me/messages?access_token=${metaApiToken}`, {
             method: "POST", headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ recipient: { id: senderId }, message: { text: aiReply } })
+            body: JSON.stringify({ recipient: { id: senderId }, message: { text: aiResponse } })
         });
-        
         const metaResponseData = await metaRes.json();
-        if (metaResponseData.error) {
-             finalDbMessage = `[META_ERROR] Code: ${metaResponseData.error.code} | Msg: ${metaResponseData.error.message}`;
-        }
+        if (metaResponseData.error) finalDbMessage = `[META_ERROR] ${metaResponseData.error.message}`;
 
     } else if (type === "comment") {
+        // Reply to comment first, then send DM
         await fetch(`https://graph.facebook.com/v18.0/${commentId}/replies?access_token=${metaApiToken}`, {
             method: "POST", headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ message: "Please check your DMs for more details." })
+            body: JSON.stringify({ message: "I've sent you a direct message with more details! 🚀" })
         });
         
         const dmRes = await fetch(`https://graph.facebook.com/v18.0/me/messages?access_token=${metaApiToken}`, {
             method: "POST", headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ recipient: { id: senderId }, message: { text: aiReply } })
+            body: JSON.stringify({ recipient: { id: senderId }, message: { text: aiResponse } })
         });
         const dmResponseData = await dmRes.json();
-        if (dmResponseData.error) {
-             finalDbMessage = `[META_ERROR] Code: ${dmResponseData.error.code} | Msg: ${dmResponseData.error.message}`;
-        }
+        if (dmResponseData.error) finalDbMessage = `[META_ERROR] ${dmResponseData.error.message}`;
     }
 
-    await supabase.from("chat_history").insert([
-        { email: config.email, platform: "instagram", platform_chat_id: senderId, sender_type: "user", message: text },
-        { email: config.email, platform: "instagram", platform_chat_id: senderId, sender_type: "bot", message: finalDbMessage }
-    ]);
+    await supabase.from("chat_history").insert({ 
+        email: config.email, platform: "instagram", platform_chat_id: senderId, customer_name: "Instagram User", sender_type: "bot", message: finalDbMessage 
+    });
 }
