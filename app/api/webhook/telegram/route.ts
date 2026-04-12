@@ -1,4 +1,15 @@
- import { NextResponse } from "next/server";
+/**
+ * ==============================================================================================
+ * CLAWLINK ENTERPRISE TELEGRAM AI WEBHOOK
+ * ==============================================================================================
+ * @file app/api/webhook/telegram/route.ts
+ * @description The core engine for Telegram communications. Contains PLG Gatekeeper 
+ * logic to block unpaid users and Omni-routing logic for active accounts.
+ * * ALL RIGHTS RESERVED. CLAWLINK INC.
+ * ==============================================================================================
+ */
+
+import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
 export const dynamic = "force-dynamic";
@@ -26,8 +37,8 @@ CRITICAL INSTRUCTION: You are an Advanced AI Support Agent operating on the Claw
 3. ADAPTIVE PERSONA (GENERAL CHAT): For general questions, greetings, or industry knowledge, you must dynamically adapt your tone, language, and behavior based EXACTLY on the "System Instructions" provided below.
 `;
 
-async function generateEmbedding(text: string, key: string | null) {
-    const apiKey = key || process.env.GEMINI_API_KEY;
+async function generateEmbedding(text: string) {
+    const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) return null;
     try {
         const embedUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-embedding-001:embedContent?key=${apiKey}`;
@@ -48,8 +59,8 @@ async function generateEmbedding(text: string, key: string | null) {
     }
 }
 
-async function callGemini(model: string, systemPrompt: string, history: any[], userText: string, key: string | null) {
-    const apiKey = key || process.env.GEMINI_API_KEY;
+async function callGemini(model: string, systemPrompt: string, history: any[], userText: string) {
+    const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) throw new Error("API_KEY missing");
     
     let contents: any[] = [];
@@ -78,8 +89,8 @@ async function callGemini(model: string, systemPrompt: string, history: any[], u
     return data.candidates[0].content.parts[0].text;
 }
 
-async function callOpenAI(model: string, systemPrompt: string, history: any[], userText: string, key: string | null) {
-    const apiKey = key || process.env.OPENAI_API_KEY;
+async function callOpenAI(model: string, systemPrompt: string, history: any[], userText: string) {
+    const apiKey = process.env.OPENAI_API_KEY;
     if (!apiKey) throw new Error("API_KEY missing");
     
     const messages = [
@@ -97,8 +108,8 @@ async function callOpenAI(model: string, systemPrompt: string, history: any[], u
     return data.choices[0].message.content;
 }
 
-async function callClaude(model: string, systemPrompt: string, history: any[], userText: string, key: string | null) {
-    const apiKey = key || process.env.ANTHROPIC_API_KEY;
+async function callClaude(model: string, systemPrompt: string, history: any[], userText: string) {
+    const apiKey = process.env.ANTHROPIC_API_KEY;
     if (!apiKey) throw new Error("API_KEY missing");
     
     let mergedMessages: any[] = [];
@@ -130,8 +141,8 @@ async function callClaude(model: string, systemPrompt: string, history: any[], u
     return data.content[0].text;
 }
 
-async function transcribeAudio(fileId: string, botToken: string, key: string | null) {
-    const apiKey = key || process.env.OPENAI_API_KEY;
+async function transcribeAudio(fileId: string, botToken: string) {
+    const apiKey = process.env.OPENAI_API_KEY;
     if (!apiKey) return null;
     try {
         const fileRes = await fetch(`https://api.telegram.org/bot${botToken}/getFile?file_id=${fileId}`);
@@ -181,7 +192,7 @@ export async function POST(req: Request) {
             return NextResponse.json({ success: true });
         }
 
-        const { data: config, error: configError } = await configQuery.limit(1).single();
+        const { data: config, error: configError } = await configQuery.order("created_at", { ascending: false }).limit(1).single();
         
         if (configError || !config || !config.telegram_token) {
             console.warn("[SECURITY_GUARD] Unauthorized webhook access attempt rejected.");
@@ -192,20 +203,20 @@ export async function POST(req: Request) {
         const configId = config.id; 
         const telegramToken = config.telegram_token;
         
-        const systemPrompt = config.system_prompt_telegram || config.system_prompt || "You are a helpful AI assistant.";
-        const userApiKey = config.user_api_key; 
+        const systemPrompt = config.system_prompt_telegram || config.system_prompt || "You are a professional, helpful, and concise AI agent.";
         
         let rawProvider = (config.ai_provider || config.selected_model || "openai").toLowerCase();
         let provider = "openai"; 
         
         if (rawProvider.includes("omni") || rawProvider.includes("nexus")) provider = "omni";
-        else if (rawProvider.includes("claude") || rawProvider.includes("anthropic")) provider = "anthropic";
+        else if (rawProvider.includes("claude") || rawProvider.includes("anthropic") || rawProvider.includes("opus")) provider = "anthropic";
         else if (rawProvider.includes("gemini") || rawProvider.includes("google")) provider = "google";
 
         const currentPlan = (config.plan_tier || config.plan || "free").toLowerCase();
         
+        // 🚀 PLG GATEKEEPER: Instantly blocks free users with an upsell message
         if (currentPlan === "free" || currentPlan === "starter" || config.plan_status !== "Active") {
-            const sleepMsg = "🤖 *ClawLink AI:* This agent is currently sleeping. The owner needs to activate their plan in the dashboard to enable 24/7 autonomous replies.";
+            const sleepMsg = "🤖 *ClawLink AI:* This agent is currently sleeping. Please activate a plan in the ClawLink Dashboard to enable 24/7 autonomous intelligence.";
             await fetch(`https://api.telegram.org/bot${telegramToken}/sendMessage`, {
                 method: "POST", headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ chat_id: chatId, text: sleepMsg, parse_mode: "Markdown" })
@@ -214,15 +225,15 @@ export async function POST(req: Request) {
             return NextResponse.json({ success: true });
         }
 
-        const isUnlimited = config.is_unlimited || config.plan === "adv_max" || config.plan === "yearly";
+        const isUnlimited = config.is_unlimited || currentPlan === "adv_max" || currentPlan === "yearly" || currentPlan === "ultra";
         const tokensUsed = config.tokens_used || 0;
-        const tokensAllocated = config.tokens_allocated || 10000;
+        const tokensAllocated = config.tokens_allocated || config.available_tokens || 10000;
         
-        const expiryDate = new Date(config.plan_expiry_date);
+        const expiryDate = new Date(config.plan_expiry_date || new Date());
         const isExpired = config.plan_expiry_date ? (new Date() > expiryDate) : false;
 
         if (isExpired || (!isUnlimited && tokensUsed >= tokensAllocated)) {
-            const maintenanceMsg = "System Note: The AI assistant for this account is currently offline due to account limits. Please contact the administrator.";
+            const maintenanceMsg = "System Note: The AI assistant for this account is currently offline due to resource limits. Please contact the administrator.";
                 
             await fetch(`https://api.telegram.org/bot${telegramToken}/sendMessage`, {
                 method: "POST", headers: { "Content-Type": "application/json" },
@@ -240,7 +251,7 @@ export async function POST(req: Request) {
                 body: JSON.stringify({ chat_id: chatId, action: "typing" })
             });
 
-            const transcription = await transcribeAudio(body.message.voice.file_id, telegramToken, userApiKey);
+            const transcription = await transcribeAudio(body.message.voice.file_id, telegramToken);
             if (!transcription) {
                 await fetch(`https://api.telegram.org/bot${telegramToken}/sendMessage`, {
                     method: "POST", headers: { "Content-Type": "application/json" },
@@ -254,7 +265,7 @@ export async function POST(req: Request) {
             if (body.message.text === "/start") return NextResponse.json({ success: true });
             
             let rawUserText = sanitizeInput(body.message.text);
-            userText = rawUserText.length > 800 ? rawUserText.substring(0, 800) + "..." : rawUserText;
+            userText = rawUserText.length > 1000 ? rawUserText.substring(0, 1000) + "..." : rawUserText;
             crmLogMessage = userText;
         }
 
@@ -265,7 +276,7 @@ export async function POST(req: Request) {
 
         let customKnowledge = "";
         try {
-            const queryVector = await generateEmbedding(userText, provider === "google" ? userApiKey : null);
+            const queryVector = await generateEmbedding(userText);
             if (queryVector) {
                 const { data: matchedDocs } = await supabase.rpc("match_knowledge", {
                     query_embedding: queryVector, match_threshold: 0.65, match_count: 3, p_user_email: ownerEmail
@@ -282,7 +293,7 @@ export async function POST(req: Request) {
             .eq("email", ownerEmail)
             .eq("platform_chat_id", chatId)
             .order("created_at", { ascending: false })
-            .limit(20);
+            .limit(10);
 
         let historyArray: any[] = [];
         if (pastChats && pastChats.length > 0) {
@@ -304,17 +315,18 @@ export async function POST(req: Request) {
         const words = userText.split(/\s+/).length;
         const usageRatio = isUnlimited ? 0 : (tokensUsed / tokensAllocated) * 100;
         
-        const GEMINI_CHEAP = "gemini-1.5-flash-8b"; 
-        const GEMINI_MID = "gemini-1.5-flash";       
-        const GEMINI_PREMIUM = "gemini-1.5-pro";    
+        // 🚀 2026 OMNI MODEL MAPPING
+        const GEMINI_CHEAP = "gemini-3.1-flash-lite"; 
+        const GEMINI_MID = "gemini-3.1-flash";       
+        const GEMINI_PREMIUM = "gemini-3.1-pro";    
         
-        const GPT_CHEAP = "gpt-4o-mini";
-        const GPT_MID = "gpt-4o";
-        const GPT_PREMIUM = "gpt-4-turbo"; 
+        const GPT_CHEAP = "gpt-4.1-nano";
+        const GPT_MID = "gpt-5.2";
+        const GPT_PREMIUM = "gpt-5.4"; 
         
         const CLAUDE_CHEAP = "claude-3-haiku-20240307";
-        const CLAUDE_MID = "claude-3-5-sonnet-20240620";
-        const CLAUDE_PREMIUM = "claude-3-opus-20240229";
+        const CLAUDE_MID = "claude-sonnet-4.6";
+        const CLAUDE_PREMIUM = "claude-opus-4.6";
 
         let targetProvider = provider;
         let targetModel = "";
@@ -342,9 +354,9 @@ export async function POST(req: Request) {
         }
 
         try {
-            if (targetProvider === "anthropic") aiResponse = await callClaude(targetModel, fullSystemContext, historyArray, userText, userApiKey);
-            else if (targetProvider === "openai") aiResponse = await callOpenAI(targetModel, fullSystemContext, historyArray, userText, userApiKey);
-            else aiResponse = await callGemini(targetModel, fullSystemContext, historyArray, userText, userApiKey);
+            if (targetProvider === "anthropic") aiResponse = await callClaude(targetModel, fullSystemContext, historyArray, userText);
+            else if (targetProvider === "openai") aiResponse = await callOpenAI(targetModel, fullSystemContext, historyArray, userText);
+            else aiResponse = await callGemini(targetModel, fullSystemContext, historyArray, userText);
             wasSuccessful = true;
         } catch (err1) {
             console.error(`[EXECUTION_FAILURE] Primary model ${targetModel} rejected request.`);
@@ -352,21 +364,21 @@ export async function POST(req: Request) {
             if (provider === "omni") {
                 console.log("[OMNI_FALLBACK] Routing to secondary engine...");
                 try {
-                    aiResponse = await callOpenAI(GPT_CHEAP, fullSystemContext, historyArray, userText, userApiKey);
+                    aiResponse = await callOpenAI(GPT_CHEAP, fullSystemContext, historyArray, userText);
                     wasSuccessful = true;
                 } catch (err2) {
                     console.log("[OMNI_FALLBACK_2] Routing to tertiary engine...");
                     try {
-                        aiResponse = await callGemini(GEMINI_CHEAP, fullSystemContext, historyArray, userText, userApiKey);
+                        aiResponse = await callGemini(GEMINI_CHEAP, fullSystemContext, historyArray, userText);
                         wasSuccessful = true;
                     } catch (err3) { console.error("[CRITICAL_FAILURE] Omni cross-provider fallback exhausted."); }
                 }
             } else {
                 console.log(`[INTRA_PROVIDER_FALLBACK] Downgrading to standard tier for ${provider}.`);
                 try {
-                    if (provider === "anthropic") aiResponse = await callClaude(CLAUDE_CHEAP, fullSystemContext, historyArray, userText, userApiKey);
-                    else if (provider === "openai") aiResponse = await callOpenAI(GPT_CHEAP, fullSystemContext, historyArray, userText, userApiKey);
-                    else aiResponse = await callGemini(GEMINI_CHEAP, fullSystemContext, historyArray, userText, userApiKey);
+                    if (provider === "anthropic") aiResponse = await callClaude(CLAUDE_CHEAP, fullSystemContext, historyArray, userText);
+                    else if (provider === "openai") aiResponse = await callOpenAI(GPT_CHEAP, fullSystemContext, historyArray, userText);
+                    else aiResponse = await callGemini(GEMINI_CHEAP, fullSystemContext, historyArray, userText);
                     wasSuccessful = true;
                 } catch (err2) {
                     console.error(`[CRITICAL_FAILURE] Intra-provider fallback failed for ${provider}.`);
