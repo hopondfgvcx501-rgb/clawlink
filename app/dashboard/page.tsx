@@ -5,7 +5,7 @@
  * CLAWLINK ENTERPRISE COMMAND CENTER (DASHBOARD)
  * ==============================================================================================
  * @file app/dashboard/page.tsx
- * @version 9.6.3 (Ultimate DB Mapping Fix)
+ * @version 9.6.4 (Mobile UI & Sticky Payment Footer Fixed)
  * @description The central hub for users to monitor their AI Agents.
  * Enforces PLG by dynamically displaying current configuration and gating 
  * the "Go Live" (Payment) logic directly from this interface.
@@ -35,7 +35,7 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 
 /**
  * ==============================================================================================
- * ENTERPRISE PRICING MATRICES (2026 UPDATED NAMES)
+ * ENTERPRISE PRICING MATRICES
  * ==============================================================================================
  */
 const PRICING_DATA: Record<string, any> = {
@@ -185,10 +185,9 @@ export default function Dashboard() {
 
   /**
    * ==============================================================================================
-   * CORE LOGIC: BULLETPROOF DATABASE MAPPING
+   * CORE LOGIC: Dynamic State Evaluation
    * ==============================================================================================
    */
-  // Checks all possible DB fields where the model might have been saved
   const rawDbModel = String(userData?.ai_model || userData?.current_model_version || userData?.selected_model || userData?.ai_provider || "gpt").toLowerCase();
   
   let pricingKey = "gpt-5.4 Pro";
@@ -260,7 +259,8 @@ export default function Dashboard() {
             telegram_token: userData?.telegram_token || "",
             whatsapp_phone_id: userData?.whatsapp_phone_id || "",
             whatsapp_number: userData?.whatsapp_number || "",
-            selected_channel: userData?.selected_channel || "widget"
+            selected_channel: userData?.selected_channel || "widget",
+            selected_model: currentPricing.name
           }
         }),
       });
@@ -311,7 +311,7 @@ export default function Dashboard() {
           email: session.user.email,
           amount: activePlanObj.usd,
           currency: "usd",
-          model: currentPricing.name, // Sends exactly "Claude Opus 4.6" etc.
+          model: currentPricing.name,
           isRenewal: !isFreePlan
         }),
       });
@@ -483,7 +483,6 @@ export default function Dashboard() {
 
   const totalMsgs = (stats?.platformStats?.whatsapp || 0) + (stats?.platformStats?.telegram || 0) + (stats?.platformStats?.web || 0);
 
-  // 🚀 DYNAMIC LIVE CHANNEL INDICATOR LOGIC 
   const exactSelectedChannel = (userData?.selected_channel || "").toLowerCase();
   
   const hasTgToken = !!userData?.telegram_token && userData?.telegram_token !== "";
@@ -577,7 +576,9 @@ export default function Dashboard() {
   };
 
   const btn = "transition-all duration-[120ms] ease-out active:scale-[0.93] transform-gpu will-change-transform";
-  const gridColsClass = isOmniActive ? "md:grid-cols-2 max-w-2xl" : "md:grid-cols-2 lg:grid-cols-4 max-w-5xl";
+  
+  // 🚀 FIXED: Ensure grid switches nicely on mobile vs desktop
+  const gridColsClass = isOmniActive ? "grid-cols-1 sm:grid-cols-2 max-w-2xl" : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 max-w-5xl";
 
   return (
     <div className="w-full min-h-screen bg-[#07070A] text-[#E8E8EC] font-sans relative selection:bg-orange-500/30 overflow-y-auto custom-scrollbar flex flex-col">
@@ -591,49 +592,53 @@ export default function Dashboard() {
               initial={{ opacity: 0, scale: 0.95, y: 10 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 10 }}
-              className="bg-[#0A0A0C] border border-white/10 rounded-2xl p-8 max-w-5xl w-full relative shadow-[0_20px_60px_rgba(0,0,0,0.8)]"
+              className="bg-[#0A0A0C] border border-white/10 rounded-2xl p-5 sm:p-8 max-w-5xl w-full relative shadow-[0_20px_60px_rgba(0,0,0,0.8)] max-h-[90vh] flex flex-col"
             >
-              <button onClick={() => setShowPricingPopup(false)} className="absolute top-4 right-4 p-2 bg-white/5 hover:bg-white/10 rounded-full text-gray-400 hover:text-white transition-colors">
+              <button onClick={() => setShowPricingPopup(false)} className="absolute top-4 right-4 z-50 p-2 bg-white/5 hover:bg-white/10 rounded-full text-gray-400 hover:text-white transition-colors">
                 <X className="w-5 h-5"/>
               </button>
               
-              <div className="text-center mb-8">
-                <h2 className="text-2xl font-black text-white uppercase tracking-widest mb-2 flex items-center justify-center gap-2">
-                  <Globe className="w-6 h-6 text-orange-500"/> SECURE DEPLOYMENT PLAN
-                </h2>
-                <p className="text-sm text-gray-400">Select a tier to activate your <span className="text-white font-bold">{currentPricing.name}</span> engine.</p>
+              {/* 🚀 FIXED: Scrollable content area so buttons never hide on mobile */}
+              <div className="overflow-y-auto custom-scrollbar flex-1 -mx-2 px-2 pb-2">
+                  <div className="text-center mb-6 mt-2">
+                    <h2 className="text-xl sm:text-2xl font-black text-white uppercase tracking-widest mb-2 flex items-center justify-center gap-2">
+                      <Globe className="w-5 h-5 sm:w-6 sm:h-6 text-orange-500"/> SECURE DEPLOYMENT PLAN
+                    </h2>
+                    <p className="text-xs sm:text-sm text-gray-400">Select a tier to activate your <span className="text-white font-bold">{currentPricing.name}</span> engine.</p>
+                  </div>
+
+                  <div className={`grid gap-4 sm:gap-6 mb-4 mx-auto text-left ${gridColsClass}`}>
+                    {currentPricing?.plans?.map((plan: any) => {
+                      const isActive = selectedRenewalPlan === plan.id;
+                      return (
+                        <div key={plan.id} onClick={() => !isRenewing && setSelectedRenewalPlan(plan.id)}
+                          className={`relative p-5 rounded-2xl cursor-pointer transition-all duration-150 ${btn} ${isActive ? "scale-[1.02]" : "hover:scale-[1.01]"}`}
+                          style={{
+                            background: isActive ? "rgba(255,255,255,0.05)" : "rgba(255,255,255,0.02)",
+                            border: `1px solid ${isActive ? plan.accent : "rgba(255,255,255,0.07)"}`,
+                            boxShadow: isActive ? `0 0 28px ${plan.accent}40` : "none"
+                          }}>
+                          {plan.badge && <div className="absolute -top-3 left-1/2 -translate-x-1/2 text-white text-[9px] font-bold uppercase px-3 py-1 rounded-full tracking-widest" style={{ background: plan.accent }}>{plan.badge}</div>}
+                          <h3 className={`font-bold uppercase text-[11px] tracking-widest mb-2 ${plan.color}`}>{plan.name}</h3>
+                          <div className="text-[1.6rem] sm:text-[1.9rem] font-black text-white mb-2">{currencySymbol}{(currency === "INR" ? (plan.inr || 0) : (plan.usd || 0)).toLocaleString()}<span style={{ fontSize: 13, fontWeight: 400, color: "#888" }}>{plan.isYearly ? "/yr" : "/mo"}</span></div>
+                          <p className="text-[11px] text-gray-400 leading-relaxed mb-3 h-auto sm:h-8">{plan.desc}</p>
+                          <span className="inline-block px-2 py-1 bg-white/5 rounded text-[10px] text-gray-300 border border-white/10">{plan.msgs}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
               </div>
 
-              <div className={`grid grid-cols-1 gap-6 mb-8 mx-auto text-left ${gridColsClass}`}>
-                {currentPricing?.plans?.map((plan: any) => {
-                  const isActive = selectedRenewalPlan === plan.id;
-                  return (
-                    <div key={plan.id} onClick={() => !isRenewing && setSelectedRenewalPlan(plan.id)}
-                      className={`relative p-5 rounded-2xl cursor-pointer transition-all duration-150 ${btn} ${isActive ? "scale-[1.02]" : "hover:scale-[1.01]"}`}
-                      style={{
-                        background: isActive ? "rgba(255,255,255,0.05)" : "rgba(255,255,255,0.02)",
-                        border: `1px solid ${isActive ? plan.accent : "rgba(255,255,255,0.07)"}`,
-                        boxShadow: isActive ? `0 0 28px ${plan.accent}40` : "none"
-                      }}>
-                      {plan.badge && <div className="absolute -top-3 left-1/2 -translate-x-1/2 text-white text-[9px] font-bold uppercase px-3 py-1 rounded-full tracking-widest" style={{ background: plan.accent }}>{plan.badge}</div>}
-                      <h3 className={`font-bold uppercase text-[11px] tracking-widest mb-2 ${plan.color}`}>{plan.name}</h3>
-                      <div className="text-[1.9rem] font-black text-white mb-2">{currencySymbol}{(currency === "INR" ? (plan.inr || 0) : (plan.usd || 0)).toLocaleString()}<span style={{ fontSize: 13, fontWeight: 400, color: "#888" }}>{plan.isYearly ? "/yr" : "/mo"}</span></div>
-                      <p className="text-[11px] text-gray-400 leading-relaxed mb-3 h-8">{plan.desc}</p>
-                      <span className="inline-block px-2 py-1 bg-white/5 rounded text-[10px] text-gray-300 border border-white/10">{plan.msgs}</span>
-                    </div>
-                  );
-                })}
-              </div>
-
-              <div className="flex flex-col sm:flex-row gap-4 w-full max-w-lg mx-auto justify-center">
+              {/* 🚀 FIXED: Sticky Footer keeps the Pay button always visible! */}
+              <div className="mt-4 pt-4 border-t border-white/10 flex flex-col sm:flex-row gap-4 w-full max-w-lg mx-auto justify-center shrink-0">
                 {currency === "INR" ? (
                   <button onClick={triggerRazorpayPayment} disabled={isRenewing || !selectedRenewalPlan}
-                    className={`bg-gradient-to-r from-orange-500 to-amber-500 text-white px-10 py-4 rounded-xl font-black uppercase tracking-widest flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(249,115,22,0.4)] disabled:opacity-50 ${btn}`}>
+                    className={`bg-gradient-to-r from-orange-500 to-amber-500 text-white w-full px-6 sm:px-10 py-3.5 sm:py-4 rounded-xl font-black text-xs sm:text-sm uppercase tracking-widest flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(249,115,22,0.4)] disabled:opacity-50 ${btn}`}>
                     {isRenewing ? "PROCESSING..." : `PAY VIA RAZORPAY — ${currencySymbol}${(getCurrentPrice() || 0).toLocaleString()}`}
                   </button>
                 ) : (
                   <button onClick={triggerStripePayment} disabled={isRenewing || !selectedRenewalPlan}
-                    className={`bg-[#635BFF] text-white px-10 py-4 rounded-xl font-black uppercase tracking-widest flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(99,91,255,0.4)] disabled:opacity-50 ${btn}`}>
+                    className={`bg-[#635BFF] text-white w-full px-6 sm:px-10 py-3.5 sm:py-4 rounded-xl font-black text-xs sm:text-sm uppercase tracking-widest flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(99,91,255,0.4)] disabled:opacity-50 ${btn}`}>
                     {isRenewing ? "PROCESSING..." : `PAY VIA STRIPE — ${currencySymbol}${(getCurrentPrice() || 0).toLocaleString()}`}
                   </button>
                 )}
