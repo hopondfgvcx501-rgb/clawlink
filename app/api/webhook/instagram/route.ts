@@ -1,12 +1,48 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
-export const maxDuration = 45;
+export const runtime = "edge";
+export const dynamic = "force-dynamic";
 
+// 🚀 INITIALIZE SUPABASE
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
 const supabase = createClient(supabaseUrl, supabaseKey);
 
+// 🛡️ CORS HEADERS
+const corsHeaders = {
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type",
+};
+
+export async function OPTIONS() {
+    return new NextResponse(null, { status: 204, headers: corsHeaders });
+}
+
+// =========================================================================
+// 🛡️ SECURITY LOCK: ENTERPRISE DATA SANITIZER (XSS & Injection Blocker)
+// =========================================================================
+function sanitizeInput(input: string | null | undefined): string {
+    if (!input) return "";
+    return input
+        .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, "") // Remove malicious scripts
+        .replace(/<[^>]*>?/gm, "") // Remove HTML tags
+        .replace(/--/g, "") // Prevent SQL comment injection
+        .trim();
+}
+
+const ENTERPRISE_GUARDRAIL = `
+CRITICAL INSTRUCTION: You are an Enterprise AI Support Agent. 
+1. ANTI-HALLUCINATION LOCK: You must ONLY use the provided Company Knowledge to answer questions. 
+2. ZERO SPECULATION: If the answer is NOT explicitly written in the provided context, DO NOT guess, make up prices, or create policies.
+3. HUMAN HANDOFF: If the user asks something outside the Knowledge Base, or seems frustrated/angry, reply EXACTLY with: "I apologize, but I don't have that specific information. Let me connect you with a human support agent who can help you right away."
+4. TONE: Be professional, concise, and highly polite. Never argue with the customer.
+`;
+
+// =========================================================================
+// 1. 🌐 GET REQUEST: META WEBHOOK VERIFICATION
+// =========================================================================
 export async function GET(req: Request) {
     const { searchParams } = new URL(req.url);
     const mode = searchParams.get("hub.mode");
@@ -20,6 +56,9 @@ export async function GET(req: Request) {
     return new NextResponse("Forbidden", { status: 403 });
 }
 
+// =========================================================================
+// 2. 🤖 POST REQUEST: INCOMING MESSAGES
+// =========================================================================
 export async function POST(req: Request) {
     try {
         const body = await req.json();
@@ -67,6 +106,9 @@ export async function POST(req: Request) {
     }
 }
 
+// =========================================================================
+// 🧠 PROCESSOR: DYNAMIC AI ROUTING
+// =========================================================================
 async function processDynamicAI(senderId: string, accountId: string, text: string, type: "dm" | "comment", req: Request, commentId?: string) {
     const { data: config, error: dbError } = await supabase
         .from("user_configs")
@@ -82,7 +124,7 @@ async function processDynamicAI(senderId: string, accountId: string, text: strin
     const metaApiToken = config.instagram_token.trim();
 
     // ==========================================
-    // 🛑 THE GATEKEEPER (Plan, Expiry & Limits Check) - SURGICALLY UPDATED
+    // 🛑 THE GATEKEEPER (Plan, Expiry & Limits Check) 
     // ==========================================
     const currentPlan = (config.plan_tier || config.plan || "free").toLowerCase();
 
@@ -97,10 +139,10 @@ async function processDynamicAI(senderId: string, accountId: string, text: strin
                 body: JSON.stringify({ recipient: { id: senderId }, message: { text: sleepMsg } })
             });
         }
-        return; // HALT EXECUTION: Stop Free-loaders
+        return; // HALT EXECUTION
     }
 
-    // 2. TOKEN & EXPIRY LIMITS CHECK (Your original logic)
+    // 2. TOKEN & EXPIRY LIMITS CHECK 
     const isUnlimited = config.is_unlimited || config.plan === "adv_max" || config.plan === "yearly";
     const tokensUsed = config.tokens_used || 0;
     const tokensAllocated = config.tokens_allocated || 10000;
@@ -124,6 +166,8 @@ async function processDynamicAI(senderId: string, accountId: string, text: strin
     // ✅ PROCEED TO AI PROCESSING
     const aiProvider = config.selected_model || "multi_model"; 
     const isOmni = aiProvider === "multi_model" || aiProvider === "omni";
+    
+    // 🔥 ROUTE SELECTION
     const targetEndpoint = isOmni ? "/api/omni" : "/api/ai";
 
     const { data: history } = await supabase
@@ -158,17 +202,24 @@ async function processDynamicAI(senderId: string, accountId: string, text: strin
         userPhoneOrChatId: senderId
     };
 
-    const engineRes = await fetch(`${baseUrl}${targetEndpoint}`, {
-        method: "POST",
-        headers: { 
-            "Authorization": `Bearer ${process.env.CLAWLINK_MASTER_SECRET}`,
-            "Content-Type": "application/json" 
-        },
-        body: JSON.stringify(payloadData)
-    });
+    let aiReply = "Service currently unavailable.";
+    try {
+        const engineRes = await fetch(`${baseUrl}${targetEndpoint}`, {
+            method: "POST",
+            headers: { 
+                "Authorization": `Bearer ${process.env.CLAWLINK_MASTER_SECRET}`,
+                "Content-Type": "application/json" 
+            },
+            body: JSON.stringify(payloadData)
+        });
 
-    const engineData = await engineRes.json();
-    const aiReply = engineData.reply || "Service currently unavailable.";
+        const engineData = await engineRes.json();
+        if (engineRes.ok && engineData.reply) {
+            aiReply = engineData.reply;
+        }
+    } catch (e) {
+        console.error("[IG_PROCESSOR_ERROR] Failed to communicate with internal AI engine:", e);
+    }
     
     // 🚀 DEDUCT TOKENS AFTER SUCCESSFUL AI REPLY
     const calculatedTokens = Math.ceil((promptText.length + aiReply.length) / 3);
