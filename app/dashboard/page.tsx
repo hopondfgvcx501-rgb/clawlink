@@ -5,10 +5,11 @@
  * CLAWLINK ENTERPRISE COMMAND CENTER (DASHBOARD)
  * ==============================================================================================
  * @file app/dashboard/page.tsx
- * @version 9.6.4 (Mobile UI & Sticky Payment Footer Fixed)
+ * @version 9.6.6 (Live Bot Redirect Opened for Free Users)
  * @description The central hub for users to monitor their AI Agents.
  * Enforces PLG by dynamically displaying current configuration and gating 
- * the "Go Live" (Payment) logic directly from this interface.
+ * the "Go Live" (Payment) logic directly from this interface. Allows free users 
+ * to redirect to their bot to trigger backend upgrade prompts.
  * * ALL RIGHTS RESERVED. CLAWLINK INC.
  * ==============================================================================================
  */
@@ -546,12 +547,8 @@ export default function Dashboard() {
   };
   const primaryChannel = getPrimaryLiveChannel();
 
+  // 🚀 FIXED: Always redirect users to their bot to let the backend Gatekeeper handle the upgrade message
   const handleOpenLiveBot = async () => {
-    if (!hasActivePlan) {
-      alert("⚠️ Your agent is currently sleeping. Please upgrade or renew your plan to activate it.");
-      return;
-    }
-
     if (exactSelectedChannel === "telegram" && hasTgToken) {
       try {
         const res = await fetch(`https://api.telegram.org/bot${userData.telegram_token}/getMe`);
@@ -571,13 +568,12 @@ export default function Dashboard() {
     } else if (exactSelectedChannel === "instagram" && hasIgId) {
         window.open("https://www.instagram.com/", "_blank"); 
     } else {
-      alert("⚠️ Infrastructure not fully provisioned. Please finalize your setup.");
+      alert("⚠️ Infrastructure not fully provisioned. Please connect your channel first.");
     }
   };
 
   const btn = "transition-all duration-[120ms] ease-out active:scale-[0.93] transform-gpu will-change-transform";
   
-  // 🚀 FIXED: Ensure grid switches nicely on mobile vs desktop
   const gridColsClass = isOmniActive ? "grid-cols-1 sm:grid-cols-2 max-w-2xl" : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 max-w-5xl";
 
   return (
@@ -598,7 +594,6 @@ export default function Dashboard() {
                 <X className="w-5 h-5"/>
               </button>
               
-              {/* 🚀 FIXED: Scrollable content area so buttons never hide on mobile */}
               <div className="overflow-y-auto custom-scrollbar flex-1 -mx-2 px-2 pb-2">
                   <div className="text-center mb-6 mt-2">
                     <h2 className="text-xl sm:text-2xl font-black text-white uppercase tracking-widest mb-2 flex items-center justify-center gap-2">
@@ -629,7 +624,6 @@ export default function Dashboard() {
                   </div>
               </div>
 
-              {/* 🚀 FIXED: Sticky Footer keeps the Pay button always visible! */}
               <div className="mt-4 pt-4 border-t border-white/10 flex flex-col sm:flex-row gap-4 w-full max-w-lg mx-auto justify-center shrink-0">
                 {currency === "INR" ? (
                   <button onClick={triggerRazorpayPayment} disabled={isRenewing || !selectedRenewalPlan}
@@ -676,9 +670,10 @@ export default function Dashboard() {
         </div>
 
         <div className="flex items-center gap-4">
+          {/* 🚀 FIXED: Button always says OPEN LIVE BOT */}
           <button onClick={handleOpenLiveBot}
             className={`hidden sm:flex items-center gap-2 bg-white text-black hover:bg-gray-100 px-5 py-2.5 rounded-full font-black text-[11px] uppercase tracking-widest shadow-[0_0_20px_rgba(255,255,255,0.15)] ${btn}`}>
-            <Bot className="w-4 h-4" /> {hasActivePlan ? "OPEN LIVE BOT" : "TEST INTEGRATION"} <ExternalLink className="w-3 h-3 ml-1" />
+            <Bot className="w-4 h-4" /> OPEN LIVE BOT <ExternalLink className="w-3 h-3 ml-1" />
           </button>
           <div className="hidden md:flex items-center bg-[#1A1A1A] border border-white/10 rounded-full px-4 py-2">
             <Search className="w-4 h-4 text-gray-500" />
@@ -794,8 +789,9 @@ export default function Dashboard() {
                 <Radio className="w-5 h-5"/>
               </div>
             </div>
+            {/* 🚀 FIXED: Button always says Open Live Bot and triggers redirect */}
             <button onClick={handleOpenLiveBot} className={`relative z-10 w-full py-3 rounded-xl text-[11px] font-bold uppercase tracking-widest transition-all bg-white/5 text-gray-300 border border-white/10 hover:bg-white/10 flex items-center justify-center gap-2 ${btn}`}>
-               {hasActivePlan ? "Open Live Bot" : "Test Integration"} <ExternalLink className="w-3 h-3"/>
+               Open Live Bot <ExternalLink className="w-3 h-3"/>
             </button>
           </motion.div>
         </div>
