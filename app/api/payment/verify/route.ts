@@ -18,8 +18,8 @@ export async function POST(req: Request) {
       email,
       plan,
       amount,
-      selected_model,     // 🚀 Yahan aayega 'gpt-5.2' ya 'claude-3-opus'
-      selected_channel    // 🚀 Yahan aayega 'whatsapp' ya 'telegram'
+      selected_model,     // Expected: 'gpt-5.4 Pro', 'Claude Opus 4.6', 'gemini 3.1 Pro', or 'omni 3 nexus'
+      selected_channel    // Expected: 'whatsapp', 'telegram', 'instagram', or 'widget'
     } = body;
 
     // 1. Verify Payment Signature (Security)
@@ -39,19 +39,20 @@ export async function POST(req: Request) {
     const currentPlan = (plan || "starter").toLowerCase();
     
     if (currentPlan === "pro") tokens = 500000;
-    if (currentPlan === "max") {
+    if (currentPlan === "max" || currentPlan === "adv_max" || currentPlan === "ultra") {
        tokens = 999999999;
        unlimited = true;
     }
 
-    // 3. 🚀 THE PERMANENT FIX: Update Supabase exactly with user's choices!
+    // 3. THE PERMANENT FIX: Update Supabase exactly with user's choices using 2026 models
     const { error: updateError } = await supabase
       .from("user_configs")
       .upsert({
         email: email.toLowerCase(),
         plan: currentPlan,
-        selected_model: selected_model || "gemini-1.5-flash",    // Saves exact model!
-        selected_channel: selected_channel || "telegram",        // Saves exact channel!
+        plan_status: "Active", // Ensure the plan is activated upon successful payment
+        selected_model: selected_model || "gpt-5.4 Pro",    // Fallback to the primary default 2026 model
+        selected_channel: selected_channel || "telegram",        
         tokens_allocated: tokens,
         is_unlimited: unlimited,
         updated_at: new Date().toISOString()
@@ -64,7 +65,7 @@ export async function POST(req: Request) {
       email: email.toLowerCase(),
       plan_name: currentPlan,
       amount: amount,
-      currency: "INR", // Change if using USD
+      currency: "INR", 
       status: "PAID",
       razorpay_order_id: razorpay_order_id
     });

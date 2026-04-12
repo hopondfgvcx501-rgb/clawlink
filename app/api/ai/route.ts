@@ -40,7 +40,15 @@ export async function POST(req: Request) {
       .eq("email", email)
       .single();
 
-    const selectedModel = config?.ai_model || "gpt-5.2";
+    // 🚀 FIXED: Dynamic string matching to DB values
+    const rawSelectedModel = (config?.ai_model || "gpt-5.4 Pro").toLowerCase();
+    
+    let selectedModel = "openai";
+    if (rawSelectedModel.includes("omni") || rawSelectedModel.includes("nexus")) selectedModel = "omni";
+    else if (rawSelectedModel.includes("claude") || rawSelectedModel.includes("opus")) selectedModel = "anthropic";
+    else if (rawSelectedModel.includes("gemini")) selectedModel = "gemini";
+    else selectedModel = "openai";
+
     const isUnlimited = config?.is_unlimited || false;
     const tokensUsed = config?.tokens_used || 0;
     const tokensAllocated = config?.available_tokens || 10000;
@@ -95,7 +103,7 @@ export async function POST(req: Request) {
     // ==========================================
     // 🧠 THE ROUTER ALGORITHM
     // ==========================================
-    if (selectedModel.includes("omni") || selectedModel.includes("nexus")) {
+    if (selectedModel === "omni") {
         // 🔄 OMNI CROSS-PROVIDER ROUTING
         console.log(`[ROUTER] Omni Engine Active. Complexity: ${words} words, Usage: ${usageRatio.toFixed(2)}%`);
         if (usageRatio >= 80) {
@@ -114,7 +122,7 @@ export async function POST(req: Request) {
         // Final Failsafe
         if (!wasSuccessful) wasSuccessful = await attemptFetch(GPT_CHEAP, "openai");
 
-    } else if (selectedModel.includes("claude") || selectedModel.includes("anthropic")) {
+    } else if (selectedModel === "anthropic") {
         // 🔹 INTRA-PROVIDER: CLAUDE ONLY
         console.log(`[ROUTER] Claude Only Active.`);
         let targetModel = CLAUDE_MID;
@@ -131,7 +139,7 @@ export async function POST(req: Request) {
                 }
             }
         }
-    } else if (selectedModel.includes("gemini") || selectedModel.includes("google")) {
+    } else if (selectedModel === "gemini") {
         // 🔹 INTRA-PROVIDER: GEMINI ONLY
         console.log(`[ROUTER] Gemini Only Active.`);
         let targetModel = GEMINI_MID;

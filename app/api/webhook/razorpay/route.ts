@@ -105,27 +105,27 @@ export async function POST(req: NextRequest) {
       const notes = paymentEntity.notes || {};
       const userEmail = (notes.email || paymentEntity.email || "").toLowerCase(); 
       const planName = (notes.plan_name || "plus").toLowerCase();
-      const rawModel = (notes.selected_model || "gpt-5.2").toLowerCase();
+      const rawModel = (notes.selected_model || notes.model || "gpt-5.4 Pro").toLowerCase();
       
       const selectedChannel = (notes.selected_channel || "widget").toLowerCase();
       const isRenewal = notes.is_renewal === "true" || notes.plan_type === "RENEWAL";
 
       if (userEmail) {
-        // 1. Establish Master Mapping for AI Providers and Exact Engine Versions
+        // 1. Establish Master Mapping for AI Providers and Exact Engine Versions (2026 UPDATE)
         let aiProvider = "openai";
-        let exactModelVersion = "gpt-4o-mini"; 
+        let exactModelVersion = "gpt-5.4 Pro"; 
 
-        if (rawModel.includes("claude") || rawModel.includes("anthropic")) {
+        if (rawModel.includes("claude") || rawModel.includes("anthropic") || rawModel.includes("opus")) {
             aiProvider = "anthropic";
-            exactModelVersion = "claude-3-opus-20240229";
+            exactModelVersion = "Claude Opus 4.6";
         }
         else if (rawModel.includes("gemini") || rawModel.includes("google")) {
             aiProvider = "google";
-            exactModelVersion = "gemini-1.5-flash-8b";
+            exactModelVersion = "gemini 3.1 Pro";
         }
         else if (rawModel.includes("omni") || rawModel.includes("multi_model") || rawModel.includes("nexus")) {
-            aiProvider = "multi_model";
-            exactModelVersion = "omni-nexus-engine";
+            aiProvider = "omni";
+            exactModelVersion = "omni 3 nexus";
         }
 
         // 2. Establish Strict Tier Limits
@@ -165,7 +165,9 @@ export async function POST(req: NextRequest) {
             plan_expiry_date: newExpiryDate.toISOString(),
             plan_status: 'Active',
             selected_channel: selectedChannel, 
-            current_model_version: exactModelVersion 
+            current_model_version: exactModelVersion,
+            ai_model: exactModelVersion, // Strictly sync with UI dashboard keys
+            ai_provider: aiProvider
         };
 
         // Extract sensitive credential tokens strictly from verified payload
@@ -175,8 +177,7 @@ export async function POST(req: NextRequest) {
         if (notes.whatsapp_number) payload.whatsapp_number = notes.whatsapp_number;
 
         if (!isRenewal) {
-            payload.selected_model = rawModel;  
-            payload.ai_provider = aiProvider; 
+            payload.selected_model = exactModelVersion;  
         } else {
             payload.tokens_used = 0;
             payload.messages_used_this_month = 0;
