@@ -471,7 +471,7 @@ export default function AdminDashboard() {
                         {clients.map((client, idx) => {
                           const isPremium = client.is_unlimited || client.plan?.toLowerCase() === 'max' || client.plan?.toLowerCase() === 'yearly' || client.plan?.toLowerCase() === 'pro';
                           const isExpired = client.plan_expiry_date ? new Date(client.plan_expiry_date) < new Date() : false;
-                          const isBlocked = client.tokens_allocated === 0 && !client.is_unlimited;
+                          const isBlocked = client.plan_status === "Killed" || (client.tokens_allocated === 0 && !client.is_unlimited); // 🚀 FIX: Consider plan_status
 
                           return (
                           <motion.tr 
@@ -546,12 +546,14 @@ export default function AdminDashboard() {
             ========================================== */}
         {activeTab === "users" && (
            <motion.div initial={{opacity: 0, y: 20}} animate={{opacity: 1, y: 0}} className="space-y-6">
-              <div className="panel">
-                <div className="panel-head">
-                  <div className="panel-title">User Management</div>
-                  <input className="bg-[#07070A] border border-white/10 rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:border-orange-500 text-white placeholder-gray-600" placeholder="Search by email..." style={{width: '240px'}}/>
+              <div className="bg-[#111113] border border-white/5 rounded-[1.5rem] overflow-hidden shadow-2xl">
+                <div className="p-6 md:px-8 border-b border-white/5 flex flex-col sm:flex-row justify-between items-start sm:items-center bg-[#0A0A0C] gap-4">
+                  <h2 className="text-sm font-black text-white uppercase tracking-widest flex items-center gap-3">
+                    <Users className="w-5 h-5 text-blue-500"/> User Management
+                  </h2>
+                  <input className="bg-[#07070A] border border-white/10 rounded-lg px-4 py-2.5 text-xs focus:outline-none focus:border-orange-500 text-white placeholder-gray-600 w-full sm:w-[240px] font-mono transition-colors" placeholder="Search by email..."/>
                 </div>
-                <div className="panel-body" style={{padding: 0}}>
+                <div className="overflow-x-auto custom-scrollbar">
                     <table className="w-full text-left text-sm whitespace-nowrap">
                       <thead className="bg-[#07070A] text-[9px] uppercase font-bold text-gray-500 tracking-widest border-b border-white/5">
                         <tr>
@@ -566,8 +568,12 @@ export default function AdminDashboard() {
                              <tr key={client.id} onClick={() => openClientDetails(client)} className="hover:bg-white/5 transition-colors cursor-pointer group">
                                 <td className="p-5 pl-8 text-white text-xs">{client.email}</td>
                                 <td className="p-5 text-[10px] font-black uppercase tracking-widest text-orange-500">{client.plan || "Starter"}</td>
-                                <td className="p-5 text-xs font-mono">1</td>
-                                <td className="p-5"><span className="badge green">Active</span></td>
+                                <td className="p-5 text-xs font-mono text-gray-400">1</td>
+                                <td className="p-5">
+                                   <span className={`text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded ${client.plan_status === "Active" ? "bg-green-500/10 text-green-400 border border-green-500/20" : client.plan_status === "Killed" ? "bg-red-500/10 text-red-400 border border-red-500/20" : "bg-yellow-500/10 text-yellow-400 border border-yellow-500/20"}`}>
+                                      {client.plan_status || "Pending"}
+                                   </span>
+                                </td>
                              </tr>
                          ))}
                       </tbody>
