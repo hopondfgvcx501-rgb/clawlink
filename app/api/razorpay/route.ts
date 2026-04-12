@@ -1,18 +1,25 @@
 import { NextResponse } from "next/server";
 import Razorpay from "razorpay";
 
-/* ─── 🚀 BACKEND SINGLE SOURCE OF TRUTH (HACKER-PROOF PRICING) ─── */
+/* ─── 🚀 BACKEND SINGLE SOURCE OF TRUTH (HACKER-PROOF PRICING 2026) ─── */
 const SECURE_PRICING: Record<string, any> = {
   "gemini 3.1 Pro": { plus: 5, pro: 999, ultra: 1999, adv_max: 49999 },
   "gpt-5.4 Pro": { plus: 5, pro: 1499, ultra: 2999, adv_max: 74999 },
   "Claude Opus 4.6": { plus: 5, pro: 1999, ultra: 3999, adv_max: 99999 },
   "omni 3 nexus": { monthly: 20916, yearly: 149999 }
 };
+
 export async function POST(req: Request) {
   try {
-    const { email, planName, selectedModel, planType, notes: frontendNotes } = await req.json();
+    const body = await req.json();
+    
+    // Safely extract payload variables, anticipating potential missing fields from the frontend
+    const { email, planName, selectedModel, model, planType, notes: frontendNotes } = body;
 
-    if (!email || !planName || !selectedModel) {
+    const actualEmail = email || frontendNotes?.email;
+    const actualPlan = (planName || frontendNotes?.plan_name || "plus").toLowerCase();
+
+    if (!actualEmail || !actualPlan) {
         return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
 
@@ -29,16 +36,24 @@ export async function POST(req: Request) {
       key_secret: keySecret,
     });
 
-    // 🔒 SECURITY CHECK: Lookup actual INR price from backend, completely IGNORE frontend amount
-    const safeModel = SECURE_PRICING[selectedModel] ? selectedModel : "gpt-5.2";
-    const secureInrPrice = SECURE_PRICING[safeModel][planName.toLowerCase()];
+    // 🔒 SECURITY CHECK: Robust model string parsing to prevent undefined errors
+    const rawModel = String(selectedModel || model || frontendNotes?.selected_model || frontendNotes?.model || "gpt-5.4 Pro").toLowerCase();
+    
+    let safeModel = "gpt-5.4 Pro";
+    if (rawModel.includes("omni") || rawModel.includes("nexus")) safeModel = "omni 3 nexus";
+    else if (rawModel.includes("claude") || rawModel.includes("opus")) safeModel = "Claude Opus 4.6";
+    else if (rawModel.includes("gemini")) safeModel = "gemini 3.1 Pro";
+
+    // Lookup actual INR price from backend, completely IGNORE frontend amount
+    const secureInrPrice = SECURE_PRICING[safeModel]?.[actualPlan];
 
     if (!secureInrPrice) {
+      console.error(`[RAZORPAY ERROR] Price mapping failed for Model: ${safeModel}, Plan: ${actualPlan}`);
       return NextResponse.json({ error: "Invalid plan or model selected" }, { status: 400 });
     }
 
-    // 🔒 SURGICAL FIX: Razorpay strictly expects integers in PAISE.
-    const safeAmount = secureInrPrice * 100;
+    // 🔒 SURGICAL FIX: Razorpay strictly expects integers in PAISE. Math.round prevents float errors.
+    const safeAmount = Math.round(secureInrPrice * 100);
 
     // 🚀 SURGICAL FIX: Dynamically merge all frontendNotes to prevent Data Drop!
     const options = {
@@ -46,20 +61,20 @@ export async function POST(req: Request) {
       currency: "INR", 
       receipt: `receipt_${Date.now()}`,
       notes: {
-        email: email,
-        plan_name: planName || "Unknown",
+        email: actualEmail,
+        plan_name: actualPlan,
         selected_model: safeModel,
         plan_type: planType || "NEW",
-        ...frontendNotes // <--- THIS SAVES EVERYTHING! (is_renewal, token, channel, etc)
+        ...(frontendNotes || {}) // <--- THIS SAVES EVERYTHING! (is_renewal, token, channel, etc)
       }
     };
 
     const order = await razorpay.orders.create(options);
-    console.log(`[RAZORPAY-ORDER] Created for ${email} | Amount: ₹${secureInrPrice}`);
+    console.log(`[RAZORPAY-ORDER] Created for ${actualEmail} | Model: ${safeModel} | Amount: ₹${secureInrPrice}`);
     
     return NextResponse.json(order);
   } catch (error: any) {
-    console.error("Razorpay Order Error:", error);
+    console.error("[RAZORPAY FATAL] Order Generation Error:", error);
     return NextResponse.json(
       { error: error.message || "Failed to create order" },
       { status: 500 }
