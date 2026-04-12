@@ -88,13 +88,10 @@ class KnoxSecurityProtocol {
   }
 
   /**
-   * Logs local violations (Can be extended to send telemetry to backend).
+   * Logs local violations (SILENT MODE: Protects without disturbing the user).
    */
   private static registerViolation(reason: string) {
     this.violationCount++;
-    if (this.violationCount > 10) {
-       document.body.innerHTML = "<div style='background:#000;color:#fff;width:100vw;height:100vh;display:flex;align-items:center;justify-content:center;font-family:monospace;'>SECURITY VIOLATION DETECTED. SESSION TERMINATED.</div>";
-    }
   }
 }
 
@@ -106,8 +103,8 @@ class KnoxSecurityProtocol {
  * Pricing is strictly enforced here for UI display, but validated on the backend route.
  */
 const PRICING_DATA: Record<string, any> = {
-  gemini: {
-    name: "Gemini (Google)",
+  "gemini 3.1 Pro": {
+    name: "Gemini 3.1 Pro",
     plans: [
       { id: "plus", name: "Plus", usd: 6, inr: 5, msgs: "Optimized Speed", desc: "Instant customer conversions & rapid response.", accent: "rgba(255,255,255,.35)", color: "text-gray-400" },
       { id: "pro", name: "Pro", usd: 12, inr: 999, msgs: "Enterprise Scale", desc: "Complex query mastermind & priority routing.", accent: "#3B82F6", color: "text-blue-400", badge: "Popular" },
@@ -115,8 +112,8 @@ const PRICING_DATA: Record<string, any> = {
       { id: "adv_max", name: "Adv Max", usd: 599, inr: 49999, msgs: "Unlimited Tier", desc: "Global system dominance & uncapped scaling.", accent: "#F97316", color: "text-orange-400", badge: "Yearly ⭐", isYearly: true }
     ]
   },
-  "gpt-5.2": { 
-    name: "GPT (OpenAI)",
+  "gpt-5.4 Pro": { 
+    name: "GPT-5.4 Pro",
     plans: [
       { id: "plus", name: "Plus", usd: 8, inr: 5, msgs: "Optimized Speed", desc: "Instant customer conversions & rapid response.", accent: "rgba(255,255,255,.35)", color: "text-gray-400" },
       { id: "pro", name: "Pro", usd: 18, inr: 1499, msgs: "Enterprise Scale", desc: "Complex query mastermind & priority routing.", accent: "#3B82F6", color: "text-blue-400", badge: "Popular" },
@@ -124,8 +121,8 @@ const PRICING_DATA: Record<string, any> = {
       { id: "adv_max", name: "Adv Max", usd: 899, inr: 74999, msgs: "Unlimited Tier", desc: "Global system dominance & uncapped scaling.", accent: "#F97316", color: "text-orange-400", badge: "Yearly ⭐", isYearly: true }
     ]
   },
-  claude: {
-    name: "Claude (Anthropic)",
+  "Claude Opus 4.6": {
+    name: "Claude Opus 4.6",
     plans: [
       { id: "plus", name: "Plus", usd: 10, inr: 5, msgs: "Optimized Speed", desc: "Instant customer conversions & rapid response.", accent: "rgba(255,255,255,.35)", color: "text-gray-400" },
       { id: "pro", name: "Pro", usd: 24, inr: 1999, msgs: "Enterprise Scale", desc: "Complex query mastermind & priority routing.", accent: "#3B82F6", color: "text-blue-400", badge: "Popular" },
@@ -133,8 +130,8 @@ const PRICING_DATA: Record<string, any> = {
       { id: "adv_max", name: "Adv Max", usd: 1199, inr: 99999, msgs: "Unlimited Tier", desc: "Global system dominance & uncapped scaling.", accent: "#F97316", color: "text-orange-400", badge: "Yearly ⭐", isYearly: true }
     ]
   },
-  omni: {
-    name: "OmniAgent Bundle",
+  "omni 3 nexus": {
+    name: "Omni 3 Nexus",
     plans: [
       { id: "monthly", name: "Pro Bundle", usd: 249, inr: 20916, msgs: "Smart Matrix", desc: "Elite multi-persona integration. 3x Fallback.", accent: "#00BFFF", color: "text-[#00BFFF]" },
       { id: "yearly", name: "Adv Premium", usd: 1799, inr: 149999, msgs: "Zero Downtime", desc: "Ultimate auto-routing & global priority access.", accent: "#BA7517", color: "text-[#BA7517]", badge: "Yearly ⭐", isYearly: true }
@@ -291,7 +288,7 @@ export default function Home() {
   const [botLink, setBotLink] = useState("");
   
   // Configuration State
-  const [activeModel, setActiveModel] = useState("gpt-5.2");
+  const [activeModel, setActiveModel] = useState("gpt-5.4 Pro");
   const [activeChannel, setActiveChannel] = useState("telegram");
   const [selectedTier, setSelectedTier] = useState<string|null>(null);
   
@@ -475,19 +472,13 @@ export default function Home() {
    * ============================================================================
    * 🚀 CRITICAL PLG STRATEGY: THE SEAMLESS REDIRECT (No Upfront Pricing)
    * ============================================================================
-   * Saves the token configurations to the database immediately and routes
-   * the user directly to the command center (dashboard). The database records
-   * the deployment as "Free" and "Sleeping". Gatekeepers intercept AI requests.
-   * Payment popup logic is completely bypassed on the public frontend.
    */
   const handleDeploy = async () => {
     setIsDeploying(true);
     try {
-      const selectedModelForDB = activeModel === "omni" ? "multi_model" : activeModel;
-      
       const payload = {
         email: session?.user?.email,
-        selectedModel: selectedModelForDB,
+        selectedModel: activeModel,
         selectedChannel: activeChannel,
         telegramToken: activeChannel === "telegram" ? telegramToken : "",
         waPhoneId: (activeChannel === "whatsapp" || activeChannel === "instagram") ? waPhoneId : "",
@@ -797,26 +788,26 @@ export default function Home() {
 
           <p className="text-[9px] font-bold tracking-[.15em] uppercase text-gray-400 mb-3 text-left">Choose your AI model</p>
           <div className="grid grid-cols-5 gap-[6px] mb-5">
-            <button aria-label="Select GPT-4o Model" data-spring onClick={()=>{ if(!isTokenSaved){ setActiveModel("gpt-5.2"); }}} disabled={isTokenSaved && activeModel!=="gpt-5.2"}
-              className={[pillBase, modelActive("gpt-5.2") ? "!border-blue-500 shadow-[0_0_0_3px_rgba(59,130,246,0.2),0_2px_8px_rgba(0,0,0,0.12)]" : "", isTokenSaved && activeModel!=="gpt-5.2" ? "opacity-25 pointer-events-none" : ""].join(" ")}>
+            <button aria-label="Select GPT-5.4 Pro Model" data-spring onClick={()=>{ if(!isTokenSaved){ setActiveModel("gpt-5.4 Pro"); }}} disabled={isTokenSaved && activeModel!=="gpt-5.4 Pro"}
+              className={[pillBase, modelActive("gpt-5.4 Pro") ? "!border-blue-500 shadow-[0_0_0_3px_rgba(59,130,246,0.2),0_2px_8px_rgba(0,0,0,0.12)]" : "", isTokenSaved && activeModel!=="gpt-5.4 Pro" ? "opacity-25 pointer-events-none" : ""].join(" ")}>
               <div className="w-[22px] h-[22px] rounded-[5px] flex items-center justify-center shrink-0 bg-[#f0fdf4]"><OpenAI_Icon/></div>
               <div className="flex flex-col min-w-0 max-sm:items-center max-sm:w-full"><span className="ptx-name" style={{color:"#10a37f"}}>GPT-5.4</span><span className="ptx-sub" style={{color:"#10a37f"}}>Pro</span></div>
             </button>
 
-            <button aria-label="Select Claude 3 Model" data-spring onClick={()=>{ if(!isTokenSaved){ setActiveModel("claude"); }}} disabled={isTokenSaved && activeModel!=="claude"}
-              className={[pillBase, modelActive("claude") ? "!border-blue-500 shadow-[0_0_0_3px_rgba(59,130,246,0.2),0_2px_8px_rgba(0,0,0,0.12)]" : "", isTokenSaved && activeModel!=="claude" ? "opacity-25 pointer-events-none" : ""].join(" ")}>
+            <button aria-label="Select Claude 3 Model" data-spring onClick={()=>{ if(!isTokenSaved){ setActiveModel("Claude Opus 4.6"); }}} disabled={isTokenSaved && activeModel!=="Claude Opus 4.6"}
+              className={[pillBase, modelActive("Claude Opus 4.6") ? "!border-blue-500 shadow-[0_0_0_3px_rgba(59,130,246,0.2),0_2px_8px_rgba(0,0,0,0.12)]" : "", isTokenSaved && activeModel!=="Claude Opus 4.6" ? "opacity-25 pointer-events-none" : ""].join(" ")}>
               <div className="w-[22px] h-[22px] rounded-[5px] flex items-center justify-center shrink-0 bg-[#fdf5f2]"><Claude_Icon/></div>
               <div className="flex flex-col min-w-0 max-sm:items-center max-sm:w-full"><span className="ptx-name" style={{color:"#d97757"}}>Claude</span><span className="ptx-sub" style={{color:"#d97757"}}>Opus 4.6</span></div>
             </button>
 
-            <button aria-label="Select Gemini Model" data-spring onClick={()=>{ if(!isTokenSaved){ setActiveModel("gemini"); }}} disabled={isTokenSaved && activeModel!=="gemini"}
-              className={[pillBase, modelActive("gemini") ? "!border-blue-500 shadow-[0_0_0_3px_rgba(59,130,246,0.2),0_2px_8px_rgba(0,0,0,0.12)]" : "", isTokenSaved && activeModel!=="gemini" ? "opacity-25 pointer-events-none" : ""].join(" ")}>
+            <button aria-label="Select Gemini Model" data-spring onClick={()=>{ if(!isTokenSaved){ setActiveModel("gemini 3.1 Pro"); }}} disabled={isTokenSaved && activeModel!=="gemini 3.1 Pro"}
+              className={[pillBase, modelActive("gemini 3.1 Pro") ? "!border-blue-500 shadow-[0_0_0_3px_rgba(59,130,246,0.2),0_2px_8px_rgba(0,0,0,0.12)]" : "", isTokenSaved && activeModel!=="gemini 3.1 Pro" ? "opacity-25 pointer-events-none" : ""].join(" ")}>
               <div className="w-[22px] h-[22px] rounded-[5px] flex items-center justify-center shrink-0 bg-[#eff2ff]"><Gemini_Icon/></div>
               <div className="flex flex-col min-w-0 max-sm:items-center max-sm:w-full"><span className="ptx-name" style={{color:"#648af5"}}>Gemini</span><span className="ptx-sub" style={{color:"#648af5"}}>3.1 Pro</span></div>
             </button>
 
-            <button aria-label="Select OmniAgent Fallback Model" data-spring onClick={()=>{ if(!isTokenSaved){ setActiveModel("omni"); }}} disabled={isTokenSaved && activeModel!=="omni"}
-              className={[pillBase, modelActive("omni") ? "!border-[#00bfff] shadow-[0_0_0_3px_rgba(0,191,255,0.2),0_2px_8px_rgba(0,0,0,0.12)]" : "", isTokenSaved && activeModel!=="omni" ? "opacity-25 pointer-events-none" : ""].join(" ")}>
+            <button aria-label="Select OmniAgent Fallback Model" data-spring onClick={()=>{ if(!isTokenSaved){ setActiveModel("omni 3 nexus"); }}} disabled={isTokenSaved && activeModel!=="omni 3 nexus"}
+              className={[pillBase, modelActive("omni 3 nexus") ? "!border-[#00bfff] shadow-[0_0_0_3px_rgba(0,191,255,0.2),0_2px_8px_rgba(0,0,0,0.12)]" : "", isTokenSaved && activeModel!=="omni 3 nexus" ? "opacity-25 pointer-events-none" : ""].join(" ")}>
               <div className="w-[22px] h-[22px] rounded-[5px] flex items-center justify-center shrink-0 bg-[#e8f9ff]"><Omni_Icon/></div>
               <div className="flex flex-col min-w-0 max-sm:items-center max-sm:w-full"><span className="ptx-name" style={{color:"#0369a1",fontSize:"9.5px"}}>Omni 3</span><span className="ptx-sub" style={{color:"#00bfff"}}>Nexus</span></div>
             </button>
@@ -996,7 +987,7 @@ export default function Home() {
           <div className="grid grid-cols-1 md:grid-cols-[1fr_2fr] gap-[1px] bg-white/[0.05] border border-white/[0.06] border-t-0 border-b-0">
             {[
               {bg:"rgba(34,197,94,.09)", e:"🗃️",t:"Enterprise RAG Memory",      d:"Inject catalog, FAQs, brand voice into Vector DB. Your agent knows your business inside out.",tag:"Vector DB"},
-              {bg:"rgba(0,191,255,.09)", e:"🧠",t:"OmniAgent — 3x AI Fallback", d:"Routes between GPT-5.2, Claude Opus, and Gemini Flash in real-time. 0% downtime. The ultimate OpenClaw alternative.",tag:"0% Downtime"},
+              {bg:"rgba(0,191,255,.09)", e:"🧠",t:"OmniAgent — 3x AI Fallback", d:"Routes between GPT-5.4, Claude Opus 4.6, and Gemini 3.1 in real-time. 0% downtime. The ultimate OpenClaw alternative.",tag:"0% Downtime"},
             ].map(({bg,e,t,d,tag})=>(
               <div key={t} className="fi-card bg-[#0A0A0D] p-6 md:p-8 hover:bg-[#0F0F14] transition-colors duration-150">
                 <div className="icon-lift w-[44px] h-[44px] rounded-[13px] flex items-center justify-center mb-5 text-[20px]" style={{background:bg}}>{e}</div>

@@ -5,7 +5,7 @@
  * CLAWLINK ENTERPRISE COMMAND CENTER (DASHBOARD)
  * ==============================================================================================
  * @file app/dashboard/page.tsx
- * @version 9.6.1 (TypeScript isLive Property Fixed)
+ * @version 9.6.2 (Fully Dynamic State Evaluation)
  * @description The central hub for users to monitor their AI Agents.
  * Enforces PLG by dynamically displaying current configuration and gating 
  * the "Go Live" (Payment) logic directly from this interface.
@@ -39,8 +39,8 @@ const supabase = createClient(supabaseUrl, supabaseKey);
  * ==============================================================================================
  */
 const PRICING_DATA: Record<string, any> = {
-  gemini: {
-    name: "Gemini (Google)",
+  "gemini 3.1 Pro": {
+    name: "Gemini 3.1 Pro",
     plans: [
       { id: "plus", name: "Plus", usd: 6, inr: 5, msgs: "Optimized Speed", desc: "Instant customer conversions & rapid response.", accent: "rgba(255,255,255,.35)", color: "text-gray-400" },
       { id: "pro", name: "Pro", usd: 12, inr: 999, msgs: "Enterprise Scale", desc: "Complex query mastermind & priority routing.", accent: "#3B82F6", color: "text-blue-400", badge: "Popular" },
@@ -48,8 +48,8 @@ const PRICING_DATA: Record<string, any> = {
       { id: "adv_max", name: "Adv Max", usd: 599, inr: 49999, msgs: "Unlimited Tier", desc: "Global system dominance & uncapped scaling.", accent: "#F97316", color: "text-orange-400", badge: "Yearly ⭐", isYearly: true }
     ]
   },
-  "gpt-5.2": { 
-    name: "GPT (OpenAI)",
+  "gpt-5.4 Pro": { 
+    name: "GPT-5.4 Pro",
     plans: [
       { id: "plus", name: "Plus", usd: 8, inr: 5, msgs: "Optimized Speed", desc: "Instant customer conversions & rapid response.", accent: "rgba(255,255,255,.35)", color: "text-gray-400" },
       { id: "pro", name: "Pro", usd: 18, inr: 1499, msgs: "Enterprise Scale", desc: "Complex query mastermind & priority routing.", accent: "#3B82F6", color: "text-blue-400", badge: "Popular" },
@@ -57,8 +57,8 @@ const PRICING_DATA: Record<string, any> = {
       { id: "adv_max", name: "Adv Max", usd: 899, inr: 74999, msgs: "Unlimited Tier", desc: "Global system dominance & uncapped scaling.", accent: "#F97316", color: "text-orange-400", badge: "Yearly ⭐", isYearly: true }
     ]
   },
-  claude: {
-    name: "Claude (Anthropic)",
+  "Claude Opus 4.6": {
+    name: "Claude Opus 4.6",
     plans: [
       { id: "plus", name: "Plus", usd: 10, inr: 5, msgs: "Optimized Speed", desc: "Instant customer conversions & rapid response.", accent: "rgba(255,255,255,.35)", color: "text-gray-400" },
       { id: "pro", name: "Pro", usd: 24, inr: 1999, msgs: "Enterprise Scale", desc: "Complex query mastermind & priority routing.", accent: "#3B82F6", color: "text-blue-400", badge: "Popular" },
@@ -66,8 +66,8 @@ const PRICING_DATA: Record<string, any> = {
       { id: "adv_max", name: "Adv Max", usd: 1199, inr: 99999, msgs: "Unlimited Tier", desc: "Global system dominance & uncapped scaling.", accent: "#F97316", color: "text-orange-400", badge: "Yearly ⭐", isYearly: true }
     ]
   },
-  omni: {
-    name: "OmniAgent Bundle",
+  "omni 3 nexus": {
+    name: "Omni 3 Nexus",
     plans: [
       { id: "monthly", name: "Pro Bundle", usd: 249, inr: 20916, msgs: "Smart Matrix", desc: "Elite multi-persona integration. 3x Fallback.", accent: "#00BFFF", color: "text-[#00BFFF]" },
       { id: "yearly", name: "Adv Premium", usd: 1799, inr: 149999, msgs: "Zero Downtime", desc: "Ultimate auto-routing & global priority access.", accent: "#BA7517", color: "text-[#BA7517]", badge: "Yearly ⭐", isYearly: true }
@@ -185,18 +185,17 @@ export default function Dashboard() {
 
   /**
    * ==============================================================================================
-   * CORE LOGIC: Dynamic State Evaluation
+   * CORE LOGIC: Dynamic State Evaluation (Future-Proof Model Display)
    * ==============================================================================================
    */
-  const exactModel = (userData?.selected_model || userData?.ai_provider || "gpt-5.2").toLowerCase();
+  // EXACTLY what the DB gives us, or fallback
+  const exactModel = userData?.ai_model || userData?.selected_model || "gpt-5.4 Pro";
   
-  let pricingKey = "gpt-5.2";
-  if (exactModel.includes("omni") || exactModel.includes("multi_model") || exactModel.includes("nexus")) pricingKey = "omni";
-  else if (exactModel.includes("claude") || exactModel.includes("anthropic")) pricingKey = "claude";
-  else if (exactModel.includes("gemini") || exactModel.includes("google")) pricingKey = "gemini";
-
-  const isOmniActive = pricingKey === "omni";
-  const currentPricing = PRICING_DATA[pricingKey] || PRICING_DATA["gpt-5.2"];
+  // Directly use the exact string to lookup pricing. If not found, fallback to GPT-5.4 Pro.
+  const currentPricing = PRICING_DATA[exactModel] || PRICING_DATA["gpt-5.4 Pro"];
+  
+  // Safe boolean check for Matrix badge
+  const isOmniActive = exactModel.toLowerCase().includes("omni") || exactModel.toLowerCase().includes("nexus");
   
   const currentPlan = userData?.plan_tier?.toLowerCase() || userData?.plan?.toLowerCase() || "free";
   const isFreePlan = currentPlan === "free" || currentPlan === "starter";
@@ -306,7 +305,7 @@ export default function Dashboard() {
           email: session.user.email,
           amount: activePlanObj.usd,
           currency: "usd",
-          model: exactModel,
+          model: exactModel, // Sending the exact DB string
           isRenewal: !isFreePlan
         }),
       });
@@ -478,14 +477,6 @@ export default function Dashboard() {
 
   const totalMsgs = (stats?.platformStats?.whatsapp || 0) + (stats?.platformStats?.telegram || 0) + (stats?.platformStats?.web || 0);
 
-  const getModelDisplayName = () => {
-    if (isOmniActive) return "🌌 Omni 3 Nexus";
-    if (pricingKey === "claude") return "Claude 3 (Opus 4.6)";
-    if (pricingKey === "gemini") return "Gemini 3 (Flash)";
-    if (pricingKey === "gpt-5.2" || exactModel.includes("gpt") || exactModel.includes("openai")) return "GPT-5.2 (Turbo)";
-    return "NOT SET";
-  };
-
   // 🚀 DYNAMIC LIVE CHANNEL INDICATOR LOGIC (BOTH isLive AND isSetup provided)
   const exactSelectedChannel = (userData?.selected_channel || "").toLowerCase();
   
@@ -604,7 +595,7 @@ export default function Dashboard() {
                 <h2 className="text-2xl font-black text-white uppercase tracking-widest mb-2 flex items-center justify-center gap-2">
                   <Globe className="w-6 h-6 text-orange-500"/> SECURE DEPLOYMENT PLAN
                 </h2>
-                <p className="text-sm text-gray-400">Select a tier to activate your <span className="text-white font-bold">{getModelDisplayName()}</span> engine.</p>
+                <p className="text-sm text-gray-400">Select a tier to activate your <span className="text-white font-bold">{exactModel}</span> engine.</p>
               </div>
 
               <div className={`grid grid-cols-1 gap-6 mb-8 mx-auto text-left ${gridColsClass}`}>
@@ -752,7 +743,7 @@ export default function Dashboard() {
               <div>
                 <h3 className="text-gray-500 text-[10px] font-bold uppercase tracking-widest mb-1">Active AI Brain</h3>
                 <p className="text-xl font-black text-white font-sans tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-blue-400 mt-2 leading-tight">
-                  {getModelDisplayName()}
+                  {exactModel}
                 </p>
                 {isOmniActive ? (
                   <div className="mt-2 flex items-center gap-2">

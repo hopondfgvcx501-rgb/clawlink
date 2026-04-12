@@ -77,13 +77,14 @@ export async function POST(req: Request) {
         expiryDate.setDate(expiryDate.getDate() + 30);
     }
 
+    // 🚀 EXACT MATCH ROUTING: Maps UI selection perfectly to the Database 
     let providerToSave = "openai";
     let exactModelVersion = "gpt-5.4 Pro";
     const safeModel = (selectedModel || "gpt-5.4 Pro").toLowerCase();
 
     if (safeModel.includes("omni") || safeModel.includes("nexus")) {
         providerToSave = "omni"; exactModelVersion = "omni 3 nexus";
-    } else if (safeModel.includes("claude") || safeModel.includes("anthropic") || safeModel.includes("opus")) {
+    } else if (safeModel.includes("claude") || safeModel.includes("opus")) {
         providerToSave = "anthropic"; exactModelVersion = "Claude Opus 4.6";
     } else if (safeModel.includes("gemini") || safeModel.includes("google")) {
         providerToSave = "google"; exactModelVersion = "gemini 3.1 Pro";
