@@ -102,7 +102,6 @@ export async function POST(req: Request) {
         tokens_allocated: allocatedTokens,
         available_tokens: allocatedTokens,
         monthly_message_limit: monthlyLimit,
-        plan_expiry_date: expiryDate.toISOString(), // Fallback
         expires_at: expiryDate.toISOString(), // Exact Column
         subscription_end_date: expiryDate.toISOString(), // Exact Column
         plan_status: 'Active', 
