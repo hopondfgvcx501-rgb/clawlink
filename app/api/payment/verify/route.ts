@@ -92,9 +92,9 @@ export async function POST(req: Request) {
     else expiryDate.setDate(expiryDate.getDate() + 30); 
 
     // 🔒 LEVEL 4: Database Update (THE AWAKENING - 100% OVERRIDE)
-    // 🚀 FIXED: Removed plan_expiry_date and matched exact DB columns
+    // 🚀 FIXED: Only including the exact column that exists in your DB: 'expires_at'
     const configPayload = {
-        plan_status: 'Active', // 🔥 BOT GOES LIVE
+        plan_status: 'Active', 
         bot_status: 'Active', 
         plan: planTier,
         plan_tier: planTier,
@@ -105,7 +105,6 @@ export async function POST(req: Request) {
         available_tokens: allocatedTokens,
         monthly_message_limit: monthlyLimit,
         expires_at: expiryDate.toISOString(), // ✅ Exact DB Column
-        subscription_end_date: expiryDate.toISOString(), // ✅ Exact DB Column
         current_model_version: exactModelVersion,
         ai_model: exactModelVersion,
         selected_model: exactModelVersion,
