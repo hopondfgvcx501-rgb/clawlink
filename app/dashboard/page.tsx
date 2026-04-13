@@ -5,9 +5,8 @@
  * CLAWLINK ENTERPRISE COMMAND CENTER (DASHBOARD)
  * ==============================================================================================
  * @file app/dashboard/page.tsx
- * @version 12.0.0 (Ultra-Lean Mode)
- * @description The central hub for users to monitor their AI Agents.
- * CLEANUP: ALL traces of Web Widget, Broadcast Hub, and Partner Program PERMANENTLY REMOVED.
+ * @version 12.2.0 (Ultra-Lean Core)
+ * @description The central hub for users to monitor their AI Agents. Only core systems active.
  * * ALL RIGHTS RESERVED. CLAWLINK INC.
  * ==============================================================================================
  */
@@ -32,11 +31,6 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-/**
- * ==============================================================================================
- * ENTERPRISE PRICING MATRICES
- * ==============================================================================================
- */
 const PRICING_DATA: Record<string, any> = {
   "gemini 3.1 Pro": {
     name: "Gemini 3.1 Pro",
@@ -78,14 +72,12 @@ export default function Dashboard() {
   const { data: session, status } = useSession();
   const router = useRouter();
 
-  // ─── STATE MANAGEMENT ───
   const [userData, setUserData] = useState<any>(null);
   const [billingHistory, setBillingHistory] = useState<any[]>([]);
   const [stats, setStats] = useState<any>(null); 
   const [isLoading, setIsLoading] = useState(true);
   const [showAppBanner, setShowAppBanner] = useState(true);
   
-  // 🚀 FIXED: Default channel changed to telegram
   const [selectedChannel, setSelectedChannel] = useState("telegram"); 
   const [channelPrompts, setChannelPrompts] = useState({
     telegram: "",
@@ -94,7 +86,6 @@ export default function Dashboard() {
   });
   const [isSavingPrompt, setIsSavingPrompt] = useState(false);
   
-  // ─── PLG GATING MODAL STATES ───
   const [showPricingPopup, setShowPricingPopup] = useState(false);
   const [selectedRenewalPlan, setSelectedRenewalPlan] = useState<string|null>(null);
   const [isRenewing, setIsRenewing] = useState(false);
@@ -103,7 +94,6 @@ export default function Dashboard() {
   const [isInjecting, setIsInjecting] = useState(false);
   const [knowledgeItems, setKnowledgeItems] = useState<any[]>([]);
 
-  // ─── CURRENCY DYNAMICS ───
   const [currency, setCurrency] = useState<"USD"|"INR">("USD");
   const [currencySymbol, setCurrencySymbol] = useState("$");
 
@@ -111,7 +101,6 @@ export default function Dashboard() {
     if (status === "unauthenticated") {
       router.push("/");
     }
-
     if (typeof window !== "undefined") {
       document.addEventListener("contextmenu", (e) => e.preventDefault());
     }
@@ -183,13 +172,7 @@ export default function Dashboard() {
     }
   };
 
-  /**
-   * ==============================================================================================
-   * CORE LOGIC: Dynamic State Evaluation
-   * ==============================================================================================
-   */
   const rawDbModel = String(userData?.ai_model || userData?.current_model_version || userData?.selected_model || userData?.ai_provider || "gpt").toLowerCase();
-  
   let pricingKey = "gpt-5.4 Pro";
   if (rawDbModel.includes("omni") || rawDbModel.includes("nexus") || rawDbModel.includes("multi")) {
       pricingKey = "omni 3 nexus";
@@ -202,7 +185,6 @@ export default function Dashboard() {
   const isOmniActive = pricingKey === "omni 3 nexus";
   const currentPricing = PRICING_DATA[pricingKey] || PRICING_DATA["gpt-5.4 Pro"];
   
-  // 🚀 FETCH TRUE PLAN FROM DB
   const currentPlan = userData?.plan_tier?.toLowerCase() || userData?.plan?.toLowerCase() || "free";
   const isFreePlan = currentPlan === "free" || currentPlan === "starter";
   
@@ -211,7 +193,6 @@ export default function Dashboard() {
     isExpired = new Date() > new Date(userData.plan_expiry_date);
   }
 
-  // 🔒 DB VERIFIED STATUS CHECK
   const hasActivePlan = !isFreePlan && !isExpired && userData?.plan_status === "Active";
   const isPremium = !isFreePlan;
 
@@ -280,7 +261,6 @@ export default function Dashboard() {
         handler: async function (response: any) {
           try {
             alert("Payment gateway confirmed. Verifying with server... Please wait.");
-            console.log("[RAZORPAY_SUCCESS] Triggering backend verification...");
             
             const verifyRes = await fetch("/api/payment/verify", {
               method: "POST", headers: { "Content-Type": "application/json" },
@@ -292,11 +272,10 @@ export default function Dashboard() {
             });
 
            const verifyData = await verifyRes.json();
-            console.log("Verify Response:", verifyData);
 
             if (verifyData.success) {
               alert("✅ Payment Verified & Bot Activated!");
-              window.location.href = "/dashboard"; // Clean reload
+              window.location.href = "/dashboard"; 
             } else {
               alert(`❌ Verification Failed!\nReason: ${verifyData.error}\nPlease contact support.`);
               setIsRenewing(false);
@@ -509,7 +488,6 @@ export default function Dashboard() {
   const hasWaId = !!userData?.whatsapp_phone_id && userData?.whatsapp_phone_id !== "";
   const hasIgId = !!userData?.instagram_account_id && userData?.instagram_account_id !== "";
 
-  // 🚀 FIXED UI NAMES: Removed extra text, enabled blink status
   const getPrimaryLiveChannel = () => {
       if (exactSelectedChannel === "telegram") {
           return { 
@@ -598,7 +576,6 @@ export default function Dashboard() {
     <div className="w-full min-h-screen bg-[#07070A] text-[#E8E8EC] font-sans relative selection:bg-orange-500/30 overflow-y-auto custom-scrollbar flex flex-col">
       <Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="lazyOnload" />
       
-      {/* ─── PLG PRICING GATING MODAL ─── */}
       <AnimatePresence>
         {showPricingPopup && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
