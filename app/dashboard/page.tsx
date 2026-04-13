@@ -289,7 +289,7 @@ export default function Dashboard() {
               method: "POST", headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
                 razorpay_order_id: response.razorpay_order_id, razorpay_payment_id: response.razorpay_payment_id,
-                razorpay_signature: response.razorpay_signature, email: session.user.email, plan: activePlanObj.id,
+                razorpay_signature: response.razorpay_signature, email: session?.user?.email || "", plan: activePlanObj.id,
                 amount: amount, selected_model: currentPricing.name
               })
             });
@@ -311,8 +311,8 @@ export default function Dashboard() {
           }
         },
         prefill: {
-          email: session.user.email,
-          name: session.user.name || "Agent",
+          email: session?.user?.email || "",
+          name: session?.user?.name || "Agent",
         },
         theme: { color: "#f97316" },
       };
