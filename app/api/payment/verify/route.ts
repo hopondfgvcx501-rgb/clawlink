@@ -91,7 +91,8 @@ export async function POST(req: Request) {
     if (planTier === "adv_max" || planTier === "yearly") expiryDate.setDate(expiryDate.getDate() + 365);
     else expiryDate.setDate(expiryDate.getDate() + 30); 
 
-    // 🔒 LEVEL 4: Database Update (THE AWAKENING - 100% EXACT COLUMNS ONLY)
+    // 🔒 LEVEL 4: Database Update (THE AWAKENING - 100% OVERRIDE)
+    // 🚀 FIXED: Removed plan_expiry_date and matched exact DB columns
     const configPayload = {
         plan_status: 'Active', // 🔥 BOT GOES LIVE
         bot_status: 'Active', 
@@ -122,12 +123,13 @@ export async function POST(req: Request) {
     if (configError) {
         console.error("[RAZORPAY_DB_ERROR]", configError);
         await sendTelegramAdminAlert(`🔴 [CRITICAL] Payment succeeded for ${safeEmail} but DB update failed: ${configError.message}`);
-        throw configError;
+        return NextResponse.json({ success: false, error: configError.message }, { status: 500 });
     }
 
     // If update Data is empty, it means Email didn't match or a Column is still wrong.
     if (!updateData || updateData.length === 0) {
-        throw new Error("Supabase Silent Failure: 0 rows updated. A column name in the payload might be missing in your DB.");
+        console.error("[RAZORPAY_DB_SILENT_FAILURE] 0 rows updated.");
+        return NextResponse.json({ success: false, error: "Database update failed. Check column names or if user exists." }, { status: 500 });
     }
 
     // 🔒 LEVEL 5: Immutable Billing Ledger
