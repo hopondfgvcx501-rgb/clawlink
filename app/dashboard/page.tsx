@@ -5,9 +5,9 @@
  * CLAWLINK ENTERPRISE COMMAND CENTER (DASHBOARD)
  * ==============================================================================================
  * @file app/dashboard/page.tsx
- * @version 9.9.0 (Payment Verification & Unlock Fix)
+ * @version 9.9.1 (Cleaned Enterprise Mode)
  * @description The central hub for users to monitor their AI Agents.
- * FIX: Perfectly aligns Razorpay success with DB Verification API for instant unlocking.
+ * FIX: Removed Web Widget UI as requested.
  * * ALL RIGHTS RESERVED. CLAWLINK INC.
  * ==============================================================================================
  */
@@ -84,7 +84,6 @@ export default function Dashboard() {
   const [stats, setStats] = useState<any>(null); 
   const [isLoading, setIsLoading] = useState(true);
   const [showAppBanner, setShowAppBanner] = useState(true);
-  const [copiedScript, setCopiedScript] = useState(false); 
   
   const [selectedChannel, setSelectedChannel] = useState("widget"); 
   const [channelPrompts, setChannelPrompts] = useState({
@@ -279,7 +278,6 @@ export default function Dashboard() {
         name: "ClawLink Premium",
         description: `Deploying ${activePlanObj.name.toUpperCase()} Plan`,
         order_id: orderData.orderId || orderData.id,
-        // 🚀 THE ULTIMATE FIX: Force backend verification immediately after Razorpay success
         handler: async function (response: any) {
           try {
             alert("Payment gateway confirmed. Verifying with server... Please wait.");
@@ -294,7 +292,7 @@ export default function Dashboard() {
               })
             });
 
-            const verifyData = await verifyRes.json();
+           const verifyData = await verifyRes.json();
             console.log("Verify Response:", verifyData);
 
             if (verifyData.success) {
@@ -488,14 +486,6 @@ export default function Dashboard() {
     const blob = new Blob([invoiceHtml], { type: "text/html" });
     const url = URL.createObjectURL(blob);
     window.open(url, "_blank");
-  };
-
-  const webChatScript = `<script src="https://www.clawlinkai.com/api/widget?id=${session?.user?.email}" defer></script>`;
-
-  const copyScript = () => {
-    navigator.clipboard.writeText(webChatScript);
-    setCopiedScript(true);
-    setTimeout(() => setCopiedScript(false), 2000);
   };
 
   const copyToClipboard = (t: string) => { 
@@ -823,37 +813,6 @@ export default function Dashboard() {
             </button>
           </motion.div>
         </div>
-
-        {/* 🔒 WEBCHAT INTEGRATION (LOCKED FOR FREE USERS) */}
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25, delay: 0.3, ease: "easeOut" }} className="bg-gradient-to-r from-[#111113] to-[#0a0a0c] border border-pink-500/20 p-6 md:p-8 rounded-[1.5rem] shadow-[0_0_30px_rgba(236,72,153,0.05)] relative overflow-hidden flex flex-col lg:flex-row items-center justify-between gap-6">
-          <div className="absolute top-0 left-0 w-64 h-64 bg-pink-500/5 rounded-full blur-3xl pointer-events-none"></div>
-          
-          <div className="flex-1 relative z-10">
-            <h3 className="text-lg font-black text-white flex items-center gap-2 mb-2">
-              <Globe className="w-5 h-5 text-pink-500" /> Webchat Integration (Live)
-            </h3>
-            <p className="text-sm text-gray-400">Want this AI on your own website? Copy the script below and paste it just before the <code className="text-pink-400 bg-pink-500/10 px-1 rounded">&lt;/body&gt;</code> tag in your HTML code.</p>
-          </div>
-
-          <div className="w-full lg:w-1/2 relative z-10 group">
-            {!hasActivePlan ? (
-                <div className="w-full bg-[#1A1A1A] border border-red-500/20 p-6 rounded-xl flex flex-col items-center justify-center text-center">
-                    <Shield className="w-6 h-6 text-red-500 mb-2"/>
-                    <p className="text-xs font-bold text-red-400 uppercase tracking-widest">Feature Locked</p>
-                    <p className="text-[10px] text-gray-500 mt-1">Upgrade to deploy on your website.</p>
-                </div>
-            ) : (
-                <>
-                    <pre className="w-full bg-[#07070A] border border-white/10 p-4 rounded-xl text-xs text-pink-400 font-mono overflow-x-auto custom-scrollbar">
-                      {webChatScript}
-                    </pre>
-                    <button onClick={copyScript} className={`absolute top-2 right-2 p-2 bg-[#1A1A1A] hover:bg-[#222] border border-white/10 rounded-lg ${btn}`}>
-                      {copiedScript ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4 text-gray-400" />}
-                    </button>
-                </>
-            )}
-          </div>
-        </motion.div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25, delay: 0.4, ease: "easeOut" }} className="bg-[#111113] border border-white/5 p-6 rounded-[1.5rem] shadow-xl relative overflow-hidden group hover:border-white/10 transition-colors">
