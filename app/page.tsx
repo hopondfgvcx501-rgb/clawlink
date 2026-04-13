@@ -5,9 +5,10 @@
  * CLAWLINK ENTERPRISE FRONTEND SECURE MODULE
  * ==============================================================================================
  * @file app/page.tsx
- * @version 10.0.0 (Ultra-Lean Core Architecture)
+ * @version 10.1.0 (Ultra-Responsive & Demo Flow Enabled)
  * @description Main onboarding interface with strict Product-Led Growth (PLG) routing.
- * CLEANUP: Permanently removed all references to 'widget' channel as per CEO directives.
+ * FIXED: Unlocked selection models for pre-login interaction (Demo mode).
+ * FIXED: Optimized desktop sizes for selection matrices to prevent empty visual gaps.
  * Integrates KNOX Level-7 Apple-grade security protocol.
  * * ALL RIGHTS RESERVED. CLAWLINK INC.
  * ==============================================================================================
@@ -29,8 +30,6 @@ import Image from "next/image";
  * ==============================================================================================
  * KNOX ENTERPRISE SECURITY PROTOCOL (FRONTEND DOM PROTECTION)
  * ==============================================================================================
- * This class establishes a hostile environment for reverse engineers and browser extensions.
- * It continually monitors the DOM for unauthorized access.
  */
 class KnoxSecurityProtocol {
   private static isInitialized = false;
@@ -53,14 +52,8 @@ class KnoxSecurityProtocol {
       console.debug = noOp;
       console.trace = noOp;
     } else {
-      console.log(
-        "%c STOP!",
-        "color: red; font-size: 50px; font-weight: bold; text-shadow: 2px 2px 0 #000;"
-      );
-      console.log(
-        "%c CLAWLINK KNOX SECURITY: Unauthorized access to backend structure is strictly prohibited.",
-        "color: white; background: red; font-size: 16px; padding: 4px; border-radius: 4px;"
-      );
+      console.log("%c STOP!", "color: red; font-size: 50px; font-weight: bold; text-shadow: 2px 2px 0 #000;");
+      console.log("%c CLAWLINK KNOX SECURITY: Unauthorized access to backend structure is strictly prohibited.", "color: white; background: red; font-size: 16px; padding: 4px; border-radius: 4px;");
     }
   }
 
@@ -130,19 +123,19 @@ const PRICING_DATA: Record<string, any> = {
  * SCALABLE VECTOR GRAPHICS (INLINE)
  * ==============================================================================================
  */
-const OpenAI_Icon  = () => <Image src="/logos/openai.svg"  alt="GPT-4o OpenAI Agent Icon"  width={26} height={26} className="transform-gpu" />;
-const Claude_Icon  = () => <Image src="/logos/claude.svg"  alt="Claude 3 Anthropic AI Icon"  width={26} height={26} className="transform-gpu" />;
-const Gemini_Icon  = () => <Image src="/logos/gemini.svg"  alt="Gemini Google AI Bot Icon"  width={26} height={26} className="transform-gpu" />;
+const OpenAI_Icon  = ({ size = 26 }: { size?: number }) => <Image src="/logos/openai.svg"  alt="GPT-4o OpenAI Agent Icon"  width={size} height={size} className="transform-gpu" />;
+const Claude_Icon  = ({ size = 26 }: { size?: number }) => <Image src="/logos/claude.svg"  alt="Claude 3 Anthropic AI Icon"  width={size} height={size} className="transform-gpu" />;
+const Gemini_Icon  = ({ size = 26 }: { size?: number }) => <Image src="/logos/gemini.svg"  alt="Gemini Google AI Bot Icon"  width={size} height={size} className="transform-gpu" />;
 
-const Llama_Icon = () => (
-  <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-label="Meta Llama 4 AI Builder" className="text-gray-800 transform-gpu">
+const Llama_Icon = ({ size = 26 }: { size?: number }) => (
+  <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-label="Meta Llama 4 AI Builder" className="text-gray-800 transform-gpu">
     <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/>
     <line x1="4" y1="22" x2="4" y2="15"/>
   </svg>
 );
 
-const Omni_Icon = () => (
-  <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#00BFFF" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-label="OmniAgent 3x AI Fallback Matrix">
+const Omni_Icon = ({ size = 22 }: { size?: number }) => (
+  <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke="#00BFFF" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-label="OmniAgent 3x AI Fallback Matrix">
     <path d="M12 4.5C10 4.5 8 5.5 7.5 7.5 6 7.5 4.5 8.5 4.5 10.5 4 11.5 4 13 5 14 4.5 15.5 5.5 17 7 17.5 7.5 19 9 20 10.5 20H12"/>
     <path d="M12 4.5C14 4.5 16 5.5 16.5 7.5 18 7.5 19.5 8.5 19.5 10.5 20 11.5 20 13 19 14 19.5 15.5 18.5 17 17 17.5 16.5 19 15 20 13.5 20H12"/>
     <line x1="12" y1="4.5" x2="12" y2="20"/>
@@ -172,16 +165,16 @@ const WhatsApp_Icon = ({ size = 26 }: { size?: number }) => (
   </svg>
 );
 
-const Discord_Icon = () => (
-  <svg viewBox="0 0 24 24" width="22" height="22" fill="#5865F2" aria-label="Discord AI Chatbot Deployment" className="transform-gpu">
+const Discord_Icon = ({ size = 22 }: { size?: number }) => (
+  <svg viewBox="0 0 24 24" width={size} height={size} fill="#5865F2" aria-label="Discord AI Chatbot Deployment" className="transform-gpu">
     <path d="M20.3 5.4c-1.6-.7-3.4-1.2-5.2-1.5-.2.4-.4.9-.6 1.3-1.9-.3-3.8-.3-5.7 0-.2-.4-.4-.9-.6-1.3-1.8.3-3.6.8-5.2 1.5-3.3 4.9-4.2 9.7-3.3 14.4 2.2 1.6 4.3 2.6 6.4 3.2.5-.7 1-1.5 1.4-2.3-1.2-.5-2.4-1.1-3.5-1.8.3-.2.6-.4.9-.7 4.6 2.1 9.7 2.1 14.3 0 .3.2.6.5.9.7-1.1.7-2.3 1.3-3.5 1.8.4.8.9 1.6 1.4 2.3 2.1-.6 4.2-1.6 6.4-3.2 1-5.1.1-10-3.2-14.4z"/>
   </svg>
 );
 
-const Instagram_Icon = () => (
-  <div aria-label="Instagram DM Automation AI Agent" className="w-[22px] h-[22px] rounded-lg bg-gradient-to-tr from-[#f09433] via-[#e6683c] to-[#bc1888] flex items-center justify-center transform-gpu">
-    <div className="w-[14px] h-[14px] border-[2px] border-white rounded-[4px] flex items-center justify-center">
-      <div className="w-[5px] h-[5px] bg-white rounded-full"/>
+const Instagram_Icon = ({ size = 22 }: { size?: number }) => (
+  <div aria-label="Instagram DM Automation AI Agent" className={`w-[${size}px] h-[${size}px] rounded-lg bg-gradient-to-tr from-[#f09433] via-[#e6683c] to-[#bc1888] flex items-center justify-center transform-gpu`}>
+    <div className="w-[60%] h-[60%] border-[2px] border-white rounded-[4px] flex items-center justify-center">
+      <div className="w-[35%] h-[35%] bg-white rounded-full"/>
     </div>
   </div>
 );
@@ -259,7 +252,7 @@ export default function Home() {
   const [botLink, setBotLink] = useState("");
   
   const [activeModel, setActiveModel] = useState("gpt-5.4 Pro");
-  const [activeChannel, setActiveChannel] = useState("telegram"); // 🚀 FIXED: Default channel is now 'telegram' instead of 'widget'
+  const [activeChannel, setActiveChannel] = useState("telegram");
   const [selectedTier, setSelectedTier] = useState<string|null>(null);
   
   const [currency, setCurrency] = useState<"USD"|"INR">("USD");
@@ -277,19 +270,15 @@ export default function Home() {
       const savedModel = localStorage.getItem("clawlink_model");
       const savedChannel = localStorage.getItem("clawlink_channel");
       if (savedModel) setActiveModel(savedModel);
-      // 🚀 FIXED: Ignore 'widget' channel if found in local storage
       if (savedChannel && savedChannel !== "widget") setActiveChannel(savedChannel);
     }
   }, []);
 
   /**
-   * 🚀 AUTH-GATED SELECTION (GATEKEEPER LOGIC)
+   * 🚀 FREE PRE-LOGIN SELECTION LOGIC (DEMO MODE ENABLED)
+   * Users can now click and interact with models/channels before logging in.
    */
   const handleModelSelect = (modelId: string) => {
-    if (status !== "authenticated") {
-      alert("Please Login via Google first to configure your AI Agent!");
-      return;
-    }
     if (!isTokenSaved) {
       setActiveModel(modelId);
       if (typeof window !== "undefined") {
@@ -299,15 +288,20 @@ export default function Home() {
   };
 
   const handleChannelSelect = (channelId: string) => {
-    if (status !== "authenticated") {
-      alert("Please Login via Google first to configure your AI Agent!");
-      return;
-    }
     if (!isTokenSaved) {
       setActiveChannel(channelId);
       if (typeof window !== "undefined") {
         localStorage.setItem("clawlink_channel", channelId);
       }
+    }
+  };
+
+  // Post Login routing check
+  const handleLoginOrDeploy = () => {
+    if (status !== "authenticated") {
+        signIn("google");
+    } else {
+        handleOpenIntegration(activeChannel);
     }
   };
 
@@ -461,7 +455,7 @@ export default function Home() {
       const payload = {
         email: session?.user?.email,
         selectedModel: activeModel,
-        selectedChannel: activeChannel, // 🚀 FIXED: No more 'widget'
+        selectedChannel: activeChannel,
         telegramToken: activeChannel === "telegram" ? telegramToken : "",
         waPhoneId: (activeChannel === "whatsapp" || activeChannel === "instagram") ? waPhoneId : "",
         waPhoneNumber: activeChannel === "whatsapp" ? waPhoneNumber : "",
@@ -558,15 +552,15 @@ export default function Home() {
 
   const btn = "transition-all duration-[120ms] ease-out active:scale-[0.93] transform-gpu will-change-transform";
 
+  // 🚀 FIXED: Enhanced desktop styling for buttons to prevent gaps and improve visual layout
   const pillBase = [
     "bg-white border-2 border-transparent cursor-pointer overflow-hidden",
     btn,
-    "h-[48px] rounded-[12px] flex flex-row items-center gap-2 px-3",
     "shadow-[0_2px_8px_rgba(0,0,0,0.12)]",
     "hover:shadow-[0_8px_20px_rgba(0,0,0,0.22)] hover:-translate-y-[2px]",
-    "sm:flex-row sm:h-[48px] sm:px-3",
-    "max-sm:flex-col max-sm:h-[58px] max-sm:px-[3px] max-sm:py-[7px] max-sm:gap-[3px] max-sm:justify-center max-sm:items-center",
-    "max-sm:rounded-[10px] max-sm:shadow-[0_2px_6px_rgba(0,0,0,0.10)]",
+    "lg:flex-row lg:w-[100%] lg:h-[64px] lg:px-4 lg:gap-3", // Larger desktop sizing
+    "max-lg:flex-col max-lg:h-[60px] max-lg:px-[4px] max-lg:py-[8px] max-lg:gap-[4px] max-lg:justify-center max-lg:items-center", // Mobile fallback
+    "rounded-[14px]",
   ].join(" ");
 
   const modelActive = (id: string) => activeModel === id && !(isTokenSaved && activeModel !== id);
@@ -645,13 +639,17 @@ export default function Home() {
         .stat-hover:hover{transform:scale(1.04)}
         .icon-lift{transition:transform .2s cubic-bezier(.34,1.56,.64,1)}
         .icon-lift:hover{transform:scale(1.12) rotate(-4deg)}
-        .ptx-name{font-size:11px;font-weight:900;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-        .ptx-sub {font-size:7.5px;font-weight:700;opacity:.8;white-space:nowrap}
-        .ptx-soon{font-size:7.5px;font-weight:700;color:#3b82f6;text-transform:uppercase}
-        @media(max-width:640px){
-          .ptx-name{font-size:9px;text-align:center;width:100%}
-          .ptx-sub,.ptx-soon{font-size:6.5px;text-align:center;width:100%}
+        
+        /* 🚀 FIXED: Dynamic Typography sizes for Desktop/Mobile */
+        .ptx-name{font-size:14px;font-weight:900;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+        .ptx-sub {font-size:10px;font-weight:700;opacity:.8;white-space:nowrap}
+        .ptx-soon{font-size:9px;font-weight:800;color:#3b82f6;text-transform:uppercase}
+        
+        @media(max-width:1024px){
+          .ptx-name{font-size:10px;text-align:center;width:100%}
+          .ptx-sub,.ptx-soon{font-size:8px;text-align:center;width:100%}
         }
+        
         .orange-glow{box-shadow:0 0 28px rgba(249,115,22,.48)}
         .orange-glow:hover{box-shadow:0 0 48px rgba(249,115,22,.65)}
         .blue-glow  {box-shadow:0 0 28px rgba(37,99,235,.52)}
@@ -666,11 +664,11 @@ export default function Home() {
            style={{background:"radial-gradient(circle,rgba(168,85,247,0.07) 0%,transparent 70%)"}}/>
 
       <nav id="clnav" aria-label="Main Navigation"
-        className="fixed top-0 left-0 right-0 z-[100] h-[56px] flex items-center justify-between px-4 md:px-10 transition-colors duration-200"
+        className="fixed top-0 left-0 right-0 z-[100] h-[64px] flex items-center justify-between px-6 md:px-12 transition-colors duration-200"
         style={{backdropFilter:"blur(12px)",WebkitBackdropFilter:"blur(12px)",
                 background:"rgba(7,7,10,0.4)",borderBottom:"1px solid rgba(255,255,255,0.055)"}}>
 
-        <svg aria-label="ClawLink Home" width="130" height="22" viewBox="0 0 152 26" fill="none" className="shrink-0 cursor-pointer transition-transform hover:scale-105" onClick={() => router.push("/")}>
+        <svg aria-label="ClawLink Home" width="140" height="24" viewBox="0 0 152 26" fill="none" className="shrink-0 cursor-pointer transition-transform hover:scale-105" onClick={() => router.push("/")}>
           <defs>
             <linearGradient id="cg" x1="0" y1="0" x2="0" y2="26" gradientUnits="userSpaceOnUse">
               <stop stopColor="#fff"/><stop offset="1" stopColor="rgba(255,255,255,.65)"/>
@@ -685,212 +683,198 @@ export default function Home() {
           <text x="116" y="18" fontFamily="-apple-system,BlinkMacSystemFont,sans-serif" fontSize="9.5" fontWeight="700" letterSpacing=".7" fill="#f97316">.COM</text>
         </svg>
 
-        <div className="flex items-center gap-3 md:gap-5">
+        <div className="flex items-center gap-4 md:gap-6">
           {status === "authenticated" && (
             <div className="hidden md:flex items-center gap-3">
-              <img src={session?.user?.image || "https://ui-avatars.com/api/?name=User&background=random"} className="w-7 h-7 rounded-full border border-white/20 ring-1 ring-white/10" alt="User Avatar"/>
+              <img src={session?.user?.image || "https://ui-avatars.com/api/?name=User&background=random"} className="w-8 h-8 rounded-full border border-white/20 ring-1 ring-white/10" alt="User Avatar"/>
               <button aria-label="Sign out of ClawLink" onClick={()=>signOut()}
-                className={`flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-gray-500 hover:text-white ${btn}`}>
-                <LogOut className="w-3 h-3"/> Logout
+                className={`flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-widest text-gray-500 hover:text-white ${btn}`}>
+                <LogOut className="w-4 h-4"/> Logout
               </button>
             </div>
           )}
           <button aria-label="Contact ClawLink Support" data-spring onClick={()=>setIsSupportModalOpen(true)}
-            className={`flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-gray-500 hover:text-white ${btn}`}>
-            <MessageSquare className="w-3.5 h-3.5"/>
-            <span className="hidden sm:inline">Contact Support</span>
-            <span className="sm:hidden">Support</span>
+            className={`flex items-center gap-2 text-[11px] font-bold uppercase tracking-widest text-gray-400 hover:text-white px-4 py-2 rounded-full border border-white/10 hover:border-white/20 bg-white/5 transition-all ${btn}`}>
+            <MessageSquare className="w-4 h-4 text-orange-500"/>
+            <span className="hidden sm:inline">Support</span>
           </button>
         </div>
       </nav>
 
-      <section id="hero" className="relative z-10 min-h-screen flex flex-col items-center justify-center pt-20 pb-16 px-4 text-center">
-        <div className="anim-badge inline-flex items-center gap-2 mb-6 px-5 py-2 rounded-full text-[10px] font-bold tracking-[.1em] text-orange-400 shadow-[0_0_15px_rgba(249,115,22,0.2)]"
+      <section id="hero" className="relative z-10 min-h-screen flex flex-col items-center justify-center pt-24 pb-16 px-4 text-center">
+        <div className="anim-badge inline-flex items-center gap-2 mb-6 px-6 py-2.5 rounded-full text-[11px] font-black tracking-[.15em] text-orange-400 shadow-[0_0_20px_rgba(249,115,22,0.2)]"
           style={{background:"rgba(249,115,22,0.09)",border:"1px solid rgba(249,115,22,0.26)"}}>
-          <span className="w-1.5 h-1.5 rounded-full bg-orange-400 bpulse pulse-ring"/>
+          <span className="w-2 h-2 rounded-full bg-orange-400 bpulse pulse-ring"/>
           LIVE NOW &nbsp;·&nbsp; 30-SECOND DEPLOY
         </div>
 
-        <h1 className="anim-h1 text-[clamp(2.4rem,6.5vw,5rem)] font-black leading-[1.03] tracking-[-0.04em] mb-4 text-white">
+        <h1 className="anim-h1 text-[clamp(2.8rem,7vw,6rem)] font-black leading-[1.05] tracking-[-0.04em] mb-6 text-white max-w-[1000px]">
           Deploy <span className="grad-text">OpenClaw AI Assistance</span><br/>Under 30 Seconds
         </h1>
 
-        <p className="anim-sub text-gray-300 text-[15px] max-w-[460px] mb-8 leading-[1.8]">
+        <p className="anim-sub text-gray-300 text-[16px] md:text-[18px] max-w-[600px] mb-10 leading-[1.8]">
           Avoid all technical complexity — one-click deploy your own 24/7 active Personal AI Assistant for WhatsApp, Telegram & Instagram. No code. No servers. Just results.
         </p>
 
-        <div className="anim-card card-shimmer tilt-el relative w-full max-w-[700px] rounded-[22px] p-5 md:p-7 mb-7 overflow-hidden"
-          style={{background:"rgba(255,255,255,0.028)",border:"1px solid rgba(255,255,255,0.07)",
-                  boxShadow:"0 0 60px rgba(249,115,22,0.06),0 32px 64px rgba(0,0,0,0.5)"}}>
-
-          <p className="text-[9px] font-bold tracking-[.15em] uppercase text-gray-400 mb-3 text-left">Choose your AI model</p>
-          <div className="grid grid-cols-5 gap-[6px] mb-5">
-            <button aria-label="Select GPT-5.4 Pro Model" data-spring onClick={() => handleModelSelect("gpt-5.4 Pro")} disabled={isTokenSaved && activeModel!=="gpt-5.4 Pro"}
-              className={[pillBase, modelActive("gpt-5.4 Pro") ? "!border-blue-500 shadow-[0_0_0_3px_rgba(59,130,246,0.2),0_2px_8px_rgba(0,0,0,0.12)]" : "", isTokenSaved && activeModel!=="gpt-5.4 Pro" ? "opacity-25 pointer-events-none" : ""].join(" ")}>
-              <div className="w-[22px] h-[22px] rounded-[5px] flex items-center justify-center shrink-0 bg-[#f0fdf4]"><OpenAI_Icon/></div>
-              <div className="flex flex-col min-w-0 max-sm:items-center max-sm:w-full"><span className="ptx-name" style={{color:"#10a37f"}}>GPT-5.4</span><span className="ptx-sub" style={{color:"#10a37f"}}>Pro</span></div>
-            </button>
-
-            <button aria-label="Select Claude 3 Model" data-spring onClick={() => handleModelSelect("Claude Opus 4.6")} disabled={isTokenSaved && activeModel!=="Claude Opus 4.6"}
-              className={[pillBase, modelActive("Claude Opus 4.6") ? "!border-blue-500 shadow-[0_0_0_3px_rgba(59,130,246,0.2),0_2px_8px_rgba(0,0,0,0.12)]" : "", isTokenSaved && activeModel!=="Claude Opus 4.6" ? "opacity-25 pointer-events-none" : ""].join(" ")}>
-              <div className="w-[22px] h-[22px] rounded-[5px] flex items-center justify-center shrink-0 bg-[#fdf5f2]"><Claude_Icon/></div>
-              <div className="flex flex-col min-w-0 max-sm:items-center max-sm:w-full"><span className="ptx-name" style={{color:"#d97757"}}>Claude</span><span className="ptx-sub" style={{color:"#d97757"}}>Opus 4.6</span></div>
-            </button>
-
-            <button aria-label="Select Gemini Model" data-spring onClick={() => handleModelSelect("gemini 3.1 Pro")} disabled={isTokenSaved && activeModel!=="gemini 3.1 Pro"}
-              className={[pillBase, modelActive("gemini 3.1 Pro") ? "!border-blue-500 shadow-[0_0_0_3px_rgba(59,130,246,0.2),0_2px_8px_rgba(0,0,0,0.12)]" : "", isTokenSaved && activeModel!=="gemini 3.1 Pro" ? "opacity-25 pointer-events-none" : ""].join(" ")}>
-              <div className="w-[22px] h-[22px] rounded-[5px] flex items-center justify-center shrink-0 bg-[#eff2ff]"><Gemini_Icon/></div>
-              <div className="flex flex-col min-w-0 max-sm:items-center max-sm:w-full"><span className="ptx-name" style={{color:"#648af5"}}>Gemini</span><span className="ptx-sub" style={{color:"#648af5"}}>3.1 Pro</span></div>
-            </button>
-
-            <button aria-label="Select OmniAgent Fallback Model" data-spring onClick={() => handleModelSelect("omni 3 nexus")} disabled={isTokenSaved && activeModel!=="omni 3 nexus"}
-              className={[pillBase, modelActive("omni 3 nexus") ? "!border-[#00bfff] shadow-[0_0_0_3px_rgba(0,191,255,0.2),0_2px_8px_rgba(0,0,0,0.12)]" : "", isTokenSaved && activeModel!=="omni 3 nexus" ? "opacity-25 pointer-events-none" : ""].join(" ")}>
-              <div className="w-[22px] h-[22px] rounded-[5px] flex items-center justify-center shrink-0 bg-[#e8f9ff]"><Omni_Icon/></div>
-              <div className="flex flex-col min-w-0 max-sm:items-center max-sm:w-full"><span className="ptx-name" style={{color:"#0369a1",fontSize:"9.5px"}}>Omni 3</span><span className="ptx-sub" style={{color:"#00bfff"}}>Nexus</span></div>
-            </button>
-
-            <div className={[pillBase, "opacity-30 cursor-not-allowed pointer-events-none"].join(" ")} aria-label="Llama 4 coming soon">
-              <div className="w-[22px] h-[22px] rounded-[5px] flex items-center justify-center shrink-0 bg-gray-100"><Llama_Icon/></div>
-              <div className="flex flex-col min-w-0 max-sm:items-center max-sm:w-full"><span className="ptx-name text-gray-600">Llama 4</span><span className="ptx-soon" style={{animation:"bpulse 1.8s ease-in-out infinite"}}>SOON</span></div>
-            </div>
-          </div>
-
-          <p className="text-[9px] font-bold tracking-[.15em] uppercase text-gray-400 mb-3 text-left">Select your channel</p>
-          <div className="grid grid-cols-5 gap-[6px] mb-5">
-            <button aria-label="Connect Telegram AI Bot" data-spring onClick={()=>handleChannelSelect("telegram")} disabled={isTokenSaved && activeChannel!=="telegram"}
-              className={[pillBase, chanActive("telegram") ? "!border-[#2aabee] shadow-[0_0_0_3px_rgba(42,171,238,0.2),0_2px_8px_rgba(0,0,0,0.12)]" : "", isTokenSaved && activeChannel!=="telegram" ? "opacity-25 pointer-events-none" : ""].join(" ")}>
-              <div className="w-[22px] h-[22px] rounded-full flex items-center justify-center shrink-0"><Telegram_Icon size={22}/></div>
-              <div className="flex flex-col min-w-0 max-sm:items-center max-sm:w-full"><span className="ptx-name text-gray-800">Telegram</span></div>
-            </button>
-
-            <button aria-label="Connect WhatsApp AI Agent" data-spring onClick={()=>handleChannelSelect("whatsapp")} disabled={isTokenSaved && activeChannel!=="whatsapp"}
-              className={[pillBase, chanActive("whatsapp") ? "!border-[#25d366] shadow-[0_0_0_3px_rgba(37,211,102,0.2),0_2px_8px_rgba(0,0,0,0.12)]" : "", isTokenSaved && activeChannel!=="whatsapp" ? "opacity-25 pointer-events-none" : ""].join(" ")}>
-              <div className="w-[22px] h-[22px] rounded-full flex items-center justify-center shrink-0"><WhatsApp_Icon size={22}/></div>
-              <div className="flex flex-col min-w-0 max-sm:items-center max-sm:w-full"><span className="ptx-name text-gray-800">WhatsApp</span></div>
-            </button>
+        {/* 🚀 FIXED: Desktop Optimized Grid Layout for Selection UI */}
+        <div className="anim-card card-shimmer tilt-el relative w-full max-w-[1100px] rounded-[28px] p-6 md:p-10 mb-8 overflow-hidden"
+          style={{background:"rgba(255,255,255,0.028)",border:"1px solid rgba(255,255,255,0.08)",
+                  boxShadow:"0 0 80px rgba(249,115,22,0.08),0 40px 80px rgba(0,0,0,0.6)"}}>
+          
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
             
-            <button aria-label="Connect Instagram Auto Reply Bot" data-spring onClick={()=>handleChannelSelect("instagram")} disabled={isTokenSaved && activeChannel!=="instagram"}
-              className={[pillBase, chanActive("instagram") ? "!border-[#e6683c] shadow-[0_0_0_3px_rgba(230,104,60,0.2),0_2px_8px_rgba(0,0,0,0.12)]" : "", isTokenSaved && activeChannel!=="instagram" ? "opacity-25 pointer-events-none" : ""].join(" ")}>
-              <div className="w-[22px] h-[22px] rounded-full flex items-center justify-center shrink-0"><Instagram_Icon/></div>
-              <div className="flex flex-col min-w-0 max-sm:items-center max-sm:w-full"><span className="ptx-name text-gray-800">Instagram</span></div>
-            </button>
+            {/* COLUMN 1: CHANNELS */}
+            <div className="flex flex-col gap-4">
+               <p className="text-[10px] lg:text-[12px] font-black tracking-[.2em] uppercase text-gray-400 text-left flex items-center gap-2 border-b border-white/5 pb-3">
+                 <span className="w-5 h-5 rounded bg-white/10 flex items-center justify-center text-white">1</span>
+                 Select Platform
+               </p>
+               <div className="grid grid-cols-5 lg:grid-cols-2 gap-2 lg:gap-4">
+                  <button aria-label="Connect Telegram AI Bot" data-spring onClick={()=>handleChannelSelect("telegram")} disabled={isTokenSaved && activeChannel!=="telegram"}
+                    className={[pillBase, chanActive("telegram") ? "!border-[#2aabee] bg-[#2aabee]/5 shadow-[0_0_0_4px_rgba(42,171,238,0.15),0_4px_12px_rgba(0,0,0,0.2)]" : "bg-[#111] border-white/5", isTokenSaved && activeChannel!=="telegram" ? "opacity-25 pointer-events-none" : ""].join(" ")}>
+                    <div className="w-[30px] h-[30px] lg:w-[40px] lg:h-[40px] rounded-full flex items-center justify-center shrink-0"><Telegram_Icon size={28}/></div>
+                    <div className="flex flex-col min-w-0 max-sm:items-center lg:items-start max-sm:w-full"><span className="ptx-name text-gray-100">Telegram</span></div>
+                  </button>
 
-            <div aria-label="Discord Bot Coming Soon" className={[pillBase, isTokenSaved?"opacity-20":"opacity-35", "cursor-not-allowed pointer-events-none"].join(" ")}>
-              <div className="w-[22px] h-[22px] rounded-full flex items-center justify-center shrink-0"><Discord_Icon/></div>
-              <div className="flex flex-col min-w-0 max-sm:items-center max-sm:w-full"><span className="ptx-name text-gray-700">Discord</span><span className="ptx-soon">SOON</span></div>
+                  <button aria-label="Connect WhatsApp AI Agent" data-spring onClick={()=>handleChannelSelect("whatsapp")} disabled={isTokenSaved && activeChannel!=="whatsapp"}
+                    className={[pillBase, chanActive("whatsapp") ? "!border-[#25d366] bg-[#25d366]/5 shadow-[0_0_0_4px_rgba(37,211,102,0.15),0_4px_12px_rgba(0,0,0,0.2)]" : "bg-[#111] border-white/5", isTokenSaved && activeChannel!=="whatsapp" ? "opacity-25 pointer-events-none" : ""].join(" ")}>
+                    <div className="w-[30px] h-[30px] lg:w-[40px] lg:h-[40px] rounded-full flex items-center justify-center shrink-0"><WhatsApp_Icon size={28}/></div>
+                    <div className="flex flex-col min-w-0 max-sm:items-center lg:items-start max-sm:w-full"><span className="ptx-name text-gray-100">WhatsApp</span></div>
+                  </button>
+                  
+                  <button aria-label="Connect Instagram Auto Reply Bot" data-spring onClick={()=>handleChannelSelect("instagram")} disabled={isTokenSaved && activeChannel!=="instagram"}
+                    className={[pillBase, chanActive("instagram") ? "!border-[#e6683c] bg-[#e6683c]/5 shadow-[0_0_0_4px_rgba(230,104,60,0.15),0_4px_12px_rgba(0,0,0,0.2)]" : "bg-[#111] border-white/5", isTokenSaved && activeChannel!=="instagram" ? "opacity-25 pointer-events-none" : ""].join(" ")}>
+                    <div className="w-[30px] h-[30px] lg:w-[40px] lg:h-[40px] rounded-full flex items-center justify-center shrink-0"><Instagram_Icon size={32}/></div>
+                    <div className="flex flex-col min-w-0 max-sm:items-center lg:items-start max-sm:w-full"><span className="ptx-name text-gray-100">Instagram</span></div>
+                  </button>
+
+                  <div aria-label="Discord Bot Coming Soon" className={[pillBase, isTokenSaved?"opacity-20":"opacity-35", "bg-[#111] border-white/5 cursor-not-allowed pointer-events-none"].join(" ")}>
+                    <div className="w-[30px] h-[30px] lg:w-[40px] lg:h-[40px] rounded-full flex items-center justify-center shrink-0"><Discord_Icon size={26}/></div>
+                    <div className="flex flex-col min-w-0 max-sm:items-center lg:items-start max-sm:w-full"><span className="ptx-name text-gray-500">Discord</span><span className="ptx-soon">SOON</span></div>
+                  </div>
+
+                  <div aria-label="Slack Bot Coming Soon" className={[pillBase, isTokenSaved?"opacity-20":"opacity-35", "bg-[#111] border-white/5 cursor-not-allowed pointer-events-none"].join(" ")}>
+                    <div className="w-[30px] h-[30px] lg:w-[40px] lg:h-[40px] rounded-full flex items-center justify-center shrink-0 bg-[#4a154b]">
+                      <svg viewBox="0 0 24 24" width="18" height="18" fill="white"><path d="M5.04 15.44a2.52 2.52 0 01-5.04 0 2.52 2.52 0 012.52-2.52h2.52v2.52zm1.26 0a2.52 2.52 0 015.04 0v6.3a2.52 2.52 0 01-5.04 0v-6.3zM8.56 5.04a2.52 2.52 0 010-5.04 2.52 2.52 0 012.52 2.52v2.52H8.56zm0 1.26a2.52 2.52 0 010 5.04H2.26a2.52 2.52 0 010-5.04h6.3z"/></svg>
+                    </div>
+                    <div className="flex flex-col min-w-0 max-sm:items-center lg:items-start max-sm:w-full"><span className="ptx-name text-gray-500">Slack</span><span className="ptx-soon">SOON</span></div>
+                  </div>
+               </div>
             </div>
 
-            <div aria-label="Slack Bot Coming Soon" className={[pillBase, isTokenSaved?"opacity-20":"opacity-35", "cursor-not-allowed pointer-events-none"].join(" ")}>
-              <div className="w-[22px] h-[22px] rounded-full flex items-center justify-center shrink-0 bg-[#4a154b]">
-                <svg viewBox="0 0 24 24" width="13" height="13" fill="white"><path d="M5.04 15.44a2.52 2.52 0 01-5.04 0 2.52 2.52 0 012.52-2.52h2.52v2.52zm1.26 0a2.52 2.52 0 015.04 0v6.3a2.52 2.52 0 01-5.04 0v-6.3zM8.56 5.04a2.52 2.52 0 010-5.04 2.52 2.52 0 012.52 2.52v2.52H8.56zm0 1.26a2.52 2.52 0 010 5.04H2.26a2.52 2.52 0 010-5.04h6.3z"/></svg>
-              </div>
-              <div className="flex flex-col min-w-0 max-sm:items-center max-sm:w-full"><span className="ptx-name text-gray-700">Slack</span><span className="ptx-soon">SOON</span></div>
+            {/* COLUMN 2: MODELS */}
+            <div className="flex flex-col gap-4">
+                <p className="text-[10px] lg:text-[12px] font-black tracking-[.2em] uppercase text-gray-400 text-left flex items-center gap-2 border-b border-white/5 pb-3">
+                 <span className="w-5 h-5 rounded bg-white/10 flex items-center justify-center text-white">2</span>
+                 Select AI Engine
+               </p>
+               <div className="grid grid-cols-5 lg:grid-cols-2 gap-2 lg:gap-4">
+                  <button aria-label="Select GPT-5.4 Pro Model" data-spring onClick={() => handleModelSelect("gpt-5.4 Pro")} disabled={isTokenSaved && activeModel!=="gpt-5.4 Pro"}
+                    className={[pillBase, modelActive("gpt-5.4 Pro") ? "!border-blue-500 bg-[#f0fdf4]/5 shadow-[0_0_0_4px_rgba(59,130,246,0.15),0_4px_12px_rgba(0,0,0,0.2)]" : "bg-[#111] border-white/5", isTokenSaved && activeModel!=="gpt-5.4 Pro" ? "opacity-25 pointer-events-none" : ""].join(" ")}>
+                    <div className="w-[30px] h-[30px] lg:w-[40px] lg:h-[40px] rounded-lg flex items-center justify-center shrink-0 bg-[#f0fdf4]/10"><OpenAI_Icon size={28}/></div>
+                    <div className="flex flex-col min-w-0 max-sm:items-center lg:items-start max-sm:w-full"><span className="ptx-name" style={{color:"#10a37f"}}>GPT-5.4</span><span className="ptx-sub" style={{color:"#10a37f"}}>Pro Max</span></div>
+                  </button>
+
+                  <button aria-label="Select Claude 3 Model" data-spring onClick={() => handleModelSelect("Claude Opus 4.6")} disabled={isTokenSaved && activeModel!=="Claude Opus 4.6"}
+                    className={[pillBase, modelActive("Claude Opus 4.6") ? "!border-blue-500 bg-[#fdf5f2]/5 shadow-[0_0_0_4px_rgba(59,130,246,0.15),0_4px_12px_rgba(0,0,0,0.2)]" : "bg-[#111] border-white/5", isTokenSaved && activeModel!=="Claude Opus 4.6" ? "opacity-25 pointer-events-none" : ""].join(" ")}>
+                    <div className="w-[30px] h-[30px] lg:w-[40px] lg:h-[40px] rounded-lg flex items-center justify-center shrink-0 bg-[#fdf5f2]/10"><Claude_Icon size={28}/></div>
+                    <div className="flex flex-col min-w-0 max-sm:items-center lg:items-start max-sm:w-full"><span className="ptx-name" style={{color:"#d97757"}}>Claude</span><span className="ptx-sub" style={{color:"#d97757"}}>Opus 4.6</span></div>
+                  </button>
+
+                  <button aria-label="Select Gemini Model" data-spring onClick={() => handleModelSelect("gemini 3.1 Pro")} disabled={isTokenSaved && activeModel!=="gemini 3.1 Pro"}
+                    className={[pillBase, modelActive("gemini 3.1 Pro") ? "!border-blue-500 bg-[#eff2ff]/5 shadow-[0_0_0_4px_rgba(59,130,246,0.15),0_4px_12px_rgba(0,0,0,0.2)]" : "bg-[#111] border-white/5", isTokenSaved && activeModel!=="gemini 3.1 Pro" ? "opacity-25 pointer-events-none" : ""].join(" ")}>
+                    <div className="w-[30px] h-[30px] lg:w-[40px] lg:h-[40px] rounded-lg flex items-center justify-center shrink-0 bg-[#eff2ff]/10"><Gemini_Icon size={28}/></div>
+                    <div className="flex flex-col min-w-0 max-sm:items-center lg:items-start max-sm:w-full"><span className="ptx-name" style={{color:"#648af5"}}>Gemini</span><span className="ptx-sub" style={{color:"#648af5"}}>3.1 Pro</span></div>
+                  </button>
+
+                  <button aria-label="Select OmniAgent Fallback Model" data-spring onClick={() => handleModelSelect("omni 3 nexus")} disabled={isTokenSaved && activeModel!=="omni 3 nexus"}
+                    className={[pillBase, modelActive("omni 3 nexus") ? "!border-[#00bfff] bg-[#e8f9ff]/5 shadow-[0_0_0_4px_rgba(0,191,255,0.15),0_4px_12px_rgba(0,0,0,0.2)]" : "bg-[#111] border-white/5", isTokenSaved && activeModel!=="omni 3 nexus" ? "opacity-25 pointer-events-none" : ""].join(" ")}>
+                    <div className="w-[30px] h-[30px] lg:w-[40px] lg:h-[40px] rounded-lg flex items-center justify-center shrink-0 bg-[#e8f9ff]/10"><Omni_Icon size={26}/></div>
+                    <div className="flex flex-col min-w-0 max-sm:items-center lg:items-start max-sm:w-full"><span className="ptx-name" style={{color:"#0369a1"}}>Omni 3</span><span className="ptx-sub" style={{color:"#00bfff"}}>Nexus Matrix</span></div>
+                  </button>
+
+                  <div aria-label="Llama 4 coming soon" className={[pillBase, "opacity-30 cursor-not-allowed bg-[#111] border-white/5 pointer-events-none"].join(" ")}>
+                    <div className="w-[30px] h-[30px] lg:w-[40px] lg:h-[40px] rounded-lg flex items-center justify-center shrink-0 bg-gray-100/10"><Llama_Icon size={28}/></div>
+                    <div className="flex flex-col min-w-0 max-sm:items-center lg:items-start max-sm:w-full"><span className="ptx-name text-gray-500">Llama 4</span><span className="ptx-soon" style={{animation:"bpulse 1.8s ease-in-out infinite"}}>SOON</span></div>
+                  </div>
+               </div>
             </div>
           </div>
-
-          <AnimatePresence mode="wait">
-            {botLink ? (
-              <motion.div key="success" initial={{opacity:0,scale:0.95}} animate={{opacity:1,scale:1}} exit={{opacity:0}} transition={{duration:.12,ease:"easeOut"}}
-                className="rounded-2xl p-5 text-center"
-                style={{background:"rgba(34,197,94,0.06)",border:"1px solid rgba(34,197,94,0.2)"}}>
-                <p className="text-[15px] font-bold text-white mb-4">🚀 Your Bot is Live!</p>
-                <div className="flex flex-col sm:flex-row justify-center gap-3">
-                  <button aria-label="Open Live Bot" data-ripple data-spring onClick={openLiveBotHandler}
-                    className={`relative overflow-hidden bg-white text-black font-black uppercase tracking-widest px-7 py-3.5 rounded-xl text-sm ${btn} hover:scale-[1.03] shadow-[0_0_20px_rgba(255,255,255,0.2)]`}>
-                    <span className="mt">Open Live Bot</span>
-                  </button>
-                  <button aria-label="Go to Dashboard" data-spring onClick={()=>router.push("/dashboard")}
-                    className={`flex items-center justify-center gap-2 text-white font-bold px-7 py-3.5 rounded-xl text-sm ${btn} hover:scale-[1.03]`}
-                    style={{background:"rgba(255,255,255,0.06)",border:"1px solid rgba(255,255,255,0.12)"}}>
-                    <Activity className="w-4 h-4"/> Live Dashboard
-                  </button>
-                </div>
-              </motion.div>
-
-            ) : status === "unauthenticated" ? (
-              <motion.div key="login" id="login-section" initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} transition={{duration:.12}}>
-                <button aria-label="Login with Google" data-ripple data-spring onClick={()=>signIn("google")}
-                  className={`relative overflow-hidden w-full bg-white text-gray-800 py-4 rounded-[1.75rem] flex items-center justify-center gap-3 text-[17px] font-bold shadow-[0_0_32px_rgba(255,255,255,0.15)] ${btn} hover:scale-[1.03]`}>
-                  <Google_Icon/> Login via Google & Deploy
-                </button>
-                <p className="mt-4 text-[13px] text-gray-400 text-center leading-relaxed">
-                  Link your channels to proceed.{" "}
-                  <span className="text-[#34A853] font-semibold">Limited servers — only 7 left.</span>
-                </p>
-              </motion.div>
-
-            ) : (
-              <motion.div key="action" initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} transition={{duration:.12}} className="flex flex-col gap-3">
-                <div className="flex items-center justify-between px-4 py-3 rounded-2xl"
-                  style={{background:"rgba(0,0,0,0.45)",border:"1px solid rgba(255,255,255,0.07)"}}>
-                  <div className="flex items-center gap-3 min-w-0">
-                    <img src={session?.user?.image || "https://ui-avatars.com/api/?name=User&background=random"} className="w-9 h-9 rounded-full border border-white/20 shrink-0" alt="User Profile"/>
-                    <div className="min-w-0">
-                      <p className="text-[13px] font-bold text-white leading-none truncate">{session?.user?.name}</p>
-                      <p className="text-[10px] text-gray-400 font-mono mt-[3px] truncate">{session?.user?.email}</p>
-                    </div>
+          
+          {/* 🚀 FIXED: Post-Selection Universal Action Area */}
+          <div className="mt-10 pt-8 border-t border-white/10 flex justify-center w-full">
+            <AnimatePresence mode="wait">
+              {botLink ? (
+                <motion.div key="success" initial={{opacity:0,scale:0.95}} animate={{opacity:1,scale:1}} exit={{opacity:0}} transition={{duration:.12,ease:"easeOut"}}
+                  className="rounded-2xl p-6 text-center w-full lg:max-w-[500px]"
+                  style={{background:"rgba(34,197,94,0.06)",border:"1px solid rgba(34,197,94,0.2)"}}>
+                  <p className="text-[16px] font-bold text-white mb-5">🚀 Your Bot is Live!</p>
+                  <div className="flex flex-col sm:flex-row justify-center gap-4">
+                    <button aria-label="Open Live Bot" data-ripple data-spring onClick={openLiveBotHandler}
+                      className={`relative overflow-hidden bg-white text-black font-black uppercase tracking-widest px-8 py-4 rounded-xl text-[13px] ${btn} hover:scale-[1.03] shadow-[0_0_20px_rgba(255,255,255,0.2)]`}>
+                      <span className="mt">Open Live Bot</span>
+                    </button>
+                    <button aria-label="Go to Dashboard" data-spring onClick={()=>router.push("/dashboard")}
+                      className={`flex items-center justify-center gap-2 text-white font-bold px-8 py-4 rounded-xl text-[13px] ${btn} hover:scale-[1.03]`}
+                      style={{background:"rgba(255,255,255,0.06)",border:"1px solid rgba(255,255,255,0.12)"}}>
+                      <Activity className="w-5 h-5"/> Live Dashboard
+                    </button>
                   </div>
-                  <button aria-label="Sign Out" data-spring onClick={()=>signOut()}
-                    className={`flex items-center gap-1 text-[10px] font-bold uppercase tracking-widest text-gray-400 hover:text-red-400 shrink-0 ml-2 ${btn}`}>
-                    <LogOut className="w-3.5 h-3.5"/>
-                    <span className="hidden sm:inline">Logout</span>
-                  </button>
-                </div>
+                </motion.div>
 
-                {!isTokenSaved ? (
-                  <button aria-label={`Connect ${activeChannel}`} data-ripple data-spring onClick={()=>handleOpenIntegration(activeChannel)}
-                    className={`relative overflow-hidden w-full bg-white text-black font-black py-4 rounded-2xl text-[14px] uppercase tracking-widest shadow-[0_0_32px_rgba(255,255,255,0.15)] ${btn} hover:scale-[1.03]`}>
-                    Connect {activeChannel === "telegram" ? "Telegram" : activeChannel === "whatsapp" ? "WhatsApp" : "Instagram"} →
+              ) : (
+                <motion.div key="login" id="login-section" initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} transition={{duration:.12}} className="w-full lg:max-w-[500px] flex flex-col items-center">
+                  <button aria-label="Login with Google" data-ripple data-spring onClick={handleLoginOrDeploy}
+                    className={`relative overflow-hidden w-full bg-gradient-to-r from-orange-500 to-amber-500 text-white py-5 rounded-[20px] flex items-center justify-center gap-3 text-[16px] font-black uppercase tracking-widest shadow-[0_0_40px_rgba(249,115,22,0.3)] ${btn} hover:scale-[1.03]`}>
+                    <Google_Icon/> {status === "authenticated" ? "Finalize Deployment" : "Login & Deploy"} →
                   </button>
-                ) : (
-                  <button aria-label="Deploy AI Agent" data-ripple data-spring onClick={handleDeploy} disabled={isDeploying}
-                    className={`mag-el relative overflow-hidden w-full font-black py-4 rounded-2xl text-[14px] uppercase tracking-widest flex items-center justify-center gap-2 ${btn} hover:scale-[1.03] bg-gradient-to-r from-blue-600 to-purple-600 text-white blue-glow`}>
-                    <Zap className="w-5 h-5 shrink-0"/>
-                    <span className="mt">{isDeploying ? "Deploying..." : "Deploy Your AI Agent Now"}</span>
-                  </button>
-                )}
-              </motion.div>
-            )}
-          </AnimatePresence>
+                  <p className="mt-5 text-[14px] text-gray-400 text-center leading-relaxed">
+                    Deploying <strong className="text-white">{PRICING_DATA[activeModel].name}</strong> to <strong className="text-white capitalize">{activeChannel}</strong>.{" "}
+                    <br/><span className="text-[#34A853] font-semibold text-[13px]">Limited enterprise servers available.</span>
+                  </p>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
         </div>
 
-        <div className="anim-stats grid grid-cols-3 w-full max-w-[580px] border border-white/[0.07] rounded-[18px] overflow-hidden">
+        <div className="anim-stats grid grid-cols-3 w-full max-w-[800px] border border-white/[0.07] rounded-[22px] overflow-hidden bg-[#0A0A0D]/50 backdrop-blur-sm shadow-xl">
           {[["30s","Deploy time"],["5+","AI models"],["24/7","Always active"]].map(([n,l]) => (
-            <div key={n} className="stat-hover flex flex-col items-center py-5 px-2 transition-colors duration-150 hover:bg-white/[0.04]"
-              style={{background:"rgba(255,255,255,0.022)",borderRight:"1px solid rgba(255,255,255,0.06)"}}>
-              <span className="text-[1.9rem] font-black leading-none grad-text">{n}</span>
-              <span className="text-[10px] text-gray-400 mt-1 text-center leading-snug">{l}</span>
+            <div key={n} className="stat-hover flex flex-col items-center py-7 px-3 transition-colors duration-150 hover:bg-white/[0.04]"
+              style={{background:"rgba(255,255,255,0.015)",borderRight:"1px solid rgba(255,255,255,0.04)"}}>
+              <span className="text-[2.2rem] lg:text-[2.8rem] font-black leading-none grad-text">{n}</span>
+              <span className="text-[11px] lg:text-[13px] font-bold tracking-widest uppercase text-gray-500 mt-2 text-center">{l}</span>
             </div>
           ))}
         </div>
       </section>
 
       {/* ══ HOW IT WORKS ══ */}
-      <section className="relative z-10 py-24 px-4 md:px-8" style={{borderTop:"1px solid rgba(255,255,255,0.04)"}}>
-        <div className="max-w-[1100px] mx-auto">
-          <div className="sr-up text-center mb-16">
-            <p className="text-[9.5px] font-bold tracking-[.15em] uppercase text-orange-500 mb-2">How It Works</p>
-            <h2 className="text-[clamp(1.8rem,3.5vw,2.8rem)] font-black tracking-[-0.035em] text-white mb-3">4 steps to go live</h2>
-            <p className="text-gray-300 text-[14px] max-w-[440px] mx-auto leading-relaxed">Zero to live AI agent in 30 seconds. No tech expertise needed.</p>
+      <section className="relative z-10 py-28 px-6 md:px-12" style={{borderTop:"1px solid rgba(255,255,255,0.04)"}}>
+        <div className="max-w-[1200px] mx-auto">
+          <div className="sr-up text-center mb-20">
+            <p className="text-[11px] font-black tracking-[.2em] uppercase text-orange-500 mb-3">How It Works</p>
+            <h2 className="text-[clamp(2rem,4vw,3.2rem)] font-black tracking-[-0.035em] text-white mb-4">4 steps to go live</h2>
+            <p className="text-gray-400 text-[16px] max-w-[500px] mx-auto leading-relaxed">Zero to live AI agent in 30 seconds. No tech expertise needed.</p>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 relative">
-            <div className="hidden md:block absolute top-8 left-[12%] right-[12%] h-px" style={{background:"linear-gradient(90deg,transparent,rgba(249,115,22,.25) 30%,rgba(249,115,22,.25) 70%,transparent)"}}/>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-10 lg:gap-14 relative">
+            <div className="hidden md:block absolute top-10 left-[12%] right-[12%] h-px" style={{background:"linear-gradient(90deg,transparent,rgba(249,115,22,.25) 30%,rgba(249,115,22,.25) 70%,transparent)"}}/>
             {[
               {n:"01",e:"🔑",t:"Login with Google",  d:"One tap. No passwords, no friction."},
               {n:"02",e:"🤖",t:"Choose Model & Channel",d:"Pick AI model + Telegram or WhatsApp."},
               {n:"03",e:"✅",t:"Token Verify",          d:"Paste token. Verified & secured instantly."},
               {n:"04",e:"🚀",t:"Go Live",               d:"Enterprise infra spins up. 24/7, zero maintenance."},
             ].map(({n,e,t,d},i)=>(
-              <div key={n} className={`sr-up sd${i+1} flex flex-col items-center text-center px-3 relative z-10`}>
-                <div className="icon-lift w-[60px] h-[60px] rounded-full flex items-center justify-center font-black text-[18px] text-orange-500 mb-4 z-10"
-                  style={{background:"#07070A",border:"1.5px solid rgba(249,115,22,0.22)",transition:"all .2s"}}
-                  onMouseEnter={e2=>{(e2.target as HTMLElement).style.background="rgba(249,115,22,0.08)";(e2.target as HTMLElement).style.boxShadow="0 0 28px rgba(249,115,22,0.2)"}}
-                  onMouseLeave={e2=>{(e2.target as HTMLElement).style.background="#07070A";(e2.target as HTMLElement).style.boxShadow="none"}}>
+              <div key={n} className={`sr-up sd${i+1} flex flex-col items-center text-center px-4 relative z-10`}>
+                <div className="icon-lift w-[70px] h-[70px] lg:w-[80px] lg:h-[80px] rounded-full flex items-center justify-center font-black text-[22px] lg:text-[26px] text-orange-500 mb-6 z-10 shadow-[0_0_30px_rgba(249,115,22,0.1)]"
+                  style={{background:"#07070A",border:"2px solid rgba(249,115,22,0.25)",transition:"all .2s"}}
+                  onMouseEnter={e2=>{(e2.target as HTMLElement).style.background="rgba(249,115,22,0.1)";(e2.target as HTMLElement).style.boxShadow="0 0 40px rgba(249,115,22,0.3)"}}
+                  onMouseLeave={e2=>{(e2.target as HTMLElement).style.background="#07070A";(e2.target as HTMLElement).style.boxShadow="0 0 30px rgba(249,115,22,0.1)"}}>
                   {n}
                 </div>
-                <div className="text-[20px] mb-2">{e}</div>
-                <div className="text-[13px] font-bold text-white mb-2">{t}</div>
-                <div className="text-[11.5px] text-gray-400 leading-relaxed">{d}</div>
+                <div className="text-[26px] mb-3">{e}</div>
+                <div className="text-[15px] font-black text-white mb-2">{t}</div>
+                <div className="text-[13px] text-gray-500 leading-relaxed">{d}</div>
               </div>
             ))}
           </div>
@@ -898,25 +882,25 @@ export default function Home() {
       </section>
 
       {/* ══ FEATURES ══ */}
-      <section className="relative z-10 py-24 px-4 md:px-8" style={{background:"#0A0A0D",borderTop:"1px solid rgba(255,255,255,0.04)"}}>
+      <section className="relative z-10 py-28 px-6 md:px-12" style={{background:"#0A0A0D",borderTop:"1px solid rgba(255,255,255,0.04)"}}>
         <div className="max-w-[1200px] mx-auto">
-          <div className="sr-up text-center mb-14">
-            <p className="text-[9.5px] font-bold tracking-[.15em] uppercase text-orange-500 mb-2">Features</p>
-            <h2 className="text-[clamp(1.8rem,3.5vw,2.8rem)] font-black tracking-[-0.035em] text-white mb-3">Enterprise power, zero complexity</h2>
-            <p className="text-gray-300 text-[14px] max-w-[460px] mx-auto leading-relaxed">Built in, battle-tested, ready on day one.</p>
+          <div className="sr-up text-center mb-16">
+            <p className="text-[11px] font-black tracking-[.2em] uppercase text-orange-500 mb-3">Features</p>
+            <h2 className="text-[clamp(2rem,4vw,3.2rem)] font-black tracking-[-0.035em] text-white mb-4">Enterprise power, zero complexity</h2>
+            <p className="text-gray-400 text-[16px] max-w-[500px] mx-auto leading-relaxed">Built in, battle-tested, ready on day one.</p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-[2fr_1fr_1fr] gap-[1px] rounded-t-[20px] overflow-hidden bg-white/[0.05] border border-white/[0.06] border-b-0">
+          <div className="grid grid-cols-1 md:grid-cols-[2fr_1fr_1fr] gap-[1px] rounded-t-[28px] overflow-hidden bg-white/[0.05] border border-white/[0.06] border-b-0">
             {[
               {bg:"rgba(59,130,246,.09)", e:"🌐",t:"Omnichannel Deployment",  d:"Deploy an AI Agent across Telegram, WhatsApp, and Instagram simultaneously. Switch channels in seconds.",tag:"Multi-platform"},
               {bg:"rgba(168,85,247,.09)",e:"🎙️",t:"Voice Intelligence",      d:"Whisper AI transcribes voice notes and replies naturally in real-time.",tag:"Whisper AI"},
               {bg:"rgba(234,179,8,.09)", e:"🚀",t:"Ultra Low Latency",         d:"Global edge network ensures sub-second response times worldwide.",tag:"Fast Response"},
             ].map(({bg,e,t,d,tag})=>(
-              <div key={t} className="fi-card bg-[#0A0A0D] p-6 md:p-8 hover:bg-[#0F0F14] transition-colors duration-150">
-                <div className="icon-lift w-[44px] h-[44px] rounded-[13px] flex items-center justify-center mb-5 text-[20px]" style={{background:bg}}>{e}</div>
-                <h3 className="text-[14px] font-bold text-white mb-2">{t}</h3>
-                <p className="text-[12px] text-gray-400 leading-[1.75] mb-3">{d}</p>
-                <span className="inline-flex px-3 py-1 rounded-full text-[9px] font-bold text-orange-400 uppercase tracking-wider" style={{background:"rgba(249,115,22,0.07)",border:"1px solid rgba(249,115,22,0.18)"}}>{tag}</span>
+              <div key={t} className="fi-card bg-[#0A0A0D] p-8 md:p-10 hover:bg-[#111116] transition-colors duration-150">
+                <div className="icon-lift w-[52px] h-[52px] rounded-[14px] flex items-center justify-center mb-6 text-[24px]" style={{background:bg}}>{e}</div>
+                <h3 className="text-[16px] font-black text-white mb-3">{t}</h3>
+                <p className="text-[13px] text-gray-400 leading-[1.8] mb-5">{d}</p>
+                <span className="inline-flex px-3.5 py-1.5 rounded-full text-[10px] font-bold text-orange-400 uppercase tracking-[.1em]" style={{background:"rgba(249,115,22,0.07)",border:"1px solid rgba(249,115,22,0.18)"}}>{tag}</span>
               </div>
             ))}
           </div>
@@ -926,26 +910,26 @@ export default function Home() {
               {bg:"rgba(34,197,94,.09)", e:"🗃️",t:"Enterprise RAG Memory",      d:"Inject catalog, FAQs, brand voice into Vector DB. Your agent knows your business inside out.",tag:"Vector DB"},
               {bg:"rgba(0,191,255,.09)", e:"🧠",t:"OmniAgent — 3x AI Fallback", d:"Routes between GPT-5.4, Claude Opus 4.6, and Gemini 3.1 in real-time. 0% downtime. The ultimate OpenClaw alternative.",tag:"0% Downtime"},
             ].map(({bg,e,t,d,tag})=>(
-              <div key={t} className="fi-card bg-[#0A0A0D] p-6 md:p-8 hover:bg-[#0F0F14] transition-colors duration-150">
-                <div className="icon-lift w-[44px] h-[44px] rounded-[13px] flex items-center justify-center mb-5 text-[20px]" style={{background:bg}}>{e}</div>
-                <h3 className="text-[14px] font-bold text-white mb-2">{t}</h3>
-                <p className="text-[12px] text-gray-400 leading-[1.75] mb-3">{d}</p>
-                <span className="inline-flex px-3 py-1 rounded-full text-[9px] font-bold text-orange-400 uppercase tracking-wider" style={{background:"rgba(249,115,22,0.07)",border:"1px solid rgba(249,115,22,0.18)"}}>{tag}</span>
+              <div key={t} className="fi-card bg-[#0A0A0D] p-8 md:p-10 hover:bg-[#111116] transition-colors duration-150">
+                <div className="icon-lift w-[52px] h-[52px] rounded-[14px] flex items-center justify-center mb-6 text-[24px]" style={{background:bg}}>{e}</div>
+                <h3 className="text-[16px] font-black text-white mb-3">{t}</h3>
+                <p className="text-[13px] text-gray-400 leading-[1.8] mb-5">{d}</p>
+                <span className="inline-flex px-3.5 py-1.5 rounded-full text-[10px] font-bold text-orange-400 uppercase tracking-[.1em]" style={{background:"rgba(249,115,22,0.07)",border:"1px solid rgba(249,115,22,0.18)"}}>{tag}</span>
               </div>
             ))}
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-[1px] rounded-b-[20px] overflow-hidden bg-white/[0.05] border border-white/[0.06] border-t-0">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-[1px] rounded-b-[28px] overflow-hidden bg-white/[0.05] border border-white/[0.06] border-t-0">
             {[
               {bg:"rgba(249,115,22,.09)",e:"⚡",t:"AI Interceptor",      d:"Check orders, book slots, trigger webhooks, update CRMs — fully autonomous.",tag:"API Triggers"},
               {bg:"rgba(236,72,153,.09)",e:"💬",t:"Live CRM & Handoff",  d:"Monitor all conversations. One click to take over from AI seamlessly.",tag:"Real-time CRM"},
               {bg:"rgba(16,185,129,.09)",e:"🔒",t:"Enterprise Security", d:"AES-256 encryption. SOC 2 compliant. Zero data retention on our servers.",tag:"AES-256"},
             ].map(({bg,e,t,d,tag})=>(
-              <div key={t} className="fi-card bg-[#0A0A0D] p-6 md:p-8 hover:bg-[#0F0F14] transition-colors duration-150">
-                <div className="icon-lift w-[44px] h-[44px] rounded-[13px] flex items-center justify-center mb-5 text-[20px]" style={{background:bg}}>{e}</div>
-                <h3 className="text-[14px] font-bold text-white mb-2">{t}</h3>
-                <p className="text-[12px] text-gray-400 leading-[1.75] mb-3">{d}</p>
-                <span className="inline-flex px-3 py-1 rounded-full text-[9px] font-bold text-orange-400 uppercase tracking-wider" style={{background:"rgba(249,115,22,0.07)",border:"1px solid rgba(249,115,22,0.18)"}}>{tag}</span>
+              <div key={t} className="fi-card bg-[#0A0A0D] p-8 md:p-10 hover:bg-[#111116] transition-colors duration-150">
+                <div className="icon-lift w-[52px] h-[52px] rounded-[14px] flex items-center justify-center mb-6 text-[24px]" style={{background:bg}}>{e}</div>
+                <h3 className="text-[16px] font-black text-white mb-3">{t}</h3>
+                <p className="text-[13px] text-gray-400 leading-[1.8] mb-5">{d}</p>
+                <span className="inline-flex px-3.5 py-1.5 rounded-full text-[10px] font-bold text-orange-400 uppercase tracking-[.1em]" style={{background:"rgba(249,115,22,0.07)",border:"1px solid rgba(249,115,22,0.18)"}}>{tag}</span>
               </div>
             ))}
           </div>
@@ -953,15 +937,15 @@ export default function Home() {
       </section>
 
       {/* ══ COMPARISON ══ */}
-      <section id="features" className="relative z-10 py-24 px-4 md:px-8" style={{background:"#0D0D10",borderTop:"1px solid rgba(255,255,255,0.04)"}}>
-        <div className="max-w-[1100px] mx-auto">
-          <div className="sr-up text-center mb-14">
-            <p className="text-[9.5px] font-bold tracking-[.15em] uppercase text-orange-500 mb-2">Comparison</p>
-            <h2 className="text-[clamp(1.8rem,3.5vw,2.8rem)] font-black tracking-[-0.035em] text-white">Traditional Setup vs ClawLink AI Bot Builder</h2>
+      <section id="features" className="relative z-10 py-28 px-6 md:px-12" style={{background:"#0D0D10",borderTop:"1px solid rgba(255,255,255,0.04)"}}>
+        <div className="max-w-[1200px] mx-auto">
+          <div className="sr-up text-center mb-16">
+            <p className="text-[11px] font-black tracking-[.2em] uppercase text-orange-500 mb-3">Comparison</p>
+            <h2 className="text-[clamp(2rem,4vw,3.2rem)] font-black tracking-[-0.035em] text-white">Traditional Setup vs ClawLink</h2>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-[1.55fr_1fr] gap-5">
-            <div className="sr-left rounded-[18px] overflow-hidden" style={{border:"1px solid rgba(255,255,255,0.07)"}}>
-              <div className="px-5 py-4 text-[9px] font-bold uppercase tracking-widest text-gray-400" style={{borderBottom:"1px solid rgba(255,255,255,0.05)",background:"rgba(255,255,255,0.02)"}}>
+          <div className="grid grid-cols-1 md:grid-cols-[1.5fr_1fr] gap-6 lg:gap-10">
+            <div className="sr-left rounded-[24px] overflow-hidden bg-[#0A0A0D]" style={{border:"1px solid rgba(255,255,255,0.08)",boxShadow:"0 10px 40px rgba(0,0,0,0.5)"}}>
+              <div className="px-6 py-5 text-[11px] font-black uppercase tracking-[.2em] text-gray-500" style={{borderBottom:"1px solid rgba(255,255,255,0.06)",background:"rgba(255,255,255,0.02)"}}>
                 Traditional Setup — Step by Step
               </div>
               {[
@@ -970,24 +954,23 @@ export default function Home() {
                 ["Installing OpenClaw manually","7 min"],["Setting up OpenClaw database","10 min"],
                 ["Connecting to AI provider","4 min"],["Pairing with Telegram / WhatsApp API","4 min"],
               ].map(([l,t])=>(
-                <div key={l} className="flex justify-between items-center px-5 py-3.5 transition-colors duration-150 hover:bg-white/[0.015]" style={{borderBottom:"1px solid rgba(255,255,255,0.04)"}}>
-                  <span className="text-[12.5px] text-gray-400">{l}</span>
-                  <span className="text-[9.5px] text-gray-300 bg-white/[0.05] px-2.5 py-1 rounded-md whitespace-nowrap ml-3">{t}</span>
+                <div key={l} className="flex justify-between items-center px-6 py-4 transition-colors duration-150 hover:bg-white/[0.02]" style={{borderBottom:"1px solid rgba(255,255,255,0.04)"}}>
+                  <span className="text-[14px] text-gray-300 font-medium">{l}</span>
+                  <span className="text-[11px] text-white font-bold bg-white/[0.06] px-3 py-1.5 rounded-lg whitespace-nowrap ml-4 border border-white/10">{t}</span>
                 </div>
               ))}
-              <div className="flex justify-between px-5 py-4 font-black text-[13px]" style={{background:"rgba(255,255,255,0.02)",borderTop:"1px solid rgba(255,255,255,0.07)"}}>
-                <span className="text-white">Total Time</span><span className="text-red-400">60 MINUTES</span>
+              <div className="flex justify-between items-center px-6 py-5 font-black text-[15px]" style={{background:"rgba(255,255,255,0.03)",borderTop:"1px solid rgba(255,255,255,0.08)"}}>
+                <span className="text-white tracking-wide">Total Time</span><span className="text-red-400 bg-red-400/10 px-4 py-1.5 rounded-xl border border-red-400/20">60 MINUTES</span>
               </div>
-              <p className="text-[11px] text-gray-500 px-5 py-3 text-right italic">* Non-technical users: multiply by 10.</p>
             </div>
 
-            <div className="sr-rght rounded-[18px] flex flex-col items-center justify-center text-center p-10 relative overflow-hidden" style={{border:"1px solid rgba(249,115,22,0.22)",background:"linear-gradient(160deg,rgba(249,115,22,0.07),transparent 55%)"}}>
-              <p className="text-[9.5px] font-bold tracking-[.15em] uppercase text-orange-500 mb-3">With ClawLink</p>
-              <p className="font-black leading-none mb-1 text-[3.4rem] grad-text" style={{letterSpacing:"-.04em"}}>ClawLink</p>
-              <p className="text-[2.6rem] font-black text-white leading-none mb-5" style={{letterSpacing:"-.03em"}}>&lt;30 sec</p>
-              <p className="text-[12px] text-gray-400 max-w-[220px] leading-[1.85]">Pick a model, connect your channel, deploy. All infrastructure handled for you.</p>
+            <div className="sr-rght rounded-[24px] flex flex-col items-center justify-center text-center p-12 relative overflow-hidden" style={{border:"2px solid rgba(249,115,22,0.25)",background:"linear-gradient(160deg,rgba(249,115,22,0.08),#0A0A0D 60%)",boxShadow:"0 20px 60px rgba(249,115,22,0.15)"}}>
+              <p className="text-[11px] font-black tracking-[.2em] uppercase text-orange-500 mb-4">With ClawLink</p>
+              <p className="font-black leading-none mb-2 text-[4rem] lg:text-[4.5rem] grad-text drop-shadow-lg" style={{letterSpacing:"-.05em"}}>ClawLink</p>
+              <p className="text-[3rem] lg:text-[3.5rem] font-black text-white leading-none mb-6 drop-shadow-md" style={{letterSpacing:"-.04em"}}>&lt;30 sec</p>
+              <p className="text-[14px] text-gray-400 max-w-[260px] leading-[1.8]">Pick a model, connect your channel, deploy. All infrastructure handled for you.</p>
               <button aria-label="Start Building Free Now" data-ripple data-spring onClick={()=>document.getElementById("hero")?.scrollIntoView({behavior:"smooth"})}
-                className={`mag-el relative overflow-hidden mt-7 px-8 py-3.5 rounded-[12px] text-[13px] font-black text-white uppercase tracking-wider ${btn} hover:scale-[1.05] orange-glow`}
+                className={`mag-el relative overflow-hidden mt-10 px-10 py-4 rounded-xl text-[14px] font-black text-white uppercase tracking-widest ${btn} hover:scale-[1.05] orange-glow`}
                 style={{background:"linear-gradient(135deg,#f97316,#ea6a00)"}}>
                 <span className="mt">Start Free Now →</span>
               </button>
@@ -997,32 +980,32 @@ export default function Home() {
       </section>
 
       {/* ══ MARQUEE ══ */}
-      <section className="relative z-10 py-24 overflow-hidden" style={{background:"#07070A",borderTop:"1px solid rgba(255,255,255,0.04)"}}>
-        <div className="sr-up text-center mb-14 px-4">
-          <p className="text-[9.5px] font-bold tracking-[.15em] uppercase text-orange-500 mb-2">50+ AI Use Cases</p>
-          <h2 className="text-[clamp(2rem,5vw,3.6rem)] font-black tracking-[-0.04em] text-white">Thousands of Use Cases</h2>
-          <p className="text-orange-400/60 font-serif italic text-[14px] mt-2">Your agent handles complex tasks around the clock.</p>
+      <section className="relative z-10 py-28 overflow-hidden" style={{background:"#07070A",borderTop:"1px solid rgba(255,255,255,0.04)"}}>
+        <div className="sr-up text-center mb-16 px-4">
+          <p className="text-[11px] font-black tracking-[.2em] uppercase text-orange-500 mb-3">50+ AI Use Cases</p>
+          <h2 className="text-[clamp(2.4rem,6vw,4.2rem)] font-black tracking-[-0.04em] text-white">Thousands of Use Cases</h2>
+          <p className="text-gray-400 font-medium text-[16px] mt-4">Your agent handles complex tasks around the clock.</p>
         </div>
-        <div className="flex flex-col gap-3 relative w-full">
+        <div className="flex flex-col gap-4 relative w-full">
           {[row1,row2,row3,row4,row5].map((r,i)=><MarqueeRow key={i} items={r} reverse={i%2===1}/>)}
-          <div className="absolute inset-0 pointer-events-none" style={{background:"linear-gradient(90deg,#07070A 0%,transparent 15%,transparent 85%,#07070A 100%)"}}/>
+          <div className="absolute inset-0 pointer-events-none" style={{background:"linear-gradient(90deg,#07070A 0%,transparent 20%,transparent 80%,#07070A 100%)"}}/>
         </div>
       </section>
 
       {/* ══ FOOTER ══ */}
-      <footer className="relative z-10 pt-24 pb-12 px-6 md:px-14" style={{background:"#040405",borderTop:"1px solid rgba(255,255,255,0.05)"}}>
-        <h2 className="sr-up text-[clamp(2.2rem,5vw,4rem)] font-black tracking-[-0.04em] mb-6 text-white" style={{fontFamily:"Georgia,serif",lineHeight:1.06}}>Deploy. Automate. Relax.</h2>
+      <footer className="relative z-10 pt-28 pb-14 px-6 md:px-16" style={{background:"#040405",borderTop:"1px solid rgba(255,255,255,0.05)"}}>
+        <h2 className="sr-up text-[clamp(2.8rem,6vw,4.8rem)] font-black tracking-[-0.04em] mb-8 text-white" style={{fontFamily:"Georgia,serif",lineHeight:1.06}}>Deploy. Automate. Relax.</h2>
         <button aria-label="Get Started with ClawLink" data-ripple data-spring onClick={()=>document.getElementById("hero")?.scrollIntoView({behavior:"smooth"})}
-          className={`mag-el sr-up relative overflow-hidden px-10 py-4 rounded-[13px] text-[14px] font-black text-black mb-20 uppercase tracking-wider ${btn} hover:scale-[1.05] orange-glow`}
+          className={`mag-el sr-up relative overflow-hidden px-12 py-5 rounded-[16px] text-[15px] font-black text-black mb-24 uppercase tracking-widest ${btn} hover:scale-[1.05] orange-glow`}
           style={{background:"linear-gradient(135deg,#FFA87A,#F97316)"}}>
           <span className="mt">Get Started Free →</span>
         </button>
-        <div className="flex flex-col md:flex-row justify-between items-center gap-4 text-[11px] text-gray-500 pt-8" style={{borderTop:"1px solid rgba(255,255,255,0.06)"}}>
-          <span>© 2026 ClawLink Inc. All rights reserved.</span>
-          <span className="hidden md:block uppercase tracking-widest text-[10px]">© 2026 CLAWLINK INC. GLOBAL AI SAAS INFRASTRUCTURE.</span>
-          <div className="flex flex-wrap justify-center gap-4 md:gap-6">
+        <div className="flex flex-col md:flex-row justify-between items-center gap-6 text-[12px] text-gray-500 pt-10" style={{borderTop:"1px solid rgba(255,255,255,0.06)"}}>
+          <span className="font-medium">© 2026 ClawLink Inc. All rights reserved.</span>
+          <span className="hidden md:block uppercase tracking-[.15em] text-[10px] font-bold">© 2026 CLAWLINK INC. GLOBAL AI SAAS INFRASTRUCTURE.</span>
+          <div className="flex flex-wrap justify-center gap-6 font-medium">
             {[["Privacy Policy","/privacy"], ["Terms of Service","/terms"], ["Refund Policy", "/refund"], ["Documentation","/docs"]].map(([l,h])=>(
-              <a key={h} href={h} className="hover:text-gray-400 transition-colors duration-150">{l}</a>
+              <a key={h} href={h} className="hover:text-white transition-colors duration-200">{l}</a>
             ))}
           </div>
         </div>
@@ -1031,36 +1014,36 @@ export default function Home() {
       {/* ══ MODALS ══ */}
       <AnimatePresence>
         {isSupportModalOpen && (
-          <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-[16px] p-4">
+          <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/80 backdrop-blur-[20px] p-4">
             <motion.div initial={{opacity:0,scale:.96,y:12}} animate={{opacity:1,scale:1,y:0}} exit={{opacity:0,scale:.96,y:12}} transition={{duration:.12,ease:"easeOut"}}
-              className="w-full max-w-md p-7 rounded-[1.75rem] relative"
+              className="w-full max-w-[500px] p-8 rounded-[2rem] relative"
               style={{background:"#0F0F12",border:"1px solid rgba(255,255,255,0.09)",boxShadow:"0 0 80px rgba(0,0,0,0.8)"}}>
               <div className="absolute top-0 left-[20%] right-[20%] h-px" style={{background:"linear-gradient(90deg,transparent,rgba(249,115,22,0.4),transparent)"}}/>
               <button aria-label="Close Support Modal" data-spring onClick={()=>setIsSupportModalOpen(false)}
-                className={`absolute top-5 right-5 p-2 rounded-full text-gray-500 hover:text-white ${btn}`} style={{background:"rgba(255,255,255,0.05)"}}>
-                <X className="w-4 h-4"/>
+                className={`absolute top-6 right-6 p-2.5 rounded-full text-gray-500 hover:text-white hover:bg-white/10 transition-colors ${btn}`}>
+                <X className="w-5 h-5"/>
               </button>
-              <div className="flex items-center gap-3 mb-2">
-                <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{background:"rgba(59,130,246,0.1)",border:"1px solid rgba(59,130,246,0.2)"}}>
-                  <MessageSquare className="w-5 h-5 text-blue-400"/>
+              <div className="flex items-center gap-4 mb-3">
+                <div className="w-12 h-12 rounded-full flex items-center justify-center" style={{background:"rgba(59,130,246,0.1)",border:"1px solid rgba(59,130,246,0.2)"}}>
+                  <MessageSquare className="w-6 h-6 text-blue-400"/>
                 </div>
-                <h2 className="text-[1.3rem] font-bold text-white">Contact Support</h2>
+                <h2 className="text-[1.5rem] font-black text-white">Contact Support</h2>
               </div>
-              <p className="text-[13px] text-gray-400 mb-6">Our team is available 24/7.</p>
-              <div className="space-y-3">
+              <p className="text-[14px] text-gray-400 mb-8">Our enterprise engineering team is available 24/7.</p>
+              <div className="space-y-4">
                 {[
-                  {icon:<Mail className="w-4 h-4 text-orange-400"/>,title:"Direct Email",content:<a href="mailto:clawlink.help@gmail.com" className="text-blue-400 hover:text-blue-300 text-[13px] font-mono">clawlink.help@gmail.com</a>},
-                  {icon:<Shield className="w-4 h-4 text-green-400"/>,title:"Enterprise SLAs",content:<p className="text-[12px] text-gray-400 mt-1 leading-relaxed">Pro and Max tier users get priority &lt;1hr guaranteed response.</p>},
+                  {icon:<Mail className="w-5 h-5 text-orange-400"/>,title:"Direct Email",content:<a href="mailto:clawlink.help@gmail.com" className="text-blue-400 hover:text-blue-300 text-[14px] font-mono tracking-wide mt-1 block">clawlink.help@gmail.com</a>},
+                  {icon:<Shield className="w-5 h-5 text-green-400"/>,title:"Enterprise SLAs",content:<p className="text-[13px] text-gray-400 mt-2 leading-relaxed">Pro and Max tier users get priority &lt;1hr guaranteed engineering response.</p>},
                 ].map(({icon,title,content},i)=>(
-                  <div key={i} className="p-5 rounded-2xl" style={{background:"rgba(255,255,255,0.03)",border:"1px solid rgba(255,255,255,0.06)"}}>
-                    <div className="flex items-center gap-2 mb-1">{icon}<span className="text-[13px] font-bold text-white">{title}</span></div>
+                  <div key={i} className="p-6 rounded-2xl" style={{background:"rgba(255,255,255,0.02)",border:"1px solid rgba(255,255,255,0.06)"}}>
+                    <div className="flex items-center gap-3 mb-2">{icon}<span className="text-[14px] font-bold text-white uppercase tracking-widest">{title}</span></div>
                     {content}
                   </div>
                 ))}
               </div>
               <button aria-label="Close Support Modal" data-ripple data-spring onClick={()=>setIsSupportModalOpen(false)}
-                className={`relative overflow-hidden w-full mt-6 bg-white text-black font-bold py-3.5 rounded-xl text-[13px] uppercase tracking-widest ${btn} hover:bg-gray-100`}>
-                Close
+                className={`relative overflow-hidden w-full mt-8 bg-white text-black font-black py-4 rounded-xl text-[14px] uppercase tracking-widest ${btn} hover:bg-gray-200 shadow-[0_4px_15px_rgba(255,255,255,0.15)]`}>
+                Close Panel
               </button>
             </motion.div>
           </div>
@@ -1069,54 +1052,54 @@ export default function Home() {
 
       <AnimatePresence>
         {isTelegramModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-[16px] p-4">
+          <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/80 backdrop-blur-[20px] p-4">
             <motion.div initial={{opacity:0,scale:.96,y:12}} animate={{opacity:1,scale:1,y:0}} exit={{opacity:0,scale:.96,y:12}} transition={{duration:.12,ease:"easeOut"}}
-              className="w-full max-w-[1000px] flex flex-col md:flex-row overflow-hidden rounded-3xl relative"
+              className="w-full max-w-[1100px] flex flex-col md:flex-row overflow-hidden rounded-[2.5rem] relative"
               style={{background:"#0F0F12",border:"1px solid rgba(255,255,255,0.09)",boxShadow:"0 0 100px rgba(0,0,0,0.9)",maxHeight:"92vh"}}>
               <div className="absolute top-0 left-[20%] right-[20%] h-px" style={{background:"linear-gradient(90deg,transparent,rgba(249,115,22,0.4),transparent)"}}/>
-              <button aria-label="Close Connect Modal" data-spring onClick={()=>setIsTelegramModalOpen(false)} className={`absolute top-4 right-4 z-20 p-2 rounded-full text-gray-500 hover:text-white ${btn}`} style={{background:"rgba(255,255,255,0.05)"}}>
-                <X className="w-4 h-4"/>
+              <button aria-label="Close Connect Modal" data-spring onClick={()=>setIsTelegramModalOpen(false)} className={`absolute top-5 right-5 z-20 p-2.5 rounded-full text-gray-400 hover:text-white hover:bg-white/10 transition-colors ${btn}`}>
+                <X className="w-5 h-5"/>
               </button>
 
-              <div className="w-full md:w-1/2 p-7 md:p-10 flex flex-col justify-start overflow-y-auto nsb">
-                <div className="flex items-center gap-4 mb-6">
-                  <div className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0" style={{background:"rgba(255,255,255,0.05)",border:"1px solid rgba(255,255,255,0.09)"}}>
-                    {activeChannel==="telegram" ? <Telegram_Icon size={26}/> : activeChannel==="whatsapp" ? <WhatsApp_Icon size={26}/> : <Instagram_Icon/>}
+              <div className="w-full md:w-[55%] p-8 md:p-12 flex flex-col justify-start overflow-y-auto nsb">
+                <div className="flex items-center gap-5 mb-8">
+                  <div className="w-14 h-14 rounded-2xl flex items-center justify-center shrink-0" style={{background:"rgba(255,255,255,0.05)",border:"1px solid rgba(255,255,255,0.09)"}}>
+                    {activeChannel==="telegram" ? <Telegram_Icon size={32}/> : activeChannel==="whatsapp" ? <WhatsApp_Icon size={32}/> : <Instagram_Icon size={32}/>}
                   </div>
-                  <h2 className="text-[1.3rem] font-bold text-white">Connect {activeChannel==="telegram"?"Telegram":activeChannel==="whatsapp"?"WhatsApp":"Instagram"}</h2>
+                  <h2 className="text-[1.6rem] font-black text-white">Connect {activeChannel==="telegram"?"Telegram":activeChannel==="whatsapp"?"WhatsApp":"Instagram"}</h2>
                 </div>
 
                 {activeChannel==="telegram" ? (
                   <>
-                    <ol className="space-y-3 text-[13px] text-gray-400 list-decimal pl-5 mb-6 leading-relaxed">
+                    <ol className="space-y-4 text-[14px] text-gray-400 list-decimal pl-6 mb-8 leading-[1.8] font-medium">
                       <li>Open Telegram → search <strong className="text-white">@BotFather</strong></li>
-                      <li>Send <code className="rounded px-2 py-0.5 text-white font-mono text-[11px]" style={{background:"rgba(255,255,255,0.07)"}}>/newbot</code></li>
+                      <li>Send <code className="rounded-md px-2.5 py-1 text-white font-mono text-[12px] border border-white/10" style={{background:"rgba(255,255,255,0.05)"}}>/newbot</code></li>
                       <li>Set <strong className="text-white">Name</strong> and <strong className="text-white">Username</strong></li>
                       <li>Copy the <strong className="text-white">HTTP API Token</strong></li>
-                      <li>Paste below</li>
+                      <li>Paste below to secure connection</li>
                     </ol>
                     <a href="https://t.me/BotFather" target="_blank" rel="noopener noreferrer"
-                      className={`inline-flex items-center gap-2 mb-7 px-4 py-2 rounded-xl text-[12px] font-bold w-fit ${btn} hover:scale-[1.03] text-[#2AABEE]`}
-                      style={{background:"rgba(42,171,238,0.08)",border:"1px solid rgba(42,171,238,0.2)"}}>
-                      <ExternalLink className="w-3.5 h-3.5"/> Open @BotFather Directly
+                      className={`inline-flex items-center justify-center gap-2 mb-8 px-6 py-3.5 rounded-xl text-[13px] font-black uppercase tracking-widest w-fit ${btn} text-[#2AABEE]`}
+                      style={{background:"rgba(42,171,238,0.08)",border:"1px solid rgba(42,171,238,0.25)",boxShadow:"0 0 20px rgba(42,171,238,0.1)"}}>
+                      <ExternalLink className="w-4 h-4"/> Open @BotFather Directly
                     </a>
-                    <div className="p-5 rounded-2xl" style={{background:"rgba(255,255,255,0.03)",border:"1px solid rgba(255,255,255,0.07)"}}>
-                      <label className="block text-[9px] font-bold uppercase tracking-widest text-gray-400 mb-3">API Access Token</label>
+                    <div className="p-6 rounded-2xl" style={{background:"rgba(255,255,255,0.02)",border:"1px solid rgba(255,255,255,0.06)"}}>
+                      <label className="block text-[10px] font-black uppercase tracking-[.2em] text-gray-500 mb-3">API Access Token</label>
                       <input aria-label="Enter Telegram Token" type="password" value={telegramToken} onChange={e=>setTelegramToken(e.target.value)} placeholder="Enter Verification Token…"
-                        className="w-full px-4 py-3.5 rounded-xl text-[13px] text-white font-mono mb-5 outline-none transition-colors duration-150"
+                        className="w-full px-5 py-4 rounded-xl text-[14px] text-white font-mono mb-6 outline-none transition-colors duration-200 placeholder-gray-600"
                         style={{background:"#07070A",border:"1px solid rgba(255,255,255,0.09)"}}
                         onFocus={e=>(e.target.style.borderColor="rgba(249,115,22,0.5)")}
                         onBlur={e =>(e.target.style.borderColor="rgba(255,255,255,0.09)")}/>
                       <button aria-label="Verify API Token" data-ripple data-spring onClick={handleSaveToken} disabled={isVerifying}
-                        className={`relative overflow-hidden w-full font-black py-4 rounded-xl text-[13px] uppercase tracking-widest ${btn} hover:scale-[1.02] disabled:opacity-50 disabled:pointer-events-none`}
+                        className={`relative overflow-hidden w-full font-black py-4 rounded-xl text-[14px] uppercase tracking-widest ${btn} hover:scale-[1.02] disabled:opacity-50 disabled:pointer-events-none shadow-[0_4px_15px_rgba(255,255,255,0.15)]`}
                         style={{background:isVerifying?"rgba(255,255,255,0.1)":"#fff",color:isVerifying?"#666":"#000"}}>
-                        {isVerifying?"Verifying…":"Verify & Save Token"}
+                        {isVerifying?"Verifying API Status…":"Verify & Save Token"}
                       </button>
                     </div>
                   </>
                 ) : (
                   <>
-                    <ol className="space-y-2.5 text-[12px] text-gray-400 list-decimal pl-5 mb-5 leading-relaxed">
+                    <ol className="space-y-3.5 text-[14px] text-gray-400 list-decimal pl-6 mb-8 leading-[1.8] font-medium">
                       <li>Log in to <strong className="text-white">Meta Developer Console</strong></li>
                       <li>Create <strong className="text-white">Business App</strong> → activate <strong className="text-white">{activeChannel === "whatsapp" ? "WhatsApp" : "Messenger"} Module</strong></li>
                       <li>Register & verify account in <strong className="text-white">API Setup</strong></li>
@@ -1124,89 +1107,89 @@ export default function Home() {
                       <li>Set Webhook URL under <strong className="text-white">Configuration</strong></li>
                       <li>Enter Callback URL + Verify Token below</li>
                     </ol>
-                    <div className="flex gap-3 mb-6">
+                    <div className="flex gap-4 mb-8">
                       <a href="https://developers.facebook.com/apps/" target="_blank" rel="noopener noreferrer"
-                        className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-[12px] font-bold w-fit ${btn} hover:scale-[1.03] ${activeChannel==="whatsapp"?"text-[#25D366]":"text-[#e6683c]"}`}
-                        style={{background:activeChannel==="whatsapp"?"rgba(37,211,102,0.08)":"rgba(230,104,60,0.08)",border:`1px solid ${activeChannel==="whatsapp"?"rgba(37,211,102,0.2)":"rgba(230,104,60,0.2)"}`}}>
-                        <ExternalLink className="w-3.5 h-3.5"/> Open Meta Developer Console
+                        className={`inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl text-[13px] font-black uppercase tracking-widest w-fit ${btn} ${activeChannel==="whatsapp"?"text-[#25D366]":"text-[#e6683c]"}`}
+                        style={{background:activeChannel==="whatsapp"?"rgba(37,211,102,0.08)":"rgba(230,104,60,0.08)",border:`1px solid ${activeChannel==="whatsapp"?"rgba(37,211,102,0.25)":"rgba(230,104,60,0.25)"}`,boxShadow:activeChannel==="whatsapp"?"0 0 20px rgba(37,211,102,0.1)":"0 0 20px rgba(230,104,60,0.1)"}}>
+                        <ExternalLink className="w-4 h-4"/> Open Meta Developer
                       </a>
                     </div>
-                    <div className="p-5 rounded-2xl" style={{background:"rgba(255,255,255,0.03)",border:"1px solid rgba(255,255,255,0.07)"}}>
+                    <div className="p-6 rounded-2xl" style={{background:"rgba(255,255,255,0.02)",border:"1px solid rgba(255,255,255,0.06)"}}>
                       
-                      <div className="mb-6 p-4 rounded-xl" style={{background:"rgba(0,0,0,0.3)", border:`1px dashed ${activeChannel==="whatsapp"?"rgba(37,211,102,0.3)":"rgba(230,104,60,0.3)"}`}}>
-                        <p className={`text-[11px] font-bold mb-3 flex items-center gap-2 ${activeChannel==="whatsapp"?"text-[#25D366]":"text-[#e6683c]"}`}>
-                          🔗 Step 1: Copy these to Meta Webhook
+                      <div className="mb-8 p-5 rounded-xl" style={{background:"rgba(0,0,0,0.4)", border:`1px dashed ${activeChannel==="whatsapp"?"rgba(37,211,102,0.4)":"rgba(230,104,60,0.4)"}`}}>
+                        <p className={`text-[12px] font-black uppercase tracking-widest mb-4 flex items-center gap-2 ${activeChannel==="whatsapp"?"text-[#25D366]":"text-[#e6683c]"}`}>
+                          🔗 Step 1: Copy to Meta Webhook
                         </p>
                         
-                        <div className="mb-3">
-                          <label className="block text-[9px] font-bold uppercase tracking-widest text-gray-500 mb-1.5">Webhook URL</label>
+                        <div className="mb-4">
+                          <label className="block text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-2">Webhook URL</label>
                           <div className="flex items-center gap-2">
-                            <input aria-label="Webhook URL" readOnly value={`https://www.clawlinkai.com/api/webhook/${activeChannel}`} className="w-full bg-black/50 text-gray-300 p-2.5 rounded-lg text-[11px] border border-white/10 outline-none font-mono" />
-                            <button aria-label="Copy Webhook URL" type="button" onClick={() => copyToClipboard(`https://www.clawlinkai.com/api/webhook/${activeChannel}`)} className="bg-white/10 hover:bg-white/20 text-white px-4 py-2.5 rounded-lg text-[11px] font-bold transition-all">Copy</button>
+                            <input aria-label="Webhook URL" readOnly value={`https://www.clawlinkai.com/api/webhook/${activeChannel}`} className="w-full bg-black/60 text-gray-300 p-3.5 rounded-lg text-[12px] border border-white/10 outline-none font-mono" />
+                            <button aria-label="Copy Webhook URL" type="button" onClick={() => copyToClipboard(`https://www.clawlinkai.com/api/webhook/${activeChannel}`)} className="bg-white/10 hover:bg-white/20 text-white px-5 py-3.5 rounded-lg text-[12px] font-bold transition-all border border-white/10">Copy</button>
                           </div>
                         </div>
 
                         <div>
-                          <label className="block text-[9px] font-bold uppercase tracking-widest text-gray-500 mb-1.5">Verify Token</label>
+                          <label className="block text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-2">Verify Token</label>
                           <div className="flex items-center gap-2">
-                            <input aria-label="Verify Token" readOnly value="clawlinkmeta2026" className="w-full bg-black/50 text-gray-300 p-2.5 rounded-lg text-[11px] border border-white/10 outline-none font-mono" />
-                            <button aria-label="Copy Verify Token" type="button" onClick={() => copyToClipboard("clawlinkmeta2026")} className="bg-white/10 hover:bg-white/20 text-white px-4 py-2.5 rounded-lg text-[11px] font-bold transition-all">Copy</button>
+                            <input aria-label="Verify Token" readOnly value="clawlinkmeta2026" className="w-full bg-black/60 text-gray-300 p-3.5 rounded-lg text-[12px] border border-white/10 outline-none font-mono" />
+                            <button aria-label="Copy Verify Token" type="button" onClick={() => copyToClipboard("clawlinkmeta2026")} className="bg-white/10 hover:bg-white/20 text-white px-5 py-3.5 rounded-lg text-[12px] font-bold transition-all border border-white/10">Copy</button>
                           </div>
                         </div>
                       </div>
 
-                      <label className="block text-[9px] font-bold uppercase tracking-widest text-gray-400 mb-3">{activeChannel==="whatsapp"?"Phone Number ID":"Instagram Account ID"}</label>
+                      <label className="block text-[10px] font-black uppercase tracking-[.2em] text-gray-500 mb-3">{activeChannel==="whatsapp"?"Phone Number ID":"Instagram Account ID"}</label>
                       <input aria-label="Phone or Account ID" type="text" value={waPhoneId} onChange={e=>setWaPhoneId(e.target.value)} placeholder="e.g. 1044727838716942"
-                        className="w-full px-4 py-3.5 rounded-xl text-[13px] text-white font-mono mb-4 outline-none transition-colors duration-150"
+                        className="w-full px-5 py-4 rounded-xl text-[14px] text-white font-mono mb-5 outline-none transition-colors duration-200 placeholder-gray-600"
                         style={{background:"#07070A",border:"1px solid rgba(255,255,255,0.09)"}}
                         onFocus={e=>(e.target.style.borderColor=activeChannel==="whatsapp"?"rgba(37,211,102,0.5)":"rgba(230,104,60,0.5)")}
                         onBlur={e =>(e.target.style.borderColor="rgba(255,255,255,0.09)")}/>
                       
                       {activeChannel === "whatsapp" && (
                           <>
-                              <label className="block text-[9px] font-bold uppercase tracking-widest text-gray-400 mb-3">WhatsApp Number (For Direct Open)</label>
+                              <label className="block text-[10px] font-black uppercase tracking-[.2em] text-gray-500 mb-3">WhatsApp Number (For Direct Open)</label>
                               <input aria-label="WhatsApp Number" type="text" value={waPhoneNumber} onChange={e=>setWaPhoneNumber(e.target.value)} placeholder="+1 234 567 890"
-                                className="w-full px-4 py-3.5 rounded-xl text-[13px] text-white font-mono mb-4 outline-none transition-colors duration-150"
+                                className="w-full px-5 py-4 rounded-xl text-[14px] text-white font-mono mb-5 outline-none transition-colors duration-200 placeholder-gray-600"
                                 style={{background:"#07070A",border:"1px solid rgba(255,255,255,0.09)"}}
                                 onFocus={e=>(e.target.style.borderColor="rgba(37,211,102,0.5)")}
                                 onBlur={e =>(e.target.style.borderColor="rgba(255,255,255,0.09)")}/>
                           </>
                       )}
 
-                      <label className="block text-[9px] font-bold uppercase tracking-widest text-gray-400 mb-3">Permanent API Token</label>
+                      <label className="block text-[10px] font-black uppercase tracking-[.2em] text-gray-500 mb-3">Permanent API Token</label>
                       <input aria-label="API Access Token" type="password" value={telegramToken} onChange={e=>setTelegramToken(e.target.value)} placeholder="EAABwzL…"
-                        className="w-full px-4 py-3.5 rounded-xl text-[13px] text-white font-mono mb-5 outline-none transition-colors duration-150"
+                        className="w-full px-5 py-4 rounded-xl text-[14px] text-white font-mono mb-6 outline-none transition-colors duration-200 placeholder-gray-600"
                         style={{background:"#07070A",border:"1px solid rgba(255,255,255,0.09)"}}
                         onFocus={e=>(e.target.style.borderColor=activeChannel==="whatsapp"?"rgba(37,211,102,0.5)":"rgba(230,104,60,0.5)")}
                         onBlur={e =>(e.target.style.borderColor="rgba(255,255,255,0.09)")}/>
                       <button aria-label="Verify and Save API Token" data-ripple data-spring onClick={handleSaveToken} disabled={isVerifying}
-                        className={`relative overflow-hidden w-full font-black py-4 rounded-xl text-[13px] uppercase tracking-widest ${btn} hover:scale-[1.02] disabled:opacity-50 disabled:pointer-events-none`}
+                        className={`relative overflow-hidden w-full font-black py-4 rounded-xl text-[14px] uppercase tracking-widest ${btn} hover:scale-[1.02] disabled:opacity-50 disabled:pointer-events-none shadow-[0_4px_15px_rgba(255,255,255,0.15)]`}
                         style={{background:isVerifying?"rgba(255,255,255,0.1)":"#fff",color:isVerifying?"#666":"#000"}}>
-                        {isVerifying?"Verifying…":"Verify & Save"}
+                        {isVerifying?"Verifying API Status…":"Verify & Save Configuration"}
                       </button>
                     </div>
                   </>
                 )}
               </div>
 
-              <div className="hidden md:flex md:w-1/2 items-center justify-center p-10 relative" style={{background:"rgba(0,0,0,0.3)",borderLeft:"1px solid rgba(255,255,255,0.05)"}}>
-                <div className="w-[290px] h-[560px] rounded-[2.6rem] flex flex-col relative overflow-hidden" style={{border:"6px solid #1A1A1A",background:"#07070A",boxShadow:"0 0 60px rgba(0,0,0,0.7)"}}>
-                  <div className="absolute top-0 inset-x-0 h-6 rounded-b-3xl z-20 flex justify-center items-end pb-1" style={{background:"#1A1A1A"}}>
-                    <div className="w-10 h-1.5 rounded-full bg-black/50"/>
+              <div className="hidden md:flex md:w-[45%] items-center justify-center p-12 relative" style={{background:"rgba(0,0,0,0.35)",borderLeft:"1px solid rgba(255,255,255,0.04)"}}>
+                <div className="w-[320px] h-[640px] rounded-[3rem] flex flex-col relative overflow-hidden bg-[#07070A]" style={{border:"8px solid #1A1A1A",boxShadow:"0 0 80px rgba(0,0,0,0.8), inset 0 0 20px rgba(0,0,0,0.5)"}}>
+                  <div className="absolute top-0 inset-x-0 h-7 rounded-b-[24px] z-20 flex justify-center items-end pb-1.5" style={{background:"#1A1A1A"}}>
+                    <div className="w-12 h-1.5 rounded-full bg-black/60"/>
                   </div>
-                  <div className="p-4 pt-8 flex items-center gap-3 z-10" style={{background:"rgba(15,15,18,0.95)",backdropFilter:"blur(12px)",borderBottom:"1px solid rgba(255,255,255,0.05)"}}>
-                    <div className={`w-9 h-9 rounded-full flex items-center justify-center ${activeChannel==="telegram"?"bg-[#2AABEE]":activeChannel==="whatsapp"?"bg-[#25D366]":""}`} style={{background:activeChannel==="instagram"?"linear-gradient(135deg,#f09433,#bc1888)":undefined}}>
-                      {activeChannel==="telegram"?<Telegram_Icon size={20}/>:activeChannel==="whatsapp"?<WhatsApp_Icon size={20}/>:<Instagram_Icon/>}
+                  <div className="p-5 pt-10 flex items-center gap-4 z-10" style={{background:"rgba(15,15,18,0.95)",backdropFilter:"blur(12px)",borderBottom:"1px solid rgba(255,255,255,0.05)"}}>
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center ${activeChannel==="telegram"?"bg-[#2AABEE]":activeChannel==="whatsapp"?"bg-[#25D366]":""}`} style={{background:activeChannel==="instagram"?"linear-gradient(135deg,#f09433,#bc1888)":undefined}}>
+                      {activeChannel==="telegram"?<Telegram_Icon size={22}/>:activeChannel==="whatsapp"?<WhatsApp_Icon size={22}/>:<Instagram_Icon size={22}/>}
                     </div>
                     <div>
-                      <p className="text-white text-[12px] font-bold flex items-center gap-1">
+                      <p className="text-white text-[14px] font-bold flex items-center gap-1.5">
                         {activeChannel==="telegram"?"BotFather":"Meta Developer"}
-                        <CheckCircle2 className="w-3 h-3 text-blue-400"/>
+                        <CheckCircle2 className="w-3.5 h-3.5 text-blue-400"/>
                       </p>
-                      <p className="text-gray-400 text-[9px] font-mono">{activeChannel==="telegram"?"Verified System Bot":"API Configuration"}</p>
+                      <p className="text-gray-400 text-[10px] font-mono mt-0.5">{activeChannel==="telegram"?"Verified System Bot":"API Configuration"}</p>
                     </div>
                   </div>
-                  <div className="p-4 pt-5 flex-1 flex flex-col justify-end space-y-2.5 overflow-y-auto nsb">
+                  <div className="p-5 pt-6 flex-1 flex flex-col justify-end space-y-3 overflow-y-auto nsb bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] bg-opacity-5">
                     {activeChannel==="telegram" ? (
                       <>
                         <ChatBubble isUser text="/newbot" delay={.1}/>
@@ -1215,29 +1198,29 @@ export default function Home() {
                         <ChatBubble text="Good. Now let's choose a username…" delay={.4}/>
                         <ChatBubble isUser text="ClawSupport_bot" delay={.5}/>
                         <motion.div initial={{opacity:0,y:8}} animate={{opacity:1,y:0}} transition={{delay:.6,duration:.18}}
-                          className="p-3 rounded-2xl rounded-tl-sm text-gray-200 self-start max-w-[90%] text-[11px] leading-relaxed"
-                          style={{background:"#1A1A1A",border:"1px solid rgba(42,171,238,0.2)"}}>
+                          className="p-4 rounded-2xl rounded-tl-sm text-gray-200 self-start max-w-[92%] text-[12px] leading-relaxed shadow-lg"
+                          style={{background:"#1A1A1A",border:"1px solid rgba(42,171,238,0.25)"}}>
                           Done! Here is your token:<br/>
-                          <span className="text-[#2AABEE] font-mono font-bold break-all mt-1 block">1234567890:AAH8ABC…</span>
+                          <span className="text-[#2AABEE] font-mono font-bold break-all mt-2 block bg-black/30 p-2 rounded-lg border border-white/5">1234567890:AAH8ABC…</span>
                         </motion.div>
                       </>
                     ) : (
-                      <div className="flex flex-col gap-3 h-full justify-start pb-4">
+                      <div className="flex flex-col gap-3.5 h-full justify-start pb-4">
                         <GuideStep delay={.1} step="1" title="Create App" desc={`Select Business Type in Meta Developer Console for ${activeChannel}.`}/>
                         <GuideStep delay={.2} step="2" title="Link Account" desc={`Register your ${activeChannel} account in API Setup.`}/>
                         <GuideStep delay={.3} step="3" title="Generate Token" desc="Create System User & get Permanent Access Token."/>
                         <GuideStep delay={.4} step="4" title="Link Webhook" desc="Enter Webhook URL & Verify Token."/>
                         <GuideStep delay={.5} step="5" title="Subscribe" desc="Enable 'messages' webhook subscription."/>
                         <motion.div initial={{opacity:0,scale:.9}} animate={{opacity:1,scale:1}} transition={{delay:.6,duration:.18}}
-                          className="mt-3 p-3 rounded-xl text-center mx-auto w-[90%]" style={{background:activeChannel==="whatsapp"?"rgba(37,211,102,0.08)":"rgba(230,104,60,0.08)",border:`1px solid ${activeChannel==="whatsapp"?"rgba(37,211,102,0.22)":"rgba(230,104,60,0.22)"}`}}>
-                          <span className={`font-bold text-[11px] flex items-center justify-center gap-2 ${activeChannel==="whatsapp"?"text-[#25D366]":"text-[#e6683c]"}`}>
-                            <Zap className="w-3 h-3"/> Infrastructure Linked
+                          className="mt-4 p-4 rounded-xl text-center mx-auto w-[90%] shadow-lg" style={{background:activeChannel==="whatsapp"?"rgba(37,211,102,0.08)":"rgba(230,104,60,0.08)",border:`1px solid ${activeChannel==="whatsapp"?"rgba(37,211,102,0.25)":"rgba(230,104,60,0.25)"}`}}>
+                          <span className={`font-black text-[12px] uppercase tracking-widest flex items-center justify-center gap-2 ${activeChannel==="whatsapp"?"text-[#25D366]":"text-[#e6683c]"}`}>
+                            <Zap className="w-4 h-4"/> Infrastructure Linked
                           </span>
                         </motion.div>
                       </div>
                     )}
                   </div>
-                  <div className="absolute bottom-2 inset-x-0 h-1 rounded-full w-28 mx-auto z-20 bg-[#333]"/>
+                  <div className="absolute bottom-2.5 inset-x-0 h-1.5 rounded-full w-32 mx-auto z-20 bg-[#333]"/>
                 </div>
               </div>
             </motion.div>
@@ -1245,40 +1228,40 @@ export default function Home() {
         )}
       </AnimatePresence>
 
-      <div className="fixed bottom-6 right-6 z-[60] flex flex-col items-end">
+      <div className="fixed bottom-8 right-8 z-[130] flex flex-col items-end">
         <AnimatePresence>
           {isHelpOpen && (
             <motion.div initial={{opacity:0,y:14,scale:.92}} animate={{opacity:1,y:0,scale:1}} exit={{opacity:0,y:14,scale:.92}} transition={{duration:.12,ease:"easeOut"}}
-              className="w-72 md:w-80 p-5 rounded-2xl mb-3 relative" style={{background:"#0F0F12",border:"1px solid rgba(255,255,255,0.09)",boxShadow:"0 0 48px rgba(0,0,0,0.8)"}}>
-              <div className="absolute top-0 left-[15%] right-[15%] h-px" style={{background:"linear-gradient(90deg,transparent,rgba(249,115,22,0.35),transparent)"}}/>
-              <button aria-label="Close Help Chat" data-spring onClick={()=>setIsHelpOpen(false)} className={`absolute top-3.5 right-3.5 text-gray-500 hover:text-white ${btn}`}><X className="w-4 h-4"/></button>
+              className="w-80 md:w-96 p-6 rounded-[1.5rem] mb-4 relative" style={{background:"#0F0F12",border:"1px solid rgba(255,255,255,0.09)",boxShadow:"0 10px 50px rgba(0,0,0,0.9)"}}>
+              <div className="absolute top-0 left-[15%] right-[15%] h-px" style={{background:"linear-gradient(90deg,transparent,rgba(249,115,22,0.4),transparent)"}}/>
+              <button aria-label="Close Help Chat" data-spring onClick={()=>setIsHelpOpen(false)} className={`absolute top-4 right-4 text-gray-500 hover:text-white bg-white/5 hover:bg-white/10 p-1.5 rounded-full transition-colors ${btn}`}><X className="w-4 h-4"/></button>
               {helpStatus==="sent" ? (
-                <div className="py-8 text-center flex flex-col items-center">
-                  <div className="w-11 h-11 rounded-full flex items-center justify-center mb-3" style={{background:"rgba(34,197,94,0.12)"}}><CheckCircle2 className="w-5 h-5 text-green-400"/></div>
-                  <h4 className="text-white font-bold text-[15px] mb-1">Submitted!</h4>
-                  <p className="text-[11px] text-gray-400">Our team will review shortly.</p>
+                <div className="py-10 text-center flex flex-col items-center">
+                  <div className="w-14 h-14 rounded-full flex items-center justify-center mb-4" style={{background:"rgba(34,197,94,0.12)", border:"1px solid rgba(34,197,94,0.2)"}}><CheckCircle2 className="w-7 h-7 text-green-400"/></div>
+                  <h4 className="text-white font-black text-[18px] mb-2">Request Submitted!</h4>
+                  <p className="text-[13px] text-gray-400">Our engineering team will review shortly.</p>
                 </div>
               ) : (
                 <>
-                  <div className="flex items-center gap-3 mb-4 pb-4" style={{borderBottom:"1px solid rgba(255,255,255,0.06)"}}>
-                    <div className="w-9 h-9 rounded-full flex items-center justify-center" style={{background:"rgba(59,130,246,0.12)"}}><MessageSquare className="w-4 h-4 text-blue-400"/></div>
+                  <div className="flex items-center gap-4 mb-5 pb-5" style={{borderBottom:"1px solid rgba(255,255,255,0.06)"}}>
+                    <div className="w-11 h-11 rounded-full flex items-center justify-center" style={{background:"rgba(59,130,246,0.12)", border:"1px solid rgba(59,130,246,0.2)"}}><MessageSquare className="w-5 h-5 text-blue-400"/></div>
                     <div>
-                      <h4 className="text-white font-bold text-[13px]">ClawLink Support</h4>
-                      <p className="text-[10px] text-gray-400">Standard SLA per tier.</p>
+                      <h4 className="text-white font-black text-[15px]">ClawLink Support</h4>
+                      <p className="text-[11px] text-gray-400 mt-0.5">Standard SLA per tier.</p>
                     </div>
                   </div>
-                  <div className="space-y-3">
-                    <input aria-label="Your Email" type="email" placeholder="Your email" value={helpEmail} onChange={e=>setHelpEmail(e.target.value)}
-                      className="w-full px-3 py-2.5 rounded-xl text-[12px] text-white outline-none transition-colors duration-150"
-                      style={{background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.07)"}}
-                      onFocus={e=>(e.target.style.borderColor="rgba(59,130,246,0.5)")} onBlur={e =>(e.target.style.borderColor="rgba(255,255,255,0.07)")}/>
-                    <textarea aria-label="Your Message" placeholder="How can we help?" rows={3} value={helpMessage} onChange={e=>setHelpMessage(e.target.value)}
-                      className="w-full px-3 py-2.5 rounded-xl text-[12px] text-white outline-none resize-none transition-colors duration-150"
-                      style={{background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.07)"}}
-                      onFocus={e=>(e.target.style.borderColor="rgba(59,130,246,0.5)")} onBlur={e =>(e.target.style.borderColor="rgba(255,255,255,0.07)")}/>
+                  <div className="space-y-4">
+                    <input aria-label="Your Email" type="email" placeholder="Your email address" value={helpEmail} onChange={e=>setHelpEmail(e.target.value)}
+                      className="w-full px-4 py-3.5 rounded-xl text-[13px] text-white outline-none transition-colors duration-200 placeholder-gray-600"
+                      style={{background:"rgba(255,255,255,0.03)",border:"1px solid rgba(255,255,255,0.08)"}}
+                      onFocus={e=>(e.target.style.borderColor="rgba(59,130,246,0.5)")} onBlur={e =>(e.target.style.borderColor="rgba(255,255,255,0.08)")}/>
+                    <textarea aria-label="Your Message" placeholder="How can we assist you today?" rows={4} value={helpMessage} onChange={e=>setHelpMessage(e.target.value)}
+                      className="w-full px-4 py-3.5 rounded-xl text-[13px] text-white outline-none resize-none transition-colors duration-200 placeholder-gray-600"
+                      style={{background:"rgba(255,255,255,0.03)",border:"1px solid rgba(255,255,255,0.08)"}}
+                      onFocus={e=>(e.target.style.borderColor="rgba(59,130,246,0.5)")} onBlur={e =>(e.target.style.borderColor="rgba(255,255,255,0.08)")}/>
                     <button aria-label="Send Message" data-ripple data-spring onClick={handleSendHelpRequest} disabled={helpStatus==="sending"}
-                      className={`relative overflow-hidden w-full bg-blue-600 hover:bg-blue-500 text-white font-bold text-[12px] py-2.5 rounded-xl flex items-center justify-center gap-2 ${btn}`}>
-                      {helpStatus==="sending"?"Sending…":<><Send className="w-3 h-3"/>Send Message</>}
+                      className={`relative overflow-hidden w-full bg-blue-600 hover:bg-blue-500 text-white font-black uppercase tracking-widest text-[13px] py-4 rounded-xl flex items-center justify-center gap-2 shadow-[0_4px_15px_rgba(59,130,246,0.3)] ${btn}`}>
+                      {helpStatus==="sending"?"Transmitting…":<><Send className="w-4 h-4"/>Send Message</>}
                     </button>
                   </div>
                 </>
@@ -1286,10 +1269,10 @@ export default function Home() {
             </motion.div>
           )}
         </AnimatePresence>
-        <motion.button aria-label="Toggle Help Widget" whileHover={{scale:1.1}} whileTap={{scale:.9}} onClick={()=>setIsHelpOpen(!isHelpOpen)}
-          className="w-14 h-14 text-white rounded-full flex items-center justify-center transition-all duration-150 transform-gpu"
-          style={{background:"linear-gradient(135deg,#3B82F6,#7C3AED)",boxShadow:"0 0 28px rgba(59,130,246,0.5)"}}>
-          {isHelpOpen ? <X className="w-6 h-6"/> : <MessageCircle className="w-6 h-6"/>}
+        <motion.button aria-label="Toggle Help Widget" whileHover={{scale:1.05}} whileTap={{scale:.95}} onClick={()=>setIsHelpOpen(!isHelpOpen)}
+          className="w-16 h-16 text-white rounded-full flex items-center justify-center transition-all duration-200 transform-gpu"
+          style={{background:"linear-gradient(135deg,#3B82F6,#7C3AED)",boxShadow:"0 10px 30px rgba(59,130,246,0.4)"}}>
+          {isHelpOpen ? <X className="w-7 h-7"/> : <MessageCircle className="w-7 h-7"/>}
         </motion.button>
       </div>
     </div>
