@@ -5,10 +5,9 @@
  * CLAWLINK ENTERPRISE FRONTEND SECURE MODULE
  * ==============================================================================================
  * @file app/page.tsx
- * @version 10.1.0 (Ultra-Responsive & Demo Flow Enabled)
+ * @version 10.2.0 (Pre-Login Selection Enabled)
  * @description Main onboarding interface with strict Product-Led Growth (PLG) routing.
- * FIXED: Unlocked selection models for pre-login interaction (Demo mode).
- * FIXED: Optimized desktop sizes for selection matrices to prevent empty visual gaps.
+ * FIXED: Removed login alert on selection clicks. Users can now freely interact pre-login.
  * Integrates KNOX Level-7 Apple-grade security protocol.
  * * ALL RIGHTS RESERVED. CLAWLINK INC.
  * ==============================================================================================
@@ -51,9 +50,6 @@ class KnoxSecurityProtocol {
       console.error = noOp;
       console.debug = noOp;
       console.trace = noOp;
-    } else {
-      console.log("%c STOP!", "color: red; font-size: 50px; font-weight: bold; text-shadow: 2px 2px 0 #000;");
-      console.log("%c CLAWLINK KNOX SECURITY: Unauthorized access to backend structure is strictly prohibited.", "color: white; background: red; font-size: 16px; padding: 4px; border-radius: 4px;");
     }
   }
 
@@ -76,11 +72,6 @@ class KnoxSecurityProtocol {
   }
 }
 
-/**
- * ==============================================================================================
- * ENTERPRISE PRICING MATRICES
- * ==============================================================================================
- */
 const PRICING_DATA: Record<string, any> = {
   "gemini 3.1 Pro": {
     name: "Gemini 3.1 Pro",
@@ -118,24 +109,19 @@ const PRICING_DATA: Record<string, any> = {
   }
 };
 
-/**
- * ==============================================================================================
- * SCALABLE VECTOR GRAPHICS (INLINE)
- * ==============================================================================================
- */
 const OpenAI_Icon  = ({ size = 26 }: { size?: number }) => <Image src="/logos/openai.svg"  alt="GPT-4o OpenAI Agent Icon"  width={size} height={size} className="transform-gpu" />;
 const Claude_Icon  = ({ size = 26 }: { size?: number }) => <Image src="/logos/claude.svg"  alt="Claude 3 Anthropic AI Icon"  width={size} height={size} className="transform-gpu" />;
 const Gemini_Icon  = ({ size = 26 }: { size?: number }) => <Image src="/logos/gemini.svg"  alt="Gemini Google AI Bot Icon"  width={size} height={size} className="transform-gpu" />;
 
 const Llama_Icon = ({ size = 26 }: { size?: number }) => (
-  <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-label="Meta Llama 4 AI Builder" className="text-gray-800 transform-gpu">
+  <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-800 transform-gpu">
     <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/>
     <line x1="4" y1="22" x2="4" y2="15"/>
   </svg>
 );
 
 const Omni_Icon = ({ size = 22 }: { size?: number }) => (
-  <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke="#00BFFF" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-label="OmniAgent 3x AI Fallback Matrix">
+  <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke="#00BFFF" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
     <path d="M12 4.5C10 4.5 8 5.5 7.5 7.5 6 7.5 4.5 8.5 4.5 10.5 4 11.5 4 13 5 14 4.5 15.5 5.5 17 7 17.5 7.5 19 9 20 10.5 20H12"/>
     <path d="M12 4.5C14 4.5 16 5.5 16.5 7.5 18 7.5 19.5 8.5 19.5 10.5 20 11.5 20 13 19 14 19.5 15.5 18.5 17 17 17.5 16.5 19 15 20 13.5 20H12"/>
     <line x1="12" y1="4.5" x2="12" y2="20"/>
@@ -151,14 +137,14 @@ const Omni_Icon = ({ size = 22 }: { size?: number }) => (
 );
 
 const Telegram_Icon = ({ size = 26 }: { size?: number }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="Telegram Bot API Builder" className="transform-gpu">
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="transform-gpu">
     <path d="M12 24c6.627 0 12-5.373 12-12S18.627 0 12 0 0 5.373 0 12s5.373 12 12 12z" fill="#2AABEE"/>
     <path d="M5.425 11.871L16.48 7.61c.526-.196 1.006.124.819.86l-1.892 8.92c-.167.755-.615.939-1.242.593L10.73 15.45l-1.657 1.588c-.183.183-.338.338-.692.338l.245-3.528 6.425-5.8c.28-.249-.06-.388-.435-.138L6.68 12.89l-3.417-1.066c-.744-.233-.759-.745.155-1.103z" fill="#fff"/>
   </svg>
 );
 
 const WhatsApp_Icon = ({ size = 26 }: { size?: number }) => (
-  <svg width={size} height={size} viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-label="WhatsApp Cloud API Automation" className="transform-gpu">
+  <svg width={size} height={size} viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" className="transform-gpu">
     <rect width="100" height="100" rx="24" fill="#25D366"/>
     <path fill="#ffffff" d="M50 15c-19.3 0-35 15.7-35 35 0 6.2 1.6 12.2 4.7 17.5L15 85l17.5-4.7c5.3 3.1 11.3 4.7 17.5 4.7 19.3 0 35-15.7 35-35S69.3 15 50 15zm0 63.8c-5.2 0-10.4-1.4-15-4.1l-1.1-.6-11.1 2.9 2.9-10.8-.7-1.1c-2.9-4.7-4.5-10.1-4.5-15.6 0-16.2 13.2-29.4 29.4-29.4s29.4 13.2 29.4 29.4-13.2 29.4-29.4 29.4z"/>
     <path fill="#ffffff" d="M42 34h9.5c5.5 0 8.5 2.5 8.5 5.5s-2.8 4.2-5.5 4.8c4 1 7 3.5 7 7.5 0 5.5-5.5 7.2-10 7.2H42V34zm5 5.5v7h4c2 0 4-1 4-3.5s-2-3.5-4-3.5h-4zm0 11v8h4.5c3 0 4.5-1.5 4.5-4s-2-4-4.5-4H47z"/>
@@ -166,13 +152,13 @@ const WhatsApp_Icon = ({ size = 26 }: { size?: number }) => (
 );
 
 const Discord_Icon = ({ size = 22 }: { size?: number }) => (
-  <svg viewBox="0 0 24 24" width={size} height={size} fill="#5865F2" aria-label="Discord AI Chatbot Deployment" className="transform-gpu">
+  <svg viewBox="0 0 24 24" width={size} height={size} fill="#5865F2" className="transform-gpu">
     <path d="M20.3 5.4c-1.6-.7-3.4-1.2-5.2-1.5-.2.4-.4.9-.6 1.3-1.9-.3-3.8-.3-5.7 0-.2-.4-.4-.9-.6-1.3-1.8.3-3.6.8-5.2 1.5-3.3 4.9-4.2 9.7-3.3 14.4 2.2 1.6 4.3 2.6 6.4 3.2.5-.7 1-1.5 1.4-2.3-1.2-.5-2.4-1.1-3.5-1.8.3-.2.6-.4.9-.7 4.6 2.1 9.7 2.1 14.3 0 .3.2.6.5.9.7-1.1.7-2.3 1.3-3.5 1.8.4.8.9 1.6 1.4 2.3 2.1-.6 4.2-1.6 6.4-3.2 1-5.1.1-10-3.2-14.4z"/>
   </svg>
 );
 
 const Instagram_Icon = ({ size = 22 }: { size?: number }) => (
-  <div aria-label="Instagram DM Automation AI Agent" className={`w-[${size}px] h-[${size}px] rounded-lg bg-gradient-to-tr from-[#f09433] via-[#e6683c] to-[#bc1888] flex items-center justify-center transform-gpu`}>
+  <div className={`w-[${size}px] h-[${size}px] rounded-lg bg-gradient-to-tr from-[#f09433] via-[#e6683c] to-[#bc1888] flex items-center justify-center transform-gpu`}>
     <div className="w-[60%] h-[60%] border-[2px] border-white rounded-[4px] flex items-center justify-center">
       <div className="w-[35%] h-[35%] bg-white rounded-full"/>
     </div>
@@ -180,7 +166,7 @@ const Instagram_Icon = ({ size = 22 }: { size?: number }) => (
 );
 
 const Google_Icon = () => (
-  <svg viewBox="0 0 24 24" width="22" height="22" aria-label="Google OAuth Sign In" className="transform-gpu">
+  <svg viewBox="0 0 24 24" width="22" height="22" className="transform-gpu">
     <path fill="#EA4335" d="M5.266 9.765A7.077 7.077 0 0112 4.909c1.69 0 3.218.6 4.418 1.582L19.91 3C17.782 1.145 15.055 0 12 0 7.27 0 3.198 2.698 1.24 6.65l4.026 3.115Z"/>
     <path fill="#34A853" d="M16.04 18.013c-1.09.703-2.474 1.078-4.04 1.078a7.077 7.077 0 01-6.723-4.823l-4.04 3.067A11.965 11.965 0 0012 24c2.933 0 5.735-1.043 7.834-3l-3.793-2.987Z"/>
     <path fill="#4A90E2" d="M19.834 21c2.195-2.048 3.62-5.096 3.62-9 0-.71-.109-1.473-.272-2.182H12v4.637h6.436c-.317 1.559-1.17 2.766-2.395 3.558L19.834 21Z"/>
@@ -247,13 +233,11 @@ export default function Home() {
   
   const [isTokenSaved, setIsTokenSaved] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
-  const [showPricingPopup, setShowPricingPopup] = useState(false);
   const [isDeploying, setIsDeploying] = useState(false);
   const [botLink, setBotLink] = useState("");
   
   const [activeModel, setActiveModel] = useState("gpt-5.4 Pro");
   const [activeChannel, setActiveChannel] = useState("telegram");
-  const [selectedTier, setSelectedTier] = useState<string|null>(null);
   
   const [currency, setCurrency] = useState<"USD"|"INR">("USD");
   const [currencySymbol, setCurrencySymbol] = useState("$");
@@ -264,7 +248,6 @@ export default function Home() {
   const [helpStatus, setHelpStatus] = useState<"idle"|"sending"|"sent">("idle");
   const [isSupportModalOpen, setIsSupportModalOpen] = useState(false);
 
-  // Load from local storage
   useEffect(() => {
     if (typeof window !== "undefined") {
       const savedModel = localStorage.getItem("clawlink_model");
@@ -276,7 +259,7 @@ export default function Home() {
 
   /**
    * 🚀 FREE PRE-LOGIN SELECTION LOGIC (DEMO MODE ENABLED)
-   * Users can now click and interact with models/channels before logging in.
+   * Removed alerts. Users can now freely interact and test layout.
    */
   const handleModelSelect = (modelId: string) => {
     if (!isTokenSaved) {
@@ -296,7 +279,6 @@ export default function Home() {
     }
   };
 
-  // Post Login routing check
   const handleLoginOrDeploy = () => {
     if (status !== "authenticated") {
         signIn("google");
@@ -308,11 +290,6 @@ export default function Home() {
   useEffect(() => {
     setIsMounted(true);
     KnoxSecurityProtocol.initialize();
-
-    const script = document.createElement("script");
-    script.src = "https://checkout.razorpay.com/v1/checkout.js";
-    script.async = true;
-    document.body.appendChild(script);
 
     try {
       const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || "";
@@ -419,21 +396,6 @@ export default function Home() {
       });
     });
 
-    document.querySelectorAll('.mag-el').forEach(el => {
-      const span = el.querySelector('.mt');
-      if (!span) return;
-      const e2 = el as HTMLElement;
-      e2.addEventListener('mousemove', (ev: any) => {
-        const r = e2.getBoundingClientRect();
-        const x = (ev.clientX - r.left - r.width  / 2) * 0.28;
-        const y = (ev.clientY - r.top  - r.height / 2) * 0.28;
-        (span as HTMLElement).style.transform = `translate(${x}px,${y}px)`;
-      });
-      e2.addEventListener('mouseleave', () => {
-        (span as HTMLElement).style.transform = 'translate(0,0)';
-      });
-    });
-
     return () => {
       io.disconnect();
       window.removeEventListener('scroll', handleScroll);
@@ -482,8 +444,8 @@ export default function Home() {
         alert("Configuration Error: " + data.error);
       }
     } catch (error) {
-      console.error("Deployment Execution Error:", error);
-      alert("Network exception encountered during automated deployment phase.");
+      console.error("Deployment Error:", error);
+      alert("Network exception encountered.");
     } finally {
       setIsDeploying(false);
     }
@@ -552,14 +514,13 @@ export default function Home() {
 
   const btn = "transition-all duration-[120ms] ease-out active:scale-[0.93] transform-gpu will-change-transform";
 
-  // 🚀 FIXED: Enhanced desktop styling for buttons to prevent gaps and improve visual layout
   const pillBase = [
     "bg-white border-2 border-transparent cursor-pointer overflow-hidden",
     btn,
     "shadow-[0_2px_8px_rgba(0,0,0,0.12)]",
     "hover:shadow-[0_8px_20px_rgba(0,0,0,0.22)] hover:-translate-y-[2px]",
-    "lg:flex-row lg:w-[100%] lg:h-[64px] lg:px-4 lg:gap-3", // Larger desktop sizing
-    "max-lg:flex-col max-lg:h-[60px] max-lg:px-[4px] max-lg:py-[8px] max-lg:gap-[4px] max-lg:justify-center max-lg:items-center", // Mobile fallback
+    "lg:flex-row lg:w-[100%] lg:h-[64px] lg:px-4 lg:gap-3", 
+    "max-lg:flex-col max-lg:h-[60px] max-lg:px-[4px] max-lg:py-[8px] max-lg:gap-[4px] max-lg:justify-center max-lg:items-center",
     "rounded-[14px]",
   ].join(" ");
 
@@ -640,7 +601,6 @@ export default function Home() {
         .icon-lift{transition:transform .2s cubic-bezier(.34,1.56,.64,1)}
         .icon-lift:hover{transform:scale(1.12) rotate(-4deg)}
         
-        /* 🚀 FIXED: Dynamic Typography sizes for Desktop/Mobile */
         .ptx-name{font-size:14px;font-weight:900;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
         .ptx-sub {font-size:10px;font-weight:700;opacity:.8;white-space:nowrap}
         .ptx-soon{font-size:9px;font-weight:800;color:#3b82f6;text-transform:uppercase}
@@ -652,8 +612,6 @@ export default function Home() {
         
         .orange-glow{box-shadow:0 0 28px rgba(249,115,22,.48)}
         .orange-glow:hover{box-shadow:0 0 48px rgba(249,115,22,.65)}
-        .blue-glow  {box-shadow:0 0 28px rgba(37,99,235,.52)}
-        .blue-glow:hover{box-shadow:0 0 48px rgba(37,99,235,.72)}
       `}}/>
 
       <div className="fixed top-[-20%] right-[-8%] w-[800px] h-[800px] rounded-full pointer-events-none z-0 float-a"
@@ -716,14 +674,11 @@ export default function Home() {
           Avoid all technical complexity — one-click deploy your own 24/7 active Personal AI Assistant for WhatsApp, Telegram & Instagram. No code. No servers. Just results.
         </p>
 
-        {/* 🚀 FIXED: Desktop Optimized Grid Layout for Selection UI */}
         <div className="anim-card card-shimmer tilt-el relative w-full max-w-[1100px] rounded-[28px] p-6 md:p-10 mb-8 overflow-hidden"
           style={{background:"rgba(255,255,255,0.028)",border:"1px solid rgba(255,255,255,0.08)",
                   boxShadow:"0 0 80px rgba(249,115,22,0.08),0 40px 80px rgba(0,0,0,0.6)"}}>
           
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
-            
-            {/* COLUMN 1: CHANNELS */}
             <div className="flex flex-col gap-4">
                <p className="text-[10px] lg:text-[12px] font-black tracking-[.2em] uppercase text-gray-400 text-left flex items-center gap-2 border-b border-white/5 pb-3">
                  <span className="w-5 h-5 rounded bg-white/10 flex items-center justify-center text-white">1</span>
@@ -762,7 +717,6 @@ export default function Home() {
                </div>
             </div>
 
-            {/* COLUMN 2: MODELS */}
             <div className="flex flex-col gap-4">
                 <p className="text-[10px] lg:text-[12px] font-black tracking-[.2em] uppercase text-gray-400 text-left flex items-center gap-2 border-b border-white/5 pb-3">
                  <span className="w-5 h-5 rounded bg-white/10 flex items-center justify-center text-white">2</span>
@@ -801,7 +755,6 @@ export default function Home() {
             </div>
           </div>
           
-          {/* 🚀 FIXED: Post-Selection Universal Action Area */}
           <div className="mt-10 pt-8 border-t border-white/10 flex justify-center w-full">
             <AnimatePresence mode="wait">
               {botLink ? (
