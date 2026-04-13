@@ -1,10 +1,10 @@
 /**
  * ==============================================================================================
- * CLAWLINK ENTERPRISE INSTAGRAM WEBHOOK (OMNI ENGINE)
+ * CLAWLINK ENTERPRISE INSTAGRAM WEBHOOK (OMNI ENGINE + AUTO-DM)
  * ==============================================================================================
  * @file app/api/webhook/instagram/route.ts
  * @description Handles Meta Graph API webhooks for Instagram DMs and Comments.
- * Directly integrates the 2026 Omni-Routing engine to prevent self-fetch timeouts.
+ * Features the "ManyChat-Killer" Auto-DM trigger system and 2026 Omni-Routing engine.
  * * ALL RIGHTS RESERVED. CLAWLINK INC.
  * ==============================================================================================
  */
@@ -12,7 +12,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
-// 🚀 REMOVED EDGE RUNTIME: Using standard Node serverless to prevent background task termination.
+// 🚀 Using standard Node serverless to prevent background task termination.
 export const dynamic = "force-dynamic";
 
 // 🚀 INITIALIZE SUPABASE
@@ -39,12 +39,30 @@ function sanitizeInput(input: string | null | undefined): string {
 const ENTERPRISE_GUARDRAIL = `
 CRITICAL INSTRUCTION: You are an Enterprise AI Support Agent operating on Instagram. 
 1. Keep your responses concise, friendly, and formatted for social media (use emojis sparingly but effectively).
-2. If the user asks something outside the provided Knowledge Base, do NOT guess. Politely state: "I don't have that specific info right now, let me connect you with a human agent."
+2. FACTUAL RAG: Base answers ONLY on the Company Knowledge provided.
+3. If the user asks something outside the Knowledge Base, do NOT guess. Politely state: "I don't have that specific info right now, let me connect you with a human agent."
 `;
 
 // =========================================================================
-// 🧠 DIRECT AI MODEL CALLERS (Prevents 504 Gateway Timeouts)
+// 🧠 DIRECT AI MODEL CALLERS & RAG
 // =========================================================================
+
+async function generateEmbedding(text: string) {
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) return null;
+    try {
+        const embedUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-embedding-001:embedContent?key=${apiKey}`;
+        const res = await fetch(embedUrl, {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ content: { parts: [{ text: text }] } }) 
+        });
+        const data = await res.json();
+        return res.ok ? data.embedding.values : null;
+    } catch (e) {
+        return null;
+    }
+}
+
 async function callGemini(model: string, systemPrompt: string, history: any[], userText: string) {
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) throw new Error("API_KEY missing");
@@ -143,8 +161,7 @@ export async function POST(req: Request) {
             const senderId = webhookEvent.sender?.id;
             const userText = webhookEvent.message?.text;
             
-            if (userText && !webhookEvent.message?.is_echo) {
-                // Awaiting execution to ensure it finishes before Vercel kills the lambda
+            if (userText && !webhookEvent.message?.is_echo && senderId !== accountId) {
                 await processDynamicAI(senderId, accountId, userText, "dm");
             }
         }
@@ -166,12 +183,12 @@ export async function POST(req: Request) {
         return NextResponse.json({ success: true }, { status: 200 });
     } catch (error) {
         console.error("[IG_WEBHOOK_FATAL] Error in POST handler:", error);
-        return NextResponse.json({ success: true }, { status: 200 });
+        return NextResponse.json({ success: true }, { status: 200 }); // Always return 200 to Meta
     }
 }
 
 // =========================================================================
-// 🧠 PROCESSOR: DYNAMIC AI ROUTING (OMNI-ENGINE)
+// 🧠 PROCESSOR: DYNAMIC AI ROUTING (OMNI-ENGINE + RAG + TRIGGERS)
 // =========================================================================
 async function processDynamicAI(senderId: string, accountId: string, text: string, type: "dm" | "comment", commentId?: string) {
     const { data: config, error: dbError } = await supabase
@@ -186,6 +203,23 @@ async function processDynamicAI(senderId: string, accountId: string, text: strin
     }
 
     const metaApiToken = config.instagram_token.trim();
+    const promptText = sanitizeInput(text);
+
+    // ==========================================
+    // 🎯 AUTO-DM TRIGGER CHECK (For Comments Only)
+    // ==========================================
+    if (type === "comment") {
+        const triggers = (config.ig_auto_dm_triggers || "link,demo,price,send").toLowerCase().split(",");
+        const commentLower = promptText.toLowerCase();
+        
+        const matchedTrigger = triggers.find((t: string) => commentLower.includes(t.trim()));
+        
+        if (!matchedTrigger) {
+            console.log(`[IG_COMMENT_IGNORED] No trigger word found in: "${promptText}"`);
+            return; // Exit execution, don't waste AI tokens
+        }
+        console.log(`[IG_AUTO_DM_TRIGGERED] Word matched: ${matchedTrigger}`);
+    }
 
     // ==========================================
     // 🛑 THE GATEKEEPER (Plan, Expiry & Limits Check) 
@@ -225,6 +259,22 @@ async function processDynamicAI(senderId: string, accountId: string, text: strin
     }
 
     // ==========================================
+    // 📚 FETCH COMPANY KNOWLEDGE (RAG)
+    // ==========================================
+    let customKnowledge = "";
+    try {
+        const queryVector = await generateEmbedding(promptText);
+        if (queryVector) {
+            const { data: matchedDocs } = await supabase.rpc("match_knowledge", {
+                query_embedding: queryVector, match_threshold: 0.65, match_count: 2, p_user_email: config.email
+            });
+            if (matchedDocs && matchedDocs.length > 0) {
+                customKnowledge = matchedDocs.map((doc: any) => sanitizeInput(doc.content)).join("\n\n");
+            }
+        }
+    } catch (e) { console.error("[IG_RAG_ERROR]", e); }
+
+    // ==========================================
     // 🚀 INITIATE OMNI-ENGINE AI RESPONSE
     // ==========================================
     let rawProvider = (config.ai_provider || config.selected_model || "openai").toLowerCase();
@@ -234,9 +284,8 @@ async function processDynamicAI(senderId: string, accountId: string, text: strin
     else if (rawProvider.includes("claude") || rawProvider.includes("anthropic") || rawProvider.includes("opus")) provider = "anthropic";
     else if (rawProvider.includes("gemini") || rawProvider.includes("google")) provider = "google";
 
-    const promptText = sanitizeInput(text);
     const systemPrompt = config.system_prompt_instagram || config.system_prompt || "You are a professional, helpful, and concise AI agent for Instagram.";
-    const fullSystemContext = `${ENTERPRISE_GUARDRAIL}\n\nSystem Instructions: ${systemPrompt}`;
+    const fullSystemContext = `${ENTERPRISE_GUARDRAIL}\n\nSystem Instructions: ${systemPrompt}\n\nCompany Knowledge Base:\n${customKnowledge ? customKnowledge : "No specific company data found."}`;
 
     const { data: pastChats } = await supabase
         .from("chat_history")
