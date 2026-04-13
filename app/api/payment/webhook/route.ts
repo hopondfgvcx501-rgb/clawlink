@@ -107,8 +107,10 @@ export async function POST(req: NextRequest) {
             tokens_allocated: allocatedTokens,
             available_tokens: allocatedTokens,
             monthly_message_limit: monthlyLimit,
-            plan_expiry_date: expiryDate.toISOString(),
-            plan_status: 'Active', // 🔥 AWAKENS THE BOT
+            plan_expiry_date: expiryDate.toISOString(), // Fallback
+            expires_at: expiryDate.toISOString(), // Exact Column
+            subscription_end_date: expiryDate.toISOString(), // Exact Column
+            plan_status: 'Active', 
             bot_status: 'Active', 
             current_model_version: exactModelVersion,
             ai_model: exactModelVersion,

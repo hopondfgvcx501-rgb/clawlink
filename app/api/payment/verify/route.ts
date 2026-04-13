@@ -92,19 +92,21 @@ export async function POST(req: Request) {
     else expiryDate.setDate(expiryDate.getDate() + 30); 
 
     // 🔒 LEVEL 4: Database Update (THE AWAKENING - 100% OVERRIDE)
-    // We update every possible column that might be holding the bot back
+    // 🚀 FIXED: Carefully syncing to exact DB column names from screenshot
     const configPayload = {
         plan: planTier,
         plan_tier: planTier,
-        plan_name: planTier, // Fix for screenshot 112024
-        plan_type: planTier === "adv_max" || planTier === "yearly" ? "yearly" : "monthly", // Fix for screenshot 112011
+        plan_name: planTier,
+        plan_type: planTier === "adv_max" || planTier === "yearly" ? "yearly" : "monthly",
         is_unlimited: isUnlimited, 
         tokens_allocated: allocatedTokens,
         available_tokens: allocatedTokens,
         monthly_message_limit: monthlyLimit,
-        plan_expiry_date: expiryDate.toISOString(),
-        plan_status: 'Active', // 🔥 BOT GOES LIVE
-        bot_status: 'Active', // Fix for screenshot 112024 (was 'Sleeping')
+        plan_expiry_date: expiryDate.toISOString(), // Fallback
+        expires_at: expiryDate.toISOString(), // Exact Column
+        subscription_end_date: expiryDate.toISOString(), // Exact Column
+        plan_status: 'Active', 
+        bot_status: 'Active', 
         current_model_version: exactModelVersion,
         ai_model: exactModelVersion,
         selected_model: exactModelVersion,
@@ -124,7 +126,7 @@ export async function POST(req: Request) {
     await supabase.from("billing_history").insert({
       email: safeEmail,
       plan_name: planTier.toUpperCase(),
-      amount: amount.toString(), // Expecting INR value
+      amount: amount.toString(),
       currency: "INR", 
       status: "PAID",
       payment_provider: "razorpay",
