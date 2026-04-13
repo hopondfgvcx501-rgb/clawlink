@@ -29,7 +29,8 @@
     "react-dom": "19.2.3",
     "recharts": "^3.8.0",
     "stripe": "^22.0.1",
-    "tailwind-merge": "^3.5.0"
+    "tailwind-merge": "^3.5.0",
+    "twilio": "^5.13.1"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.2.1",
@@ -38,6 +39,7 @@
     "@types/nodemailer": "^7.0.11",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@types/twilio": "^3.19.2",
     "autoprefixer": "^10.4.27",
     "eslint": "^9",
     "eslint-config-next": "16.1.6",
