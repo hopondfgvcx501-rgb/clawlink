@@ -91,9 +91,10 @@ export async function POST(req: Request) {
     if (planTier === "adv_max" || planTier === "yearly") expiryDate.setDate(expiryDate.getDate() + 365);
     else expiryDate.setDate(expiryDate.getDate() + 30); 
 
-    // 🔒 LEVEL 4: Database Update (THE AWAKENING - 100% OVERRIDE)
-    // 🚀 FIXED: Carefully syncing to exact DB column names from screenshot
+    // 🔒 LEVEL 4: Database Update (THE AWAKENING - 100% EXACT COLUMNS ONLY)
     const configPayload = {
+        plan_status: 'Active', // 🔥 BOT GOES LIVE
+        bot_status: 'Active', 
         plan: planTier,
         plan_tier: planTier,
         plan_name: planTier,
@@ -102,10 +103,8 @@ export async function POST(req: Request) {
         tokens_allocated: allocatedTokens,
         available_tokens: allocatedTokens,
         monthly_message_limit: monthlyLimit,
-        expires_at: expiryDate.toISOString(), // Exact Column
-        subscription_end_date: expiryDate.toISOString(), // Exact Column
-        plan_status: 'Active', 
-        bot_status: 'Active', 
+        expires_at: expiryDate.toISOString(), // ✅ Exact DB Column
+        subscription_end_date: expiryDate.toISOString(), // ✅ Exact DB Column
         current_model_version: exactModelVersion,
         ai_model: exactModelVersion,
         selected_model: exactModelVersion,
@@ -113,7 +112,12 @@ export async function POST(req: Request) {
         updated_at: new Date().toISOString()
     };
 
-    const { error: configError } = await supabase.from("user_configs").update(configPayload).eq("email", safeEmail);
+    // 🚀 FIXED: Added .select() to catch Silent Failures instantly!
+    const { data: updateData, error: configError } = await supabase
+        .from("user_configs")
+        .update(configPayload)
+        .eq("email", safeEmail)
+        .select();
 
     if (configError) {
         console.error("[RAZORPAY_DB_ERROR]", configError);
@@ -121,11 +125,16 @@ export async function POST(req: Request) {
         throw configError;
     }
 
+    // If update Data is empty, it means Email didn't match or a Column is still wrong.
+    if (!updateData || updateData.length === 0) {
+        throw new Error("Supabase Silent Failure: 0 rows updated. A column name in the payload might be missing in your DB.");
+    }
+
     // 🔒 LEVEL 5: Immutable Billing Ledger
     await supabase.from("billing_history").insert({
       email: safeEmail,
       plan_name: planTier.toUpperCase(),
-      amount: amount.toString(),
+      amount: amount.toString(), 
       currency: "INR", 
       status: "PAID",
       payment_provider: "razorpay",
@@ -138,6 +147,6 @@ export async function POST(req: Request) {
 
   } catch (error: any) {
     console.error("[PAYMENT_VERIFICATION_FATAL]:", error);
-    return NextResponse.json({ success: false, error: "Internal System Error" }, { status: 500 });
+    return NextResponse.json({ success: false, error: error.message || "Internal System Error" }, { status: 500 });
   }
 }
