@@ -3,7 +3,7 @@
 import { useSession, signOut } from "next-auth/react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LayoutDashboard, MessageSquare, Megaphone, BarChart3, Globe, Gift, LogOut, Loader2, Cpu } from "lucide-react";
+import { LayoutDashboard, MessageSquare, BarChart3, LogOut, Loader2, Cpu } from "lucide-react";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { data: session, status } = useSession();
@@ -19,14 +19,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     return null;
   }
 
-  // 🚀 MASTER NAVIGATION MENU
+  // 🚀 MASTER NAVIGATION MENU (Cleaned up as per CEO orders)
   const navItems = [
     { name: "Overview", href: "/dashboard", icon: LayoutDashboard },
     { name: "Live CRM Inbox", href: "/dashboard/crm", icon: MessageSquare },
     { name: "Data Analytics", href: "/dashboard/analytics", icon: BarChart3 },
-    { name: "Web Widget", href: "/dashboard/widget", icon: Globe },
-    { name: "Broadcast Hub", href: "/dashboard/broadcast", icon: Megaphone },
-    { name: "Partner Program", href: "/dashboard/referral", icon: Gift },
   ];
 
   return (
@@ -94,7 +91,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
         {/* Mobile Bottom Navigation */}
         <div className="md:hidden fixed bottom-0 left-0 right-0 bg-[#111] border-t border-white/10 flex justify-around p-2 z-50">
-          {navItems.slice(0, 5).map((item) => {
+          {navItems.map((item) => {
             const isActive = pathname === item.href;
             return (
               <Link key={item.name} href={item.href} className={`p-3 rounded-xl flex flex-col items-center gap-1 ${isActive ? 'text-blue-500 bg-blue-500/10' : 'text-gray-500'}`}>
