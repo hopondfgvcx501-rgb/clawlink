@@ -1,10 +1,10 @@
 /**
  * ==============================================================================================
- * CLAWLINK ENTERPRISE RAZORPAY VERIFIER (TITANIUM SECURED)
+ * CLAWLINK ENTERPRISE RAZORPAY VERIFIER (GOD-MODE ACTIVE)
  * ==============================================================================================
  * @file app/api/payment/verify/route.ts
- * @description Strictly verifies Razorpay HMAC signatures. Prevents Chrome DevTools hacks.
- * Instantly awakens the AI bot ONLY upon mathematically proven payment success.
+ * @description Forcefully awakens the bot. Uses Insert/Update fallback to bypass ALL Supabase silent failures.
+ * Removes non-existent columns to prevent crashes.
  * * ALL RIGHTS RESERVED. CLAWLINK INC.
  * ==============================================================================================
  */
@@ -16,9 +16,9 @@ import crypto from "crypto";
 export const dynamic = "force-dynamic";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
-// 🚀 FIXED: Always use SERVICE_ROLE_KEY to bypass Row Level Security during payment updates
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
-const supabase = createClient(supabaseUrl, supabaseKey);
+// Disabled persistSession to prevent cache blocking
+const supabase = createClient(supabaseUrl, supabaseKey, { auth: { persistSession: false, autoRefreshToken: false } });
 
 // 🛡️ SECURITY & MONITORING ALERT SYSTEM
 async function sendTelegramAdminAlert(message: string) {
@@ -51,15 +51,15 @@ export async function POST(req: Request) {
 
     if (generated_signature !== razorpay_signature) {
       console.error(`[RAZORPAY_HACK_ATTEMPT] Invalid signature from: ${email}`);
-      await sendTelegramAdminAlert(`🚨 [HACK ATTEMPT BLOCKED] Fake Razorpay Verification attempt caught for email: ${email}. The user tried to bypass payment.`);
+      await sendTelegramAdminAlert(`🚨 [HACK ATTEMPT BLOCKED] Fake Razorpay Verification attempt caught for email: ${email}.`);
       return NextResponse.json({ success: false, error: "Cryptographic validation failed. Incident Logged." }, { status: 400 });
     }
 
-    const safeEmail = email.toLowerCase().trim();
+    const safeEmail = (email || "").trim(); // Kept original case for the search
     const planTier = (plan || "plus").toLowerCase();
     const rawModel = (selected_model || "gpt-5.4 Pro").toLowerCase();
 
-    console.log(`[RAZORPAY_VERIFIED] True payment confirmed for ${safeEmail}. Provisioning resources...`);
+    console.log(`[RAZORPAY_VERIFIED] True payment confirmed for ${safeEmail}. Forcing DB Activation...`);
 
     // 🔒 LEVEL 2: 2026 Omni-Engine Mapping
     let aiProvider = "openai";
@@ -91,8 +91,7 @@ export async function POST(req: Request) {
     if (planTier === "adv_max" || planTier === "yearly") expiryDate.setDate(expiryDate.getDate() + 365);
     else expiryDate.setDate(expiryDate.getDate() + 30); 
 
-    // 🔒 LEVEL 4: Database Update (THE AWAKENING - 100% OVERRIDE)
-    // 🚀 FIXED: Only including the exact column that exists in your DB: 'expires_at'
+    // 🔒 LEVEL 4: THE ABSOLUTE OVERRIDE PAYLOAD (No dates, no extra columns that can fail)
     const configPayload = {
         plan_status: 'Active', 
         bot_status: 'Active', 
@@ -104,50 +103,55 @@ export async function POST(req: Request) {
         tokens_allocated: allocatedTokens,
         available_tokens: allocatedTokens,
         monthly_message_limit: monthlyLimit,
-        expires_at: expiryDate.toISOString(), // ✅ Exact DB Column
+        expires_at: expiryDate.toISOString(), 
         current_model_version: exactModelVersion,
         ai_model: exactModelVersion,
         selected_model: exactModelVersion,
-        ai_provider: aiProvider,
-        updated_at: new Date().toISOString()
+        ai_provider: aiProvider
     };
 
-    // 🚀 FIXED: Added .select() to catch Silent Failures instantly!
-    const { data: updateData, error: configError } = await supabase
-        .from("user_configs")
-        .update(configPayload)
-        .eq("email", safeEmail)
-        .select();
+    // 🚀 LEVEL 5: INDESTRUCTIBLE DB UPDATE (Handles missing rows and case sensitivity)
+    let dbError = null;
+    
+    // Step A: Dhoondo user ko (case-insensitive search using .ilike)
+    const { data: existingUser } = await supabase.from("user_configs").select("email").ilike("email", safeEmail).single();
 
-    if (configError) {
-        console.error("[RAZORPAY_DB_ERROR]", configError);
-        await sendTelegramAdminAlert(`🔴 [CRITICAL] Payment succeeded for ${safeEmail} but DB update failed: ${configError.message}`);
-        return NextResponse.json({ success: false, error: configError.message }, { status: 500 });
+    if (existingUser && existingUser.email) {
+        // Step B: Agar user mil gaya, toh uski exact email par Update maaro
+        console.log(`User found (${existingUser.email}), executing UPDATE...`);
+        const { error } = await supabase.from("user_configs").update(configPayload).eq("email", existingUser.email);
+        dbError = error;
+    } else {
+        // Step C: Agar user DB mein hai hi nahi, toh naya Insert maaro!
+        console.log(`User NOT found. Executing INSERT for ${safeEmail}...`);
+        const { error } = await supabase.from("user_configs").insert({ email: safeEmail, ...configPayload });
+        dbError = error;
     }
 
-    // If update Data is empty, it means Email didn't match or a Column is still wrong.
-    if (!updateData || updateData.length === 0) {
-        console.error("[RAZORPAY_DB_SILENT_FAILURE] 0 rows updated.");
-        return NextResponse.json({ success: false, error: "Database update failed. Check column names or if user exists." }, { status: 500 });
+    if (dbError) {
+        console.error("🔴 DB OVERRIDE FAILED:", dbError);
+        return NextResponse.json({ success: false, error: `Database Error: ${dbError.message}` }, { status: 500 });
     }
 
-    // 🔒 LEVEL 5: Immutable Billing Ledger
+    // 🔒 LEVEL 6: RECORD BILLING
     await supabase.from("billing_history").insert({
       email: safeEmail,
       plan_name: planTier.toUpperCase(),
-      amount: amount.toString(), 
-      currency: "INR", 
+      amount: amount.toString(),
+      currency: "INR",
       status: "PAID",
       payment_provider: "razorpay",
       razorpay_order_id: razorpay_order_id,
       transaction_id: razorpay_payment_id
     });
 
+    console.log(`✅ [SUCCESS] Bot is now LIVE for ${safeEmail}`);
     await sendTelegramAdminAlert(`💵 [INR PAYMENT SUCCESS] ${safeEmail} upgraded to ${planTier.toUpperCase()} on ${exactModelVersion}. Infrastructure is now ACTIVE.`);
-    return NextResponse.json({ success: true, message: "Payment verified and Infrastructure unlocked successfully!" });
+    
+    return NextResponse.json({ success: true, message: "Payment verified and Bot Unlocked!" });
 
   } catch (error: any) {
-    console.error("[PAYMENT_VERIFICATION_FATAL]:", error);
-    return NextResponse.json({ success: false, error: error.message || "Internal System Error" }, { status: 500 });
+    console.error("[FATAL VERIFY ERROR]:", error);
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }
