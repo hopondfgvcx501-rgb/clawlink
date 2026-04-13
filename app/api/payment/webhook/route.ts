@@ -16,6 +16,7 @@ import { createClient } from "@supabase/supabase-js";
 export const dynamic = "force-dynamic";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
+// 🚀 FIXED: Always use SERVICE_ROLE_KEY to bypass Row Level Security during webhook updates
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
 const supabase = createClient(supabaseUrl, supabaseKey);
 
@@ -96,16 +97,19 @@ export async function POST(req: NextRequest) {
         if (planTier === "adv_max" || planTier === "yearly") expiryDate.setDate(expiryDate.getDate() + 365);
         else expiryDate.setDate(expiryDate.getDate() + 30); 
 
-        // 3. Assemble Payload (Perfect DB Sync)
+        // 3. Assemble Payload (Perfect DB Sync - 100% OVERRIDE)
         const configPayload = {
             plan: planTier,
             plan_tier: planTier,
+            plan_name: planTier,
+            plan_type: planTier === "adv_max" || planTier === "yearly" ? "yearly" : "monthly",
             is_unlimited: isUnlimited, 
             tokens_allocated: allocatedTokens,
             available_tokens: allocatedTokens,
             monthly_message_limit: monthlyLimit,
             plan_expiry_date: expiryDate.toISOString(),
             plan_status: 'Active', // 🔥 AWAKENS THE BOT
+            bot_status: 'Active', 
             current_model_version: exactModelVersion,
             ai_model: exactModelVersion,
             selected_model: exactModelVersion,

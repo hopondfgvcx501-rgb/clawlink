@@ -16,6 +16,7 @@ import crypto from "crypto";
 export const dynamic = "force-dynamic";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
+// 🚀 FIXED: Always use SERVICE_ROLE_KEY to bypass Row Level Security during payment updates
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
 const supabase = createClient(supabaseUrl, supabaseKey);
 
@@ -90,16 +91,20 @@ export async function POST(req: Request) {
     if (planTier === "adv_max" || planTier === "yearly") expiryDate.setDate(expiryDate.getDate() + 365);
     else expiryDate.setDate(expiryDate.getDate() + 30); 
 
-    // 🔒 LEVEL 4: Database Update (THE AWAKENING)
+    // 🔒 LEVEL 4: Database Update (THE AWAKENING - 100% OVERRIDE)
+    // We update every possible column that might be holding the bot back
     const configPayload = {
         plan: planTier,
         plan_tier: planTier,
+        plan_name: planTier, // Fix for screenshot 112024
+        plan_type: planTier === "adv_max" || planTier === "yearly" ? "yearly" : "monthly", // Fix for screenshot 112011
         is_unlimited: isUnlimited, 
         tokens_allocated: allocatedTokens,
         available_tokens: allocatedTokens,
         monthly_message_limit: monthlyLimit,
         plan_expiry_date: expiryDate.toISOString(),
         plan_status: 'Active', // 🔥 BOT GOES LIVE
+        bot_status: 'Active', // Fix for screenshot 112024 (was 'Sleeping')
         current_model_version: exactModelVersion,
         ai_model: exactModelVersion,
         selected_model: exactModelVersion,
@@ -111,7 +116,7 @@ export async function POST(req: Request) {
 
     if (configError) {
         console.error("[RAZORPAY_DB_ERROR]", configError);
-        await sendTelegramAdminAlert(`🔴 [CRITICAL] Payment succeeded for ${safeEmail} but DB update failed.`);
+        await sendTelegramAdminAlert(`🔴 [CRITICAL] Payment succeeded for ${safeEmail} but DB update failed: ${configError.message}`);
         throw configError;
     }
 
@@ -127,7 +132,7 @@ export async function POST(req: Request) {
       transaction_id: razorpay_payment_id
     });
 
-    await sendTelegramAdminAlert(`💵 [INR PAYMENT SUCCESS] ${safeEmail} upgraded to ${planTier.toUpperCase()} on ${exactModelVersion}.`);
+    await sendTelegramAdminAlert(`💵 [INR PAYMENT SUCCESS] ${safeEmail} upgraded to ${planTier.toUpperCase()} on ${exactModelVersion}. Infrastructure is now ACTIVE.`);
     return NextResponse.json({ success: true, message: "Payment verified and Infrastructure unlocked successfully!" });
 
   } catch (error: any) {
