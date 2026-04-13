@@ -5,9 +5,9 @@
  * CLAWLINK ENTERPRISE COMMAND CENTER (DASHBOARD)
  * ==============================================================================================
  * @file app/dashboard/page.tsx
- * @version 9.9.1 (Cleaned Enterprise Mode)
+ * @version 12.0.0 (Ultra-Lean Mode)
  * @description The central hub for users to monitor their AI Agents.
- * FIX: Removed Web Widget UI as requested.
+ * CLEANUP: ALL traces of Web Widget, Broadcast Hub, and Partner Program PERMANENTLY REMOVED.
  * * ALL RIGHTS RESERVED. CLAWLINK INC.
  * ==============================================================================================
  */
@@ -85,9 +85,9 @@ export default function Dashboard() {
   const [isLoading, setIsLoading] = useState(true);
   const [showAppBanner, setShowAppBanner] = useState(true);
   
-  const [selectedChannel, setSelectedChannel] = useState("widget"); 
+  // 🚀 FIXED: Default channel changed to telegram
+  const [selectedChannel, setSelectedChannel] = useState("telegram"); 
   const [channelPrompts, setChannelPrompts] = useState({
-    widget: "",
     telegram: "",
     whatsapp: "",
     instagram: ""
@@ -135,10 +135,9 @@ export default function Dashboard() {
           const data = await res.json();
           if (data.success && data.data) {
             setUserData(data.data);
-            const activeChan = data.data.selected_channel || "widget";
+            const activeChan = data.data.selected_channel || "telegram";
             setSelectedChannel(activeChan);
             setChannelPrompts({
-              widget: data.data.system_prompt_widget || data.data.system_prompt || "",
               telegram: data.data.system_prompt_telegram || "",
               whatsapp: data.data.system_prompt_whatsapp || "",
               instagram: data.data.system_prompt_instagram || ""
@@ -262,7 +261,7 @@ export default function Dashboard() {
             telegram_token: userData?.telegram_token || "",
             whatsapp_phone_id: userData?.whatsapp_phone_id || "",
             whatsapp_number: userData?.whatsapp_number || "",
-            selected_channel: userData?.selected_channel || "widget",
+            selected_channel: userData?.selected_channel || "telegram",
             selected_model: currentPricing.name
           }
         }),
@@ -504,7 +503,7 @@ export default function Dashboard() {
 
   const totalMsgs = (stats?.platformStats?.whatsapp || 0) + (stats?.platformStats?.telegram || 0) + (stats?.platformStats?.web || 0);
 
-  const exactSelectedChannel = (userData?.selected_channel || "").toLowerCase();
+  const exactSelectedChannel = (userData?.selected_channel || "telegram").toLowerCase();
   
   const hasTgToken = !!userData?.telegram_token && userData?.telegram_token !== "";
   const hasWaId = !!userData?.whatsapp_phone_id && userData?.whatsapp_phone_id !== "";
