@@ -5,9 +5,9 @@
  * CLAWLINK ENTERPRISE COMMAND CENTER (DASHBOARD)
  * ==============================================================================================
  * @file app/dashboard/page.tsx
- * @version 9.7.0 (Titanium Security Layer 3.0)
+ * @version 9.9.0 (Payment Verification & Unlock Fix)
  * @description The central hub for users to monitor their AI Agents.
- * Strictly locks frontend Webchat & Knowledge Base UI for unpaid/inactive users.
+ * FIX: Perfectly aligns Razorpay success with DB Verification API for instant unlocking.
  * * ALL RIGHTS RESERVED. CLAWLINK INC.
  * ==============================================================================================
  */
@@ -129,10 +129,11 @@ export default function Dashboard() {
       }
     } catch {}
 
-    if (session?.user?.email) {
-      fetch(`/api/user?email=${session.user.email}&t=${Date.now()}`, { cache: 'no-store' })
-        .then((res) => res.json())
-        .then((data) => {
+    const fetchData = async () => {
+      if (session?.user?.email) {
+        try {
+          const res = await fetch(`/api/user?email=${session.user.email}&t=${Date.now()}`, { cache: 'no-store' });
+          const data = await res.json();
           if (data.success && data.data) {
             setUserData(data.data);
             const activeChan = data.data.selected_channel || "widget";
@@ -143,31 +144,33 @@ export default function Dashboard() {
               whatsapp: data.data.system_prompt_whatsapp || "",
               instagram: data.data.system_prompt_instagram || ""
             });
-            if (data.data.plan) {
-                setSelectedRenewalPlan(data.data.plan.toLowerCase());
+            if (data.data.plan_tier || data.data.plan) {
+                setSelectedRenewalPlan((data.data.plan_tier || data.data.plan).toLowerCase());
             }
           }
-        })
-        .catch(console.error);
+        } catch (error) { console.error("User fetch error", error); }
 
-      fetch(`/api/billing?email=${session.user.email}&t=${Date.now()}`, { cache: 'no-store' })
-        .then((res) => res.json())
-        .then((data) => {
-          if (data.success) {
-            setBillingHistory(data.data);
+        try {
+          const billRes = await fetch(`/api/billing?email=${session.user.email}&t=${Date.now()}`, { cache: 'no-store' });
+          const billData = await billRes.json();
+          if (billData.success) {
+            setBillingHistory(billData.data);
           }
-        })
-        .catch(console.error);
+        } catch (error) { console.error("Billing fetch error", error); }
 
-      fetch(`/api/analytics?email=${session.user.email}&t=${Date.now()}`, { cache: 'no-store' })
-        .then(res => res.json())
-        .then(data => {
-          if (data.success) setStats(data.data);
-        })
-        .catch(console.error)
-        .finally(() => setIsLoading(false));
+        try {
+          const statRes = await fetch(`/api/analytics?email=${session.user.email}&t=${Date.now()}`, { cache: 'no-store' });
+          const statData = await statRes.json();
+          if (statData.success) setStats(statData.data);
+        } catch (error) { console.error("Stats fetch error", error); }
 
-      fetchKnowledge();
+        await fetchKnowledge();
+        setIsLoading(false);
+      }
+    };
+
+    if (session?.user?.email) {
+        fetchData();
     }
   }, [session, status, router]);
 
@@ -201,6 +204,7 @@ export default function Dashboard() {
   const isOmniActive = pricingKey === "omni 3 nexus";
   const currentPricing = PRICING_DATA[pricingKey] || PRICING_DATA["gpt-5.4 Pro"];
   
+  // 🚀 FETCH TRUE PLAN FROM DB
   const currentPlan = userData?.plan_tier?.toLowerCase() || userData?.plan?.toLowerCase() || "free";
   const isFreePlan = currentPlan === "free" || currentPlan === "starter";
   
@@ -209,7 +213,7 @@ export default function Dashboard() {
     isExpired = new Date() > new Date(userData.plan_expiry_date);
   }
 
-  // 🔒 THE ULTIMATE TRUTH: Backend decides if plan is active
+  // 🔒 DB VERIFIED STATUS CHECK
   const hasActivePlan = !isFreePlan && !isExpired && userData?.plan_status === "Active";
   const isPremium = !isFreePlan;
 
@@ -273,11 +277,38 @@ export default function Dashboard() {
         amount: orderData.amount,
         currency: orderData.currency || "INR",
         name: "ClawLink Premium",
-        description: `${isFreePlan ? 'Deploying' : 'Renewing'} ${activePlanObj.name.toUpperCase()} Plan`,
+        description: `Deploying ${activePlanObj.name.toUpperCase()} Plan`,
         order_id: orderData.orderId || orderData.id,
-        handler: function (response: any) {
-          alert("Payment Successful! Your AI Agent is now live.");
-          window.location.reload();
+        // 🚀 THE ULTIMATE FIX: Force backend verification immediately after Razorpay success
+        handler: async function (response: any) {
+          try {
+            alert("Payment gateway confirmed. Verifying with server... Please wait.");
+            console.log("[RAZORPAY_SUCCESS] Triggering backend verification...");
+            
+            const verifyRes = await fetch("/api/payment/verify", {
+              method: "POST", headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                razorpay_order_id: response.razorpay_order_id, razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature, email: session.user.email, plan: activePlanObj.id,
+                amount: amount, selected_model: currentPricing.name
+              })
+            });
+
+            const verifyData = await verifyRes.json();
+            console.log("Verify Response:", verifyData);
+
+            if (verifyData.success) {
+              alert("✅ Payment Verified & Bot Activated!");
+              window.location.href = "/dashboard"; // Clean reload
+            } else {
+              alert(`❌ Verification Failed!\nReason: ${verifyData.error}\nPlease contact support.`);
+              setIsRenewing(false);
+            }
+          } catch (e) {
+            console.error("Verification Catch Error:", e);
+            alert("❌ Server Connection Error during verification. Contact Support.");
+            setIsRenewing(false);
+          }
         },
         prefill: {
           email: session.user.email,
@@ -489,13 +520,14 @@ export default function Dashboard() {
   const hasWaId = !!userData?.whatsapp_phone_id && userData?.whatsapp_phone_id !== "";
   const hasIgId = !!userData?.instagram_account_id && userData?.instagram_account_id !== "";
 
+  // 🚀 FIXED UI NAMES: Removed extra text, enabled blink status
   const getPrimaryLiveChannel = () => {
       if (exactSelectedChannel === "telegram") {
           return { 
-              name: "Telegram Agent", 
+              name: "Telegram", 
               bgLight: "bg-blue-500/5", 
               bgHover: "group-hover:bg-blue-500/10", 
-              dot: (hasTgToken && hasActivePlan) ? "bg-green-500 animate-pulse" : (hasTgToken ? "bg-yellow-500" : "bg-red-500"), 
+              dot: (hasTgToken && hasActivePlan) ? "bg-green-500 animate-pulse shadow-[0_0_8px_#22c55e]" : (hasTgToken ? "bg-yellow-500" : "bg-red-500"), 
               text: (hasTgToken && hasActivePlan) ? "text-green-400" : "text-blue-400", 
               border: "border-blue-500/20", 
               iconBg: "bg-blue-500/10",
@@ -506,10 +538,10 @@ export default function Dashboard() {
       
       if (exactSelectedChannel === "whatsapp") {
           return { 
-              name: "WhatsApp Cloud", 
+              name: "WhatsApp", 
               bgLight: "bg-green-500/5", 
               bgHover: "group-hover:bg-green-500/10", 
-              dot: (hasWaId && hasActivePlan) ? "bg-green-500 animate-pulse" : (hasWaId ? "bg-yellow-500" : "bg-red-500"), 
+              dot: (hasWaId && hasActivePlan) ? "bg-green-500 animate-pulse shadow-[0_0_8px_#22c55e]" : (hasWaId ? "bg-yellow-500" : "bg-red-500"), 
               text: (hasWaId && hasActivePlan) ? "text-green-400" : "text-green-500", 
               border: "border-green-500/20", 
               iconBg: "bg-green-500/10",
@@ -520,10 +552,10 @@ export default function Dashboard() {
 
       if (exactSelectedChannel === "instagram") {
           return { 
-              name: "Instagram Agent", 
+              name: "Instagram", 
               bgLight: "bg-pink-500/5", 
               bgHover: "group-hover:bg-pink-500/10", 
-              dot: (hasIgId && hasActivePlan) ? "bg-green-500 animate-pulse" : (hasIgId ? "bg-yellow-500" : "bg-red-500"), 
+              dot: (hasIgId && hasActivePlan) ? "bg-green-500 animate-pulse shadow-[0_0_8px_#22c55e]" : (hasIgId ? "bg-yellow-500" : "bg-red-500"), 
               text: (hasIgId && hasActivePlan) ? "text-green-400" : "text-pink-500", 
               border: "border-pink-500/20", 
               iconBg: "bg-pink-500/10",
@@ -571,7 +603,6 @@ export default function Dashboard() {
   };
 
   const btn = "transition-all duration-[120ms] ease-out active:scale-[0.93] transform-gpu will-change-transform";
-  
   const gridColsClass = isOmniActive ? "grid-cols-1 sm:grid-cols-2 max-w-2xl" : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 max-w-5xl";
 
   return (
@@ -761,8 +792,9 @@ export default function Dashboard() {
                 <BrainCircuit className="w-5 h-5"/>
               </div>
             </div>
-            <div className="relative z-10 w-full bg-blue-500/10 text-blue-400 py-3 rounded-xl text-[11px] font-bold border border-blue-500/20 flex items-center justify-center gap-2">
-              <Zap className="w-3 h-3"/> Infrastructure Locked
+            {/* 🚀 FIXED: Dynamic Infrastructure Status */}
+            <div className={`relative z-10 w-full py-3 rounded-xl text-[11px] font-bold border flex items-center justify-center gap-2 ${hasActivePlan ? 'bg-green-500/10 text-green-400 border-green-500/20' : 'bg-blue-500/10 text-blue-400 border-blue-500/20'}`}>
+              <Zap className="w-3 h-3"/> {hasActivePlan ? "Infrastructure Unlocked" : "Infrastructure Locked"}
             </div>
           </motion.div>
 
@@ -778,7 +810,7 @@ export default function Dashboard() {
                 {exactSelectedChannel && (
                   <p className={`text-[10px] font-mono mt-2 flex items-center gap-1.5 ${primaryChannel.isLive ? 'text-green-500' : 'text-yellow-500'}`}>
                     <span className={`w-1.5 h-1.5 rounded-full ${primaryChannel.dot}`}></span>
-                    {primaryChannel.isLive ? "Verified & Live 🟢" : (primaryChannel.isSetup ? "Sleeping (Needs Upgrade)" : "Pending Setup")}
+                    {primaryChannel.isLive ? "Live & Active 🟢" : (primaryChannel.isSetup ? "Sleeping (Needs Upgrade)" : "Pending Setup")}
                   </p>
                 )}
               </div>
