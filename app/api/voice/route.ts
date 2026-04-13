@@ -1,5 +1,18 @@
-import { NextResponse } from "next/server";
+/**
+ * ==============================================================================================
+ * CLAWLINK ENTERPRISE VOICE CONFIGURATION API (TITANIUM SECURED)
+ * ==============================================================================================
+ * @file app/api/voice/route.ts
+ * @description Manages Twilio/Voice AI API keys and prompts. 
+ * Strictly locked with NextAuth JWT and PLG Gatekeeper (Active Plan verification).
+ * Prevents IDOR (Insecure Direct Object Reference) attacks.
+ * * ALL RIGHTS RESERVED. CLAWLINK INC.
+ * ==============================================================================================
+ */
+
+import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { getToken } from "next-auth/jwt";
 
 export const dynamic = "force-dynamic";
 
@@ -7,23 +20,38 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-export async function GET(req: Request) {
-  try {
-    const { searchParams } = new URL(req.url);
-    const email = searchParams.get("email");
+// 🛡️ SECURITY LOCK: ENTERPRISE DATA SANITIZER
+function sanitizeInput(input: string | null | undefined): string {
+    if (!input) return "";
+    return input.replace(/<[^>]*>?/gm, "").replace(/--/g, "").replace(/;/g, "").trim();
+}
 
-    if (!email) {
-      return NextResponse.json({ success: false, error: "Email parameter is required." }, { status: 400 });
+// =========================================================================
+// 1. GET: SECURELY FETCH VOICE CONFIGURATION
+// =========================================================================
+export async function GET(req: NextRequest) {
+  try {
+    // 🔒 LEVEL 1: Absolute Identity Verification
+    const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
+    if (!token || !token.email) {
+      return NextResponse.json({ success: false, error: "Unauthorized. Invalid session." }, { status: 401 });
+    }
+    const secureEmail = token.email.toLowerCase();
+
+    // 🔒 LEVEL 2: PLG Gatekeeper (Only Active users can access Voice AI)
+    const { data: configCheck } = await supabase.from("user_configs").select("plan_status").eq("email", secureEmail).single();
+    if (!configCheck || configCheck.plan_status !== "Active") {
+        return NextResponse.json({ success: false, error: "Active Premium Plan required to access Voice AI." }, { status: 403 });
     }
 
     const { data, error } = await supabase
       .from("voice_configs")
       .select("provider, api_key, phone_number, voice_type, system_prompt")
-      .eq("email", email)
+      .eq("email", secureEmail)
       .single();
 
     if (error && error.code !== "PGRST116") {
-      console.error("Database query error:", error);
+      console.error("[VOICE_GET_ERROR] Database query error:", error);
       return NextResponse.json({ success: false, error: "Failed to retrieve voice configuration." }, { status: 500 });
     }
 
@@ -39,26 +67,48 @@ export async function GET(req: Request) {
     });
 
   } catch (error: any) {
-    console.error("Voice GET Error:", error);
+    console.error("[VOICE_GET_FATAL]:", error);
     return NextResponse.json({ success: false, error: "Internal Server Error." }, { status: 500 });
   }
 }
 
-export async function POST(req: Request) {
+// =========================================================================
+// 2. POST: SECURELY SAVE/UPDATE VOICE CONFIGURATION
+// =========================================================================
+export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
-    const { email, provider, apiKey, phoneNumber, voiceType, systemPrompt } = body;
+    // 🔒 LEVEL 1: Absolute Identity Verification
+    const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
+    if (!token || !token.email) {
+      return NextResponse.json({ success: false, error: "Unauthorized. Invalid session." }, { status: 401 });
+    }
+    const secureEmail = token.email.toLowerCase();
 
-    if (!email) {
-      return NextResponse.json({ success: false, error: "Email is required to save configuration." }, { status: 400 });
+    // 🔒 LEVEL 2: PLG Gatekeeper
+    const { data: configCheck } = await supabase.from("user_configs").select("plan_status").eq("email", secureEmail).single();
+    if (!configCheck || configCheck.plan_status !== "Active") {
+        return NextResponse.json({ success: false, error: "Active Premium Plan required to deploy Voice AI." }, { status: 403 });
     }
 
-    // Upsert logic: Update if email exists, insert if it does not.
+    const body = await req.json();
+    
+    // 🛡️ SANITIZE ALL INCOMING DATA
+    const provider = sanitizeInput(body.provider || "twilio");
+    const apiKey = sanitizeInput(body.apiKey);
+    const phoneNumber = sanitizeInput(body.phoneNumber);
+    const voiceType = sanitizeInput(body.voiceType || "alloy");
+    const systemPrompt = sanitizeInput(body.systemPrompt);
+
+    if (!apiKey || !phoneNumber) {
+      return NextResponse.json({ success: false, error: "API Key and Phone Number are strictly required." }, { status: 400 });
+    }
+
+    // 🔒 LEVEL 3: Secure Upsert bounded by verified session email
     const { error } = await supabase
       .from("voice_configs")
       .upsert(
         {
-          email: email,
+          email: secureEmail, // FORCED: Cannot be overwritten by API body payload
           provider: provider,
           api_key: apiKey,
           phone_number: phoneNumber,
@@ -70,14 +120,14 @@ export async function POST(req: Request) {
       );
 
     if (error) {
-      console.error("Database upsert error:", error);
+      console.error("[VOICE_POST_ERROR] Database upsert error:", error);
       return NextResponse.json({ success: false, error: "Failed to securely save voice configuration." }, { status: 500 });
     }
 
-    return NextResponse.json({ success: true, message: "Voice configuration updated successfully." });
+    return NextResponse.json({ success: true, message: "Voice Infrastructure provisioned securely." });
 
   } catch (error: any) {
-    console.error("Voice POST Error:", error);
+    console.error("[VOICE_POST_FATAL]:", error);
     return NextResponse.json({ success: false, error: "Internal Server Error." }, { status: 500 });
   }
 }
