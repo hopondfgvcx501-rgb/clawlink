@@ -10,7 +10,7 @@
  * FIXED: Applied uniform 'Silicon Light Grey' background to all selection buttons.
  * FIXED: Text inside selection buttons changed to Dark/Black for high contrast.
  * FIXED: Enforced strict uniform size for all icons across Models and Channels.
- * FIXED: Updated main CTA text exactly to "Login & Deploy with Google".
+ * FIXED: Updated main CTA text exactly to "Login & Deploy".
  * Integrates KNOX Level-7 Apple-grade security protocol.
  * * ALL RIGHTS RESERVED. CLAWLINK INC.
  * ==============================================================================================
@@ -790,7 +790,7 @@ export default function Home() {
                 <motion.div key="login" id="login-section" initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} transition={{duration:.12}} className="w-full flex flex-col items-center">
                   <button aria-label="Login with Google" data-ripple data-spring onClick={handleLoginOrDeploy}
                     className={`relative overflow-hidden w-full max-w-[600px] bg-white text-black py-4 rounded-[12px] flex items-center justify-center gap-3 text-[15px] font-black tracking-wide ${btn} hover:scale-[1.02] active:bg-gray-200 transition-transform`}>
-                    <Google_Icon/> {status === "authenticated" ? "Finalize Deployment" : "Login & Deploy with Google"}
+                    <Google_Icon/> {status === "authenticated" ? "Finalize Deployment" : "Login & Deploy"}
                   </button>
                   <p className="mt-4 text-[13px] text-gray-400 text-center leading-relaxed">
                     Deploying <strong className="text-white">{PRICING_DATA[activeModel].name}</strong> to <strong className="text-white capitalize">{activeChannel}</strong>.{" "}
