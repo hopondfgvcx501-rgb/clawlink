@@ -1,10 +1,10 @@
 /**
  * ==============================================================================================
- * CLAWLINK ENTERPRISE RAZORPAY WEBHOOK HANDLER
+ * CLAWLINK ENTERPRISE RAZORPAY WEBHOOK (TITANIUM SECURED)
  * ==============================================================================================
  * @file app/api/payment/webhook/route.ts
- * @description Securely receives background payment confirmations from Razorpay.
- * Instantly provisions resources, updates the 2026 model ledger, and wakes up the AI agents.
+ * @description Background listener for Razorpay. Strictly blocks unauthenticated webhooks 
+ * using cryptographic signature checks. Provisions accounts safely.
  * * ALL RIGHTS RESERVED. CLAWLINK INC.
  * ==============================================================================================
  */
@@ -15,10 +15,24 @@ import { createClient } from "@supabase/supabase-js";
 
 export const dynamic = "force-dynamic";
 
-// Initialize Supabase Client with Service Role for admin bypass
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
 const supabase = createClient(supabaseUrl, supabaseKey);
+
+// 🛡️ SECURITY & MONITORING ALERT SYSTEM
+async function sendTelegramAdminAlert(message: string) {
+    const token = process.env.TELEGRAM_BOT_TOKEN;
+    const adminChatId = process.env.TELEGRAM_ADMIN_CHAT_ID;
+    if (token && adminChatId) {
+        try {
+            await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ chat_id: adminChatId, text: message })
+            });
+        } catch (e) { console.error(e); }
+    }
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -26,9 +40,9 @@ export async function POST(req: NextRequest) {
     const signature = req.headers.get("x-razorpay-signature");
     const secret = process.env.RAZORPAY_WEBHOOK_SECRET || "";
 
-    // 1. Security Check: Verify the cryptographic signature from Razorpay
+    // 🔒 LEVEL 1: Webhook Signature Guard
     if (!signature) {
-      console.error("[WEBHOOK ERROR] Missing signature.");
+      console.error("[RAZORPAY_WEBHOOK_BLOCKED] Missing signature.");
       return NextResponse.json({ error: "No signature provided" }, { status: 400 });
     }
 
@@ -38,98 +52,78 @@ export async function POST(req: NextRequest) {
       .digest("hex");
 
     if (signature !== expectedSignature) {
-      console.error("[WEBHOOK ERROR] Signature mismatch. Potential spoofing attempt.");
-      return NextResponse.json({ error: "Unauthorized Signature" }, { status: 401 });
+      console.error("[RAZORPAY_WEBHOOK_HACK] Signature mismatch!");
+      await sendTelegramAdminAlert(`🚨 [HACK ATTEMPT BLOCKED] Fake Razorpay Webhook request detected. Origin spoofing blocked.`);
+      return NextResponse.json({ error: "Unauthorized Cryptographic Signature" }, { status: 401 });
     }
 
     const payload = JSON.parse(bodyText);
 
-    // 2. Process only if the payment is successfully captured
+    // 🔒 LEVEL 2: Execution on Valid Event Only
     if (payload.event === "payment.captured" || payload.event === "order.paid") {
       const paymentEntity = payload.payload.payment.entity;
       const notes = paymentEntity.notes || {};
       
       const email = (notes.email || paymentEntity.email || "").toLowerCase();
-      const planName = (notes.plan_name || "plus").toLowerCase();
+      const planTier = (notes.plan_tier || notes.plan || "plus").toLowerCase();
       const rawModel = (notes.selected_model || notes.model || "gpt-5.4 Pro").toLowerCase();
 
       if (email) {
-        // 3. Establish Strict Tier Limits based on 2026 Pricing
-        let allocatedTokens = 2000000; 
-        let monthlyMessages = 5000;
-        let isUnlimited = false;
-        const expiryDate = new Date();
-
-        if (planName === "pro") { 
-            allocatedTokens = 10000000; 
-            monthlyMessages = 25000;
-        } else if (planName === "ultra") { 
-            allocatedTokens = 25000000; 
-            monthlyMessages = 75000;
-        } else if (planName === "adv_max" || planName === "yearly" || planName === "monthly") { 
-            isUnlimited = true; 
-            allocatedTokens = 100000000; 
-            monthlyMessages = 500000;
-        }
-
-        if (planName === "adv_max" || planName === "yearly") {
-            expiryDate.setDate(expiryDate.getDate() + 365);
-        } else {
-            expiryDate.setDate(expiryDate.getDate() + 30); 
-        }
-
-        // 4. Establish Master Mapping for AI Providers
+        // 1. Establish Master Mapping for AI Providers (2026 Schema)
         let aiProvider = "openai";
-        let exactModelVersion = "gpt-5.4 Pro"; 
+        let exactModelVersion = notes.selected_model || "gpt-5.4 Pro";
 
-        if (rawModel.includes("claude") || rawModel.includes("anthropic") || rawModel.includes("opus")) {
-            aiProvider = "anthropic";
-            exactModelVersion = "Claude Opus 4.6";
-        }
-        else if (rawModel.includes("gemini") || rawModel.includes("google")) {
-            aiProvider = "google";
-            exactModelVersion = "gemini 3.1 Pro";
-        }
-        else if (rawModel.includes("omni") || rawModel.includes("multi") || rawModel.includes("nexus")) {
-            aiProvider = "omni";
-            exactModelVersion = "omni 3 nexus";
+        if (rawModel.includes("claude") || rawModel.includes("opus") || rawModel.includes("anthropic")) {
+            aiProvider = "anthropic"; exactModelVersion = "Claude Opus 4.6";
+        } else if (rawModel.includes("gemini") || rawModel.includes("google")) {
+            aiProvider = "google"; exactModelVersion = "gemini 3.1 Pro";
+        } else if (rawModel.includes("omni") || rawModel.includes("nexus")) {
+            aiProvider = "omni"; exactModelVersion = "omni 3 nexus";
         }
 
-        // 5. Build the comprehensive payload to fully awaken the system
-        const updatePayload = {
-            plan: planName,
-            plan_tier: planName, 
-            plan_status: "Active", // Instant Activation
+        // 2. Establish Strict Tier Limits
+        let isUnlimited = false;
+        let allocatedTokens = 2000000; 
+        let monthlyLimit = 5000;
+
+        if (planTier === "pro") { allocatedTokens = 10000000; monthlyLimit = 25000; } 
+        else if (planTier === "ultra") { allocatedTokens = 25000000; monthlyLimit = 75000; } 
+        else if (planTier === "adv_max" || planTier === "yearly" || planTier === "max") { 
+            isUnlimited = true; allocatedTokens = 100000000; monthlyLimit = 500000; 
+        }
+
+        const expiryDate = new Date();
+        if (planTier === "adv_max" || planTier === "yearly") expiryDate.setDate(expiryDate.getDate() + 365);
+        else expiryDate.setDate(expiryDate.getDate() + 30); 
+
+        // 3. Assemble Payload (Perfect DB Sync)
+        const configPayload = {
+            plan: planTier,
+            plan_tier: planTier,
             is_unlimited: isUnlimited, 
             tokens_allocated: allocatedTokens,
-            available_tokens: allocatedTokens, // Reset tokens on fresh payment
-            monthly_message_limit: monthlyMessages,
+            available_tokens: allocatedTokens,
+            monthly_message_limit: monthlyLimit,
             plan_expiry_date: expiryDate.toISOString(),
-            ai_model: exactModelVersion, 
-            selected_model: exactModelVersion,
+            plan_status: 'Active', // 🔥 AWAKENS THE BOT
             current_model_version: exactModelVersion,
+            ai_model: exactModelVersion,
+            selected_model: exactModelVersion,
             ai_provider: aiProvider,
             updated_at: new Date().toISOString()
         };
 
-        // 6. Execute the secure database update
-        const { error: updateError } = await supabase
-          .from("user_configs")
-          .update(updatePayload)
-          .eq("email", email);
+        // 4. Securely Update Database
+        const { error: configError } = await supabase.from("user_configs").update(configPayload).eq("email", email);
 
-        if (updateError) {
-           console.error(`[WEBHOOK DB ERROR] Failed to provision ${email}:`, updateError.message);
-           throw updateError;
-        }
-
-        console.log(`[WEBHOOK SUCCESS] ✅ Account ${email} fully upgraded to ${planName.toUpperCase()} on ${exactModelVersion}. Bots awakened.`);
+        if (configError) throw configError;
+        console.log(`[RAZORPAY_WEBHOOK_SUCCESS] Account automation unlocked for ${email}.`);
       }
     }
 
     return NextResponse.json({ success: true });
   } catch (error: any) {
-    console.error("[WEBHOOK FATAL ERROR]:", error.message);
+    console.error("[RAZORPAY_WEBHOOK_FATAL]:", error.message);
     return NextResponse.json({ error: "Internal processing error" }, { status: 500 });
   }
 }
