@@ -5,11 +5,11 @@
  * CLAWLINK ENTERPRISE FRONTEND SECURE MODULE
  * ==============================================================================================
  * @file app/page.tsx
- * @version 10.8.0 (Silicon Light Grey & Uniform Icon Update)
+ * @version 10.9.0 (TypeScript Strict Fix & Final Polish)
  * @description Main onboarding interface with strict Product-Led Growth (PLG) routing.
+ * FIXED: Resolved TypeScript build error by restoring 'size' prop definitions to SVG icons.
  * FIXED: Applied uniform 'Silicon Light Grey' background to all selection buttons.
  * FIXED: Text inside selection buttons changed to Dark/Black for high contrast.
- * FIXED: Enforced strict uniform size for all icons across Models and Channels.
  * FIXED: Updated main CTA text exactly to "Login & Deploy".
  * Integrates KNOX Level-7 Apple-grade security protocol.
  * * ALL RIGHTS RESERVED. CLAWLINK INC.
@@ -112,22 +112,19 @@ const PRICING_DATA: Record<string, any> = {
   }
 };
 
-// Standardized icon size for perfect uniformity across all buttons
-const ICON_SIZE = 20;
+const OpenAI_Icon  = ({ size = 20 }: { size?: number }) => <Image src="/logos/openai.svg"  alt="GPT-4o OpenAI Agent Icon"  width={size} height={size} className="transform-gpu shrink-0" />;
+const Claude_Icon  = ({ size = 20 }: { size?: number }) => <Image src="/logos/claude.svg"  alt="Claude 3 Anthropic AI Icon"  width={size} height={size} className="transform-gpu shrink-0" />;
+const Gemini_Icon  = ({ size = 20 }: { size?: number }) => <Image src="/logos/gemini.svg"  alt="Gemini Google AI Bot Icon"  width={size} height={size} className="transform-gpu shrink-0" />;
 
-const OpenAI_Icon  = () => <Image src="/logos/openai.svg"  alt="GPT-4o OpenAI Agent Icon"  width={ICON_SIZE} height={ICON_SIZE} className="transform-gpu shrink-0" />;
-const Claude_Icon  = () => <Image src="/logos/claude.svg"  alt="Claude 3 Anthropic AI Icon"  width={ICON_SIZE} height={ICON_SIZE} className="transform-gpu shrink-0" />;
-const Gemini_Icon  = () => <Image src="/logos/gemini.svg"  alt="Gemini Google AI Bot Icon"  width={ICON_SIZE} height={ICON_SIZE} className="transform-gpu shrink-0" />;
-
-const Llama_Icon = () => (
-  <svg viewBox="0 0 24 24" width={ICON_SIZE} height={ICON_SIZE} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#1A1A24] transform-gpu shrink-0">
+const Llama_Icon = ({ size = 20 }: { size?: number }) => (
+  <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#1A1A24] transform-gpu shrink-0">
     <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/>
     <line x1="4" y1="22" x2="4" y2="15"/>
   </svg>
 );
 
-const Omni_Icon = () => (
-  <svg viewBox="0 0 24 24" width={ICON_SIZE} height={ICON_SIZE} fill="none" stroke="#00BFFF" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 transform-gpu">
+const Omni_Icon = ({ size = 18 }: { size?: number }) => (
+  <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke="#00BFFF" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 transform-gpu">
     <path d="M12 4.5C10 4.5 8 5.5 7.5 7.5 6 7.5 4.5 8.5 4.5 10.5 4 11.5 4 13 5 14 4.5 15.5 5.5 17 7 17.5 7.5 19 9 20 10.5 20H12"/>
     <path d="M12 4.5C14 4.5 16 5.5 16.5 7.5 18 7.5 19.5 8.5 19.5 10.5 20 11.5 20 13 19 14 19.5 15.5 18.5 17 17 17.5 16.5 19 15 20 13.5 20H12"/>
     <line x1="12" y1="4.5" x2="12" y2="20"/>
@@ -142,29 +139,30 @@ const Omni_Icon = () => (
   </svg>
 );
 
-const Telegram_Icon = () => (
-  <svg width={ICON_SIZE} height={ICON_SIZE} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="transform-gpu shrink-0">
+// 🚀 FIXED: Added size props back to prevent Vercel Build Error
+const Telegram_Icon = ({ size = 20 }: { size?: number }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="transform-gpu shrink-0">
     <path d="M12 24c6.627 0 12-5.373 12-12S18.627 0 12 0 0 5.373 0 12s5.373 12 12 12z" fill="#2AABEE"/>
     <path d="M5.425 11.871L16.48 7.61c.526-.196 1.006.124.819.86l-1.892 8.92c-.167.755-.615.939-1.242.593L10.73 15.45l-1.657 1.588c-.183.183-.338.338-.692.338l.245-3.528 6.425-5.8c.28-.249-.06-.388-.435-.138L6.68 12.89l-3.417-1.066c-.744-.233-.759-.745.155-1.103z" fill="#fff"/>
   </svg>
 );
 
-const WhatsApp_Icon = () => (
-  <svg width={ICON_SIZE} height={ICON_SIZE} viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" className="transform-gpu shrink-0">
+const WhatsApp_Icon = ({ size = 20 }: { size?: number }) => (
+  <svg width={size} height={size} viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" className="transform-gpu shrink-0">
     <rect width="100" height="100" rx="24" fill="#25D366"/>
     <path fill="#ffffff" d="M50 15c-19.3 0-35 15.7-35 35 0 6.2 1.6 12.2 4.7 17.5L15 85l17.5-4.7c5.3 3.1 11.3 4.7 17.5 4.7 19.3 0 35-15.7 35-35S69.3 15 50 15zm0 63.8c-5.2 0-10.4-1.4-15-4.1l-1.1-.6-11.1 2.9 2.9-10.8-.7-1.1c-2.9-4.7-4.5-10.1-4.5-15.6 0-16.2 13.2-29.4 29.4-29.4s29.4 13.2 29.4 29.4-13.2 29.4-29.4 29.4z"/>
     <path fill="#ffffff" d="M42 34h9.5c5.5 0 8.5 2.5 8.5 5.5s-2.8 4.2-5.5 4.8c4 1 7 3.5 7 7.5 0 5.5-5.5 7.2-10 7.2H42V34zm5 5.5v7h4c2 0 4-1 4-3.5s-2-3.5-4-3.5h-4zm0 11v8h4.5c3 0 4.5-1.5 4.5-4s-2-4-4.5-4H47z"/>
   </svg>
 );
 
-const Discord_Icon = () => (
-  <svg viewBox="0 0 24 24" width={ICON_SIZE} height={ICON_SIZE} fill="#5865F2" className="transform-gpu shrink-0">
+const Discord_Icon = ({ size = 20 }: { size?: number }) => (
+  <svg viewBox="0 0 24 24" width={size} height={size} fill="#5865F2" className="transform-gpu shrink-0">
     <path d="M20.3 5.4c-1.6-.7-3.4-1.2-5.2-1.5-.2.4-.4.9-.6 1.3-1.9-.3-3.8-.3-5.7 0-.2-.4-.4-.9-.6-1.3-1.8.3-3.6.8-5.2 1.5-3.3 4.9-4.2 9.7-3.3 14.4 2.2 1.6 4.3 2.6 6.4 3.2.5-.7 1-1.5 1.4-2.3-1.2-.5-2.4-1.1-3.5-1.8.3-.2.6-.4.9-.7 4.6 2.1 9.7 2.1 14.3 0 .3.2.6.5.9.7-1.1.7-2.3 1.3-3.5 1.8.4.8.9 1.6 1.4 2.3 2.1-.6 4.2-1.6 6.4-3.2 1-5.1.1-10-3.2-14.4z"/>
   </svg>
 );
 
-const Instagram_Icon = () => (
-  <div style={{ width: ICON_SIZE, height: ICON_SIZE }} className={`rounded-[4px] bg-gradient-to-tr from-[#f09433] via-[#e6683c] to-[#bc1888] flex items-center justify-center transform-gpu shrink-0`}>
+const Instagram_Icon = ({ size = 20 }: { size?: number }) => (
+  <div style={{ width: size, height: size }} className={`rounded-[4px] bg-gradient-to-tr from-[#f09433] via-[#e6683c] to-[#bc1888] flex items-center justify-center transform-gpu shrink-0`}>
     <div className="w-[60%] h-[60%] border-[1.5px] border-white rounded-[3px] flex items-center justify-center">
       <div className="w-[30%] h-[30%] bg-white rounded-full"/>
     </div>
@@ -531,8 +529,6 @@ export default function Home() {
 
   const btn = "transition-all duration-[120ms] ease-out active:scale-[0.93] transform-gpu will-change-transform";
 
-  // 🚀 FIXED: Silicon Light Grey background with Dark Text for maximum contrast and legibility.
-  // Kept uniform styling across desktop and mobile to ensure shapes remain consistent (perfect wide rectangles).
   const pillBase = [
     "bg-[#E5E7EB] border border-white/5 cursor-pointer overflow-hidden",
     btn,
@@ -617,9 +613,8 @@ export default function Home() {
         .icon-lift{transition:transform .2s cubic-bezier(.34,1.56,.64,1)}
         .icon-lift:hover{transform:scale(1.12) rotate(-4deg)}
         
-        /* 🚀 FIXED: High contrast Dark text on Light Grey background */
         .ptx-name{font-size:12px;font-weight:800;color:#111827;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:0.02em}
-        .ptx-sub {display:none} /* Hidden for cleaner look */
+        .ptx-sub {display:none} 
         .ptx-soon{font-size:9px;font-weight:800;color:#6b7280;text-transform:uppercase;margin-left:auto;}
         
         @media(max-width:1024px){
@@ -698,32 +693,32 @@ export default function Home() {
             </p>
             <div className="grid grid-cols-2 md:grid-cols-5 gap-[12px] mb-8">
               <button aria-label="Select GPT-5.4 Pro Model" data-spring onClick={() => handleModelSelect("gpt-5.4 Pro")} disabled={isTokenSaved && activeModel!=="gpt-5.4 Pro"}
-                className={[pillBase, modelActive("gpt-5.4 Pro") ? "!bg-white border-[#10a37f] shadow-[0_0_0_3px_rgba(16,163,127,0.3)]" : "", isTokenSaved && activeModel!=="gpt-5.4 Pro" ? "opacity-25 pointer-events-none" : ""].join(" ")}>
+                className={[pillBase, modelActive("gpt-5.4 Pro") ? "!border-blue-400/50 bg-[#D1D5DB]" : "", isTokenSaved && activeModel!=="gpt-5.4 Pro" ? "opacity-25 pointer-events-none" : ""].join(" ")}>
                 <OpenAI_Icon/>
                 <span className="ptx-name">GPT-5.4</span>
               </button>
 
               <button aria-label="Select Claude 3 Model" data-spring onClick={() => handleModelSelect("Claude Opus 4.6")} disabled={isTokenSaved && activeModel!=="Claude Opus 4.6"}
-                className={[pillBase, modelActive("Claude Opus 4.6") ? "!bg-white border-[#d97757] shadow-[0_0_0_3px_rgba(217,119,87,0.3)]" : "", isTokenSaved && activeModel!=="Claude Opus 4.6" ? "opacity-25 pointer-events-none" : ""].join(" ")}>
+                className={[pillBase, modelActive("Claude Opus 4.6") ? "!border-blue-400/50 bg-[#D1D5DB]" : "", isTokenSaved && activeModel!=="Claude Opus 4.6" ? "opacity-25 pointer-events-none" : ""].join(" ")}>
                 <Claude_Icon/>
                 <span className="ptx-name">Claude</span>
               </button>
 
               <button aria-label="Select Gemini Model" data-spring onClick={() => handleModelSelect("gemini 3.1 Pro")} disabled={isTokenSaved && activeModel!=="gemini 3.1 Pro"}
-                className={[pillBase, modelActive("gemini 3.1 Pro") ? "!bg-white border-[#648af5] shadow-[0_0_0_3px_rgba(100,138,245,0.3)]" : "", isTokenSaved && activeModel!=="gemini 3.1 Pro" ? "opacity-25 pointer-events-none" : ""].join(" ")}>
+                className={[pillBase, modelActive("gemini 3.1 Pro") ? "!border-blue-400/50 bg-[#D1D5DB]" : "", isTokenSaved && activeModel!=="gemini 3.1 Pro" ? "opacity-25 pointer-events-none" : ""].join(" ")}>
                 <Gemini_Icon/>
                 <span className="ptx-name">Gemini</span>
               </button>
 
               <button aria-label="Select OmniAgent Fallback Model" data-spring onClick={() => handleModelSelect("omni 3 nexus")} disabled={isTokenSaved && activeModel!=="omni 3 nexus"}
-                className={[pillBase, modelActive("omni 3 nexus") ? "!bg-white border-[#00bfff] shadow-[0_0_0_3px_rgba(0,191,255,0.3)]" : "", isTokenSaved && activeModel!=="omni 3 nexus" ? "opacity-25 pointer-events-none" : ""].join(" ")}>
+                className={[pillBase, modelActive("omni 3 nexus") ? "!border-blue-400/50 bg-[#D1D5DB]" : "", isTokenSaved && activeModel!=="omni 3 nexus" ? "opacity-25 pointer-events-none" : ""].join(" ")}>
                 <Omni_Icon/>
                 <span className="ptx-name">Omni 3 Nexus</span>
               </button>
 
               <div aria-label="Llama 4 coming soon" className={[pillBase, "opacity-40 cursor-not-allowed pointer-events-none col-span-2 md:col-span-1"].join(" ")}>
                 <Llama_Icon/>
-                <span className="ptx-name">Llama 4</span>
+                <span className="ptx-name text-gray-400">Llama 4</span>
                 <span className="ptx-soon">SOON</span>
               </div>
             </div>
@@ -734,26 +729,26 @@ export default function Home() {
             </p>
             <div className="grid grid-cols-2 md:grid-cols-5 gap-[12px] mb-8">
               <button aria-label="Connect Telegram AI Bot" data-spring onClick={()=>handleChannelSelect("telegram")} disabled={isTokenSaved && activeChannel!=="telegram"}
-                className={[pillBase, chanActive("telegram") ? "!bg-white border-[#2aabee] shadow-[0_0_0_3px_rgba(42,171,238,0.3)]" : "", isTokenSaved && activeChannel!=="telegram" ? "opacity-25 pointer-events-none" : ""].join(" ")}>
+                className={[pillBase, chanActive("telegram") ? "!border-blue-400/50 bg-[#D1D5DB]" : "", isTokenSaved && activeChannel!=="telegram" ? "opacity-25 pointer-events-none" : ""].join(" ")}>
                 <Telegram_Icon/>
                 <span className="ptx-name">Telegram</span>
               </button>
 
               <button aria-label="Connect WhatsApp AI Agent" data-spring onClick={()=>handleChannelSelect("whatsapp")} disabled={isTokenSaved && activeChannel!=="whatsapp"}
-                className={[pillBase, chanActive("whatsapp") ? "!bg-white border-[#25d366] shadow-[0_0_0_3px_rgba(37,211,102,0.3)]" : "", isTokenSaved && activeChannel!=="whatsapp" ? "opacity-25 pointer-events-none" : ""].join(" ")}>
+                className={[pillBase, chanActive("whatsapp") ? "!border-blue-400/50 bg-[#D1D5DB]" : "", isTokenSaved && activeChannel!=="whatsapp" ? "opacity-25 pointer-events-none" : ""].join(" ")}>
                 <WhatsApp_Icon/>
                 <span className="ptx-name">WhatsApp</span>
               </button>
               
               <button aria-label="Connect Instagram Auto Reply Bot" data-spring onClick={()=>handleChannelSelect("instagram")} disabled={isTokenSaved && activeChannel!=="instagram"}
-                className={[pillBase, chanActive("instagram") ? "!bg-white border-[#e6683c] shadow-[0_0_0_3px_rgba(230,104,60,0.3)]" : "", isTokenSaved && activeChannel!=="instagram" ? "opacity-25 pointer-events-none" : ""].join(" ")}>
+                className={[pillBase, chanActive("instagram") ? "!border-blue-400/50 bg-[#D1D5DB]" : "", isTokenSaved && activeChannel!=="instagram" ? "opacity-25 pointer-events-none" : ""].join(" ")}>
                 <Instagram_Icon/>
                 <span className="ptx-name">Instagram</span>
               </button>
 
               <div aria-label="Discord Bot Coming Soon" className={[pillBase, "opacity-40 cursor-not-allowed pointer-events-none"].join(" ")}>
                 <Discord_Icon/>
-                <span className="ptx-name">Discord</span>
+                <span className="ptx-name text-gray-400">Discord</span>
                 <span className="ptx-soon">SOON</span>
               </div>
 
@@ -761,7 +756,7 @@ export default function Home() {
                 <div className="w-[20px] h-[20px] rounded-full flex items-center justify-center shrink-0 bg-[#4a154b]">
                   <svg viewBox="0 0 24 24" width="12" height="12" fill="white"><path d="M5.04 15.44a2.52 2.52 0 01-5.04 0 2.52 2.52 0 012.52-2.52h2.52v2.52zm1.26 0a2.52 2.52 0 015.04 0v6.3a2.52 2.52 0 01-5.04 0v-6.3zM8.56 5.04a2.52 2.52 0 010-5.04 2.52 2.52 0 012.52 2.52v2.52H8.56zm0 1.26a2.52 2.52 0 010 5.04H2.26a2.52 2.52 0 010-5.04h6.3z"/></svg>
                 </div>
-                <span className="ptx-name">Slack</span>
+                <span className="ptx-name text-gray-400">Slack</span>
                 <span className="ptx-soon">SOON</span>
               </div>
             </div>
@@ -1241,4 +1236,4 @@ export default function Home() {
       </div>
     </div>
   );
-}  
+}
