@@ -1,3 +1,14 @@
+/**
+ * ==============================================================================================
+ * CLAWLINK ENTERPRISE WEBCHAT WIDGET API
+ * ==============================================================================================
+ * @file app/api/widget/route.ts
+ * @description Generates the injectible JS widget and handles live chat routing for websites.
+ * STRICTLY LOCKED: Prevents rendering or API access for unpaid/inactive accounts.
+ * * ALL RIGHTS RESERVED. CLAWLINK INC.
+ * ==============================================================================================
+ */
+
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
@@ -26,9 +37,9 @@ export async function OPTIONS() {
 function sanitizeInput(input: string | null | undefined): string {
     if (!input) return "";
     return input
-        .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, "") // Remove malicious scripts
-        .replace(/<[^>]*>?/gm, "") // Remove HTML tags
-        .replace(/--/g, "") // Prevent SQL comment injection
+        .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, "") 
+        .replace(/<[^>]*>?/gm, "") 
+        .replace(/--/g, "") 
         .trim();
 }
 
@@ -45,13 +56,20 @@ CRITICAL INSTRUCTION: You are an Enterprise AI Support Agent.
 // =========================================================================
 export async function GET(req: Request) {
     const { searchParams } = new URL(req.url);
-    // 🛡️ Sanitize the incoming ID/Email to prevent URL manipulation attacks
     const email = sanitizeInput(searchParams.get("id")); 
 
     if (!email) {
         return new NextResponse("console.error('[ClawLink Widget] Missing Account ID.');", {
             headers: { "Content-Type": "application/javascript" }
         });
+    }
+
+    // 🔒 THE ULTIMATE PLG GATEKEEPER (Prevents Free Users from Loading the Widget UI)
+    const { data: config } = await supabase.from("user_configs").select("plan_status").eq("email", email.toLowerCase()).single();
+
+    if (!config || config.plan_status !== "Active") {
+        const deadJsCode = `console.warn("[ClawLink AI] Agent infrastructure is currently sleeping or payment is pending for this account.");`;
+        return new NextResponse(deadJsCode, { headers: { "Content-Type": "application/javascript" } });
     }
 
     const jsCode = `
@@ -182,7 +200,7 @@ export async function GET(req: Request) {
             const data = await res.json();
             document.getElementById(typingId).remove();
             if (data.success) { appendMsg(data.reply, 'bot'); } 
-            else { appendMsg('Sorry, I encountered an error.', 'bot'); }
+            else { appendMsg(data.reply || 'Sorry, I encountered an error.', 'bot'); }
           } catch (e) {
             document.getElementById(typingId).remove();
             appendMsg('Network error. Please try again.', 'bot');
@@ -319,7 +337,7 @@ export async function POST(req: Request) {
         const email = sanitizeInput(body.email);
         const rawMessage = body.message ? sanitizeInput(body.message) : "";
         const sessionId = sanitizeInput(body.sessionId);
-        const audio = body.audio; // Base64 audio string
+        const audio = body.audio;
 
         let userText = rawMessage;
         let crmLogMessage = rawMessage;
@@ -338,7 +356,7 @@ export async function POST(req: Request) {
             return NextResponse.json({ success: false, error: "Missing required fields" }, { status: 400, headers: corsHeaders });
         }
 
-        // 🚀 SURGICAL FIX: Fetch ANY config associated with the user
+        // 🚀 FETCH CONFIGURATION
         const { data: configList } = await supabase.from("user_configs").select("*").eq("email", email).order("created_at", { ascending: false }).limit(5);
         
         if (!configList || configList.length === 0) {
@@ -347,16 +365,25 @@ export async function POST(req: Request) {
 
         let config = configList.find(c => c.selected_channel === 'widget') || configList[0];
 
-        const isUnlimited = config.is_unlimited || config.plan_name === "max" || config.plan_name === "ultra_max";
+        // 🔒 THE ULTIMATE PLG GATEKEEPER: Stops API abuse if user plan is not active
+        if (config.plan_status !== "Active") {
+            const sleepMsg = "🤖 This AI Agent is currently in sleep mode. The owner needs to activate their plan to enable 24/7 autonomous responses.";
+            return NextResponse.json({ success: true, reply: sleepMsg }, { headers: corsHeaders });
+        }
+
+        const isUnlimited = config.is_unlimited || config.plan_tier === "adv_max" || config.plan_tier === "yearly" || config.plan_tier === "ultra";
         const messagesUsed = config.messages_used_this_month || 0;
         const monthlyLimit = config.monthly_message_limit || 1000;
+        const tokensUsed = config.tokens_used || 0;
+        const tokensAllocated = config.tokens_allocated || 0;
         
         const expiryDate = new Date(config.plan_expiry_date);
         const isExpired = config.plan_expiry_date ? (new Date() > expiryDate) : false;
 
-        if (isExpired || (!isUnlimited && messagesUsed >= monthlyLimit)) {
-            const maintenanceMsg = "Hello! Our AI assistant is currently undergoing a brief scheduled maintenance to serve you better. Please leave your query and our human support team will get back to you shortly. Thank you for your patience!";
-            return NextResponse.json({ success: true, reply: maintenanceMsg }, { headers: corsHeaders });
+        // 🔒 LIMITS ENFORCEMENT
+        if (isExpired || (!isUnlimited && (messagesUsed >= monthlyLimit || tokensUsed >= tokensAllocated))) {
+            const limitMsg = "System Note: The AI assistant for this account is currently offline due to resource limits. Please contact the administrator.";
+            return NextResponse.json({ success: true, reply: limitMsg }, { headers: corsHeaders });
         }
 
         if (userText.length > 800) {
@@ -385,7 +412,7 @@ export async function POST(req: Request) {
             .limit(5);
 
         let memoryHistory = "";
-        let historyArray: any[] = []; // Array for Omni fallback
+        let historyArray: any[] = []; 
         if (pastChats && pastChats.length > 0) {
             const reversed = pastChats.reverse();
             memoryHistory = reversed.map(chat => `${chat.sender_type.toUpperCase()}: ${chat.message}`).join("\n");
@@ -432,7 +459,7 @@ export async function POST(req: Request) {
         const GPT_PREMIUM = "gpt-5.4";
         const GPT_FALLBACKS = [GPT_PREMIUM, GPT_MID, GPT_CHEAP];
         
-        const CLAUDE_CHEAP = "claude-3-haiku";
+        const CLAUDE_CHEAP = "claude-3-haiku-20240307";
         const CLAUDE_MID = "claude-sonnet-4.6";
         const CLAUDE_PREMIUM = "claude-opus-4.6";
         const CLAUDE_FALLBACKS = [CLAUDE_PREMIUM, CLAUDE_MID, CLAUDE_CHEAP];
@@ -442,7 +469,6 @@ export async function POST(req: Request) {
 
         // 🧠 COMPLEXITY & BUDGET ROUTER
         if (provider === "omni") {
-            // OMNI BUNDLE (Cross-Provider allowed)
             if (usageRatio >= 80) {
                 wasSuccessful = await attemptFetch(GEMINI_CHEAP, "google");
                 if(!wasSuccessful) wasSuccessful = await attemptFetch(GPT_CHEAP, "openai");
@@ -455,9 +481,8 @@ export async function POST(req: Request) {
                 else if (words < 150) wasSuccessful = await attemptFetch(GPT_MID, "openai");
                 else wasSuccessful = await attemptFetch(CLAUDE_PREMIUM, "anthropic"); 
             }
-            if(!wasSuccessful) wasSuccessful = await attemptFetch(GPT_CHEAP, "openai"); // Final Failsafe
+            if(!wasSuccessful) wasSuccessful = await attemptFetch(GPT_CHEAP, "openai"); 
         } else {
-            // NORMAL PLAN (Single Provider Strict Logic)
             if (provider === "anthropic") {
                 targetModel = (usageRatio >= 85 || words < 40) ? CLAUDE_CHEAP : (words > 150 ? CLAUDE_PREMIUM : CLAUDE_MID);
                 wasSuccessful = await attemptFetch(targetModel, "anthropic");
@@ -488,7 +513,9 @@ export async function POST(req: Request) {
         if (wasSuccessful) {
             await supabase.from("user_configs").update({ messages_used_this_month: messagesUsed + 1 }).eq("email", email);
             if (!config.is_unlimited) {
-                await supabase.from("user_configs").update({ tokens_used: config.tokens_used + 1 }).eq("email", email);
+                // Approximate 1 token per 3 chars
+                const calculatedTokens = Math.ceil((userText.length + aiResponse.length) / 3);
+                await supabase.from("user_configs").update({ tokens_used: config.tokens_used + calculatedTokens }).eq("email", email);
             }
         }
 

@@ -5,11 +5,9 @@
  * CLAWLINK ENTERPRISE COMMAND CENTER (DASHBOARD)
  * ==============================================================================================
  * @file app/dashboard/page.tsx
- * @version 9.6.6 (Live Bot Redirect Opened for Free Users)
+ * @version 9.7.0 (Titanium Security Layer 3.0)
  * @description The central hub for users to monitor their AI Agents.
- * Enforces PLG by dynamically displaying current configuration and gating 
- * the "Go Live" (Payment) logic directly from this interface. Allows free users 
- * to redirect to their bot to trigger backend upgrade prompts.
+ * Strictly locks frontend Webchat & Knowledge Base UI for unpaid/inactive users.
  * * ALL RIGHTS RESERVED. CLAWLINK INC.
  * ==============================================================================================
  */
@@ -211,6 +209,7 @@ export default function Dashboard() {
     isExpired = new Date() > new Date(userData.plan_expiry_date);
   }
 
+  // 🔒 THE ULTIMATE TRUTH: Backend decides if plan is active
   const hasActivePlan = !isFreePlan && !isExpired && userData?.plan_status === "Active";
   const isPremium = !isFreePlan;
 
@@ -547,7 +546,6 @@ export default function Dashboard() {
   };
   const primaryChannel = getPrimaryLiveChannel();
 
-  // 🚀 FIXED: Always redirect users to their bot to let the backend Gatekeeper handle the upgrade message
   const handleOpenLiveBot = async () => {
     if (exactSelectedChannel === "telegram" && hasTgToken) {
       try {
@@ -670,7 +668,6 @@ export default function Dashboard() {
         </div>
 
         <div className="flex items-center gap-4">
-          {/* 🚀 FIXED: Button always says OPEN LIVE BOT */}
           <button onClick={handleOpenLiveBot}
             className={`hidden sm:flex items-center gap-2 bg-white text-black hover:bg-gray-100 px-5 py-2.5 rounded-full font-black text-[11px] uppercase tracking-widest shadow-[0_0_20px_rgba(255,255,255,0.15)] ${btn}`}>
             <Bot className="w-4 h-4" /> OPEN LIVE BOT <ExternalLink className="w-3 h-3 ml-1" />
@@ -789,13 +786,13 @@ export default function Dashboard() {
                 <Radio className="w-5 h-5"/>
               </div>
             </div>
-            {/* 🚀 FIXED: Button always says Open Live Bot and triggers redirect */}
             <button onClick={handleOpenLiveBot} className={`relative z-10 w-full py-3 rounded-xl text-[11px] font-bold uppercase tracking-widest transition-all bg-white/5 text-gray-300 border border-white/10 hover:bg-white/10 flex items-center justify-center gap-2 ${btn}`}>
                Open Live Bot <ExternalLink className="w-3 h-3"/>
             </button>
           </motion.div>
         </div>
 
+        {/* 🔒 WEBCHAT INTEGRATION (LOCKED FOR FREE USERS) */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25, delay: 0.3, ease: "easeOut" }} className="bg-gradient-to-r from-[#111113] to-[#0a0a0c] border border-pink-500/20 p-6 md:p-8 rounded-[1.5rem] shadow-[0_0_30px_rgba(236,72,153,0.05)] relative overflow-hidden flex flex-col lg:flex-row items-center justify-between gap-6">
           <div className="absolute top-0 left-0 w-64 h-64 bg-pink-500/5 rounded-full blur-3xl pointer-events-none"></div>
           
@@ -807,12 +804,22 @@ export default function Dashboard() {
           </div>
 
           <div className="w-full lg:w-1/2 relative z-10 group">
-            <pre className="w-full bg-[#07070A] border border-white/10 p-4 rounded-xl text-xs text-pink-400 font-mono overflow-x-auto custom-scrollbar">
-              {webChatScript}
-            </pre>
-            <button onClick={copyScript} className={`absolute top-2 right-2 p-2 bg-[#1A1A1A] hover:bg-[#222] border border-white/10 rounded-lg ${btn}`}>
-              {copiedScript ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4 text-gray-400" />}
-            </button>
+            {!hasActivePlan ? (
+                <div className="w-full bg-[#1A1A1A] border border-red-500/20 p-6 rounded-xl flex flex-col items-center justify-center text-center">
+                    <Shield className="w-6 h-6 text-red-500 mb-2"/>
+                    <p className="text-xs font-bold text-red-400 uppercase tracking-widest">Feature Locked</p>
+                    <p className="text-[10px] text-gray-500 mt-1">Upgrade to deploy on your website.</p>
+                </div>
+            ) : (
+                <>
+                    <pre className="w-full bg-[#07070A] border border-white/10 p-4 rounded-xl text-xs text-pink-400 font-mono overflow-x-auto custom-scrollbar">
+                      {webChatScript}
+                    </pre>
+                    <button onClick={copyScript} className={`absolute top-2 right-2 p-2 bg-[#1A1A1A] hover:bg-[#222] border border-white/10 rounded-lg ${btn}`}>
+                      {copiedScript ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4 text-gray-400" />}
+                    </button>
+                </>
+            )}
           </div>
         </motion.div>
 
@@ -933,7 +940,16 @@ export default function Dashboard() {
             </div>
           </motion.div>
 
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 1.0, ease: "easeOut" }} className="bg-[#111113] border border-green-500/20 rounded-[1.5rem] p-8 shadow-[0_0_30px_rgba(34,197,94,0.05)] relative overflow-hidden flex flex-col">
+          {/* 🔒 CUSTOM KNOWLEDGE BASE (LOCKED FOR FREE USERS) */}
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 1.0, ease: "easeOut" }} className={`bg-[#111113] border ${hasActivePlan ? 'border-green-500/20' : 'border-white/5'} rounded-[1.5rem] p-8 shadow-[0_0_30px_rgba(34,197,94,0.05)] relative overflow-hidden flex flex-col`}>
+            {!hasActivePlan && (
+                <div className="absolute inset-0 bg-[#0A0A0C]/80 backdrop-blur-sm z-20 flex flex-col items-center justify-center text-center p-6 border border-white/5 rounded-[1.5rem]">
+                    <Shield className="w-10 h-10 text-orange-500 mb-3 opacity-80"/>
+                    <h4 className="text-sm font-black text-white uppercase tracking-widest">RAG Engine Locked</h4>
+                    <p className="text-xs text-gray-400 mt-2 max-w-sm">You must have an active subscription to inject custom business data into the Vector Database.</p>
+                </div>
+            )}
+
             <div className="absolute top-0 right-0 p-6 opacity-10 pointer-events-none"><BrainCircuit className="w-32 h-32 text-green-500" /></div>
             <h3 className="text-lg font-black text-green-400 mb-2 tracking-wide flex items-center gap-2 relative z-10">🧠 Custom Knowledge Base (RAG)</h3>
             <p className="text-sm text-gray-400 mb-6 relative z-10">Train your AI with your specific business data. Paste product details, FAQs, or policies below to convert them into vectors.</p>

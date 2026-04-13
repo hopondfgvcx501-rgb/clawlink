@@ -1,3 +1,14 @@
+/**
+ * ==============================================================================================
+ * CLAWLINK ENTERPRISE KNOWLEDGE BASE API (RAG)
+ * ==============================================================================================
+ * @file app/api/knowledge/route.ts
+ * @description Handles vector embeddings for custom business data. Strictly locked down 
+ * to ensure only users with 'Active' plan_status can consume embedding API credits.
+ * * ALL RIGHTS RESERVED. CLAWLINK INC.
+ * ==============================================================================================
+ */
+
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { getToken } from "next-auth/jwt"; // 🛡️ THE MASTER SECURITY LOCK
@@ -8,7 +19,7 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-// 🚀 ROBUST GEMINI EMBEDDING FUNCTION (Fixed for Google's Latest 2026 API Update)
+// 🚀 ROBUST GEMINI EMBEDDING FUNCTION (Fixed for Google's Latest API Update)
 async function generateEmbedding(text: string) {
   if (!process.env.GEMINI_API_KEY) {
     return { error: "GEMINI_API_KEY is missing in Vercel environment variables!" };
@@ -68,20 +79,35 @@ export async function GET(req: NextRequest) {
   }
 }
 
-// 2. INJECT NEW KNOWLEDGE INTO VECTOR DB
+// 2. INJECT NEW KNOWLEDGE INTO VECTOR DB (NOW TITANIUM SECURED)
 export async function POST(req: NextRequest) {
   try {
-    // 🛡️ SECURITY LOCK: Verify Session First
+    // 🛡️ LEVEL 1 SECURITY: Verify Identity
     const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
     
     if (!token || !token.email) {
       return NextResponse.json({ success: false, error: "Unauthorized. Invalid Session." }, { status: 401 });
     }
 
-    const { text } = await req.json();
-
-    // 🔥 Overwrite user input with cryptographic token email
     const email = token.email.toLowerCase();
+
+    // 🛡️ LEVEL 2 SECURITY: Verify Active Plan Status (Stop free-loaders)
+    const { data: config, error: configError } = await supabase
+      .from("user_configs")
+      .select("plan_status")
+      .eq("email", email)
+      .single();
+
+    if (configError || !config || config.plan_status !== "Active") {
+      console.warn(`🚨 [SECURITY BLOCK] Unpaid user ${email} attempted to burn Vector API credits.`);
+      return NextResponse.json({ 
+          success: false, 
+          error: "Active Premium Plan required. Please upgrade in the dashboard to train your AI." 
+      }, { status: 403 });
+    }
+
+    // Process valid request
+    const { text } = await req.json();
 
     if (!text) {
       return NextResponse.json({ success: false, error: "Missing data payload" }, { status: 400 });
