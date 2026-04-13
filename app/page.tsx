@@ -5,9 +5,10 @@
  * CLAWLINK ENTERPRISE FRONTEND SECURE MODULE
  * ==============================================================================================
  * @file app/page.tsx
- * @version 10.3.0 (Restored Horizontal Layout & Demo Flow)
+ * @version 10.4.0 (Perfected Horizontal Layout & Typography)
  * @description Main onboarding interface with strict Product-Led Growth (PLG) routing.
- * FIXED: Restored 5-column horizontal layout for channels and models to prevent text clipping.
+ * FIXED: Restored 5-column horizontal layout for channels and models to match original design.
+ * FIXED: Corrected button shapes to perfectly rounded rectangles and improved text visibility (white/bold).
  * FIXED: Maintained unlocked pre-login selection (Demo Mode).
  * Integrates KNOX Level-7 Apple-grade security protocol.
  * * ALL RIGHTS RESERVED. CLAWLINK INC.
@@ -526,13 +527,13 @@ export default function Home() {
 
   const btn = "transition-all duration-[120ms] ease-out active:scale-[0.93] transform-gpu will-change-transform";
 
-  // 🚀 FIXED: Restored grid-cols-5 to keep 5 items in a single row
+  // 🚀 FIXED: Restored grid-cols-5 exact layout. Text is now white and legible. Icons are appropriately sized.
   const pillBase = [
-    "bg-white border-2 border-transparent cursor-pointer overflow-hidden",
+    "bg-[#1A1A24] border-2 border-white/5 cursor-pointer overflow-hidden",
     btn,
-    "shadow-[0_2px_8px_rgba(0,0,0,0.12)]",
-    "hover:shadow-[0_8px_20px_rgba(0,0,0,0.22)] hover:-translate-y-[2px]",
-    "flex-col h-[60px] px-[4px] py-[8px] gap-[4px] justify-center items-center rounded-[10px]",
+    "shadow-[0_2px_8px_rgba(0,0,0,0.2)]",
+    "hover:shadow-[0_8px_20px_rgba(0,0,0,0.3)] hover:-translate-y-[2px] hover:bg-[#20202C]",
+    "flex-col h-[70px] w-full px-[8px] py-[10px] gap-[6px] justify-center items-center rounded-[16px]",
   ].join(" ");
 
   const modelActive = (id: string) => activeModel === id && !(isTokenSaved && activeModel !== id);
@@ -612,9 +613,10 @@ export default function Home() {
         .icon-lift{transition:transform .2s cubic-bezier(.34,1.56,.64,1)}
         .icon-lift:hover{transform:scale(1.12) rotate(-4deg)}
         
-        .ptx-name{font-size:11px;font-weight:900;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:center;width:100%}
-        .ptx-sub {font-size:8px;font-weight:700;opacity:.8;white-space:nowrap;text-align:center;width:100%}
-        .ptx-soon{font-size:8px;font-weight:800;color:#3b82f6;text-transform:uppercase;text-align:center;width:100%}
+        /* 🚀 FIXED: Dynamic Typography sizes for Desktop/Mobile - White text */
+        .ptx-name{font-size:12.5px;font-weight:900;color: white; white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:center;width:100%}
+        .ptx-sub {font-size:9.5px;font-weight:700;opacity:0.9;white-space:nowrap;text-align:center;width:100%}
+        .ptx-soon{font-size:9px;font-weight:800;color:#3b82f6;text-transform:uppercase;text-align:center;width:100%}
         
         .orange-glow{box-shadow:0 0 28px rgba(249,115,22,.48)}
         .orange-glow:hover{box-shadow:0 0 48px rgba(249,115,22,.65)}
@@ -681,7 +683,7 @@ export default function Home() {
         </p>
 
         {/* 🚀 FIXED: Restored 5-column grid layout for Selection UI */}
-        <div className="anim-card card-shimmer tilt-el relative w-full max-w-[650px] rounded-[24px] p-6 md:p-8 mb-8 overflow-hidden"
+        <div className="anim-card card-shimmer tilt-el relative w-full max-w-[800px] rounded-[24px] p-6 md:p-8 mb-8 overflow-hidden"
           style={{background:"rgba(255,255,255,0.028)",border:"1px solid rgba(255,255,255,0.08)",
                   boxShadow:"0 0 80px rgba(249,115,22,0.08),0 40px 80px rgba(0,0,0,0.6)"}}>
           
@@ -689,34 +691,34 @@ export default function Home() {
               <span className="w-4 h-4 text-[9px] rounded bg-white/10 flex items-center justify-center text-white">1</span>
               Choose Your AI Model
             </p>
-            <div className="grid grid-cols-5 gap-[6px] mb-6">
+            <div className="grid grid-cols-5 gap-[12px] mb-8">
               <button aria-label="Select GPT-5.4 Pro Model" data-spring onClick={() => handleModelSelect("gpt-5.4 Pro")} disabled={isTokenSaved && activeModel!=="gpt-5.4 Pro"}
-                className={[pillBase, modelActive("gpt-5.4 Pro") ? "!border-blue-500 shadow-[0_0_0_3px_rgba(59,130,246,0.2),0_2px_8px_rgba(0,0,0,0.12)]" : "bg-[#111] border-white/5", isTokenSaved && activeModel!=="gpt-5.4 Pro" ? "opacity-25 pointer-events-none" : ""].join(" ")}>
-                <div className="w-[24px] h-[24px] rounded-[6px] flex items-center justify-center shrink-0 bg-[#f0fdf4]"><OpenAI_Icon size={20}/></div>
-                <div className="flex flex-col min-w-0 items-center w-full"><span className="ptx-name" style={{color:"#10a37f"}}>GPT-5.4</span><span className="ptx-sub" style={{color:"#10a37f"}}>Pro</span></div>
+                className={[pillBase, modelActive("gpt-5.4 Pro") ? "!bg-[#f0fdf4]/10 !border-[#10a37f] shadow-[0_0_0_4px_rgba(16,163,127,0.15)]" : "", isTokenSaved && activeModel!=="gpt-5.4 Pro" ? "opacity-25 pointer-events-none" : ""].join(" ")}>
+                <div className="w-[30px] h-[30px] rounded-lg flex items-center justify-center shrink-0 mb-1"><OpenAI_Icon size={24}/></div>
+                <div className="flex flex-col items-center"><span className="ptx-name">GPT-5.4</span><span className="ptx-sub" style={{color:"#10a37f"}}>Pro</span></div>
               </button>
 
               <button aria-label="Select Claude 3 Model" data-spring onClick={() => handleModelSelect("Claude Opus 4.6")} disabled={isTokenSaved && activeModel!=="Claude Opus 4.6"}
-                className={[pillBase, modelActive("Claude Opus 4.6") ? "!border-blue-500 shadow-[0_0_0_3px_rgba(59,130,246,0.2),0_2px_8px_rgba(0,0,0,0.12)]" : "bg-[#111] border-white/5", isTokenSaved && activeModel!=="Claude Opus 4.6" ? "opacity-25 pointer-events-none" : ""].join(" ")}>
-                <div className="w-[24px] h-[24px] rounded-[6px] flex items-center justify-center shrink-0 bg-[#fdf5f2]"><Claude_Icon size={20}/></div>
-                <div className="flex flex-col min-w-0 items-center w-full"><span className="ptx-name" style={{color:"#d97757"}}>Claude</span><span className="ptx-sub" style={{color:"#d97757"}}>Opus 4.6</span></div>
+                className={[pillBase, modelActive("Claude Opus 4.6") ? "!bg-[#fdf5f2]/10 !border-[#d97757] shadow-[0_0_0_4px_rgba(217,119,87,0.15)]" : "", isTokenSaved && activeModel!=="Claude Opus 4.6" ? "opacity-25 pointer-events-none" : ""].join(" ")}>
+                <div className="w-[30px] h-[30px] rounded-lg flex items-center justify-center shrink-0 mb-1"><Claude_Icon size={24}/></div>
+                <div className="flex flex-col items-center"><span className="ptx-name">Claude</span><span className="ptx-sub" style={{color:"#d97757"}}>Opus 4.6</span></div>
               </button>
 
               <button aria-label="Select Gemini Model" data-spring onClick={() => handleModelSelect("gemini 3.1 Pro")} disabled={isTokenSaved && activeModel!=="gemini 3.1 Pro"}
-                className={[pillBase, modelActive("gemini 3.1 Pro") ? "!border-blue-500 shadow-[0_0_0_3px_rgba(59,130,246,0.2),0_2px_8px_rgba(0,0,0,0.12)]" : "bg-[#111] border-white/5", isTokenSaved && activeModel!=="gemini 3.1 Pro" ? "opacity-25 pointer-events-none" : ""].join(" ")}>
-                <div className="w-[24px] h-[24px] rounded-[6px] flex items-center justify-center shrink-0 bg-[#eff2ff]"><Gemini_Icon size={20}/></div>
-                <div className="flex flex-col min-w-0 items-center w-full"><span className="ptx-name" style={{color:"#648af5"}}>Gemini</span><span className="ptx-sub" style={{color:"#648af5"}}>3.1 Pro</span></div>
+                className={[pillBase, modelActive("gemini 3.1 Pro") ? "!bg-[#eff2ff]/10 !border-[#648af5] shadow-[0_0_0_4px_rgba(100,138,245,0.15)]" : "", isTokenSaved && activeModel!=="gemini 3.1 Pro" ? "opacity-25 pointer-events-none" : ""].join(" ")}>
+                <div className="w-[30px] h-[30px] rounded-lg flex items-center justify-center shrink-0 mb-1"><Gemini_Icon size={24}/></div>
+                <div className="flex flex-col items-center"><span className="ptx-name">Gemini</span><span className="ptx-sub" style={{color:"#648af5"}}>3.1 Pro</span></div>
               </button>
 
               <button aria-label="Select OmniAgent Fallback Model" data-spring onClick={() => handleModelSelect("omni 3 nexus")} disabled={isTokenSaved && activeModel!=="omni 3 nexus"}
-                className={[pillBase, modelActive("omni 3 nexus") ? "!border-[#00bfff] shadow-[0_0_0_3px_rgba(0,191,255,0.2),0_2px_8px_rgba(0,0,0,0.12)]" : "bg-[#111] border-white/5", isTokenSaved && activeModel!=="omni 3 nexus" ? "opacity-25 pointer-events-none" : ""].join(" ")}>
-                <div className="w-[24px] h-[24px] rounded-[6px] flex items-center justify-center shrink-0 bg-[#e8f9ff]"><Omni_Icon size={18}/></div>
-                <div className="flex flex-col min-w-0 items-center w-full"><span className="ptx-name" style={{color:"#0369a1"}}>Omni 3</span><span className="ptx-sub" style={{color:"#00bfff"}}>Nexus</span></div>
+                className={[pillBase, modelActive("omni 3 nexus") ? "!bg-[#e8f9ff]/10 !border-[#00bfff] shadow-[0_0_0_4px_rgba(0,191,255,0.15)]" : "", isTokenSaved && activeModel!=="omni 3 nexus" ? "opacity-25 pointer-events-none" : ""].join(" ")}>
+                <div className="w-[30px] h-[30px] rounded-lg flex items-center justify-center shrink-0 mb-1"><Omni_Icon size={24}/></div>
+                <div className="flex flex-col items-center"><span className="ptx-name">Omni 3</span><span className="ptx-sub" style={{color:"#00bfff"}}>Nexus</span></div>
               </button>
 
-              <div aria-label="Llama 4 coming soon" className={[pillBase, "opacity-30 cursor-not-allowed bg-[#111] border-white/5 pointer-events-none"].join(" ")}>
-                <div className="w-[24px] h-[24px] rounded-[6px] flex items-center justify-center shrink-0 bg-gray-100"><Llama_Icon size={18}/></div>
-                <div className="flex flex-col min-w-0 items-center w-full"><span className="ptx-name text-gray-400">Llama 4</span><span className="ptx-soon" style={{animation:"bpulse 1.8s ease-in-out infinite"}}>SOON</span></div>
+              <div aria-label="Llama 4 coming soon" className={[pillBase, "opacity-30 cursor-not-allowed pointer-events-none"].join(" ")}>
+                <div className="w-[30px] h-[30px] rounded-lg flex items-center justify-center shrink-0 mb-1"><Llama_Icon size={24}/></div>
+                <div className="flex flex-col items-center"><span className="ptx-name">Llama 4</span><span className="ptx-soon" style={{animation:"bpulse 1.8s ease-in-out infinite"}}>SOON</span></div>
               </div>
             </div>
 
@@ -724,35 +726,35 @@ export default function Home() {
               <span className="w-4 h-4 text-[9px] rounded bg-white/10 flex items-center justify-center text-white">2</span>
               Select Your Channel
             </p>
-            <div className="grid grid-cols-5 gap-[6px] mb-6">
+            <div className="grid grid-cols-5 gap-[12px] mb-8">
               <button aria-label="Connect Telegram AI Bot" data-spring onClick={()=>handleChannelSelect("telegram")} disabled={isTokenSaved && activeChannel!=="telegram"}
-                className={[pillBase, chanActive("telegram") ? "!border-[#2aabee] shadow-[0_0_0_3px_rgba(42,171,238,0.2),0_2px_8px_rgba(0,0,0,0.12)]" : "bg-[#111] border-white/5", isTokenSaved && activeChannel!=="telegram" ? "opacity-25 pointer-events-none" : ""].join(" ")}>
-                <div className="w-[24px] h-[24px] rounded-full flex items-center justify-center shrink-0"><Telegram_Icon size={24}/></div>
-                <div className="flex flex-col min-w-0 items-center w-full"><span className="ptx-name text-gray-200">Telegram</span></div>
+                className={[pillBase, chanActive("telegram") ? "!bg-[#2aabee]/10 !border-[#2aabee] shadow-[0_0_0_4px_rgba(42,171,238,0.15)]" : "", isTokenSaved && activeChannel!=="telegram" ? "opacity-25 pointer-events-none" : ""].join(" ")}>
+                <div className="w-[30px] h-[30px] rounded-full flex items-center justify-center shrink-0 mb-1"><Telegram_Icon size={26}/></div>
+                <div className="flex flex-col items-center"><span className="ptx-name">Telegram</span></div>
               </button>
 
               <button aria-label="Connect WhatsApp AI Agent" data-spring onClick={()=>handleChannelSelect("whatsapp")} disabled={isTokenSaved && activeChannel!=="whatsapp"}
-                className={[pillBase, chanActive("whatsapp") ? "!border-[#25d366] shadow-[0_0_0_3px_rgba(37,211,102,0.2),0_2px_8px_rgba(0,0,0,0.12)]" : "bg-[#111] border-white/5", isTokenSaved && activeChannel!=="whatsapp" ? "opacity-25 pointer-events-none" : ""].join(" ")}>
-                <div className="w-[24px] h-[24px] rounded-full flex items-center justify-center shrink-0"><WhatsApp_Icon size={24}/></div>
-                <div className="flex flex-col min-w-0 items-center w-full"><span className="ptx-name text-gray-200">WhatsApp</span></div>
+                className={[pillBase, chanActive("whatsapp") ? "!bg-[#25d366]/10 !border-[#25d366] shadow-[0_0_0_4px_rgba(37,211,102,0.15)]" : "", isTokenSaved && activeChannel!=="whatsapp" ? "opacity-25 pointer-events-none" : ""].join(" ")}>
+                <div className="w-[30px] h-[30px] rounded-full flex items-center justify-center shrink-0 mb-1"><WhatsApp_Icon size={26}/></div>
+                <div className="flex flex-col items-center"><span className="ptx-name">WhatsApp</span></div>
               </button>
               
               <button aria-label="Connect Instagram Auto Reply Bot" data-spring onClick={()=>handleChannelSelect("instagram")} disabled={isTokenSaved && activeChannel!=="instagram"}
-                className={[pillBase, chanActive("instagram") ? "!border-[#e6683c] shadow-[0_0_0_3px_rgba(230,104,60,0.2),0_2px_8px_rgba(0,0,0,0.12)]" : "bg-[#111] border-white/5", isTokenSaved && activeChannel!=="instagram" ? "opacity-25 pointer-events-none" : ""].join(" ")}>
-                <div className="w-[24px] h-[24px] rounded-full flex items-center justify-center shrink-0"><Instagram_Icon size={24}/></div>
-                <div className="flex flex-col min-w-0 items-center w-full"><span className="ptx-name text-gray-200">Instagram</span></div>
+                className={[pillBase, chanActive("instagram") ? "!bg-[#e6683c]/10 !border-[#e6683c] shadow-[0_0_0_4px_rgba(230,104,60,0.15)]" : "", isTokenSaved && activeChannel!=="instagram" ? "opacity-25 pointer-events-none" : ""].join(" ")}>
+                <div className="w-[30px] h-[30px] rounded-full flex items-center justify-center shrink-0 mb-1"><Instagram_Icon size={26}/></div>
+                <div className="flex flex-col items-center"><span className="ptx-name">Instagram</span></div>
               </button>
 
-              <div aria-label="Discord Bot Coming Soon" className={[pillBase, isTokenSaved?"opacity-20":"opacity-35", "bg-[#111] border-white/5 cursor-not-allowed pointer-events-none"].join(" ")}>
-                <div className="w-[24px] h-[24px] rounded-full flex items-center justify-center shrink-0"><Discord_Icon size={20}/></div>
-                <div className="flex flex-col min-w-0 items-center w-full"><span className="ptx-name text-gray-400">Discord</span><span className="ptx-soon">SOON</span></div>
+              <div aria-label="Discord Bot Coming Soon" className={[pillBase, isTokenSaved?"opacity-20":"opacity-35", "cursor-not-allowed pointer-events-none"].join(" ")}>
+                <div className="w-[30px] h-[30px] rounded-full flex items-center justify-center shrink-0 mb-1"><Discord_Icon size={24}/></div>
+                <div className="flex flex-col items-center"><span className="ptx-name text-gray-500">Discord</span><span className="ptx-soon">SOON</span></div>
               </div>
 
-              <div aria-label="Slack Bot Coming Soon" className={[pillBase, isTokenSaved?"opacity-20":"opacity-35", "bg-[#111] border-white/5 cursor-not-allowed pointer-events-none"].join(" ")}>
-                <div className="w-[24px] h-[24px] rounded-full flex items-center justify-center shrink-0 bg-[#4a154b]">
-                  <svg viewBox="0 0 24 24" width="14" height="14" fill="white"><path d="M5.04 15.44a2.52 2.52 0 01-5.04 0 2.52 2.52 0 012.52-2.52h2.52v2.52zm1.26 0a2.52 2.52 0 015.04 0v6.3a2.52 2.52 0 01-5.04 0v-6.3zM8.56 5.04a2.52 2.52 0 010-5.04 2.52 2.52 0 012.52 2.52v2.52H8.56zm0 1.26a2.52 2.52 0 010 5.04H2.26a2.52 2.52 0 010-5.04h6.3z"/></svg>
+              <div aria-label="Slack Bot Coming Soon" className={[pillBase, isTokenSaved?"opacity-20":"opacity-35", "cursor-not-allowed pointer-events-none"].join(" ")}>
+                <div className="w-[30px] h-[30px] rounded-full flex items-center justify-center shrink-0 bg-[#4a154b] mb-1">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="white"><path d="M5.04 15.44a2.52 2.52 0 01-5.04 0 2.52 2.52 0 012.52-2.52h2.52v2.52zm1.26 0a2.52 2.52 0 015.04 0v6.3a2.52 2.52 0 01-5.04 0v-6.3zM8.56 5.04a2.52 2.52 0 010-5.04 2.52 2.52 0 012.52 2.52v2.52H8.56zm0 1.26a2.52 2.52 0 010 5.04H2.26a2.52 2.52 0 010-5.04h6.3z"/></svg>
                 </div>
-                <div className="flex flex-col min-w-0 items-center w-full"><span className="ptx-name text-gray-400">Slack</span><span className="ptx-soon">SOON</span></div>
+                <div className="flex flex-col items-center"><span className="ptx-name text-gray-500">Slack</span><span className="ptx-soon">SOON</span></div>
               </div>
             </div>
           
@@ -779,12 +781,12 @@ export default function Home() {
               ) : (
                 <motion.div key="login" id="login-section" initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} transition={{duration:.12}} className="w-full flex flex-col items-center">
                   <button aria-label="Login with Google" data-ripple data-spring onClick={handleLoginOrDeploy}
-                    className={`relative overflow-hidden w-full bg-white text-black py-4 rounded-[16px] flex items-center justify-center gap-3 text-[15px] font-black uppercase tracking-widest shadow-[0_0_30px_rgba(255,255,255,0.15)] ${btn} hover:scale-[1.03]`}>
+                    className={`relative overflow-hidden w-full bg-white text-black py-4 rounded-[16px] flex items-center justify-center gap-3 text-[16px] font-black tracking-widest shadow-[0_0_30px_rgba(255,255,255,0.15)] ${btn} hover:scale-[1.03]`}>
                     <Google_Icon/> {status === "authenticated" ? "Finalize Deployment" : "Login via Google & Deploy"}
                   </button>
                   <p className="mt-4 text-[13px] text-gray-400 text-center leading-relaxed">
                     Deploying <strong className="text-white">{PRICING_DATA[activeModel].name}</strong> to <strong className="text-white capitalize">{activeChannel}</strong>.{" "}
-                    <br/><span className="text-[#34A853] font-semibold text-[13px]">Limited enterprise servers available.</span>
+                    <span className="text-[#34A853] font-semibold text-[13px]">Limited enterprise servers available.</span>
                   </p>
                 </motion.div>
               )}
