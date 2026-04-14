@@ -4,9 +4,8 @@
  * ==============================================================================================
  * @file app/api/config/route.ts
  * @description Securely provisions the user's database record using real payload data.
- * FIXED: Removed manual 'updated_at' and 'created_at' insertions to resolve Supabase schema cache errors.
- * FIXED: Removed '@/' path alias to resolve Vercel 'Module not found' build errors.
- * FIXED: Instantiated Supabase client directly in the file for bulletproof deployment.
+ * FIXED: Replaced strict 'upsert' with a robust 'select -> update/insert' mechanism to resolve
+ * the "no unique or exclusion constraint matching the ON CONFLICT" Supabase error.
  * * ALL RIGHTS RESERVED. CLAWLINK INC.
  * ==============================================================================================
  */
@@ -71,7 +70,7 @@ export async function POST(req: Request) {
     }
 
     // Construct the full database payload. 
-    // CRITICAL FIX: Do NOT pass created_at or updated_at manually to avoid schema cache errors.
+    // Do NOT pass created_at or updated_at manually to avoid schema cache errors.
     const payload: any = {
         ai_model: exactModelVersion, 
         selected_model: exactModelVersion, 
@@ -95,15 +94,35 @@ export async function POST(req: Request) {
         payload.instagram_token = telegramToken; 
     }
 
-    // Secure database upsert via Admin Client (Update if exists, Insert if new)
-    const { error: upsertError } = await supabaseAdmin
+    // --- ROBUST DATABASE OPERATION (Replaces strict UPSERT) ---
+    // 1. Check if the user already exists
+    const { data: existingUser, error: lookupError } = await supabaseAdmin
         .from("user_configs")
-        .upsert(
-            { email: email, ...payload }, 
-            { onConflict: "email" }
-        );
+        .select("id")
+        .eq("email", email)
+        .maybeSingle();
 
-    if (upsertError) throw new Error("Database Operation Failed: " + upsertError.message);
+    if (lookupError) {
+        throw new Error("Database Lookup Failed: " + lookupError.message);
+    }
+
+    if (existingUser) {
+        // 2A. Update existing user
+        const { error: updateError } = await supabaseAdmin
+            .from("user_configs")
+            .update(payload)
+            .eq("id", existingUser.id);
+        
+        if (updateError) throw new Error("Database Update Failed: " + updateError.message);
+    } else {
+        // 2B. Insert new user
+        const { error: insertError } = await supabaseAdmin
+            .from("user_configs")
+            .insert({ email: email, ...payload });
+        
+        if (insertError) throw new Error("Database Insert Failed: " + insertError.message);
+    }
+    // ----------------------------------------------------------
 
     // Dynamic Link Generation for the Live Bot integration
     let botLink = "";
