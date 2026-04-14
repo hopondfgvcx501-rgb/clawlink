@@ -5,12 +5,11 @@
  * CLAWLINK ENTERPRISE FRONTEND SECURE MODULE
  * ==============================================================================================
  * @file app/page.tsx
- * @version 10.9.5 (Ultimate Security & Post-Login Blur Logic)
+ * @version 10.9.6 (Typography & Size Scale Polish)
  * @description Main onboarding interface with strict Product-Led Growth (PLG) routing.
- * FIXED: Implemented strict Demo Mode vs Real Mode logic. Pre-login clicks are local only.
- * FIXED: Added dim/blur effect to unselected options ONLY when logged in, to highlight the actual DB choice.
- * FIXED: Hardened Knox Security Protocol against bot/AI injection and DOM tampering.
- * FIXED: Maintained Silicon Light Grey aesthetics and uniform icon sizing.
+ * FIXED: Scaled up Button sizes (height 60px), Icon sizes (28px), and Text sizes (15px).
+ * FIXED: Expanded container width to safely fit full model names (e.g., Claude Opus 4.6) in one row.
+ * FIXED: Maintained strict post-login DB save logic and pre-login demo interactions.
  * Integrates KNOX Level-7 Apple-grade security protocol.
  * * ALL RIGHTS RESERVED. CLAWLINK INC.
  * ==============================================================================================
@@ -59,7 +58,6 @@ class KnoxSecurityProtocol {
 
   private static preventTampering() {
     if (process.env.NODE_ENV !== "development") {
-        // Basic anti-inspect measures for production
         document.addEventListener('contextmenu', event => event.preventDefault());
         document.addEventListener('keydown', (e) => {
             if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && e.key === 'I')) {
@@ -73,7 +71,6 @@ class KnoxSecurityProtocol {
     const observer = new MutationObserver((mutations) => {
       mutations.forEach((mutation) => {
         mutation.addedNodes.forEach((node) => {
-          // Strictly block any script that isn't from our allowed payment gateways
           if (node.nodeName === "SCRIPT" && !(node as HTMLScriptElement).src.includes("stripe") && !(node as HTMLScriptElement).src.includes("razorpay")) {
              node.parentNode?.removeChild(node);
              this.registerViolation("Unauthorized Script Injection Detected and Neutralized");
@@ -86,7 +83,6 @@ class KnoxSecurityProtocol {
 
   private static registerViolation(reason: string) {
     this.violationCount++;
-    // In a real app, send a silent beacon to your backend here
   }
 }
 
@@ -127,21 +123,21 @@ const PRICING_DATA: Record<string, any> = {
   }
 };
 
-// Standardized icon size for perfect uniformity across all buttons
-const ICON_SIZE = 20;
+// 🚀 FIXED: Increased universal Icon Size from 20 to 28 for better visibility
+const ICON_SIZE = 28;
 
-const OpenAI_Icon  = ({ size = 20 }: { size?: number }) => <Image src="/logos/openai.svg"  alt="GPT-4o OpenAI Agent Icon"  width={size} height={size} className="transform-gpu shrink-0" />;
-const Claude_Icon  = ({ size = 20 }: { size?: number }) => <Image src="/logos/claude.svg"  alt="Claude 3 Anthropic AI Icon"  width={size} height={size} className="transform-gpu shrink-0" />;
-const Gemini_Icon  = ({ size = 20 }: { size?: number }) => <Image src="/logos/gemini.svg"  alt="Gemini Google AI Bot Icon"  width={size} height={size} className="transform-gpu shrink-0" />;
+const OpenAI_Icon  = ({ size = ICON_SIZE }: { size?: number }) => <Image src="/logos/openai.svg"  alt="GPT-4o OpenAI Agent Icon"  width={size} height={size} className="transform-gpu shrink-0" />;
+const Claude_Icon  = ({ size = ICON_SIZE }: { size?: number }) => <Image src="/logos/claude.svg"  alt="Claude 3 Anthropic AI Icon"  width={size} height={size} className="transform-gpu shrink-0" />;
+const Gemini_Icon  = ({ size = ICON_SIZE }: { size?: number }) => <Image src="/logos/gemini.svg"  alt="Gemini Google AI Bot Icon"  width={size} height={size} className="transform-gpu shrink-0" />;
 
-const Llama_Icon = ({ size = 20 }: { size?: number }) => (
+const Llama_Icon = ({ size = ICON_SIZE }: { size?: number }) => (
   <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#1A1A24] transform-gpu shrink-0">
     <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/>
     <line x1="4" y1="22" x2="4" y2="15"/>
   </svg>
 );
 
-const Omni_Icon = ({ size = 18 }: { size?: number }) => (
+const Omni_Icon = ({ size = 24 }: { size?: number }) => (
   <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke="#00BFFF" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 transform-gpu">
     <path d="M12 4.5C10 4.5 8 5.5 7.5 7.5 6 7.5 4.5 8.5 4.5 10.5 4 11.5 4 13 5 14 4.5 15.5 5.5 17 7 17.5 7.5 19 9 20 10.5 20H12"/>
     <path d="M12 4.5C14 4.5 16 5.5 16.5 7.5 18 7.5 19.5 8.5 19.5 10.5 20 11.5 20 13 19 14 19.5 15.5 18.5 17 17 17.5 16.5 19 15 20 13.5 20H12"/>
@@ -157,14 +153,14 @@ const Omni_Icon = ({ size = 18 }: { size?: number }) => (
   </svg>
 );
 
-const Telegram_Icon = ({ size = 20 }: { size?: number }) => (
+const Telegram_Icon = ({ size = ICON_SIZE }: { size?: number }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="transform-gpu shrink-0">
     <path d="M12 24c6.627 0 12-5.373 12-12S18.627 0 12 0 0 5.373 0 12s5.373 12 12 12z" fill="#2AABEE"/>
     <path d="M5.425 11.871L16.48 7.61c.526-.196 1.006.124.819.86l-1.892 8.92c-.167.755-.615.939-1.242.593L10.73 15.45l-1.657 1.588c-.183.183-.338.338-.692.338l.245-3.528 6.425-5.8c.28-.249-.06-.388-.435-.138L6.68 12.89l-3.417-1.066c-.744-.233-.759-.745.155-1.103z" fill="#fff"/>
   </svg>
 );
 
-const WhatsApp_Icon = ({ size = 20 }: { size?: number }) => (
+const WhatsApp_Icon = ({ size = ICON_SIZE }: { size?: number }) => (
   <svg width={size} height={size} viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" className="transform-gpu shrink-0">
     <rect width="100" height="100" rx="24" fill="#25D366"/>
     <path fill="#ffffff" d="M50 15c-19.3 0-35 15.7-35 35 0 6.2 1.6 12.2 4.7 17.5L15 85l17.5-4.7c5.3 3.1 11.3 4.7 17.5 4.7 19.3 0 35-15.7 35-35S69.3 15 50 15zm0 63.8c-5.2 0-10.4-1.4-15-4.1l-1.1-.6-11.1 2.9 2.9-10.8-.7-1.1c-2.9-4.7-4.5-10.1-4.5-15.6 0-16.2 13.2-29.4 29.4-29.4s29.4 13.2 29.4 29.4-13.2 29.4-29.4 29.4z"/>
@@ -172,15 +168,15 @@ const WhatsApp_Icon = ({ size = 20 }: { size?: number }) => (
   </svg>
 );
 
-const Discord_Icon = ({ size = 20 }: { size?: number }) => (
+const Discord_Icon = ({ size = ICON_SIZE }: { size?: number }) => (
   <svg viewBox="0 0 24 24" width={size} height={size} fill="#5865F2" className="transform-gpu shrink-0">
     <path d="M20.3 5.4c-1.6-.7-3.4-1.2-5.2-1.5-.2.4-.4.9-.6 1.3-1.9-.3-3.8-.3-5.7 0-.2-.4-.4-.9-.6-1.3-1.8.3-3.6.8-5.2 1.5-3.3 4.9-4.2 9.7-3.3 14.4 2.2 1.6 4.3 2.6 6.4 3.2.5-.7 1-1.5 1.4-2.3-1.2-.5-2.4-1.1-3.5-1.8.3-.2.6-.4.9-.7 4.6 2.1 9.7 2.1 14.3 0 .3.2.6.5.9.7-1.1.7-2.3 1.3-3.5 1.8.4.8.9 1.6 1.4 2.3 2.1-.6 4.2-1.6 6.4-3.2 1-5.1.1-10-3.2-14.4z"/>
   </svg>
 );
 
-const Instagram_Icon = ({ size = 20 }: { size?: number }) => (
-  <div style={{ width: size, height: size }} className={`rounded-[4px] bg-gradient-to-tr from-[#f09433] via-[#e6683c] to-[#bc1888] flex items-center justify-center transform-gpu shrink-0`}>
-    <div className="w-[60%] h-[60%] border-[1.5px] border-white rounded-[3px] flex items-center justify-center">
+const Instagram_Icon = ({ size = ICON_SIZE }: { size?: number }) => (
+  <div style={{ width: size, height: size }} className={`rounded-[6px] bg-gradient-to-tr from-[#f09433] via-[#e6683c] to-[#bc1888] flex items-center justify-center transform-gpu shrink-0`}>
+    <div className="w-[60%] h-[60%] border-[1.5px] border-white rounded-[4px] flex items-center justify-center">
       <div className="w-[30%] h-[30%] bg-white rounded-full"/>
     </div>
   </div>
@@ -278,11 +274,6 @@ export default function Home() {
     }
   }, []);
 
-  /**
-   * 🚀 FREE PRE-LOGIN SELECTION LOGIC (DEMO MODE ENABLED)
-   * If not authenticated, we just update local state to "feel" interactive.
-   * If authenticated, we also update state, but visual dimming happens below.
-   */
   const handleModelSelect = (modelId: string) => {
     if (!isTokenSaved) {
       setActiveModel(modelId);
@@ -551,16 +542,9 @@ export default function Home() {
 
   const btn = "transition-all duration-[120ms] ease-out active:scale-[0.93] transform-gpu will-change-transform";
 
-  const pillBase = [
-    "bg-[#E5E7EB] border border-white/5 cursor-pointer overflow-hidden",
-    btn,
-    "hover:bg-[#D1D5DB]",
-    "flex flex-row h-[48px] w-full px-[14px] gap-[10px] justify-start items-center rounded-[10px]", 
-  ].join(" ");
-
-  // 🚀 FIXED: Post-login blurring logic. If authenticated, unselected items blur.
+  // 🚀 FIXED: Height increased to 60px. Changed text visibility sizes and layout gaps.
   const getButtonClass = (isActive: boolean) => {
-      let classes = pillBase;
+      let classes = `bg-[#E5E7EB] border border-white/5 cursor-pointer overflow-hidden ${btn} hover:bg-[#D1D5DB] flex flex-row h-[60px] w-full px-[16px] gap-[12px] justify-start items-center rounded-[12px]`;
       if (status === "authenticated" && !isActive) {
           classes += " opacity-50 grayscale transition-opacity duration-300";
       }
@@ -644,12 +628,12 @@ export default function Home() {
         .icon-lift{transition:transform .2s cubic-bezier(.34,1.56,.64,1)}
         .icon-lift:hover{transform:scale(1.12) rotate(-4deg)}
         
-        .ptx-name{font-size:12px;font-weight:800;color:#111827;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:0.02em}
-        .ptx-sub {display:none} 
-        .ptx-soon{font-size:9px;font-weight:800;color:#6b7280;text-transform:uppercase;margin-left:auto;}
+        /* 🚀 FIXED: Increased font size for legibility and clear names */
+        .ptx-name{font-size:15px;font-weight:900;color:#111827;white-space:nowrap;letter-spacing:0.01em}
+        .ptx-soon{font-size:10px;font-weight:900;color:#6b7280;text-transform:uppercase;margin-left:auto;}
         
         @media(max-width:1024px){
-          .ptx-name{font-size:11px;}
+          .ptx-name{font-size:12px;text-overflow:ellipsis;overflow:hidden;}
         }
         
         .orange-glow{box-shadow:0 0 28px rgba(249,115,22,.48)}
@@ -716,7 +700,8 @@ export default function Home() {
           Avoid all technical complexity — one-click deploy your own 24/7 active Personal AI Assistant for WhatsApp, Telegram & Instagram. No code. No servers. Just results.
         </p>
 
-        <div className="anim-card card-shimmer tilt-el relative w-full max-w-[900px] rounded-[24px] p-6 md:p-8 mb-8 overflow-hidden bg-[#0A0A0D] border border-white/[0.06]">
+        {/* 🚀 FIXED: Widened container to 1100px so full names fit comfortably */}
+        <div className="anim-card card-shimmer tilt-el relative w-full max-w-[1100px] rounded-[24px] p-6 md:p-8 mb-8 overflow-hidden bg-[#0A0A0D] border border-white/[0.06]">
           
             <p className="text-[10px] font-black tracking-[.2em] uppercase text-gray-500 text-left flex items-center gap-2 border-b border-white/5 pb-3 mb-4">
               <span className="w-4 h-4 text-[9px] rounded bg-white/10 flex items-center justify-center text-white">1</span>
@@ -725,31 +710,31 @@ export default function Home() {
             <div className="grid grid-cols-2 md:grid-cols-5 gap-[12px] mb-8">
               <button aria-label="Select GPT-5.4 Pro Model" data-spring onClick={() => handleModelSelect("gpt-5.4 Pro")} disabled={isTokenSaved && activeModel!=="gpt-5.4 Pro"}
                 className={getButtonClass(modelActive("gpt-5.4 Pro"))}>
-                <OpenAI_Icon/>
-                <span className="ptx-name">GPT-5.4</span>
+                <OpenAI_Icon size={ICON_SIZE}/>
+                <span className="ptx-name">GPT-5.4 Pro</span>
               </button>
 
               <button aria-label="Select Claude 3 Model" data-spring onClick={() => handleModelSelect("Claude Opus 4.6")} disabled={isTokenSaved && activeModel!=="Claude Opus 4.6"}
                 className={getButtonClass(modelActive("Claude Opus 4.6"))}>
-                <Claude_Icon/>
-                <span className="ptx-name">Claude</span>
+                <Claude_Icon size={ICON_SIZE}/>
+                <span className="ptx-name">Claude Opus 4.6</span>
               </button>
 
               <button aria-label="Select Gemini Model" data-spring onClick={() => handleModelSelect("gemini 3.1 Pro")} disabled={isTokenSaved && activeModel!=="gemini 3.1 Pro"}
                 className={getButtonClass(modelActive("gemini 3.1 Pro"))}>
-                <Gemini_Icon/>
-                <span className="ptx-name">Gemini</span>
+                <Gemini_Icon size={ICON_SIZE}/>
+                <span className="ptx-name">Gemini 3.1 Pro</span>
               </button>
 
               <button aria-label="Select OmniAgent Fallback Model" data-spring onClick={() => handleModelSelect("omni 3 nexus")} disabled={isTokenSaved && activeModel!=="omni 3 nexus"}
                 className={getButtonClass(modelActive("omni 3 nexus"))}>
-                <Omni_Icon/>
+                <Omni_Icon size={ICON_SIZE}/>
                 <span className="ptx-name">Omni 3 Nexus</span>
               </button>
 
-              <div aria-label="Llama 4 coming soon" className={[pillBase, "opacity-40 cursor-not-allowed pointer-events-none col-span-2 md:col-span-1"].join(" ")}>
-                <Llama_Icon/>
-                <span className="ptx-name text-gray-400">Llama 4</span>
+              <div aria-label="Llama 4 coming soon" className={`bg-[#E5E7EB] border border-white/5 overflow-hidden opacity-40 cursor-not-allowed pointer-events-none flex flex-row h-[60px] w-full px-[16px] gap-[12px] justify-start items-center rounded-[12px] col-span-2 md:col-span-1`}>
+                <Llama_Icon size={ICON_SIZE}/>
+                <span className="ptx-name text-gray-500">Llama 4</span>
                 <span className="ptx-soon">SOON</span>
               </div>
             </div>
@@ -761,33 +746,33 @@ export default function Home() {
             <div className="grid grid-cols-2 md:grid-cols-5 gap-[12px] mb-8">
               <button aria-label="Connect Telegram AI Bot" data-spring onClick={()=>handleChannelSelect("telegram")} disabled={isTokenSaved && activeChannel!=="telegram"}
                 className={getButtonClass(chanActive("telegram"))}>
-                <Telegram_Icon/>
+                <Telegram_Icon size={ICON_SIZE}/>
                 <span className="ptx-name">Telegram</span>
               </button>
 
               <button aria-label="Connect WhatsApp AI Agent" data-spring onClick={()=>handleChannelSelect("whatsapp")} disabled={isTokenSaved && activeChannel!=="whatsapp"}
                 className={getButtonClass(chanActive("whatsapp"))}>
-                <WhatsApp_Icon/>
+                <WhatsApp_Icon size={ICON_SIZE}/>
                 <span className="ptx-name">WhatsApp</span>
               </button>
               
               <button aria-label="Connect Instagram Auto Reply Bot" data-spring onClick={()=>handleChannelSelect("instagram")} disabled={isTokenSaved && activeChannel!=="instagram"}
                 className={getButtonClass(chanActive("instagram"))}>
-                <Instagram_Icon/>
+                <Instagram_Icon size={ICON_SIZE}/>
                 <span className="ptx-name">Instagram</span>
               </button>
 
-              <div aria-label="Discord Bot Coming Soon" className={[pillBase, "opacity-40 cursor-not-allowed pointer-events-none"].join(" ")}>
-                <Discord_Icon/>
-                <span className="ptx-name text-gray-400">Discord</span>
+              <div aria-label="Discord Bot Coming Soon" className={`bg-[#E5E7EB] border border-white/5 overflow-hidden opacity-40 cursor-not-allowed pointer-events-none flex flex-row h-[60px] w-full px-[16px] gap-[12px] justify-start items-center rounded-[12px]`}>
+                <Discord_Icon size={ICON_SIZE}/>
+                <span className="ptx-name text-gray-500">Discord</span>
                 <span className="ptx-soon">SOON</span>
               </div>
 
-              <div aria-label="Slack Bot Coming Soon" className={[pillBase, "opacity-40 cursor-not-allowed pointer-events-none col-span-2 md:col-span-1"].join(" ")}>
+              <div aria-label="Slack Bot Coming Soon" className={`bg-[#E5E7EB] border border-white/5 overflow-hidden opacity-40 cursor-not-allowed pointer-events-none flex flex-row h-[60px] w-full px-[16px] gap-[12px] justify-start items-center rounded-[12px] col-span-2 md:col-span-1`}>
                 <div className="w-[20px] h-[20px] rounded-full flex items-center justify-center shrink-0 bg-[#4a154b]">
                   <svg viewBox="0 0 24 24" width="12" height="12" fill="white"><path d="M5.04 15.44a2.52 2.52 0 01-5.04 0 2.52 2.52 0 012.52-2.52h2.52v2.52zm1.26 0a2.52 2.52 0 015.04 0v6.3a2.52 2.52 0 01-5.04 0v-6.3zM8.56 5.04a2.52 2.52 0 010-5.04 2.52 2.52 0 012.52 2.52v2.52H8.56zm0 1.26a2.52 2.52 0 010 5.04H2.26a2.52 2.52 0 010-5.04h6.3z"/></svg>
                 </div>
-                <span className="ptx-name text-gray-400">Slack</span>
+                <span className="ptx-name text-gray-500">Slack</span>
                 <span className="ptx-soon">SOON</span>
               </div>
             </div>
