@@ -4,17 +4,32 @@
  * ==============================================================================================
  * @file app/api/config/route.ts
  * @description Securely provisions the user's database record using real payload data.
- * FIXED: Removed all dummy/testing billing logic.
- * FIXED: Uses supabaseAdmin client for RLS bypass.
- * FIXED: Exact Model Names and user-selected states are strictly preserved.
+ * FIXED: Removed '@/' path alias to resolve Vercel 'Module not found' build errors.
+ * FIXED: Instantiated Supabase client directly in the file for bulletproof deployment.
+ * FIXED: Translated all documentation to professional English.
  * * ALL RIGHTS RESERVED. CLAWLINK INC.
  * ==============================================================================================
  */
 
 import { NextResponse } from "next/server";
-import { supabaseAdmin } from "@/lib/supabase"; // 🚀 SECURE: Using admin client
+import { createClient } from "@supabase/supabase-js";
 
 export const dynamic = "force-dynamic";
+
+// Initialize Supabase directly to prevent path alias resolution errors during Vercel builds
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
+
+if (!supabaseUrl || !supabaseKey) {
+    console.error("[KNOX_SECURITY] FATAL: Supabase environment variables are missing.");
+}
+
+const supabaseAdmin = createClient(supabaseUrl, supabaseKey, {
+    auth: {
+        persistSession: false,
+        autoRefreshToken: false,
+    }
+});
 
 function sanitizeInput(input: string | null | undefined): string {
     if (!input) return "";
@@ -33,7 +48,7 @@ export async function POST(req: Request) {
     const waPhoneId = sanitizeInput(body.waPhoneId);
     const waPhoneNumber = sanitizeInput(body.waPhoneNumber);
     
-    // 🚀 REAL STATE: Directly taking what the user/system selected, no forced defaults
+    // Real state extracted directly from the user's active session
     const actualPlan = sanitizeInput(body.plan || "free").toLowerCase();
     const actualPlanStatus = sanitizeInput(body.plan_status || "Inactive");
     const actualBotStatus = sanitizeInput(body.bot_status || "Sleeping");
@@ -42,7 +57,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: false, error: "Secure session email is required." }, { status: 400 });
     }
 
-    // 🚀 STRICT EXACT MATCH ROUTING: Maps exactly to what is displayed on UI
+    // Strict exact match routing to ensure UI selection matches Database exactly
     let providerToSave = "openai";
     let exactModelVersion = "GPT-5.4 Pro";
     const safeModel = (selectedModel || "GPT-5.4 Pro").toLowerCase();
@@ -55,7 +70,7 @@ export async function POST(req: Request) {
         providerToSave = "google"; exactModelVersion = "Gemini 3.1 Pro";
     }
 
-    // Full Database Payload Construction based on REAL data
+    // Construct the full database payload
     const payload: any = {
         ai_model: exactModelVersion, 
         selected_model: exactModelVersion, 
@@ -68,7 +83,7 @@ export async function POST(req: Request) {
         updated_at: new Date().toISOString()
     };
 
-    // Secure Token injection based on selected channel
+    // Secure token injection mapped to the appropriate channel
     if (selectedChannel === "telegram" && telegramToken) {
         payload.telegram_token = telegramToken;
     } else if (selectedChannel === "whatsapp" && waPhoneId) {
@@ -76,11 +91,11 @@ export async function POST(req: Request) {
         payload.whatsapp_token = telegramToken; 
         if (waPhoneNumber) payload.wa_phone_number = waPhoneNumber;
     } else if (selectedChannel === "instagram" && waPhoneId) {
-        payload.wa_phone_id = waPhoneId; 
+        payload.instagram_account_id = waPhoneId; 
         payload.instagram_token = telegramToken; 
     }
 
-    // 🚀 REAL SECURE DB UPSERT: No dummy logic, pure database state management
+    // Secure database upsert via Admin Client (Update if exists, Insert if new)
     const { error: upsertError } = await supabaseAdmin
         .from("user_configs")
         .upsert(
@@ -88,16 +103,18 @@ export async function POST(req: Request) {
             { onConflict: "email" }
         );
 
-    if (upsertError) throw new Error("DB Operation Error: " + upsertError.message);
+    if (upsertError) throw new Error("Database Operation Failed: " + upsertError.message);
 
-    // Dynamic Link Generation for the Live Bot
+    // Dynamic Link Generation for the Live Bot integration
     let botLink = "";
     if (selectedChannel === "telegram" && telegramToken) {
       try {
         const tRes = await fetch(`https://api.telegram.org/bot${telegramToken}/getMe`);
         const tData = await tRes.json();
         if (tData.ok) { botLink = `https://t.me/${tData.result.username}`; }
-      } catch (err) {}
+      } catch (err) {
+        console.error("Failed to verify Telegram details silently.");
+      }
     } else if (selectedChannel === "whatsapp") {
       botLink = waPhoneNumber ? `https://api.whatsapp.com/send?phone=${waPhoneNumber.replace(/\D/g, '')}` : "https://business.facebook.com/wa/manage/";
     } else if (selectedChannel === "instagram") {
