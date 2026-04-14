@@ -4,9 +4,9 @@
  * ==============================================================================================
  * @file app/api/config/route.ts
  * @description Securely provisions the user's database record using real payload data.
+ * FIXED: Removed manual 'updated_at' and 'created_at' insertions to resolve Supabase schema cache errors.
  * FIXED: Removed '@/' path alias to resolve Vercel 'Module not found' build errors.
  * FIXED: Instantiated Supabase client directly in the file for bulletproof deployment.
- * FIXED: Translated all documentation to professional English.
  * * ALL RIGHTS RESERVED. CLAWLINK INC.
  * ==============================================================================================
  */
@@ -70,7 +70,8 @@ export async function POST(req: Request) {
         providerToSave = "google"; exactModelVersion = "Gemini 3.1 Pro";
     }
 
-    // Construct the full database payload
+    // Construct the full database payload. 
+    // CRITICAL FIX: Do NOT pass created_at or updated_at manually to avoid schema cache errors.
     const payload: any = {
         ai_model: exactModelVersion, 
         selected_model: exactModelVersion, 
@@ -79,8 +80,7 @@ export async function POST(req: Request) {
         plan_tier: actualPlan,
         plan_status: actualPlanStatus,
         bot_status: actualBotStatus,
-        selected_channel: selectedChannel || "telegram",
-        updated_at: new Date().toISOString()
+        selected_channel: selectedChannel || "telegram"
     };
 
     // Secure token injection mapped to the appropriate channel
@@ -99,7 +99,7 @@ export async function POST(req: Request) {
     const { error: upsertError } = await supabaseAdmin
         .from("user_configs")
         .upsert(
-            { email: email, ...payload, created_at: new Date().toISOString() }, 
+            { email: email, ...payload }, 
             { onConflict: "email" }
         );
 
