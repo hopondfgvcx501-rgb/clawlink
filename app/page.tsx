@@ -5,11 +5,11 @@
  * CLAWLINK ENTERPRISE FRONTEND SECURE MODULE
  * ==============================================================================================
  * @file app/page.tsx
- * @version 11.0.0 (Ultra-Smooth Animation Polish & Tagline Update)
+ * @version 11.2.0 (UI State Fixes & Identity Display)
  * @description Main onboarding interface with strict Product-Led Growth (PLG) routing.
- * FIXED: Integrated premium 220Hz-feel animations (Ripple, Float Lift, Spring Click).
- * FIXED: Added "fastest server 1- click deploy" tagline below the main heading.
- * FIXED: Kept core DB/Auth logic completely locked and untouched.
+ * FIXED: Unselected buttons no longer blur automatically. They remain fully visible until a selection is made.
+ * FIXED: Display the user's active email session directly above the Finalize Deployment CTA.
+ * FIXED: Added dynamic 'Deploying' states to CTA button for premium user feedback.
  * Integrates KNOX Level-7 Apple-grade security protocol.
  * * ALL RIGHTS RESERVED. CLAWLINK INC.
  * ==============================================================================================
@@ -23,7 +23,7 @@ import { loadStripe } from "@stripe/stripe-js";
 import {
   Globe, Database, Mic, Zap, MessageSquare, Activity,
   LogOut, Shield, ExternalLink, CheckCircle2, Copy,
-  MessageCircle, X, Send, Mail
+  MessageCircle, X, Send, Mail, User
 } from "lucide-react";
 import Image from "next/image";
 
@@ -252,8 +252,9 @@ export default function Home() {
   const [isDeploying, setIsDeploying] = useState(false);
   const [botLink, setBotLink] = useState("");
   
-  const [activeModel, setActiveModel] = useState("gpt-5.4 Pro");
-  const [activeChannel, setActiveChannel] = useState("telegram");
+  // 🚀 FIXED: Initialize with null so buttons start FULLY VISIBLE until a user explicitly clicks.
+  const [activeModel, setActiveModel] = useState<string | null>(null);
+  const [activeChannel, setActiveChannel] = useState<string | null>(null);
   
   const [currency, setCurrency] = useState<"USD"|"INR">("USD");
   const [currencySymbol, setCurrencySymbol] = useState("$");
@@ -295,6 +296,11 @@ export default function Home() {
     if (status !== "authenticated") {
         signIn("google");
     } else {
+        // If they click finalize without selecting, default them or alert
+        if(!activeChannel || !activeModel) {
+            alert("Please select a Model and a Channel first.");
+            return;
+        }
         handleOpenIntegration(activeChannel);
     }
   };
@@ -370,7 +376,6 @@ export default function Home() {
     };
     cgRaf = requestAnimationFrame(animCG);
 
-    // 🚀 INTEGRATED 100+ Showcase: Ripple Effect for all buttons with data-ripple
     const onRippleClick = (e: MouseEvent) => {
       const t = e.currentTarget as HTMLElement;
       const r = t.getBoundingClientRect();
@@ -385,7 +390,6 @@ export default function Home() {
       el.addEventListener('click', onRippleClick as EventListener);
     });
 
-    // 🚀 INTEGRATED 100+ Showcase: Spring/Elastic Bounce effect on click
     const onSpringClick = (e: Event) => {
       const t = e.currentTarget as HTMLElement;
       t.classList.remove('spr-play');
@@ -440,13 +444,14 @@ export default function Home() {
     setIsTelegramModalOpen(true);
   };
   
+  // 🚀 FIXED: Deployment Logic now securely tied to Database and immediately routes to dashboard.
   const handleDeploy = async () => {
     setIsDeploying(true);
     try {
       const payload = {
         email: session?.user?.email,
-        selectedModel: activeModel,
-        selectedChannel: activeChannel,
+        selectedModel: activeModel || "gpt-5.4 Pro",
+        selectedChannel: activeChannel || "telegram",
         telegramToken: activeChannel === "telegram" ? telegramToken : "",
         waPhoneId: (activeChannel === "whatsapp" || activeChannel === "instagram") ? waPhoneId : "",
         waPhoneNumber: activeChannel === "whatsapp" ? waPhoneNumber : "",
@@ -471,15 +476,16 @@ export default function Home() {
         router.push("/dashboard"); 
       } else {
         alert("Configuration Error: " + data.error);
+        setIsDeploying(false);
       }
     } catch (error) {
       console.error("Deployment Error:", error);
       alert("Network exception encountered.");
-    } finally {
       setIsDeploying(false);
-    }
+    } 
   };
 
+  // 🚀 FIXED: Direct chaining of Token Verification -> Dashboard Deployment (1-Click Fix)
   const handleSaveToken = async () => {
     if (activeChannel === "telegram" && !telegramToken.trim()) {
       alert("Please supply a valid structured Telegram API Token."); return;
@@ -497,10 +503,17 @@ export default function Home() {
       if (data.success) { 
         setIsTokenSaved(true); 
         setIsTelegramModalOpen(false); 
+        // Force the deployment sequence immediately after successful verification
+        handleDeploy();
       }
-      else alert("❌ VERIFICATION REJECTED: " + data.error);
-    } catch { alert("Network integrity lost during verification handshake."); }
-    finally { setIsVerifying(false); }
+      else {
+          alert("❌ VERIFICATION REJECTED: " + data.error);
+          setIsVerifying(false);
+      }
+    } catch { 
+        alert("Network integrity lost during verification handshake."); 
+        setIsVerifying(false);
+    }
   };
 
   const handleSendHelpRequest = () => {
@@ -541,12 +554,12 @@ export default function Home() {
 
   if (!isMounted) return null;
 
-  // 🚀 INTEGRATED 100+ Showcase: Smooth Float Lift Hover
   const btn = "transition-all duration-[120ms] ease-out hover:-translate-y-1 hover:shadow-lg transform-gpu will-change-transform";
 
-  const getButtonClass = (isActive: boolean) => {
+  // 🚀 FIXED: Only blur unselected items IF a category has been actively selected.
+  const getButtonClass = (isActive: boolean, categorySelected: boolean) => {
       let classes = `bg-[#E5E7EB] border border-white/5 cursor-pointer overflow-hidden ${btn} hover:bg-[#D1D5DB] flex flex-row h-[60px] w-full px-[16px] gap-[12px] justify-start items-center rounded-[12px]`;
-      if (status === "authenticated" && !isActive) {
+      if (status === "authenticated" && categorySelected && !isActive) {
           classes += " opacity-50 grayscale transition-opacity duration-300";
       }
       return classes;
@@ -672,13 +685,13 @@ export default function Home() {
             <div className="hidden md:flex items-center gap-3">
               <img src={session?.user?.image || "https://ui-avatars.com/api/?name=User&background=random"} className="w-8 h-8 rounded-full border border-white/20 ring-1 ring-white/10" alt="User Avatar"/>
               <button aria-label="Sign out of ClawLink" onClick={()=>signOut()}
-                className={`flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-widest text-gray-500 hover:text-white ${btn}`}>
+                className={`flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-widest text-gray-500 hover:text-white transition-all duration-150`}>
                 <LogOut className="w-4 h-4"/> Logout
               </button>
             </div>
           )}
           <button aria-label="Contact ClawLink Support" data-spring onClick={()=>setIsSupportModalOpen(true)}
-            className={`flex items-center gap-2 text-[11px] font-bold uppercase tracking-widest text-gray-400 hover:text-white px-4 py-2 rounded-full border border-white/10 hover:border-white/20 bg-white/5 transition-all ${btn}`}>
+            className={`flex items-center gap-2 text-[11px] font-bold uppercase tracking-widest text-gray-400 hover:text-white px-4 py-2 rounded-full border border-white/10 hover:border-white/20 bg-white/5 transition-all hover:-translate-y-1 hover:shadow-lg`}>
             <MessageSquare className="w-4 h-4 text-orange-500"/>
             <span className="hidden sm:inline">Support</span>
           </button>
@@ -692,12 +705,10 @@ export default function Home() {
           LIVE NOW &nbsp;·&nbsp; 30-SECOND DEPLOY
         </div>
 
-        {/* 🚀 FIXED: Kept Heading on a single line safely */}
         <h1 className="anim-h1 text-[clamp(2.5rem,5vw,5rem)] font-black leading-[1.1] tracking-[-0.04em] text-white w-full px-4 mb-2">
           Deploy <span className="grad-text">OpenClaw AI Assistance</span>
         </h1>
         
-        {/* 🚀 FIXED: Added the tagline requested by the CEO directly below the heading */}
         <p className="anim-sub text-white font-bold text-[18px] md:text-[22px] mb-8 uppercase tracking-widest" style={{letterSpacing: "0.15em"}}>
           FASTEST SERVER 1-CLICK DEPLOY
         </p>
@@ -714,25 +725,25 @@ export default function Home() {
             </p>
             <div className="grid grid-cols-2 md:grid-cols-5 gap-[12px] mb-8">
               <button aria-label="Select GPT-5.4 Pro Model" data-spring onClick={() => handleModelSelect("gpt-5.4 Pro")} disabled={isTokenSaved && activeModel!=="gpt-5.4 Pro"}
-                className={getButtonClass(modelActive("gpt-5.4 Pro"))}>
+                className={getButtonClass(modelActive("gpt-5.4 Pro"), activeModel !== null)}>
                 <OpenAI_Icon size={ICON_SIZE}/>
                 <span className="ptx-name">GPT-5.4 Pro</span>
               </button>
 
               <button aria-label="Select Claude 3 Model" data-spring onClick={() => handleModelSelect("Claude Opus 4.6")} disabled={isTokenSaved && activeModel!=="Claude Opus 4.6"}
-                className={getButtonClass(modelActive("Claude Opus 4.6"))}>
+                className={getButtonClass(modelActive("Claude Opus 4.6"), activeModel !== null)}>
                 <Claude_Icon size={ICON_SIZE}/>
                 <span className="ptx-name">Claude Opus 4.6</span>
               </button>
 
               <button aria-label="Select Gemini Model" data-spring onClick={() => handleModelSelect("gemini 3.1 Pro")} disabled={isTokenSaved && activeModel!=="gemini 3.1 Pro"}
-                className={getButtonClass(modelActive("gemini 3.1 Pro"))}>
+                className={getButtonClass(modelActive("gemini 3.1 Pro"), activeModel !== null)}>
                 <Gemini_Icon size={ICON_SIZE}/>
                 <span className="ptx-name">Gemini 3.1 Pro</span>
               </button>
 
               <button aria-label="Select OmniAgent Fallback Model" data-spring onClick={() => handleModelSelect("omni 3 nexus")} disabled={isTokenSaved && activeModel!=="omni 3 nexus"}
-                className={getButtonClass(modelActive("omni 3 nexus"))}>
+                className={getButtonClass(modelActive("omni 3 nexus"), activeModel !== null)}>
                 <Omni_Icon size={ICON_SIZE}/>
                 <span className="ptx-name">Omni 3 Nexus</span>
               </button>
@@ -750,19 +761,19 @@ export default function Home() {
             </p>
             <div className="grid grid-cols-2 md:grid-cols-5 gap-[12px] mb-8">
               <button aria-label="Connect Telegram AI Bot" data-spring onClick={()=>handleChannelSelect("telegram")} disabled={isTokenSaved && activeChannel!=="telegram"}
-                className={getButtonClass(chanActive("telegram"))}>
+                className={getButtonClass(chanActive("telegram"), activeChannel !== null)}>
                 <Telegram_Icon size={ICON_SIZE}/>
                 <span className="ptx-name">Telegram</span>
               </button>
 
               <button aria-label="Connect WhatsApp AI Agent" data-spring onClick={()=>handleChannelSelect("whatsapp")} disabled={isTokenSaved && activeChannel!=="whatsapp"}
-                className={getButtonClass(chanActive("whatsapp"))}>
+                className={getButtonClass(chanActive("whatsapp"), activeChannel !== null)}>
                 <WhatsApp_Icon size={ICON_SIZE}/>
                 <span className="ptx-name">WhatsApp</span>
               </button>
               
               <button aria-label="Connect Instagram Auto Reply Bot" data-spring onClick={()=>handleChannelSelect("instagram")} disabled={isTokenSaved && activeChannel!=="instagram"}
-                className={getButtonClass(chanActive("instagram"))}>
+                className={getButtonClass(chanActive("instagram"), activeChannel !== null)}>
                 <Instagram_Icon size={ICON_SIZE}/>
                 <span className="ptx-name">Instagram</span>
               </button>
@@ -804,12 +815,28 @@ export default function Home() {
 
               ) : (
                 <motion.div key="login" id="login-section" initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} transition={{duration:.12}} className="w-full flex flex-col items-center">
-                  <button aria-label="Login with Google" data-ripple data-spring onClick={handleLoginOrDeploy}
-                    className={`relative overflow-hidden w-full max-w-[600px] bg-white text-black py-4 rounded-[12px] flex items-center justify-center gap-3 text-[16px] font-black tracking-wide hover:-translate-y-1 hover:shadow-[0_10px_20px_rgba(255,255,255,0.2)] active:bg-gray-200 transition-all duration-150`}>
-                    <Google_Icon/> {status === "authenticated" ? "Finalize Deployment" : "Login & Deploy"}
+                  {/* 🚀 FIXED: Displayed active session email if user is logged in */}
+                  {status === "authenticated" && session?.user?.email && (
+                    <motion.div initial={{opacity: 0, y: 10}} animate={{opacity: 1, y: 0}} className="mb-3 flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/5 border border-white/10">
+                      <User className="w-3 h-3 text-gray-400" />
+                      <span className="text-xs text-gray-400 font-mono tracking-wide">Logged in as: <span className="text-white font-bold">{session.user.email}</span></span>
+                    </motion.div>
+                  )}
+                  
+                  <button aria-label="Login with Google" data-ripple data-spring onClick={handleLoginOrDeploy} disabled={isDeploying}
+                    className={`relative overflow-hidden w-full max-w-[600px] ${isDeploying ? 'bg-gray-300 cursor-not-allowed' : 'bg-white hover:scale-[1.02] hover:-translate-y-1 hover:shadow-[0_10px_20px_rgba(255,255,255,0.2)] active:bg-gray-200'} text-black py-4 rounded-[12px] flex items-center justify-center gap-3 text-[15px] font-black tracking-wide transition-all duration-150`}>
+                    {isDeploying ? (
+                      <span className="flex items-center gap-2">
+                         <Activity className="w-5 h-5 animate-spin" /> DEPLOYING TO SECURE SERVER...
+                      </span>
+                    ) : (
+                      <>
+                        <Google_Icon/> {status === "authenticated" ? "Finalize Deployment" : "Login & Deploy"}
+                      </>
+                    )}
                   </button>
                   <p className="mt-4 text-[13px] text-gray-400 text-center leading-relaxed">
-                    Deploying <strong className="text-white">{PRICING_DATA[activeModel].name}</strong> to <strong className="text-white capitalize">{activeChannel}</strong>.{" "}
+                    Deploying <strong className="text-white">{PRICING_DATA[activeModel || "gpt-5.4 Pro"].name}</strong> to <strong className="text-white capitalize">{activeChannel || "Telegram"}</strong>.{" "}
                     <span className="text-[#34A853] font-semibold text-[13px]">Limited enterprise servers available.</span>
                   </p>
                 </motion.div>
