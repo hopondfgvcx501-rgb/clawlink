@@ -5,12 +5,12 @@
  * CLAWLINK ENTERPRISE FRONTEND SECURE MODULE
  * ==============================================================================================
  * @file app/page.tsx
- * @version 11.3.0 (Smart Routing & Desktop App Ready)
+ * @version 12.0.0 (Cinematic UI Polish & Brand Glows)
  * @description Main onboarding interface with strict Product-Led Growth (PLG) routing.
- * FIXED: Unselected buttons no longer blur automatically. They remain fully visible until a selection is made.
- * FIXED: Display the user's active email session directly above the Finalize Deployment CTA.
- * FIXED: Added dynamic 'Deploying' states to CTA button for premium user feedback.
- * FIXED: Added Smart Routing - If user has already deployed, show "Open Command Center" CTA to prevent getting stuck on setup page.
+ * FIXED: Added dynamic brand-colored border glows to model/channel buttons.
+ * FIXED: Implemented 'ColorFlow' text animation on main heading.
+ * FIXED: Added slow-moving 'Creative Agency' particle background effect.
+ * FIXED: Replaced standard spinners with modern dot-bounce loading animations.
  * Integrates KNOX Level-7 Apple-grade security protocol.
  * * ALL RIGHTS RESERVED. CLAWLINK INC.
  * ==============================================================================================
@@ -265,7 +265,6 @@ export default function Home() {
   const [helpStatus, setHelpStatus] = useState<"idle"|"sending"|"sent">("idle");
   const [isSupportModalOpen, setIsSupportModalOpen] = useState(false);
 
-  // 🚀 FIXED: Smart User Detection (Prevents getting stuck on setup screen)
   const [hasDeployedBefore, setHasDeployedBefore] = useState(false);
 
   useEffect(() => {
@@ -277,7 +276,6 @@ export default function Home() {
     }
   }, []);
 
-  // 🚀 FIXED: Check DB if user already has an active deployment
   useEffect(() => {
     if (status === "authenticated" && session?.user?.email) {
         const checkDeploymentStatus = async () => {
@@ -575,12 +573,18 @@ export default function Home() {
 
   if (!isMounted) return null;
 
-  const btn = "transition-all duration-[120ms] ease-out hover:-translate-y-1 hover:shadow-lg transform-gpu will-change-transform";
+  // 🚀 FIXED: Added hover border colors specific to the brand
+  const getButtonClass = (isActive: boolean, categorySelected: boolean, brandColorClass: string) => {
+      let classes = `bg-[#0F0F12] border border-white/5 cursor-pointer overflow-hidden transition-all duration-300 ease-out transform-gpu will-change-transform flex flex-row h-[64px] w-full px-[20px] gap-[14px] justify-start items-center rounded-[16px]`;
+      
+      if (isActive) {
+          classes += ` scale-[1.02] shadow-[0_0_20px_rgba(0,0,0,0.5)] border-t border-b-0 border-l-0 border-r-0 ${brandColorClass.replace('hover:', '')} !bg-[#15151A]`;
+      } else {
+          classes += ` ${brandColorClass} hover:bg-[#15151A] hover:-translate-y-1 hover:shadow-xl`;
+      }
 
-  const getButtonClass = (isActive: boolean, categorySelected: boolean) => {
-      let classes = `bg-[#E5E7EB] border border-white/5 cursor-pointer overflow-hidden ${btn} hover:bg-[#D1D5DB] flex flex-row h-[60px] w-full px-[16px] gap-[12px] justify-start items-center rounded-[12px]`;
       if (status === "authenticated" && categorySelected && !isActive) {
-          classes += " opacity-50 grayscale transition-opacity duration-300";
+          classes += " opacity-40 grayscale";
       }
       return classes;
   };
@@ -607,6 +611,76 @@ export default function Home() {
         .sr-left{opacity:0;transform:translateX(-20px);transition:opacity .32s cubic-bezier(.16,1,.3,1),transform .32s cubic-bezier(.16,1,.3,1)}
         .sr-rght{opacity:0;transform:translateX(20px);transition:opacity .32s cubic-bezier(.16,1,.3,1),transform .32s cubic-bezier(.16,1,.3,1)}
         .sr-vis {opacity:1!important;transform:none!important}
+        
+        /* 🚀 NEW: Creative Agency Particle Background */
+        .particle-bg {
+          position: fixed;
+          top: 0; left: 0; right: 0; bottom: 0;
+          background-image: 
+            radial-gradient(circle at 15% 50%, rgba(249, 115, 22, 0.04) 0%, transparent 50%),
+            radial-gradient(circle at 85% 30%, rgba(99, 102, 241, 0.04) 0%, transparent 50%);
+          background-size: 100% 100%;
+          z-index: 0;
+          pointer-events: none;
+        }
+        .stars {
+          position: absolute;
+          top: 0; left: 0; right: 0; bottom: 0;
+          background-image: 
+            radial-gradient(2px 2px at 20px 30px, #ffffff, rgba(0,0,0,0)),
+            radial-gradient(2px 2px at 40px 70px, #ffffff, rgba(0,0,0,0)),
+            radial-gradient(2px 2px at 50px 160px, #ffffff, rgba(0,0,0,0)),
+            radial-gradient(2px 2px at 90px 40px, #ffffff, rgba(0,0,0,0)),
+            radial-gradient(2px 2px at 130px 80px, #ffffff, rgba(0,0,0,0)),
+            radial-gradient(2px 2px at 160px 120px, #ffffff, rgba(0,0,0,0));
+          background-repeat: repeat;
+          background-size: 200px 200px;
+          animation: star Drift 100s linear infinite;
+          opacity: 0.15;
+        }
+        @keyframes star Drift {
+          0% { transform: translateY(0) translateX(0); }
+          100% { transform: translateY(-200px) translateX(-100px); }
+        }
+
+        /* 🚀 NEW: ColorFlow Text Animation */
+        .color-flow-text {
+          background: linear-gradient(
+            to right,
+            #FF3366, #FF9933, #4ADE80, #3B82F6, #8B5CF6, #FF3366
+          );
+          background-size: 200% auto;
+          color: transparent;
+          -webkit-background-clip: text;
+          background-clip: text;
+          animation: colorFlow 5s linear infinite;
+        }
+        @keyframes colorFlow {
+          0% { background-position: 0% center; }
+          100% { background-position: -200% center; }
+        }
+
+        /* 🚀 NEW: Bouncing Dots Loader */
+        .bouncing-dots {
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          gap: 6px;
+        }
+        .bouncing-dots span {
+          width: 6px;
+          height: 6px;
+          background-color: currentColor;
+          border-radius: 50%;
+          animation: bounce 1.4s infinite ease-in-out both;
+        }
+        .bouncing-dots span:nth-child(1) { animation-delay: -0.32s; }
+        .bouncing-dots span:nth-child(2) { animation-delay: -0.16s; }
+        @keyframes bounce {
+          0%, 80%, 100% { transform: scale(0); }
+          40% { transform: scale(1); }
+        }
+
         .cg-dot{
           position:fixed;width:380px;height:380px;border-radius:50%;
           pointer-events:none;z-index:1;
@@ -629,21 +703,7 @@ export default function Home() {
         .spr-play{animation:spr .4s cubic-bezier(.34,1.56,.64,1)!important}
         .tilt-el{will-change:transform;transition:transform .08s ease-out}
         .mt{display:block;transition:transform .22s cubic-bezier(.34,1.56,.64,1);pointer-events:none}
-        @keyframes grs{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
-        .grad-text{
-          background:linear-gradient(135deg,#f97316 0%,#fb923c 35%,#fbbf24 60%,#f97316 100%)!important;
-          background-size:250% 250%!important;
-          animation:grs 2.8s ease infinite!important;
-          -webkit-background-clip:text!important;
-          -webkit-text-fill-color:transparent!important;
-          background-clip:text!important;
-        }
-        @keyframes fo1{0%,100%{transform:translateY(0) translateX(0)}50%{transform:translateY(-26px) translateX(12px)}}
-        @keyframes fo2{0%,100%{transform:translateY(0) translateX(0)}50%{transform:translateY(20px) translateX(-16px)}}
-        @keyframes fo3{0%,100%{transform:translateY(0)}50%{transform:translateY(-18px)}}
-        .float-a{animation:fo1 7s ease-in-out infinite}
-        .float-b{animation:fo2 9s ease-in-out infinite 1.5s}
-        .float-c{animation:fo3 6s ease-in-out infinite 3s}
+        
         .card-shimmer::before{
           content:'';position:absolute;top:0;left:15%;right:15%;height:1px;
           background:linear-gradient(90deg,transparent,rgba(249,115,22,.55),transparent)
@@ -662,7 +722,7 @@ export default function Home() {
         .icon-lift{transition:transform .2s cubic-bezier(.34,1.56,.64,1)}
         .icon-lift:hover{transform:scale(1.12) rotate(-4deg)}
         
-        .ptx-name{font-size:15px;font-weight:900;color:#111827;white-space:nowrap;letter-spacing:0.01em}
+        .ptx-name{font-size:14px;font-weight:800;color:#fff;white-space:nowrap;letter-spacing:0.02em}
         .ptx-soon{font-size:10px;font-weight:900;color:#6b7280;text-transform:uppercase;margin-left:auto;}
         
         @media(max-width:1024px){
@@ -673,12 +733,7 @@ export default function Home() {
         .orange-glow:hover{box-shadow:0 0 48px rgba(249,115,22,.65)}
       `}}/>
 
-      <div className="fixed top-[-20%] right-[-8%] w-[800px] h-[800px] rounded-full pointer-events-none z-0 float-a"
-           style={{background:"radial-gradient(circle,rgba(249,115,22,0.18) 0%,transparent 65%)",transform:"translateZ(0)"}}/>
-      <div className="fixed bottom-[-20%] left-[-8%] w-[800px] h-[800px] rounded-full pointer-events-none z-0 float-b"
-           style={{background:"radial-gradient(circle,rgba(99,102,241,0.15) 0%,transparent 65%)",transform:"translateZ(0)"}}/>
-      <div className="fixed top-[30%] left-[40%] w-[500px] h-[500px] rounded-full pointer-events-none z-0 float-c"
-           style={{background:"radial-gradient(circle,rgba(168,85,247,0.07) 0%,transparent 70%)"}}/>
+      <div className="particle-bg"><div className="stars"></div></div>
 
       <nav id="clnav" aria-label="Main Navigation"
         className="fixed top-0 left-0 right-0 z-[100] h-[64px] flex items-center justify-between px-6 md:px-12 transition-colors duration-200"
@@ -708,7 +763,6 @@ export default function Home() {
                 className={`flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-widest text-gray-500 hover:text-white transition-all duration-150`}>
                 <LogOut className="w-4 h-4"/> Logout
               </button>
-              {/* 🚀 FIXED: Show Dashboard button in header if user has already deployed */}
               {hasDeployedBefore && (
                   <button onClick={() => router.push("/dashboard")} className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-widest text-orange-500 hover:text-orange-400 bg-orange-500/10 px-3 py-1.5 rounded-lg border border-orange-500/20 transition-all ml-2">
                       <LayoutDashboard className="w-4 h-4"/> Dashboard
@@ -731,86 +785,86 @@ export default function Home() {
           LIVE NOW &nbsp;·&nbsp; 30-SECOND DEPLOY
         </div>
 
-        <h1 className="anim-h1 text-[clamp(2.5rem,5vw,5rem)] font-black leading-[1.1] tracking-[-0.04em] text-white w-full px-4 mb-2">
-          Deploy <span className="grad-text">OpenClaw AI Assistance</span>
+        <h1 className="anim-h1 text-[clamp(2.5rem,5vw,5.5rem)] font-black leading-[1.1] tracking-[-0.04em] text-white w-full px-4 mb-2">
+          Deploy <span className="color-flow-text">OpenClaw AI Assistance</span>
         </h1>
         
-        <p className="anim-sub text-white font-bold text-[18px] md:text-[22px] mb-8 uppercase tracking-widest" style={{letterSpacing: "0.15em"}}>
+        <p className="anim-sub text-white font-black text-[16px] md:text-[20px] mb-8 uppercase tracking-[0.25em]">
           FASTEST SERVER 1-CLICK DEPLOY
         </p>
 
-        <p className="anim-sub text-gray-300 text-[16px] md:text-[18px] max-w-[600px] mb-10 leading-[1.8]">
+        <p className="anim-sub text-gray-400 font-medium text-[16px] md:text-[18px] max-w-[600px] mb-12 leading-[1.8]">
           Avoid all technical complexity — one-click deploy your own 24/7 active Personal AI Assistant for WhatsApp, Telegram & Instagram. No code. No servers. Just results.
         </p>
 
-        <div className="anim-card card-shimmer tilt-el relative w-full max-w-[1100px] rounded-[24px] p-6 md:p-8 mb-8 overflow-hidden bg-[#0A0A0D] border border-white/[0.06]">
+        <div className="anim-card tilt-el relative w-full max-w-[1100px] rounded-[32px] p-6 md:p-10 mb-8 overflow-hidden bg-[#07070A]/80 backdrop-blur-md border border-white/[0.08] shadow-[0_30px_80px_rgba(0,0,0,0.8)]">
           
-            <p className="text-[10px] font-black tracking-[.2em] uppercase text-gray-500 text-left flex items-center gap-2 border-b border-white/5 pb-3 mb-4">
+            <p className="text-[10px] font-black tracking-[.2em] uppercase text-gray-500 text-left flex items-center gap-2 border-b border-white/5 pb-3 mb-5">
               <span className="w-4 h-4 text-[9px] rounded bg-white/10 flex items-center justify-center text-white">1</span>
               Choose Your AI Model
             </p>
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-[12px] mb-8">
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-[14px] mb-10">
               <button aria-label="Select GPT-5.4 Pro Model" data-spring onClick={() => handleModelSelect("gpt-5.4 Pro")} disabled={(isTokenSaved || hasDeployedBefore) && activeModel!=="gpt-5.4 Pro"}
-                className={getButtonClass(modelActive("gpt-5.4 Pro"), activeModel !== null)}>
+                className={getButtonClass(modelActive("gpt-5.4 Pro"), activeModel !== null, "hover:border-t-green-400 hover:shadow-[0_-4px_15px_rgba(74,222,128,0.15)]")}>
                 <OpenAI_Icon size={ICON_SIZE}/>
                 <span className="ptx-name">GPT-5.4 Pro</span>
               </button>
 
               <button aria-label="Select Claude 3 Model" data-spring onClick={() => handleModelSelect("Claude Opus 4.6")} disabled={(isTokenSaved || hasDeployedBefore) && activeModel!=="Claude Opus 4.6"}
-                className={getButtonClass(modelActive("Claude Opus 4.6"), activeModel !== null)}>
+                className={getButtonClass(modelActive("Claude Opus 4.6"), activeModel !== null, "hover:border-t-[#e6683c] hover:shadow-[0_-4px_15px_rgba(230,104,60,0.15)]")}>
                 <Claude_Icon size={ICON_SIZE}/>
                 <span className="ptx-name">Claude Opus 4.6</span>
               </button>
 
               <button aria-label="Select Gemini Model" data-spring onClick={() => handleModelSelect("gemini 3.1 Pro")} disabled={(isTokenSaved || hasDeployedBefore) && activeModel!=="gemini 3.1 Pro"}
-                className={getButtonClass(modelActive("gemini 3.1 Pro"), activeModel !== null)}>
+                className={getButtonClass(modelActive("gemini 3.1 Pro"), activeModel !== null, "hover:border-t-blue-400 hover:shadow-[0_-4px_15px_rgba(96,165,250,0.15)]")}>
                 <Gemini_Icon size={ICON_SIZE}/>
                 <span className="ptx-name">Gemini 3.1 Pro</span>
               </button>
 
               <button aria-label="Select OmniAgent Fallback Model" data-spring onClick={() => handleModelSelect("omni 3 nexus")} disabled={(isTokenSaved || hasDeployedBefore) && activeModel!=="omni 3 nexus"}
-                className={getButtonClass(modelActive("omni 3 nexus"), activeModel !== null)}>
+                className={getButtonClass(modelActive("omni 3 nexus"), activeModel !== null, "hover:border-t-[#00BFFF] hover:shadow-[0_-4px_15px_rgba(0,191,255,0.15)]")}>
                 <Omni_Icon size={ICON_SIZE}/>
                 <span className="ptx-name">Omni 3 Nexus</span>
               </button>
 
-              <div aria-label="Llama 4 coming soon" className={`bg-[#E5E7EB] border border-white/5 overflow-hidden opacity-40 cursor-not-allowed pointer-events-none flex flex-row h-[60px] w-full px-[16px] gap-[12px] justify-start items-center rounded-[12px] col-span-2 md:col-span-1`}>
+              <div aria-label="Llama 4 coming soon" className={`bg-[#0F0F12] border border-white/5 overflow-hidden opacity-40 cursor-not-allowed pointer-events-none flex flex-row h-[64px] w-full px-[20px] gap-[14px] justify-start items-center rounded-[16px] col-span-2 md:col-span-1`}>
                 <Llama_Icon size={ICON_SIZE}/>
                 <span className="ptx-name text-gray-500">Llama 4</span>
                 <span className="ptx-soon">SOON</span>
               </div>
             </div>
 
-            <p className="text-[10px] font-black tracking-[.2em] uppercase text-gray-500 text-left flex items-center gap-2 border-b border-white/5 pb-3 mb-4">
+            <p className="text-[10px] font-black tracking-[.2em] uppercase text-gray-500 text-left flex items-center gap-2 border-b border-white/5 pb-3 mb-5">
               <span className="w-4 h-4 text-[9px] rounded bg-white/10 flex items-center justify-center text-white">2</span>
               Select Your Channel
             </p>
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-[12px] mb-8">
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-[14px] mb-8">
               <button aria-label="Connect Telegram AI Bot" data-spring onClick={()=>handleChannelSelect("telegram")} disabled={(isTokenSaved || hasDeployedBefore) && activeChannel!=="telegram"}
-                className={getButtonClass(chanActive("telegram"), activeChannel !== null)}>
+                className={getButtonClass(chanActive("telegram"), activeChannel !== null, "hover:border-t-[#2AABEE] hover:shadow-[0_-4px_15px_rgba(42,171,238,0.15)]")}>
                 <Telegram_Icon size={ICON_SIZE}/>
                 <span className="ptx-name">Telegram</span>
               </button>
 
               <button aria-label="Connect WhatsApp AI Agent" data-spring onClick={()=>handleChannelSelect("whatsapp")} disabled={(isTokenSaved || hasDeployedBefore) && activeChannel!=="whatsapp"}
-                className={getButtonClass(chanActive("whatsapp"), activeChannel !== null)}>
+                className={getButtonClass(chanActive("whatsapp"), activeChannel !== null, "hover:border-t-[#25D366] hover:shadow-[0_-4px_15px_rgba(37,211,102,0.15)]")}>
                 <WhatsApp_Icon size={ICON_SIZE}/>
                 <span className="ptx-name">WhatsApp</span>
               </button>
               
               <button aria-label="Connect Instagram Auto Reply Bot" data-spring onClick={()=>handleChannelSelect("instagram")} disabled={(isTokenSaved || hasDeployedBefore) && activeChannel!=="instagram"}
-                className={getButtonClass(chanActive("instagram"), activeChannel !== null)}>
+                className={getButtonClass(chanActive("instagram"), activeChannel !== null, "hover:border-t-pink-500 hover:shadow-[0_-4px_15px_rgba(236,72,153,0.15)]")}>
                 <Instagram_Icon size={ICON_SIZE}/>
                 <span className="ptx-name">Instagram</span>
               </button>
 
-              <div aria-label="Discord Bot Coming Soon" className={`bg-[#E5E7EB] border border-white/5 overflow-hidden opacity-40 cursor-not-allowed pointer-events-none flex flex-row h-[60px] w-full px-[16px] gap-[12px] justify-start items-center rounded-[12px]`}>
+              <div aria-label="Discord Bot Coming Soon" className={`bg-[#0F0F12] border border-white/5 overflow-hidden opacity-40 cursor-not-allowed pointer-events-none flex flex-row h-[64px] w-full px-[20px] gap-[14px] justify-start items-center rounded-[16px]`}>
                 <Discord_Icon size={ICON_SIZE}/>
                 <span className="ptx-name text-gray-500">Discord</span>
                 <span className="ptx-soon">SOON</span>
               </div>
 
-              <div aria-label="Slack Bot Coming Soon" className={`bg-[#E5E7EB] border border-white/5 overflow-hidden opacity-40 cursor-not-allowed pointer-events-none flex flex-row h-[60px] w-full px-[16px] gap-[12px] justify-start items-center rounded-[12px] col-span-2 md:col-span-1`}>
+              <div aria-label="Slack Bot Coming Soon" className={`bg-[#0F0F12] border border-white/5 overflow-hidden opacity-40 cursor-not-allowed pointer-events-none flex flex-row h-[64px] w-full px-[20px] gap-[14px] justify-start items-center rounded-[16px] col-span-2 md:col-span-1`}>
                 <div className="w-[20px] h-[20px] rounded-full flex items-center justify-center shrink-0 bg-[#4a154b]">
                   <svg viewBox="0 0 24 24" width="12" height="12" fill="white"><path d="M5.04 15.44a2.52 2.52 0 01-5.04 0 2.52 2.52 0 012.52-2.52h2.52v2.52zm1.26 0a2.52 2.52 0 015.04 0v6.3a2.52 2.52 0 01-5.04 0v-6.3zM8.56 5.04a2.52 2.52 0 010-5.04 2.52 2.52 0 012.52 2.52v2.52H8.56zm0 1.26a2.52 2.52 0 010 5.04H2.26a2.52 2.52 0 010-5.04h6.3z"/></svg>
                 </div>
@@ -819,20 +873,20 @@ export default function Home() {
               </div>
             </div>
           
-          <div className="mt-8 pt-6 border-t border-white/10 flex justify-center w-full">
+          <div className="mt-10 pt-8 border-t border-white/10 flex justify-center w-full">
             <AnimatePresence mode="wait">
               {botLink ? (
                 <motion.div key="success" initial={{opacity:0,scale:0.95}} animate={{opacity:1,scale:1}} exit={{opacity:0}} transition={{duration:.12,ease:"easeOut"}}
-                  className="rounded-2xl p-6 text-center w-full"
+                  className="rounded-[20px] p-6 text-center w-full"
                   style={{background:"rgba(34,197,94,0.06)",border:"1px solid rgba(34,197,94,0.2)"}}>
                   <p className="text-[16px] font-bold text-white mb-5">🚀 Your Bot is Live!</p>
                   <div className="flex flex-col sm:flex-row justify-center gap-4">
                     <button aria-label="Open Live Bot" data-ripple data-spring onClick={openLiveBotHandler}
-                      className={`relative overflow-hidden bg-white text-black font-black uppercase tracking-widest px-8 py-3.5 rounded-xl text-[13px] hover:-translate-y-1 hover:shadow-lg transition-transform duration-150`}>
+                      className={`relative overflow-hidden bg-white text-black font-black uppercase tracking-widest px-8 py-3.5 rounded-[14px] text-[13px] hover:-translate-y-1 hover:shadow-lg transition-transform duration-150`}>
                       <span className="mt">Open Live Bot</span>
                     </button>
                     <button aria-label="Go to Dashboard" data-spring onClick={()=>router.push("/dashboard")}
-                      className={`flex items-center justify-center gap-2 text-white font-bold px-8 py-3.5 rounded-xl text-[13px] hover:-translate-y-1 hover:shadow-lg transition-transform duration-150`}
+                      className={`flex items-center justify-center gap-2 text-white font-bold px-8 py-3.5 rounded-[14px] text-[13px] hover:-translate-y-1 hover:shadow-lg transition-transform duration-150`}
                       style={{background:"rgba(255,255,255,0.06)",border:"1px solid rgba(255,255,255,0.12)"}}>
                       <Activity className="w-5 h-5"/> Live Dashboard
                     </button>
@@ -842,24 +896,23 @@ export default function Home() {
               ) : (
                 <motion.div key="login" id="login-section" initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} transition={{duration:.12}} className="w-full flex flex-col items-center">
                   {status === "authenticated" && session?.user?.email && (
-                    <motion.div initial={{opacity: 0, y: 10}} animate={{opacity: 1, y: 0}} className="mb-3 flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/5 border border-white/10">
+                    <motion.div initial={{opacity: 0, y: 10}} animate={{opacity: 1, y: 0}} className="mb-4 flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/5 border border-white/10">
                       <User className="w-3 h-3 text-gray-400" />
                       <span className="text-xs text-gray-400 font-mono tracking-wide">Logged in as: <span className="text-white font-bold">{session.user.email}</span></span>
                     </motion.div>
                   )}
                   
-                  {/* 🚀 FIXED: Display Dashboard Button if already deployed */}
                   {hasDeployedBefore ? (
                       <button aria-label="Open Command Center" data-ripple data-spring onClick={() => router.push("/dashboard")}
-                        className={`relative overflow-hidden w-full max-w-[600px] bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-[0_0_20px_rgba(249,115,22,0.4)] hover:scale-[1.02] hover:-translate-y-1 py-4 rounded-[12px] flex items-center justify-center gap-3 text-[15px] font-black tracking-wide transition-all duration-150 uppercase`}>
-                        <LayoutDashboard className="w-5 h-5" /> 🚀 OPEN COMMAND CENTER (DASHBOARD)
+                        className={`relative overflow-hidden w-full max-w-[600px] bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-[0_0_30px_rgba(249,115,22,0.4)] hover:scale-[1.02] hover:-translate-y-1 py-4 md:py-5 rounded-[16px] flex items-center justify-center gap-3 text-[15px] md:text-[17px] font-black tracking-[0.1em] transition-all duration-150 uppercase`}>
+                        <LayoutDashboard className="w-5 h-5" /> OPEN COMMAND CENTER
                       </button>
                   ) : (
                       <button aria-label="Login with Google" data-ripple data-spring onClick={handleLoginOrDeploy} disabled={isDeploying}
-                        className={`relative overflow-hidden w-full max-w-[600px] ${isDeploying ? 'bg-gray-300 cursor-not-allowed' : 'bg-white hover:scale-[1.02] hover:-translate-y-1 hover:shadow-[0_10px_20px_rgba(255,255,255,0.2)] active:bg-gray-200'} text-black py-4 rounded-[12px] flex items-center justify-center gap-3 text-[15px] font-black tracking-wide transition-all duration-150`}>
+                        className={`relative overflow-hidden w-full max-w-[600px] ${isDeploying ? 'bg-white/10 text-white cursor-not-allowed' : 'bg-white text-black hover:scale-[1.02] hover:-translate-y-1 hover:shadow-[0_10px_30px_rgba(255,255,255,0.2)] active:bg-gray-200'} py-4 md:py-5 rounded-[16px] flex items-center justify-center gap-3 text-[15px] md:text-[17px] font-black tracking-[0.05em] transition-all duration-150`}>
                         {isDeploying ? (
-                          <span className="flex items-center gap-2">
-                             <Activity className="w-5 h-5 animate-spin" /> DEPLOYING TO SECURE SERVER...
+                          <span className="flex items-center gap-3 font-mono tracking-widest text-[13px] uppercase">
+                             <div className="bouncing-dots"><span/><span/><span/></div> DEPLOYING TO SECURE SERVER
                           </span>
                         ) : (
                           <>
@@ -870,8 +923,8 @@ export default function Home() {
                   )}
                   
                   {!hasDeployedBefore && (
-                      <p className="mt-4 text-[13px] text-gray-400 text-center leading-relaxed">
-                        Deploying <strong className="text-white">{PRICING_DATA[activeModel || "gpt-5.4 Pro"].name}</strong> to <strong className="text-white capitalize">{activeChannel || "Telegram"}</strong>.{" "}
+                      <p className="mt-5 text-[13px] text-gray-500 text-center leading-relaxed">
+                        Deploying <strong className="text-gray-300">{activeModel ? PRICING_DATA[activeModel].name : "GPT-5.4 Pro"}</strong> to <strong className="text-gray-300 capitalize">{activeChannel || "Telegram"}</strong>.{" "}
                         <span className="text-[#34A853] font-semibold text-[13px]">Limited enterprise servers available.</span>
                       </p>
                   )}
@@ -881,12 +934,12 @@ export default function Home() {
           </div>
         </div>
 
-        <div className="anim-stats grid grid-cols-3 w-full max-w-[650px] border border-white/[0.07] rounded-[22px] overflow-hidden bg-[#0A0A0D]/50 backdrop-blur-sm shadow-xl">
+        <div className="anim-stats grid grid-cols-3 w-full max-w-[700px] border border-white/[0.05] rounded-[24px] overflow-hidden bg-[#0A0A0D]/50 backdrop-blur-md shadow-2xl">
           {[["30s","Deploy time"],["5+","AI models"],["24/7","Always active"]].map(([n,l]) => (
-            <div key={n} className="stat-hover flex flex-col items-center py-7 px-3 transition-colors duration-150 hover:bg-white/[0.04]"
+            <div key={n} className="stat-hover flex flex-col items-center py-8 px-4 transition-colors duration-150 hover:bg-white/[0.04]"
               style={{background:"rgba(255,255,255,0.015)",borderRight:"1px solid rgba(255,255,255,0.04)"}}>
-              <span className="text-[2.2rem] lg:text-[2.6rem] font-black leading-none grad-text">{n}</span>
-              <span className="text-[11px] lg:text-[12px] font-bold tracking-widest uppercase text-gray-500 mt-2 text-center">{l}</span>
+              <span className="text-[2.4rem] lg:text-[2.8rem] font-black leading-none grad-text drop-shadow-md">{n}</span>
+              <span className="text-[11px] lg:text-[12px] font-bold tracking-[0.2em] uppercase text-gray-500 mt-3 text-center">{l}</span>
             </div>
           ))}
         </div>
