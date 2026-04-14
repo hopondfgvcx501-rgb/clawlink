@@ -5,12 +5,11 @@
  * CLAWLINK ENTERPRISE FRONTEND SECURE MODULE
  * ==============================================================================================
  * @file app/page.tsx
- * @version 12.0.0 (Cinematic UI Polish & Brand Glows)
+ * @version 12.2.0 (Ultimate Typography & Max Glow Polish)
  * @description Main onboarding interface with strict Product-Led Growth (PLG) routing.
- * FIXED: Added dynamic brand-colored border glows to model/channel buttons.
- * FIXED: Implemented 'ColorFlow' text animation on main heading.
- * FIXED: Added slow-moving 'Creative Agency' particle background effect.
- * FIXED: Replaced standard spinners with modern dot-bounce loading animations.
+ * FIXED: 'FASTEST SERVER 1-CLICK DEPLOY' made significantly bolder and larger.
+ * FIXED: Increased the intensity of the ambient background glow orbs.
+ * FIXED: Retained original button shapes with brand-specific hover glows.
  * Integrates KNOX Level-7 Apple-grade security protocol.
  * * ALL RIGHTS RESERVED. CLAWLINK INC.
  * ==============================================================================================
@@ -573,18 +572,20 @@ export default function Home() {
 
   if (!isMounted) return null;
 
-  // 🚀 FIXED: Added hover border colors specific to the brand
-  const getButtonClass = (isActive: boolean, categorySelected: boolean, brandColorClass: string) => {
-      let classes = `bg-[#0F0F12] border border-white/5 cursor-pointer overflow-hidden transition-all duration-300 ease-out transform-gpu will-change-transform flex flex-row h-[64px] w-full px-[20px] gap-[14px] justify-start items-center rounded-[16px]`;
+  const btn = "transition-all duration-[120ms] ease-out hover:-translate-y-1 hover:shadow-lg transform-gpu will-change-transform";
+
+  // 🚀 FIXED: Retained original styling but added subtle cinematic hover border glows
+  const getButtonClass = (isActive: boolean, categorySelected: boolean, hoverBorderColorClass: string) => {
+      let classes = `bg-[#E5E7EB] border cursor-pointer overflow-hidden ${btn} hover:bg-[#D1D5DB] flex flex-row h-[60px] w-full px-[16px] gap-[12px] justify-start items-center rounded-[12px] transition-colors duration-300`;
       
       if (isActive) {
-          classes += ` scale-[1.02] shadow-[0_0_20px_rgba(0,0,0,0.5)] border-t border-b-0 border-l-0 border-r-0 ${brandColorClass.replace('hover:', '')} !bg-[#15151A]`;
+          classes += ` border-transparent ${hoverBorderColorClass.replace('hover:', '')}`; 
       } else {
-          classes += ` ${brandColorClass} hover:bg-[#15151A] hover:-translate-y-1 hover:shadow-xl`;
+          classes += ` border-transparent ${hoverBorderColorClass}`;
       }
 
       if (status === "authenticated" && categorySelected && !isActive) {
-          classes += " opacity-40 grayscale";
+          classes += " opacity-50 grayscale transition-opacity duration-300";
       }
       return classes;
   };
@@ -681,10 +682,11 @@ export default function Home() {
           40% { transform: scale(1); }
         }
 
+        /* 🚀 FIXED: Deeper, stronger background ambient glows */
         .cg-dot{
-          position:fixed;width:380px;height:380px;border-radius:50%;
+          position:fixed;width:420px;height:420px;border-radius:50%;
           pointer-events:none;z-index:1;
-          background:radial-gradient(circle,rgba(249,115,22,0.055) 0%,transparent 65%);
+          background:radial-gradient(circle,rgba(249,115,22,0.08) 0%,transparent 65%);
           transform:translate(-50%,-50%);will-change:left,top;
         }
         .rpl-wave{
@@ -722,7 +724,7 @@ export default function Home() {
         .icon-lift{transition:transform .2s cubic-bezier(.34,1.56,.64,1)}
         .icon-lift:hover{transform:scale(1.12) rotate(-4deg)}
         
-        .ptx-name{font-size:14px;font-weight:800;color:#fff;white-space:nowrap;letter-spacing:0.02em}
+        .ptx-name{font-size:14px;font-weight:800;color:#111827;white-space:nowrap;letter-spacing:0.02em}
         .ptx-soon{font-size:10px;font-weight:900;color:#6b7280;text-transform:uppercase;margin-left:auto;}
         
         @media(max-width:1024px){
@@ -734,6 +736,13 @@ export default function Home() {
       `}}/>
 
       <div className="particle-bg"><div className="stars"></div></div>
+
+      <div className="fixed top-[-20%] right-[-8%] w-[900px] h-[900px] rounded-full pointer-events-none z-0 float-a"
+           style={{background:"radial-gradient(circle,rgba(249,115,22,0.22) 0%,transparent 65%)",transform:"translateZ(0)"}}/>
+      <div className="fixed bottom-[-20%] left-[-8%] w-[900px] h-[900px] rounded-full pointer-events-none z-0 float-b"
+           style={{background:"radial-gradient(circle,rgba(99,102,241,0.18) 0%,transparent 65%)",transform:"translateZ(0)"}}/>
+      <div className="fixed top-[30%] left-[40%] w-[600px] h-[600px] rounded-full pointer-events-none z-0 float-c"
+           style={{background:"radial-gradient(circle,rgba(168,85,247,0.10) 0%,transparent 70%)"}}/>
 
       <nav id="clnav" aria-label="Main Navigation"
         className="fixed top-0 left-0 right-0 z-[100] h-[64px] flex items-center justify-between px-6 md:px-12 transition-colors duration-200"
@@ -789,7 +798,8 @@ export default function Home() {
           Deploy <span className="color-flow-text">OpenClaw AI Assistance</span>
         </h1>
         
-        <p className="anim-sub text-white font-black text-[16px] md:text-[20px] mb-8 uppercase tracking-[0.25em]">
+        {/* 🚀 FIXED: Bolder, cleaner, modern typography for subhead */}
+        <p className="anim-sub text-white font-black text-[22px] md:text-[28px] mb-8 uppercase tracking-wide">
           FASTEST SERVER 1-CLICK DEPLOY
         </p>
 
@@ -797,74 +807,74 @@ export default function Home() {
           Avoid all technical complexity — one-click deploy your own 24/7 active Personal AI Assistant for WhatsApp, Telegram & Instagram. No code. No servers. Just results.
         </p>
 
-        <div className="anim-card tilt-el relative w-full max-w-[1100px] rounded-[32px] p-6 md:p-10 mb-8 overflow-hidden bg-[#07070A]/80 backdrop-blur-md border border-white/[0.08] shadow-[0_30px_80px_rgba(0,0,0,0.8)]">
+        <div className="anim-card tilt-el relative w-full max-w-[1100px] rounded-[24px] p-6 md:p-8 mb-8 overflow-hidden bg-[#0A0A0D] border border-white/[0.06] shadow-[0_30px_80px_rgba(0,0,0,0.6)]">
           
-            <p className="text-[10px] font-black tracking-[.2em] uppercase text-gray-500 text-left flex items-center gap-2 border-b border-white/5 pb-3 mb-5">
+            <p className="text-[10px] font-black tracking-[.2em] uppercase text-gray-500 text-left flex items-center gap-2 border-b border-white/5 pb-3 mb-4">
               <span className="w-4 h-4 text-[9px] rounded bg-white/10 flex items-center justify-center text-white">1</span>
               Choose Your AI Model
             </p>
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-[14px] mb-10">
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-[12px] mb-8">
               <button aria-label="Select GPT-5.4 Pro Model" data-spring onClick={() => handleModelSelect("gpt-5.4 Pro")} disabled={(isTokenSaved || hasDeployedBefore) && activeModel!=="gpt-5.4 Pro"}
-                className={getButtonClass(modelActive("gpt-5.4 Pro"), activeModel !== null, "hover:border-t-green-400 hover:shadow-[0_-4px_15px_rgba(74,222,128,0.15)]")}>
+                className={getButtonClass(modelActive("gpt-5.4 Pro"), activeModel !== null, "hover:border-green-400 hover:shadow-[0_0_15px_rgba(74,222,128,0.25)]")}>
                 <OpenAI_Icon size={ICON_SIZE}/>
                 <span className="ptx-name">GPT-5.4 Pro</span>
               </button>
 
               <button aria-label="Select Claude 3 Model" data-spring onClick={() => handleModelSelect("Claude Opus 4.6")} disabled={(isTokenSaved || hasDeployedBefore) && activeModel!=="Claude Opus 4.6"}
-                className={getButtonClass(modelActive("Claude Opus 4.6"), activeModel !== null, "hover:border-t-[#e6683c] hover:shadow-[0_-4px_15px_rgba(230,104,60,0.15)]")}>
+                className={getButtonClass(modelActive("Claude Opus 4.6"), activeModel !== null, "hover:border-[#e6683c] hover:shadow-[0_0_15px_rgba(230,104,60,0.25)]")}>
                 <Claude_Icon size={ICON_SIZE}/>
                 <span className="ptx-name">Claude Opus 4.6</span>
               </button>
 
               <button aria-label="Select Gemini Model" data-spring onClick={() => handleModelSelect("gemini 3.1 Pro")} disabled={(isTokenSaved || hasDeployedBefore) && activeModel!=="gemini 3.1 Pro"}
-                className={getButtonClass(modelActive("gemini 3.1 Pro"), activeModel !== null, "hover:border-t-blue-400 hover:shadow-[0_-4px_15px_rgba(96,165,250,0.15)]")}>
+                className={getButtonClass(modelActive("gemini 3.1 Pro"), activeModel !== null, "hover:border-blue-400 hover:shadow-[0_0_15px_rgba(96,165,250,0.25)]")}>
                 <Gemini_Icon size={ICON_SIZE}/>
                 <span className="ptx-name">Gemini 3.1 Pro</span>
               </button>
 
               <button aria-label="Select OmniAgent Fallback Model" data-spring onClick={() => handleModelSelect("omni 3 nexus")} disabled={(isTokenSaved || hasDeployedBefore) && activeModel!=="omni 3 nexus"}
-                className={getButtonClass(modelActive("omni 3 nexus"), activeModel !== null, "hover:border-t-[#00BFFF] hover:shadow-[0_-4px_15px_rgba(0,191,255,0.15)]")}>
+                className={getButtonClass(modelActive("omni 3 nexus"), activeModel !== null, "hover:border-[#00BFFF] hover:shadow-[0_0_15px_rgba(0,191,255,0.25)]")}>
                 <Omni_Icon size={ICON_SIZE}/>
                 <span className="ptx-name">Omni 3 Nexus</span>
               </button>
 
-              <div aria-label="Llama 4 coming soon" className={`bg-[#0F0F12] border border-white/5 overflow-hidden opacity-40 cursor-not-allowed pointer-events-none flex flex-row h-[64px] w-full px-[20px] gap-[14px] justify-start items-center rounded-[16px] col-span-2 md:col-span-1`}>
+              <div aria-label="Llama 4 coming soon" className={`bg-[#E5E7EB] border border-white/5 overflow-hidden opacity-40 cursor-not-allowed pointer-events-none flex flex-row h-[60px] w-full px-[16px] gap-[12px] justify-start items-center rounded-[12px] col-span-2 md:col-span-1`}>
                 <Llama_Icon size={ICON_SIZE}/>
                 <span className="ptx-name text-gray-500">Llama 4</span>
                 <span className="ptx-soon">SOON</span>
               </div>
             </div>
 
-            <p className="text-[10px] font-black tracking-[.2em] uppercase text-gray-500 text-left flex items-center gap-2 border-b border-white/5 pb-3 mb-5">
+            <p className="text-[10px] font-black tracking-[.2em] uppercase text-gray-500 text-left flex items-center gap-2 border-b border-white/5 pb-3 mb-4">
               <span className="w-4 h-4 text-[9px] rounded bg-white/10 flex items-center justify-center text-white">2</span>
               Select Your Channel
             </p>
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-[14px] mb-8">
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-[12px] mb-8">
               <button aria-label="Connect Telegram AI Bot" data-spring onClick={()=>handleChannelSelect("telegram")} disabled={(isTokenSaved || hasDeployedBefore) && activeChannel!=="telegram"}
-                className={getButtonClass(chanActive("telegram"), activeChannel !== null, "hover:border-t-[#2AABEE] hover:shadow-[0_-4px_15px_rgba(42,171,238,0.15)]")}>
+                className={getButtonClass(chanActive("telegram"), activeChannel !== null, "hover:border-[#2AABEE] hover:shadow-[0_0_15px_rgba(42,171,238,0.25)]")}>
                 <Telegram_Icon size={ICON_SIZE}/>
                 <span className="ptx-name">Telegram</span>
               </button>
 
               <button aria-label="Connect WhatsApp AI Agent" data-spring onClick={()=>handleChannelSelect("whatsapp")} disabled={(isTokenSaved || hasDeployedBefore) && activeChannel!=="whatsapp"}
-                className={getButtonClass(chanActive("whatsapp"), activeChannel !== null, "hover:border-t-[#25D366] hover:shadow-[0_-4px_15px_rgba(37,211,102,0.15)]")}>
+                className={getButtonClass(chanActive("whatsapp"), activeChannel !== null, "hover:border-[#25D366] hover:shadow-[0_0_15px_rgba(37,211,102,0.25)]")}>
                 <WhatsApp_Icon size={ICON_SIZE}/>
                 <span className="ptx-name">WhatsApp</span>
               </button>
               
               <button aria-label="Connect Instagram Auto Reply Bot" data-spring onClick={()=>handleChannelSelect("instagram")} disabled={(isTokenSaved || hasDeployedBefore) && activeChannel!=="instagram"}
-                className={getButtonClass(chanActive("instagram"), activeChannel !== null, "hover:border-t-pink-500 hover:shadow-[0_-4px_15px_rgba(236,72,153,0.15)]")}>
+                className={getButtonClass(chanActive("instagram"), activeChannel !== null, "hover:border-pink-500 hover:shadow-[0_0_15px_rgba(236,72,153,0.25)]")}>
                 <Instagram_Icon size={ICON_SIZE}/>
                 <span className="ptx-name">Instagram</span>
               </button>
 
-              <div aria-label="Discord Bot Coming Soon" className={`bg-[#0F0F12] border border-white/5 overflow-hidden opacity-40 cursor-not-allowed pointer-events-none flex flex-row h-[64px] w-full px-[20px] gap-[14px] justify-start items-center rounded-[16px]`}>
+              <div aria-label="Discord Bot Coming Soon" className={`bg-[#E5E7EB] border border-white/5 overflow-hidden opacity-40 cursor-not-allowed pointer-events-none flex flex-row h-[60px] w-full px-[16px] gap-[12px] justify-start items-center rounded-[12px]`}>
                 <Discord_Icon size={ICON_SIZE}/>
                 <span className="ptx-name text-gray-500">Discord</span>
                 <span className="ptx-soon">SOON</span>
               </div>
 
-              <div aria-label="Slack Bot Coming Soon" className={`bg-[#0F0F12] border border-white/5 overflow-hidden opacity-40 cursor-not-allowed pointer-events-none flex flex-row h-[64px] w-full px-[20px] gap-[14px] justify-start items-center rounded-[16px] col-span-2 md:col-span-1`}>
+              <div aria-label="Slack Bot Coming Soon" className={`bg-[#E5E7EB] border border-white/5 overflow-hidden opacity-40 cursor-not-allowed pointer-events-none flex flex-row h-[60px] w-full px-[16px] gap-[12px] justify-start items-center rounded-[12px] col-span-2 md:col-span-1`}>
                 <div className="w-[20px] h-[20px] rounded-full flex items-center justify-center shrink-0 bg-[#4a154b]">
                   <svg viewBox="0 0 24 24" width="12" height="12" fill="white"><path d="M5.04 15.44a2.52 2.52 0 01-5.04 0 2.52 2.52 0 012.52-2.52h2.52v2.52zm1.26 0a2.52 2.52 0 015.04 0v6.3a2.52 2.52 0 01-5.04 0v-6.3zM8.56 5.04a2.52 2.52 0 010-5.04 2.52 2.52 0 012.52 2.52v2.52H8.56zm0 1.26a2.52 2.52 0 010 5.04H2.26a2.52 2.52 0 010-5.04h6.3z"/></svg>
                 </div>
@@ -873,7 +883,7 @@ export default function Home() {
               </div>
             </div>
           
-          <div className="mt-10 pt-8 border-t border-white/10 flex justify-center w-full">
+          <div className="mt-8 pt-6 border-t border-white/10 flex justify-center w-full">
             <AnimatePresence mode="wait">
               {botLink ? (
                 <motion.div key="success" initial={{opacity:0,scale:0.95}} animate={{opacity:1,scale:1}} exit={{opacity:0}} transition={{duration:.12,ease:"easeOut"}}
@@ -882,11 +892,11 @@ export default function Home() {
                   <p className="text-[16px] font-bold text-white mb-5">🚀 Your Bot is Live!</p>
                   <div className="flex flex-col sm:flex-row justify-center gap-4">
                     <button aria-label="Open Live Bot" data-ripple data-spring onClick={openLiveBotHandler}
-                      className={`relative overflow-hidden bg-white text-black font-black uppercase tracking-widest px-8 py-3.5 rounded-[14px] text-[13px] hover:-translate-y-1 hover:shadow-lg transition-transform duration-150`}>
+                      className={`relative overflow-hidden bg-white text-black font-black uppercase tracking-widest px-8 py-3.5 rounded-xl text-[13px] hover:-translate-y-1 hover:shadow-lg transition-transform duration-150`}>
                       <span className="mt">Open Live Bot</span>
                     </button>
                     <button aria-label="Go to Dashboard" data-spring onClick={()=>router.push("/dashboard")}
-                      className={`flex items-center justify-center gap-2 text-white font-bold px-8 py-3.5 rounded-[14px] text-[13px] hover:-translate-y-1 hover:shadow-lg transition-transform duration-150`}
+                      className={`flex items-center justify-center gap-2 text-white font-bold px-8 py-3.5 rounded-xl text-[13px] hover:-translate-y-1 hover:shadow-lg transition-transform duration-150`}
                       style={{background:"rgba(255,255,255,0.06)",border:"1px solid rgba(255,255,255,0.12)"}}>
                       <Activity className="w-5 h-5"/> Live Dashboard
                     </button>
@@ -904,12 +914,12 @@ export default function Home() {
                   
                   {hasDeployedBefore ? (
                       <button aria-label="Open Command Center" data-ripple data-spring onClick={() => router.push("/dashboard")}
-                        className={`relative overflow-hidden w-full max-w-[600px] bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-[0_0_30px_rgba(249,115,22,0.4)] hover:scale-[1.02] hover:-translate-y-1 py-4 md:py-5 rounded-[16px] flex items-center justify-center gap-3 text-[15px] md:text-[17px] font-black tracking-[0.1em] transition-all duration-150 uppercase`}>
+                        className={`relative overflow-hidden w-full max-w-[600px] bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-[0_0_30px_rgba(249,115,22,0.4)] hover:scale-[1.02] hover:-translate-y-1 py-4 md:py-5 rounded-[12px] flex items-center justify-center gap-3 text-[15px] md:text-[17px] font-black tracking-[0.1em] transition-all duration-150 uppercase`}>
                         <LayoutDashboard className="w-5 h-5" /> OPEN COMMAND CENTER
                       </button>
                   ) : (
                       <button aria-label="Login with Google" data-ripple data-spring onClick={handleLoginOrDeploy} disabled={isDeploying}
-                        className={`relative overflow-hidden w-full max-w-[600px] ${isDeploying ? 'bg-white/10 text-white cursor-not-allowed' : 'bg-white text-black hover:scale-[1.02] hover:-translate-y-1 hover:shadow-[0_10px_30px_rgba(255,255,255,0.2)] active:bg-gray-200'} py-4 md:py-5 rounded-[16px] flex items-center justify-center gap-3 text-[15px] md:text-[17px] font-black tracking-[0.05em] transition-all duration-150`}>
+                        className={`relative overflow-hidden w-full max-w-[600px] ${isDeploying ? 'bg-white/10 text-white cursor-not-allowed border border-white/20' : 'bg-white text-black hover:scale-[1.02] hover:-translate-y-1 hover:shadow-[0_10px_30px_rgba(255,255,255,0.2)] active:bg-gray-200'} py-4 md:py-5 rounded-[12px] flex items-center justify-center gap-3 text-[15px] md:text-[17px] font-black tracking-[0.05em] transition-all duration-150`}>
                         {isDeploying ? (
                           <span className="flex items-center gap-3 font-mono tracking-widest text-[13px] uppercase">
                              <div className="bouncing-dots"><span/><span/><span/></div> DEPLOYING TO SECURE SERVER
