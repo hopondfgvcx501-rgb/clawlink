@@ -5,9 +5,11 @@
  * CLAWLINK ENTERPRISE COMMAND CENTER (DASHBOARD)
  * ==============================================================================================
  * @file app/dashboard/page.tsx
- * @version 12.0.0 (Ultra-Lean Mode)
+ * @version 12.1.0 (UI Sync & Dynamic Traffic Polish)
  * @description The central hub for users to monitor their AI Agents.
- * CLEANUP: ALL traces of Web Widget, Broadcast Hub, and Partner Program PERMANENTLY REMOVED.
+ * FIXED: Made `hasActivePlan` logic robust to strictly unlock RAG and Live status post-upgrade.
+ * FIXED: Changed Live Channel text to "Your bot is Live 🟢" upon activation.
+ * FIXED: Replaced static 3-tier platform routing with dynamic single-channel actual traffic.
  * * ALL RIGHTS RESERVED. CLAWLINK INC.
  * ==============================================================================================
  */
@@ -25,7 +27,6 @@ import {
   Receipt, Download, Smartphone, BrainCircuit, Search, Crown, Copy, Check, Bot, Database, Save, ArrowUpRight, TrendingUp, Shield, Mail
 } from "lucide-react";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
-import Image from "next/image";
 
 // Initialize Supabase Client
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
@@ -85,7 +86,6 @@ export default function Dashboard() {
   const [isLoading, setIsLoading] = useState(true);
   const [showAppBanner, setShowAppBanner] = useState(true);
   
-  // 🚀 FIXED: Default channel changed to telegram
   const [selectedChannel, setSelectedChannel] = useState("telegram"); 
   const [channelPrompts, setChannelPrompts] = useState({
     telegram: "",
@@ -185,7 +185,7 @@ export default function Dashboard() {
 
   /**
    * ==============================================================================================
-   * CORE LOGIC: Dynamic State Evaluation
+   * CORE LOGIC: Dynamic State Evaluation (ROBUST FIX)
    * ==============================================================================================
    */
   const rawDbModel = String(userData?.ai_model || userData?.current_model_version || userData?.selected_model || userData?.ai_provider || "gpt").toLowerCase();
@@ -203,17 +203,18 @@ export default function Dashboard() {
   const currentPricing = PRICING_DATA[pricingKey] || PRICING_DATA["gpt-5.4 Pro"];
   
   // 🚀 FETCH TRUE PLAN FROM DB
-  const currentPlan = userData?.plan_tier?.toLowerCase() || userData?.plan?.toLowerCase() || "free";
-  const isFreePlan = currentPlan === "free" || currentPlan === "starter";
+  const currentPlan = (userData?.plan_tier || userData?.plan || "free").toLowerCase();
+  const isFreePlan = currentPlan === "free" || currentPlan === "starter" || currentPlan === "unassigned";
   
   let isExpired = false;
   if (userData?.plan_expiry_date) {
     isExpired = new Date() > new Date(userData.plan_expiry_date);
   }
 
-  // 🔒 DB VERIFIED STATUS CHECK
-  const hasActivePlan = !isFreePlan && !isExpired && userData?.plan_status === "Active";
-  const isPremium = !isFreePlan;
+  // 🚀 FIXED: Extremely robust logic to ensure if user paid, the UI unlocks properly regardless of exact string casing.
+  const isStatusActive = (userData?.plan_status || "").toLowerCase() === "active" || (userData?.bot_status || "").toLowerCase() === "active";
+  const hasActivePlan = (!isFreePlan && !isExpired) || isStatusActive;
+  const isPremium = !isFreePlan || isStatusActive;
 
   let primaryButtonText = "⚡ Go Live Now (Upgrade)";
   if (!isFreePlan && isExpired) {
@@ -501,7 +502,7 @@ export default function Dashboard() {
     );
   }
 
-  const totalMsgs = (stats?.platformStats?.whatsapp || 0) + (stats?.platformStats?.telegram || 0) + (stats?.platformStats?.web || 0);
+  const totalMsgs = (stats?.platformStats?.whatsapp || 0) + (stats?.platformStats?.telegram || 0) + (stats?.platformStats?.web || 0) + (stats?.platformStats?.instagram || 0);
 
   const exactSelectedChannel = (userData?.selected_channel || "telegram").toLowerCase();
   
@@ -509,7 +510,7 @@ export default function Dashboard() {
   const hasWaId = !!userData?.whatsapp_phone_id && userData?.whatsapp_phone_id !== "";
   const hasIgId = !!userData?.instagram_account_id && userData?.instagram_account_id !== "";
 
-  // 🚀 FIXED UI NAMES: Removed extra text, enabled blink status
+  // 🚀 FIXED: Display "Your bot is Live 🟢" exactly as requested when hasActivePlan is true
   const getPrimaryLiveChannel = () => {
       if (exactSelectedChannel === "telegram") {
           return { 
@@ -781,7 +782,6 @@ export default function Dashboard() {
                 <BrainCircuit className="w-5 h-5"/>
               </div>
             </div>
-            {/* 🚀 FIXED: Dynamic Infrastructure Status */}
             <div className={`relative z-10 w-full py-3 rounded-xl text-[11px] font-bold border flex items-center justify-center gap-2 ${hasActivePlan ? 'bg-green-500/10 text-green-400 border-green-500/20' : 'bg-blue-500/10 text-blue-400 border-blue-500/20'}`}>
               <Zap className="w-3 h-3"/> {hasActivePlan ? "Infrastructure Unlocked" : "Infrastructure Locked"}
             </div>
@@ -799,7 +799,8 @@ export default function Dashboard() {
                 {exactSelectedChannel && (
                   <p className={`text-[10px] font-mono mt-2 flex items-center gap-1.5 ${primaryChannel.isLive ? 'text-green-500' : 'text-yellow-500'}`}>
                     <span className={`w-1.5 h-1.5 rounded-full ${primaryChannel.dot}`}></span>
-                    {primaryChannel.isLive ? "Live & Active 🟢" : (primaryChannel.isSetup ? "Sleeping (Needs Upgrade)" : "Pending Setup")}
+                    {/* 🚀 FIXED: Specific wording requested by CEO */}
+                    {primaryChannel.isLive ? "Your bot is Live 🟢" : (primaryChannel.isSetup ? "Sleeping (Needs Upgrade)" : "Pending Setup")}
                   </p>
                 )}
               </div>
@@ -874,29 +875,21 @@ export default function Dashboard() {
             </div>
           </motion.div>
 
+          {/* 🚀 FIXED: Replaced static 3-bar logic with Dynamic Single Channel Traffic */}
           <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.3, delay: 0.8, ease: "easeOut" }} className="bg-[#111113] border border-white/5 p-6 md:p-8 rounded-[1.5rem] shadow-xl flex flex-col">
-            <h3 className="text-sm font-bold uppercase tracking-widest text-gray-500 mb-8">Platform Routing</h3>
+            <h3 className="text-sm font-bold uppercase tracking-widest text-gray-500 mb-8">Channel Traffic</h3>
             <div className="flex-1 flex flex-col justify-center gap-8">
               <div>
                 <div className="flex justify-between items-end mb-2">
-                  <span className="text-sm font-bold text-white flex items-center gap-2"><div className="w-2 h-2 bg-green-500 rounded-full"></div> WhatsApp</span>
-                  <span className="text-xs text-gray-400 font-mono">{stats?.platformStats?.whatsapp || 0} msgs</span>
+                  <span className="text-sm font-bold text-white flex items-center gap-2 capitalize">
+                    <div className={`w-2 h-2 rounded-full ${exactSelectedChannel === 'whatsapp' ? 'bg-green-500' : exactSelectedChannel === 'instagram' ? 'bg-pink-500' : 'bg-blue-400'}`}></div> 
+                    {exactSelectedChannel || "Telegram"}
+                  </span>
+                  <span className="text-xs text-gray-400 font-mono">{stats?.platformStats?.[exactSelectedChannel] || totalMsgs || 0} msgs</span>
                 </div>
-                <div className="w-full bg-[#1A1A1A] h-2 rounded-full overflow-hidden"><div className="h-full bg-green-500 rounded-full" style={{ width: `${((stats?.platformStats?.whatsapp || 0) / (totalMsgs || 1)) * 100}%` }}></div></div>
-              </div>
-              <div>
-                <div className="flex justify-between items-end mb-2">
-                  <span className="text-sm font-bold text-white flex items-center gap-2"><div className="w-2 h-2 bg-blue-400 rounded-full"></div> Telegram</span>
-                  <span className="text-xs text-gray-400 font-mono">{stats?.platformStats?.telegram || 0} msgs</span>
+                <div className="w-full bg-[#1A1A1A] h-2 rounded-full overflow-hidden">
+                  <div className={`h-full rounded-full ${exactSelectedChannel === 'whatsapp' ? 'bg-green-500' : exactSelectedChannel === 'instagram' ? 'bg-pink-500' : 'bg-blue-400'}`} style={{ width: totalMsgs > 0 ? '100%' : '0%' }}></div>
                 </div>
-                <div className="w-full bg-[#1A1A1A] h-2 rounded-full overflow-hidden"><div className="h-full bg-blue-400 rounded-full" style={{ width: `${((stats?.platformStats?.telegram || 0) / (totalMsgs || 1)) * 100}%` }}></div></div>
-              </div>
-              <div>
-                <div className="flex justify-between items-end mb-2">
-                  <span className="text-sm font-bold text-white flex items-center gap-2"><div className="w-2 h-2 bg-pink-500 rounded-full"></div> Instagram</span>
-                  <span className="text-xs text-gray-400 font-mono">{stats?.platformStats?.instagram || 0} msgs</span>
-                </div>
-                <div className="w-full bg-[#1A1A1A] h-2 rounded-full overflow-hidden"><div className="h-full bg-pink-500 rounded-full" style={{ width: `${((stats?.platformStats?.instagram || 0) / (totalMsgs || 1)) * 100}%` }}></div></div>
               </div>
             </div>
           </motion.div>
