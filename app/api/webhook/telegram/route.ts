@@ -7,17 +7,33 @@
  * logic to block unpaid users and Omni-routing logic for active accounts.
  * FIXED: Restored REAL API fetch calls for Gemini, Claude, and OpenAI.
  * FIXED: Maintained conversational memory (Ghajini preventer) and RAG Vector DB queries.
+ * FIXED: Explicit mapping of premium UI model names to their underlying provider API IDs.
  * * ALL RIGHTS RESERVED. CLAWLINK INC.
  * ==============================================================================================
  */
 
 import { NextResponse } from "next/server";
-import { supabaseAdmin } from "@/lib/supabase"; // Use secure client
+import { createClient } from "@supabase/supabase-js";
 
 export const dynamic = "force-dynamic";
 
 const rateLimitMap = new Map<string, number>();
 const COOLDOWN_MS = 1500;
+
+// Initialize Supabase directly to prevent path alias resolution errors during Vercel builds
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
+
+if (!supabaseUrl || !supabaseKey) {
+    console.error("[KNOX_SECURITY] FATAL: Supabase environment variables are missing.");
+}
+
+const supabaseAdmin = createClient(supabaseUrl, supabaseKey, {
+    auth: {
+        persistSession: false,
+        autoRefreshToken: false,
+    }
+});
 
 function sanitizeInput(input: string | null | undefined): string {
     if (!input) return "";
@@ -58,7 +74,7 @@ async function generateEmbedding(text: string) {
 }
 
 // 🚀 REAL API EXECUTIONS RESTORED
-async function callGemini(model: string, systemPrompt: string, history: any[], userText: string) {
+async function callGemini(modelId: string, systemPrompt: string, history: any[], userText: string) {
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) throw new Error("API_KEY missing");
     
@@ -76,10 +92,7 @@ async function callGemini(model: string, systemPrompt: string, history: any[], u
     if (lastRole === "user") contents[contents.length - 1].parts[0].text += "\n" + userText;
     else contents.push({ role: "user", parts: [{ text: userText }] });
 
-    // Ensure model name is a valid Google model string (e.g. gemini-1.5-pro)
-    const googleModelString = model.includes("Flash") || model.includes("Lite") ? "gemini-1.5-flash" : "gemini-1.5-pro";
-
-    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${googleModelString}:generateContent?key=${apiKey}`, {
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelId}:generateContent?key=${apiKey}`, {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 
             system_instruction: { parts: { text: systemPrompt } },
@@ -91,7 +104,7 @@ async function callGemini(model: string, systemPrompt: string, history: any[], u
     return data.candidates[0].content.parts[0].text;
 }
 
-async function callOpenAI(model: string, systemPrompt: string, history: any[], userText: string) {
+async function callOpenAI(modelId: string, systemPrompt: string, history: any[], userText: string) {
     const apiKey = process.env.OPENAI_API_KEY;
     if (!apiKey) throw new Error("API_KEY missing");
     
@@ -101,19 +114,16 @@ async function callOpenAI(model: string, systemPrompt: string, history: any[], u
         { role: "user", content: userText }
     ];
 
-    // Ensure model name is a valid OpenAI model string (e.g. gpt-4o)
-    const openAIModelString = "gpt-4o";
-
     const res = await fetch("https://api.openai.com/v1/chat/completions", {
         method: "POST", headers: { "Content-Type": "application/json", "Authorization": `Bearer ${apiKey}` },
-        body: JSON.stringify({ model: openAIModelString, messages: messages })
+        body: JSON.stringify({ model: modelId, messages: messages })
     });
     const data = await res.json();
     if (!res.ok) throw new Error("Provider Error: OpenAI API rejected the request.");
     return data.choices[0].message.content;
 }
 
-async function callClaude(model: string, systemPrompt: string, history: any[], userText: string) {
+async function callClaude(modelId: string, systemPrompt: string, history: any[], userText: string) {
     const apiKey = process.env.ANTHROPIC_API_KEY;
     if (!apiKey) throw new Error("API_KEY missing");
     
@@ -132,13 +142,10 @@ async function callClaude(model: string, systemPrompt: string, history: any[], u
 
     if (mergedMessages.length > 0 && mergedMessages[0].role !== "user") mergedMessages.shift();
 
-    // Ensure model name is a valid Anthropic model string
-    const claudeModelString = "claude-3-opus-20240229";
-
     const res = await fetch("https://api.anthropic.com/v1/messages", {
         method: "POST", headers: { "Content-Type": "application/json", "x-api-key": apiKey, "anthropic-version": "2023-06-01" },
         body: JSON.stringify({ 
-            model: claudeModelString, 
+            model: modelId, 
             max_tokens: 1024, 
             system: systemPrompt,
             messages: mergedMessages 
@@ -325,48 +332,67 @@ export async function POST(req: Request) {
         const words = userText.split(/\s+/).length;
         const usageRatio = isUnlimited ? 0 : (tokensUsed / tokensAllocated) * 100;
         
-        // 🚀 OMNI-FALLBACK & EXACT ROUTING
+        // 🚀 2026 OMNI MODEL MAPPING
+        // Mapping UI display names to their actual underlying API model IDs
+        const GEMINI_CHEAP = "gemini-1.5-flash"; 
+        const GEMINI_MID = "gemini-1.5-flash";       
+        const GEMINI_PREMIUM = "gemini-1.5-pro";    
+        
+        const GPT_CHEAP = "gpt-3.5-turbo";
+        const GPT_MID = "gpt-4o-mini";
+        const GPT_PREMIUM = "gpt-4o"; 
+        
+        const CLAUDE_CHEAP = "claude-3-haiku-20240307";
+        const CLAUDE_MID = "claude-3-sonnet-20240229";
+        const CLAUDE_PREMIUM = "claude-3-opus-20240229";
+
         let targetProvider = provider;
-        let targetModel = config.selected_model || "GPT-5.4 Pro";
+        
+        // Match the UI selection to the correct API ID for execution
+        let targetApiId = GPT_PREMIUM; 
+        if (provider === "anthropic") targetApiId = CLAUDE_PREMIUM;
+        if (provider === "google") targetApiId = GEMINI_PREMIUM;
 
         if (provider === "omni") {
             if (usageRatio >= 80) {
                 targetProvider = "google"; 
+                targetApiId = GEMINI_CHEAP;
             } else if (usageRatio >= 60) {
                 targetProvider = "openai"; 
+                targetApiId = GPT_MID;
             } else {
-                if (words < 40) { targetProvider = "google";  }
-                else if (words < 150) { targetProvider = "openai"; }
-                else { targetProvider = "anthropic"; } 
+                if (words < 40) { targetProvider = "google"; targetApiId = GEMINI_MID; }
+                else if (words < 150) { targetProvider = "openai"; targetApiId = GPT_MID; }
+                else { targetProvider = "anthropic"; targetApiId = CLAUDE_PREMIUM; } 
             }
         }
 
         try {
-            if (targetProvider === "anthropic") aiResponse = await callClaude(targetModel, fullSystemContext, historyArray, userText);
-            else if (targetProvider === "openai") aiResponse = await callOpenAI(targetModel, fullSystemContext, historyArray, userText);
-            else aiResponse = await callGemini(targetModel, fullSystemContext, historyArray, userText);
+            if (targetProvider === "anthropic") aiResponse = await callClaude(targetApiId, fullSystemContext, historyArray, userText);
+            else if (targetProvider === "openai") aiResponse = await callOpenAI(targetApiId, fullSystemContext, historyArray, userText);
+            else aiResponse = await callGemini(targetApiId, fullSystemContext, historyArray, userText);
             wasSuccessful = true;
         } catch (err1) {
-            console.error(`[EXECUTION_FAILURE] Primary model ${targetModel} rejected request.`);
+            console.error(`[EXECUTION_FAILURE] Primary model ${targetApiId} rejected request.`);
             
             if (provider === "omni") {
                 console.log("[OMNI_FALLBACK] Routing to secondary engine...");
                 try {
-                    aiResponse = await callOpenAI(targetModel, fullSystemContext, historyArray, userText);
+                    aiResponse = await callOpenAI(GPT_MID, fullSystemContext, historyArray, userText);
                     wasSuccessful = true;
                 } catch (err2) {
                     console.log("[OMNI_FALLBACK_2] Routing to tertiary engine...");
                     try {
-                        aiResponse = await callGemini(targetModel, fullSystemContext, historyArray, userText);
+                        aiResponse = await callGemini(GEMINI_CHEAP, fullSystemContext, historyArray, userText);
                         wasSuccessful = true;
                     } catch (err3) { console.error("[CRITICAL_FAILURE] Omni cross-provider fallback exhausted."); }
                 }
             } else {
                 console.log(`[INTRA_PROVIDER_FALLBACK] Downgrading to standard tier for ${provider}.`);
                 try {
-                    if (provider === "anthropic") aiResponse = await callClaude(targetModel, fullSystemContext, historyArray, userText);
-                    else if (provider === "openai") aiResponse = await callOpenAI(targetModel, fullSystemContext, historyArray, userText);
-                    else aiResponse = await callGemini(targetModel, fullSystemContext, historyArray, userText);
+                    if (provider === "anthropic") aiResponse = await callClaude(CLAUDE_CHEAP, fullSystemContext, historyArray, userText);
+                    else if (provider === "openai") aiResponse = await callOpenAI(GPT_CHEAP, fullSystemContext, historyArray, userText);
+                    else aiResponse = await callGemini(GEMINI_CHEAP, fullSystemContext, historyArray, userText);
                     wasSuccessful = true;
                 } catch (err2) {
                     console.error(`[CRITICAL_FAILURE] Intra-provider fallback failed for ${provider}.`);
