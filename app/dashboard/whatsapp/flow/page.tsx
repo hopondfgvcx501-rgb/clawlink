@@ -26,9 +26,10 @@ import ReactFlow, {
 import 'reactflow/dist/style.css';
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
+// 🚀 FIX: Replaced MousePointerSquare with MousePointer to fix Vercel Build Error
 import { 
   MessageSquare, Zap, Play, Save, Activity, 
-  List, MousePointerSquare, FileText
+  List, MousePointer, FileText
 } from "lucide-react";
 import TopHeader from "@/components/TopHeader";
 
@@ -55,7 +56,8 @@ const InteractiveNode = ({ data, isConnectable }: any) => (
     <Handle type="target" position={Position.Left} isConnectable={isConnectable} className="w-3 h-3 bg-blue-500 border-2 border-[#111114]" />
     <div className="bg-blue-500/10 px-3 py-2 flex justify-between items-center border-b border-blue-500/20">
       <div className="flex items-center gap-2">
-        {data.type === 'button' ? <MousePointerSquare className="w-4 h-4 text-blue-400" /> : <List className="w-4 h-4 text-blue-400" />}
+        {/* 🚀 FIX: Used MousePointer here */}
+        {data.type === 'button' ? <MousePointer className="w-4 h-4 text-blue-400" /> : <List className="w-4 h-4 text-blue-400" />}
         <span className="text-[11px] font-black uppercase tracking-widest text-blue-400">Interactive</span>
       </div>
     </div>
@@ -149,7 +151,8 @@ export default function WhatsAppFlowBuilder() {
               <div className="space-y-2">
                 <div className="bg-[#111114] border border-white/10 p-3 rounded-xl cursor-grab hover:border-blue-500/50 transition-colors flex items-center gap-3"
                   onDragStart={(e) => { e.dataTransfer.setData('application/reactflow', 'interactiveNode'); e.dataTransfer.setData('application/label', 'Send Buttons (Max 3)'); e.dataTransfer.setData('application/actionType', 'button'); e.dataTransfer.effectAllowed = 'move'; }} draggable>
-                  <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center shrink-0"><MousePointerSquare className="w-4 h-4 text-blue-400"/></div>
+                  {/* 🚀 FIX: Used MousePointer here */}
+                  <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center shrink-0"><MousePointer className="w-4 h-4 text-blue-400"/></div>
                   <div className="flex flex-col"><span className="text-[12px] font-bold text-gray-200">Button Message</span></div>
                 </div>
                 <div className="bg-[#111114] border border-white/10 p-3 rounded-xl cursor-grab hover:border-blue-500/50 transition-colors flex items-center gap-3"
