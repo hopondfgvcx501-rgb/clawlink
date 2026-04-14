@@ -4,10 +4,11 @@ import { useSession, signOut } from "next-auth/react";
 import { useState, useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
+// 🚀 FIX: Removed FolderVideo and used Folder to fix Vercel Build
 import { 
   LayoutDashboard, Inbox, BarChart3, Settings, LogOut, 
   MessageCircle, Bot, Workflow, Megaphone, Users, Tag, 
-  Sparkles, MessageSquareQuote, UsersRound, FolderVideo, 
+  Sparkles, MessageSquareQuote, UsersRound, Folder, 
   ChevronDown, Activity
 } from "lucide-react";
 import Image from "next/image";
@@ -17,11 +18,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const router = useRouter();
   const pathname = usePathname();
 
-  // State to manage which channel menu is expanded
   const [expandedChannel, setExpandedChannel] = useState<string | null>(null);
 
-  // In a real app, you would fetch user_configs to see which channels are active.
-  // For now, we assume all are active for demonstration.
   const activeChannels = {
     whatsapp: true,
     instagram: true,
@@ -67,7 +65,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       { name: "Flow Builder", icon: Workflow },
       { name: "Broadcast", icon: Megaphone },
       { name: "Groups & Channels", icon: UsersRound },
-      { name: "Media Library", icon: FolderVideo },
+      { name: "Media Library", icon: Folder }, // 🚀 FIX: Used Folder here
       { name: "Users (CRM)", icon: Users },
       { name: "Analytics", icon: BarChart3 },
       { name: "AI Copilot", icon: Sparkles },

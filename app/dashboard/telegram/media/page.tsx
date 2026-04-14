@@ -1,22 +1,12 @@
 "use client";
 
-/**
- * ==============================================================================================
- * CLAWLINK ENTERPRISE: TELEGRAM MEDIA LIBRARY
- * ==============================================================================================
- * @file app/dashboard/telegram/media/page.tsx
- * @description Cloud storage interface for managing images, videos, and documents.
- * Files uploaded here can be dynamically attached to flow nodes and broadcasts.
- * * ALL RIGHTS RESERVED. CLAWLINK INC.
- * ==============================================================================================
- */
-
 import React, { useState } from 'react';
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
+// 🚀 FIX: Removed FolderVideo and used Folder
 import { 
-  FolderVideo, UploadCloud, Image as ImageIcon, 
+  Folder, UploadCloud, Image as ImageIcon, 
   Film, FileText, Trash2, Copy, CheckCircle2 
 } from "lucide-react";
 import TopHeader from "@/components/TopHeader";
@@ -80,7 +70,7 @@ export default function TelegramMediaLibrary() {
           <div>
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-lg font-black text-white flex items-center gap-2">
-                <FolderVideo className="w-5 h-5 text-[#2AABEE]"/> Hosted Assets
+                <Folder className="w-5 h-5 text-[#2AABEE]"/> Hosted Assets 
               </h3>
               <span className="text-[12px] font-mono text-gray-500">{files.length} items</span>
             </div>
