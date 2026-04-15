@@ -86,7 +86,8 @@ export async function POST(req: Request) {
     if (selectedChannel === "telegram" && telegramToken) {
         payload.telegram_token = telegramToken;
     } else if (selectedChannel === "whatsapp" && waPhoneId) {
-        payload.wa_phone_id = waPhoneId;
+        // FIXED: Using correct column name 'whatsapp_phone_id'
+        payload.whatsapp_phone_id = waPhoneId;
         payload.whatsapp_token = telegramToken; 
         if (waPhoneNumber) payload.wa_phone_number = waPhoneNumber;
     } else if (selectedChannel === "instagram" && waPhoneId) {

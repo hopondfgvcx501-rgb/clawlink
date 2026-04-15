@@ -1,6 +1,0 @@
-{
-    "antigravityCopilot.proxy.enabled": false,
-    "antigravityCopilot.autoConfigureCopilot": false,
-    "antigravityCopilot.proxy.rewriteMaxTokens": true,
-    "antigravityCopilot.proxy.ssePreflightEnabled": true
-}
