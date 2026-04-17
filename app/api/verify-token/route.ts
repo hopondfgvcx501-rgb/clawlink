@@ -4,10 +4,10 @@ import { NextResponse } from "next/server";
  * ==============================================================================================
  * CLAWLINK ENTERPRISE API CREDENTIAL VERIFIER
  * ==============================================================================================
+ * @file app/api/verify-token/route.ts
  * @description Securely verifies Meta (WhatsApp/Instagram) and Telegram tokens before saving.
- * FIXED: Implemented strict token sanitization to strip hidden newline/space characters.
- * FIXED: Migrated Meta token transmission from URL query params to Secure HTTP Bearer Headers.
- * * ALL RIGHTS RESERVED. CLAWLINK INC.
+ * 🚀 FIXED: Implemented strict sanitization to remove hidden line breaks from copy-pasting.
+ * 🚀 FIXED: Sent token via Authorization Header instead of URL param to fix Meta parsing errors.
  * ==============================================================================================
  */
 
@@ -19,7 +19,7 @@ export async function POST(req: Request) {
 
         if (!token) return NextResponse.json({ success: false, error: "Token is empty." });
 
-        // 🛡️ SECURITY: Aggressive Sanitization (Removes spaces, tabs, and newlines from copy-pasting)
+        // 🛡️ SECURITY: Aggressive Sanitization (Removes hidden spaces, tabs, and newlines)
         const cleanToken = token.replace(/[\n\r\s]+/g, '').trim();
 
         if (channel === "telegram") {
@@ -40,7 +40,7 @@ export async function POST(req: Request) {
             // Clean the ID as well
             const cleanPhoneId = phoneId.replace(/[\n\r\s]+/g, '').trim();
 
-            // 🚀 REAL VERIFICATION: Hitting Meta Graph API (Secure Header Implementation)
+            // 🚀 REAL VERIFICATION: Hitting Meta Graph API using Secure Bearer Headers
             const res = await fetch(`https://graph.facebook.com/v18.0/${cleanPhoneId}`, {
                 method: "GET",
                 headers: {
