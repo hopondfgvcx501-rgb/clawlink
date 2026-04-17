@@ -6,12 +6,13 @@
  * ==============================================================================================
  * @file app/dashboard/instagram/flow/page.tsx
  * @description Visual Drag & Drop Builder for Instagram DM Funnels.
- * Allows mapping of Comments, Story Mentions, and Quick Replies to automated DMs.
+ * 🚀 SECURED: Compiles visual graph to JSON payload for Meta API.
+ * 🚀 FIXED: Strict "Instagram" naming compliance. Removed "IG" shorthand.
  * * ALL RIGHTS RESERVED. CLAWLINK INC.
  * ==============================================================================================
  */
 
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import ReactFlow, {
   ReactFlowProvider, addEdge, useNodesState, useEdgesState,
   Controls, Background, Panel, Handle, Position
@@ -21,7 +22,7 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { 
   MessageSquare, Zap, Play, Save, Activity, 
-  MousePointer, Image as ImageIcon, MessageCircle
+  MousePointer, MessageCircle
 } from "lucide-react";
 import TopHeader from "@/components/TopHeader";
 
@@ -30,7 +31,7 @@ import TopHeader from "@/components/TopHeader";
 // ==========================================
 
 const TriggerNode = ({ data, isConnectable }: any) => (
-  <div className="bg-[#111114] border border-pink-500/50 shadow-[0_0_15px_rgba(236,72,153,0.15)] rounded-xl w-[250px] overflow-hidden">
+  <div className="bg-[#111114] border border-pink-500/50 shadow-[0_0_15px_rgba(236,72,153,0.15)] rounded-xl w-[250px] overflow-hidden group">
     <div className="bg-gradient-to-r from-orange-500/20 to-pink-500/20 px-3 py-2 flex items-center gap-2 border-b border-pink-500/20">
       <Zap className="w-4 h-4 text-pink-500" />
       <span className="text-[11px] font-black uppercase tracking-widest text-pink-400">Trigger</span>
@@ -64,24 +65,21 @@ const ActionNode = ({ data, isConnectable }: any) => (
 
 const nodeTypes = { triggerNode: TriggerNode, actionNode: ActionNode };
 
-const initialNodes = [
-  { id: 'ig-trigger-1', type: 'triggerNode', position: { x: 50, y: 150 }, data: { label: 'User Comments "LINK"', detail: 'Triggers on any Reel/Post' } },
-];
-const initialEdges: any[] = [];
-let id = 1;
-const getId = () => `ig_node_${id++}`;
-
 export default function InstagramFlowBuilder() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
   
-  const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
-  const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
+  const [nodes, setNodes, onNodesChange] = useNodesState([
+    { id: 'insta-trigger-1', type: 'triggerNode', position: { x: 50, y: 150 }, data: { label: 'User Comments "LINK"', detail: 'Triggers on any Reel/Post' } }
+  ]);
+  const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const [reactFlowInstance, setReactFlowInstance] = useState<any>(null);
   const [isSaving, setIsSaving] = useState(false);
 
-  if (status === "unauthenticated") router.push("/");
+  useEffect(() => {
+    if (status === "unauthenticated") router.replace("/");
+  }, [status, router]);
 
   const onConnect = useCallback((params: any) => {
     const animatedEdge = { ...params, animated: true, style: { stroke: '#ec4899', strokeWidth: 2 }, type: 'smoothstep' };
@@ -99,28 +97,54 @@ export default function InstagramFlowBuilder() {
       const nodeLabel = event.dataTransfer.getData('application/label');
       const nodeActionType = event.dataTransfer.getData('application/actionType');
 
-      if (!type) return;
+      if (!type || !reactFlowInstance) return;
 
       const position = reactFlowInstance.screenToFlowPosition({ x: event.clientX, y: event.clientY });
-      const newNode = { id: getId(), type, position, data: { label: nodeLabel, type: nodeActionType, preview: 'Drag edge to configure' } };
+      const newNode = { id: `insta_node_${Date.now()}`, type, position, data: { label: nodeLabel, type: nodeActionType, preview: 'Drag edge to configure' } };
       setNodes((nds) => nds.concat(newNode));
     }, [reactFlowInstance, setNodes]
   );
 
-  const handleSaveFlow = () => {
+  const handleSaveFlow = async () => {
+      if (!session?.user?.email) return;
       setIsSaving(true);
-      setTimeout(() => { setIsSaving(false); alert("📸 Instagram Funnel compiled and synced to Meta Graph API!"); }, 1200);
+      
+      const payload = {
+        email: session.user.email,
+        channel: "instagram",
+        nodes: reactFlowInstance.getNodes(),
+        edges: reactFlowInstance.getEdges()
+      };
+
+      try {
+        const res = await fetch('/api/instagram/flow', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        
+        const data = await res.json();
+        if(data.success) {
+          alert("📸 Instagram Funnel compiled and synced to Meta Graph API!");
+        } else {
+          alert("Failed to save flow.");
+        }
+      } catch(err) {
+        console.error(err);
+      } finally {
+        setIsSaving(false);
+      }
   };
 
   return (
     <div className="flex flex-col h-screen bg-[#07070A] text-white overflow-hidden selection:bg-pink-500/30">
-      <TopHeader title="IG Flow Builder" session={session} />
+      <TopHeader title="Instagram Flow Builder" session={session} />
       
       <div className="flex-1 flex overflow-hidden border-t border-white/5">
         <aside className="w-[280px] bg-[#0A0A0D] border-r border-white/5 flex flex-col z-20 shadow-[5px_0_30px_rgba(0,0,0,0.5)]">
           <div className="p-5 border-b border-white/5">
             <h2 className="text-[13px] font-black uppercase tracking-[0.15em] text-white flex items-center gap-2">
-              <MessageSquare className="w-4 h-4 text-pink-500" /> IG Toolbox
+              <MessageSquare className="w-4 h-4 text-pink-500" /> Instagram Toolbox
             </h2>
             <p className="text-[10px] text-gray-500 mt-1">Drag nodes to build DM funnels</p>
           </div>
@@ -166,10 +190,7 @@ export default function InstagramFlowBuilder() {
               <Background color="#ffffff" gap={24} size={1} opacity={0.05} />
               <Controls className="bg-[#111114] border border-white/10 rounded-lg overflow-hidden fill-white" showInteractive={false}/>
               <Panel position="top-right" className="flex gap-3 m-4">
-                <button className="bg-[#111114] border border-white/10 hover:bg-white/5 text-white px-4 py-2 rounded-xl text-[11px] font-bold uppercase tracking-widest flex items-center gap-2 transition-colors">
-                  <Play className="w-3 h-3 text-pink-500" /> Test
-                </button>
-                <button onClick={handleSaveFlow} disabled={isSaving} className="bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-400 hover:to-purple-400 text-white px-6 py-2 rounded-xl text-[11px] font-black uppercase tracking-widest flex items-center gap-2 transition-colors shadow-[0_0_15px_rgba(236,72,153,0.3)] disabled:opacity-50">
+                <button onClick={handleSaveFlow} disabled={isSaving} className="bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-400 hover:to-purple-400 text-white px-6 py-2.5 rounded-xl text-[11px] font-black uppercase tracking-widest flex items-center gap-2 transition-colors shadow-[0_0_15px_rgba(236,72,153,0.3)] disabled:opacity-50">
                   {isSaving ? <Activity className="w-4 h-4 animate-spin"/> : <Save className="w-4 h-4" />} {isSaving ? "Compiling..." : "Save & Publish"}
                 </button>
               </Panel>
@@ -177,16 +198,7 @@ export default function InstagramFlowBuilder() {
           </ReactFlowProvider>
         </div>
       </div>
-
-      <style dangerouslySetInnerHTML={{__html:`
-        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
-        .react-flow__controls-button { border-bottom: 1px solid rgba(255,255,255,0.1) !important; background: #111114 !important; }
-        .react-flow__controls-button svg { fill: #9ca3af !important; }
-        .react-flow__controls-button:hover svg { fill: #fff !important; }
-      `}}/>
+      <style dangerouslySetInnerHTML={{__html:`.react-flow__controls-button { border-bottom: 1px solid rgba(255,255,255,0.1) !important; background: #111114 !important; } .react-flow__controls-button svg { fill: #9ca3af !important; } .react-flow__controls-button:hover svg { fill: #fff !important; }`}}/>
     </div>
   );
 }
