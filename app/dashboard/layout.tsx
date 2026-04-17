@@ -7,8 +7,9 @@
  * @file app/dashboard/layout.tsx
  * @description Master layout wrapper. Dynamically renders "Active Channels" in the sidebar
  * and routes to the exact Advanced PRO Features based on the platform.
- * FIXED: Enforced strict full-name channel rendering (WhatsApp, Instagram, Telegram) with exact casing.
- * FIXED: Removed "Suite" and all shorthand text.
+ * 🚀 SECURED: Added Cache-Control and timestamping to prevent stale data leaks.
+ * 🚀 SECURED: Strict null checks and anti-flicker UI for session loading.
+ * 🚀 FIXED: Enforced strict full-name channel rendering (WhatsApp, Instagram, Telegram).
  * * ALL RIGHTS RESERVED. CLAWLINK INC.
  * ==============================================================================================
  */
@@ -32,7 +33,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [expandedChannel, setExpandedChannel] = useState<string | null>(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false); 
   
-  // 🚀 DYNAMIC STATE: Defaults to false. Overridden by real DB fetch.
+  // 🚀 DYNAMIC STATE: Defaults to false. Overridden by secure DB fetch.
   const [activeChannels, setActiveChannels] = useState({
     telegram: false,
     whatsapp: false,
@@ -41,20 +42,32 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   const [isLoadingChannels, setIsLoadingChannels] = useState(true);
 
+  // Secure Auth Redirect
   useEffect(() => {
-    if (status === "unauthenticated") router.push("/");
+    if (status === "unauthenticated") {
+      router.replace("/");
+    }
   }, [status, router]);
 
+  // Auto-close mobile menu on route change
   useEffect(() => {
     setIsMobileMenuOpen(false);
   }, [pathname]);
 
-  // 🚀 REAL-TIME FETCH LOGIC
+  // 🚀 SECURE REAL-TIME FETCH LOGIC
   useEffect(() => {
-    if (status === "authenticated" && session?.user?.email) {
-      fetch(`/api/user?email=${session.user.email}`)
-        .then(res => res.json())
-        .then(data => {
+    const fetchActiveChannels = async () => {
+      if (status === "authenticated" && session?.user?.email) {
+        try {
+          // Added cache-busting to ensure fresh, secure data retrieval
+          const res = await fetch(`/api/user?email=${encodeURIComponent(session.user.email)}&t=${Date.now()}`, {
+            headers: { 'Cache-Control': 'no-store' }
+          });
+          
+          if (!res.ok) throw new Error("Secure fetch failed");
+          
+          const data = await res.json();
+          
           if (data.success && data.data) {
             setActiveChannels({
               telegram: !!data.data.telegram_token,    
@@ -62,18 +75,19 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               instagram: !!data.data.instagram_account_id || !!data.data.instagram_token   
             });
             
-            // Auto-expand the active channel if there's only one, or match it to the current URL
             if (data.data.selected_channel) {
               setExpandedChannel(data.data.selected_channel);
             }
           }
+        } catch (err) {
+          console.error("[SECURITY_LOG] Failed to load active channels safely", err);
+        } finally {
           setIsLoadingChannels(false);
-        })
-        .catch(err => {
-          console.error("Failed to load active channels", err);
-          setIsLoadingChannels(false);
-        });
-    }
+        }
+      }
+    };
+
+    fetchActiveChannels();
   }, [session, status]);
 
   const toggleChannel = (channel: string) => {
@@ -83,43 +97,43 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   // 🚀 ADVANCED PRO FEATURES ROUTING MATRIX
   const menuItems = {
     whatsapp: [
-      { name: "Inbox", icon: MessageCircle, path: "/dashboard/crm" },
-      { name: "Automation", icon: Cpu, path: "/dashboard/whatsapp/automation" },
+      { name: "Live CRM Inbox", icon: MessageCircle, path: "/dashboard/crm" },
+      { name: "Automation Rules", icon: Cpu, path: "/dashboard/whatsapp/automation" },
       { name: "Flow Builder", icon: Workflow, path: "/dashboard/whatsapp/flow" },
-      { name: "Broadcast", icon: Megaphone, path: "/dashboard/whatsapp/broadcast" },
-      { name: "Contacts (CRM)", icon: Users, path: "/dashboard/whatsapp/contacts" },
-      { name: "Labels", icon: Tag, path: "/dashboard/whatsapp/labels" },
-      { name: "Analytics", icon: BarChart3, path: "/dashboard/analytics" },
+      { name: "Broadcast Engine", icon: Megaphone, path: "/dashboard/whatsapp/broadcast" },
+      { name: "Contacts & CRM", icon: Users, path: "/dashboard/whatsapp/contacts" },
+      { name: "Chat Labels", icon: Tag, path: "/dashboard/whatsapp/labels" },
+      { name: "Data Analytics", icon: BarChart3, path: "/dashboard/analytics" },
       { name: "AI Copilot", icon: BrainCircuit, path: "/dashboard/whatsapp/copilot" },
-      { name: "Team", icon: UsersRound, path: "/dashboard/team" },
-      { name: "Settings", icon: Settings, path: "/dashboard/whatsapp/settings" },
+      { name: "Team Access", icon: UsersRound, path: "/dashboard/team" },
+      { name: "Channel Settings", icon: Settings, path: "/dashboard/settings" },
     ],
     instagram: [
-      { name: "Inbox", icon: MessageCircle, path: "/dashboard/crm" },
-      { name: "Comments", icon: MessageSquareQuote, path: "/dashboard/instagram/comments" },
-      { name: "Automation", icon: Cpu, path: "/dashboard/instagram/automations" },
+      { name: "Live CRM Inbox", icon: MessageCircle, path: "/dashboard/crm" },
+      { name: "Auto Comments", icon: MessageSquareQuote, path: "/dashboard/instagram/comments" },
+      { name: "DM Automations", icon: Cpu, path: "/dashboard/instagram/automations" },
       { name: "Flow Builder", icon: Workflow, path: "/dashboard/instagram/flow" },
-      { name: "Leads (CRM)", icon: Users, path: "/dashboard/instagram/leads" },
-      { name: "Campaigns", icon: Megaphone, path: "/dashboard/instagram/campaigns" },
-      { name: "Growth Tools", icon: Sparkles, path: "/dashboard/instagram/growth" },
-      { name: "Analytics", icon: BarChart3, path: "/dashboard/analytics" },
+      { name: "Leads Database", icon: Users, path: "/dashboard/instagram/leads" },
+      { name: "Mass Campaigns", icon: Megaphone, path: "/dashboard/instagram/campaigns" },
+      { name: "Growth Funnels", icon: Sparkles, path: "/dashboard/instagram/growth" },
+      { name: "Data Analytics", icon: BarChart3, path: "/dashboard/analytics" },
       { name: "AI Copilot", icon: BrainCircuit, path: "/dashboard/instagram/copilot" },
-      { name: "Team", icon: UsersRound, path: "/dashboard/team" },
-      { name: "Settings", icon: Settings, path: "/dashboard/instagram/settings" },
+      { name: "Team Access", icon: UsersRound, path: "/dashboard/team" },
+      { name: "Channel Settings", icon: Settings, path: "/dashboard/settings" },
     ],
     telegram: [
-      { name: "Inbox", icon: MessageCircle, path: "/dashboard/crm" },
-      { name: "Bots", icon: Bot, path: "/dashboard/telegram/bots" },
-      { name: "Automation", icon: Cpu, path: "/dashboard/telegram/automation" },
+      { name: "Live CRM Inbox", icon: MessageCircle, path: "/dashboard/crm" },
+      { name: "Bot Manager", icon: Bot, path: "/dashboard/telegram/bots" },
+      { name: "Automation Rules", icon: Cpu, path: "/dashboard/telegram/automation" },
       { name: "Flow Builder", icon: Workflow, path: "/dashboard/telegram/flow" },
-      { name: "Broadcast", icon: Megaphone, path: "/dashboard/telegram/broadcast" },
-      { name: "Groups & Channels", icon: UsersRound, path: "/dashboard/telegram/groups" },
+      { name: "Broadcast Engine", icon: Megaphone, path: "/dashboard/telegram/broadcast" },
+      { name: "Groups Mod", icon: UsersRound, path: "/dashboard/telegram/groups" },
       { name: "Media Library", icon: Folder, path: "/dashboard/telegram/media" },
-      { name: "Users (CRM)", icon: Users, path: "/dashboard/telegram/users" },
-      { name: "Analytics", icon: BarChart3, path: "/dashboard/analytics" },
+      { name: "Subscribers", icon: Users, path: "/dashboard/telegram/users" },
+      { name: "Data Analytics", icon: BarChart3, path: "/dashboard/analytics" },
       { name: "AI Copilot", icon: BrainCircuit, path: "/dashboard/telegram/copilot" },
-      { name: "Team", icon: UsersRound, path: "/dashboard/team" },
-      { name: "Settings", icon: Settings, path: "/dashboard/telegram/settings" },
+      { name: "Team Access", icon: UsersRound, path: "/dashboard/team" },
+      { name: "Channel Settings", icon: Settings, path: "/dashboard/settings" },
     ]
   };
 
@@ -130,7 +144,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     return "text-gray-400";
   };
 
-  // Helper to ensure perfect Enterprise Naming and Casing
+  // Explicit Strict Casing Function
   const getExactChannelName = (channel: string) => {
     if (channel === "whatsapp") return "WhatsApp";
     if (channel === "instagram") return "Instagram";
@@ -155,7 +169,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     return null;
   };
 
-  if (status === "loading") return null;
+  // Secure Anti-Flicker Loading State
+  if (status === "loading") {
+    return (
+      <div className="w-full h-screen bg-[#07070A] flex flex-col items-center justify-center">
+        <Activity className="w-8 h-8 text-orange-500 animate-spin opacity-50" />
+      </div>
+    );
+  }
 
   const deployedChannels = Object.keys(activeChannels).filter(k => activeChannels[k as keyof typeof activeChannels]);
 
@@ -173,7 +194,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         )}
       </AnimatePresence>
 
-      {/* 🚀 SMART SIDEBAR (Mobile & Desktop Responsive) */}
+      {/* 🚀 SMART SIDEBAR */}
       <aside className={`fixed md:relative inset-y-0 left-0 w-[280px] bg-[#0A0A0D] border-r border-white/5 flex flex-col shrink-0 z-50 shadow-[5px_0_30px_rgba(0,0,0,0.5)] transform transition-transform duration-300 ease-in-out ${isMobileMenuOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"}`}>
         
         {/* Header / Logo */}
@@ -199,32 +220,32 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <p className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500 mb-3 pl-2">Enterprise Tools</p>
             <div className="space-y-1">
               <button onClick={() => router.push("/dashboard")} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] font-bold transition-all ${pathname === "/dashboard" ? "bg-white/10 text-white" : "text-gray-400 hover:bg-white/5 hover:text-gray-200"}`}>
-                <LayoutDashboard className="w-4 h-4"/> Overview
+                <LayoutDashboard className="w-4 h-4"/> Global Overview
               </button>
               <button onClick={() => router.push("/dashboard/crm")} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] font-bold transition-all ${pathname === "/dashboard/crm" ? "bg-white/10 text-white" : "text-gray-400 hover:bg-white/5 hover:text-gray-200"}`}>
                 <Inbox className="w-4 h-4"/> Live CRM Inbox
               </button>
               <button onClick={() => router.push("/dashboard/analytics")} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] font-bold transition-all ${pathname === "/dashboard/analytics" ? "bg-white/10 text-white" : "text-gray-400 hover:bg-white/5 hover:text-gray-200"}`}>
-                <BarChart3 className="w-4 h-4"/> Data Analytics
+                <BarChart3 className="w-4 h-4"/> Universal Analytics
               </button>
               <button onClick={() => router.push("/dashboard/settings")} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] font-bold transition-all ${pathname === "/dashboard/settings" ? "bg-white/10 text-white" : "text-gray-400 hover:bg-white/5 hover:text-gray-200"}`}>
-                <Settings className="w-4 h-4"/> Global Settings
+                <Settings className="w-4 h-4"/> API Configurations
               </button>
             </div>
           </div>
 
           {/* Dynamic Channels & Sub-features */}
           <div>
-            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500 mb-3 pl-2">Active Channels</p>
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500 mb-3 pl-2">Active Workspaces</p>
             
             {isLoadingChannels ? (
                <div className="pl-3 py-2 text-[11px] text-gray-600 font-mono flex items-center gap-2">
-                 <Activity className="w-3 h-3 animate-spin"/> Syncing Capabilities...
+                 <Activity className="w-3 h-3 animate-spin"/> Syncing Safely...
                </div>
             ) : deployedChannels.length > 0 ? (
-              <div className="space-y-2">
+              <div className="space-y-3">
                 {deployedChannels.map((channel) => (
-                  <div key={channel} className={`flex flex-col border transition-all duration-300 rounded-2xl overflow-hidden ${expandedChannel === channel ? 'bg-[#111114] border-white/10 shadow-xl' : 'bg-transparent border-transparent'}`}>
+                  <div key={channel} className={`flex flex-col transition-all duration-300 rounded-2xl overflow-hidden ${expandedChannel === channel ? 'bg-[#111114] border border-white/5 shadow-xl' : 'bg-transparent border border-transparent'}`}>
                     
                     <button 
                       onClick={() => toggleChannel(channel)}
@@ -248,7 +269,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                           transition={{ duration: 0.3, ease: "easeInOut" }}
                           className="overflow-hidden"
                         >
-                          <div className="p-2 pt-0 pb-3 space-y-0.5 mt-1 border-t border-white/5 bg-black/20">
+                          <div className="p-2 pt-0 pb-3 space-y-0.5 mt-1">
                             {menuItems[channel as keyof typeof menuItems].map((item, idx) => (
                               <button 
                                 key={idx} 
@@ -293,7 +314,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 <span className="text-[10px] text-gray-500 truncate">{session?.user?.email}</span>
               </div>
             </div>
-            <button onClick={(e) => { e.stopPropagation(); signOut(); }} className="p-2 text-gray-500 hover:text-red-400 transition-colors">
+            <button onClick={(e) => { e.stopPropagation(); signOut(); }} className="p-2 text-gray-500 hover:text-red-400 transition-colors" title="Secure Logout">
               <LogOut className="w-4 h-4"/>
             </button>
           </div>
