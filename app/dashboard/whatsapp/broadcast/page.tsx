@@ -6,11 +6,12 @@
  * ==============================================================================================
  * @file app/dashboard/whatsapp/broadcast/page.tsx
  * @description WhatsApp specific bulk messaging requiring Meta-approved templates.
+ * 🚀 UPGRADED: Removed dummy campaign state. Connected to real database fetch and dispatch APIs.
  * * ALL RIGHTS RESERVED. CLAWLINK INC.
  * ==============================================================================================
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
@@ -21,6 +22,15 @@ import {
 } from "lucide-react";
 import TopHeader from "@/components/TopHeader";
 
+interface Campaign {
+  id: string | number;
+  name: string;
+  status: string;
+  sent: number;
+  opens: string;
+  date: string;
+}
+
 export default function WhatsAppBroadcast() {
   const { data: session, status } = useSession();
   const router = useRouter();
@@ -28,28 +38,81 @@ export default function WhatsAppBroadcast() {
   const [audience, setAudience] = useState('all');
   const [template, setTemplate] = useState('promo_v1');
   const [isSending, setIsSending] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const [campaigns, setCampaigns] = useState([
-    { id: 1, name: "Diwali Offer (promo_v1)", status: "Completed", sent: 1205, opens: "95%", date: "Oct 24" },
-    { id: 2, name: "Webinar Link (event_v2)", status: "Completed", sent: 800, opens: "88%", date: "Oct 10" },
-  ]);
+  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
 
   if (status === "unauthenticated") router.push("/");
 
-  const handleSendBroadcast = () => {
+  // 🚀 FETCH REAL CAMPAIGN HISTORY FROM BACKEND
+  useEffect(() => {
+    const fetchCampaigns = async () => {
+      if (status === "authenticated" && session?.user?.email) {
+        try {
+          const res = await fetch(`/api/broadcast?email=${session.user.email}&channel=whatsapp`);
+          const data = await res.json();
+          if (data.success && data.campaigns) {
+             setCampaigns(data.campaigns);
+          }
+        } catch (error) {
+          console.error("Failed to load real campaigns", error);
+        } finally {
+          setIsLoading(false);
+        }
+      }
+    };
+    fetchCampaigns();
+  }, [session, status]);
+
+  // 🚀 DISPATCH REAL CAMPAIGN TO BACKEND
+  const handleSendBroadcast = async () => {
+    if (!session?.user?.email) return;
     setIsSending(true);
-    setTimeout(() => {
-      setIsSending(false);
-      setCampaigns([{ id: Date.now(), name: `Campaign (${template})`, status: "Completed", sent: audience === 'all' ? 1205 : 340, opens: "Pending", date: "Just now" }, ...campaigns]);
-      alert("🟢 WhatsApp Broadcast successfully queued via Meta API!");
-    }, 1500);
+    
+    try {
+      const res = await fetch("/api/broadcast", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+              email: session.user.email,
+              channel: "whatsapp",
+              audience: audience,
+              template: template
+          })
+      });
+
+      const data = await res.json();
+      
+      if (data.success) {
+          alert("🟢 WhatsApp Broadcast successfully queued via Meta API!");
+          // Re-fetch to get the newly created campaign history
+          const refreshRes = await fetch(`/api/broadcast?email=${session.user.email}&channel=whatsapp`);
+          const refreshData = await refreshRes.json();
+          if (refreshData.success && refreshData.campaigns) setCampaigns(refreshData.campaigns);
+      } else {
+          alert("Failed to send campaign: " + data.error);
+      }
+    } catch (error) {
+        alert("Network error while dispatching campaign.");
+    } finally {
+        setIsSending(false);
+    }
   };
 
   const btnHover = "transition-all duration-[120ms] ease-out active:scale-[0.95] transform-gpu will-change-transform";
 
+  if (isLoading || status === "loading") {
+    return (
+      <div className="w-full h-screen bg-[#07070A] flex flex-col items-center justify-center text-[#25D366] font-mono">
+        <Activity className="w-10 h-10 animate-spin mb-4" />
+        LOADING CAMPAIGN HISTORY...
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col h-screen bg-[#07070A] text-white overflow-hidden selection:bg-[#25D366]/30">
-      <TopHeader title="WA Broadcast Engine" session={session} />
+      <TopHeader title="WhatsApp Broadcast Engine" session={session} />
       
       <div className="flex-1 overflow-y-auto custom-scrollbar p-6 md:p-8">
         <div className="max-w-[1400px] mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -61,7 +124,7 @@ export default function WhatsAppBroadcast() {
                 <div className="w-10 h-10 rounded-xl bg-[#25D366]/10 flex items-center justify-center border border-[#25D366]/20">
                   <Megaphone className="w-5 h-5 text-[#25D366]"/>
                 </div>
-                New WA Campaign
+                New WhatsApp Campaign
               </h2>
               <p className="text-[13px] text-gray-400 mt-2">Dispatch Meta-approved templates to your contacts.</p>
             </div>
@@ -130,7 +193,12 @@ export default function WhatsAppBroadcast() {
               className="bg-[#0A0A0D] border border-white/5 rounded-[24px] p-5 shadow-[0_10px_40px_rgba(0,0,0,0.5)] flex flex-col h-[550px]">
               
               <div className="flex-1 overflow-y-auto custom-scrollbar pr-2 space-y-3">
-                {campaigns.map((camp) => (
+                {campaigns.length === 0 ? (
+                    <div className="text-center py-10">
+                        <Activity className="w-8 h-8 text-gray-600 mx-auto mb-3" />
+                        <p className="text-sm text-gray-500">No campaigns launched yet.</p>
+                    </div>
+                ) : campaigns.map((camp) => (
                   <div key={camp.id} className="bg-[#111114] border border-white/5 p-4 rounded-2xl hover:border-[#25D366]/30 transition-colors cursor-pointer">
                     <div className="flex justify-between items-start mb-2">
                       <h4 className="text-[13px] font-bold text-white truncate max-w-[150px]">{camp.name}</h4>
