@@ -7,11 +7,14 @@
  * @file app/dashboard/instagram/campaigns/page.tsx
  * @description Allows sending bulk messages to followers who have interacted within 24h.
  * Fully compliant with Meta's Messenger API guidelines for Instagram.
+ * 🚀 SECURED: Strict cache-busting for real-time campaign logs.
+ * 🚀 UPGRADED: Removed dummy array. Connected to live PostgreSQL / API sync.
+ * 🚀 FIXED: Enforced strict "Instagram" terminology. No "IG" shorthand.
  * * ALL RIGHTS RESERVED. CLAWLINK INC.
  * ==============================================================================================
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
@@ -21,40 +24,112 @@ import {
 } from "lucide-react";
 import TopHeader from "@/components/TopHeader";
 
+interface Campaign {
+  id: string | number;
+  name: string;
+  status: string;
+  sent: number;
+  opens: string;
+  date: string;
+}
+
 export default function InstagramCampaigns() {
   const { data: session, status } = useSession();
   const router = useRouter();
 
   const [audience, setAudience] = useState('active_24h');
   const [message, setMessage] = useState('');
+  
+  const [isLoading, setIsLoading] = useState(true);
   const [isSending, setIsSending] = useState(false);
 
-  const [campaigns, setCampaigns] = useState([
-    { id: 1, name: "Weekend Promo", status: "Completed", sent: 840, opens: "82%", date: "Yesterday" },
-  ]);
+  // Real Database Campaign History
+  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
 
-  if (status === "unauthenticated") router.push("/");
+  if (status === "unauthenticated") router.replace("/");
 
-  const handleSendCampaign = () => {
+  // 🚀 SECURE REAL-TIME FETCH LOGIC
+  useEffect(() => {
+    const fetchCampaigns = async () => {
+      if (status === "authenticated" && session?.user?.email) {
+        try {
+          const res = await fetch(`/api/broadcast?email=${encodeURIComponent(session.user.email)}&channel=instagram&t=${Date.now()}`, {
+            headers: { 'Cache-Control': 'no-store' }
+          });
+          
+          if (!res.ok) throw new Error("Secure fetch failed");
+          
+          const data = await res.json();
+          if (data.success && data.campaigns) {
+             setCampaigns(data.campaigns);
+          }
+        } catch (error) {
+          console.error("[INSTAGRAM_CAMPAIGN_ERROR] Failed to load history safely", error);
+        } finally {
+          setIsLoading(false);
+        }
+      }
+    };
+    fetchCampaigns();
+  }, [session, status]);
+
+  // 🚀 SECURE DISPATCH TO META API
+  const handleSendCampaign = async () => {
     if (!message.trim()) {
       alert("Message cannot be empty!");
       return;
     }
+    if (!session?.user?.email) return;
     
     setIsSending(true);
-    setTimeout(() => {
+    
+    try {
+      const res = await fetch("/api/broadcast", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: session.user.email,
+          channel: "instagram",
+          audience: audience,
+          message: message,
+          name: "Mass DM Campaign"
+        })
+      });
+
+      const data = await res.json();
+      
+      if (data.success) {
+        alert("📸 Instagram DM Campaign successfully queued via Meta API!");
+        setMessage('');
+        // Re-fetch the live history
+        const refreshRes = await fetch(`/api/broadcast?email=${encodeURIComponent(session.user.email)}&channel=instagram`);
+        const refreshData = await refreshRes.json();
+        if (refreshData.success && refreshData.campaigns) setCampaigns(refreshData.campaigns);
+      } else {
+        alert("Failed to queue campaign: " + data.error);
+      }
+    } catch (error) {
+      alert("Network error while dispatching campaign.");
+    } finally {
       setIsSending(false);
-      setCampaigns([{ id: Date.now(), name: "Quick Campaign", status: "Completed", sent: 840, opens: "Pending", date: "Just now" }, ...campaigns]);
-      setMessage('');
-      alert("📸 Instagram DM Campaign successfully queued via Meta API!");
-    }, 1500);
+    }
   };
 
   const btnHover = "transition-all duration-[120ms] ease-out active:scale-[0.95] transform-gpu will-change-transform";
 
+  // Secure Anti-Flicker Loading State
+  if (isLoading || status === "loading") {
+    return (
+      <div className="w-full h-screen bg-[#07070A] flex flex-col items-center justify-center text-pink-500 font-mono">
+        <Activity className="w-10 h-10 animate-spin mb-4" />
+        LOADING CAMPAIGN HISTORY...
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col h-screen bg-[#07070A] text-white overflow-hidden selection:bg-pink-500/30">
-      <TopHeader title="IG Campaigns" session={session} />
+      <TopHeader title="Instagram Campaigns" session={session} />
       
       <div className="flex-1 overflow-y-auto custom-scrollbar p-6 md:p-8">
         <div className="max-w-[1400px] mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -66,7 +141,7 @@ export default function InstagramCampaigns() {
                 <div className="w-10 h-10 rounded-xl bg-pink-500/10 flex items-center justify-center border border-pink-500/20">
                   <Megaphone className="w-5 h-5 text-pink-500"/>
                 </div>
-                New IG Campaign
+                New Instagram Campaign
               </h2>
               <p className="text-[13px] text-gray-400 mt-2">Send bulk DMs to users who interacted with you in the last 24 hours.</p>
             </div>
@@ -79,7 +154,7 @@ export default function InstagramCampaigns() {
                 <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-gray-500 mb-3">1. Select Meta-Compliant Audience</label>
                 <div className="flex flex-wrap gap-3">
                   {[
-                    { id: 'active_24h', label: 'Active (Last 24h)', count: '840' },
+                    { id: 'active_24h', label: 'Active (Last 24h)', count: 'Syncing...' },
                   ].map((seg) => (
                     <button 
                       key={seg.id}
@@ -90,7 +165,7 @@ export default function InstagramCampaigns() {
                         : 'bg-[#111114] border-white/10 text-gray-400'
                       }`}
                     >
-                      <Users className="w-4 h-4"/> {seg.label} <span className="opacity-50 text-[10px] font-mono">({seg.count})</span>
+                      <Users className="w-4 h-4"/> {seg.label}
                     </button>
                   ))}
                 </div>
@@ -115,10 +190,10 @@ export default function InstagramCampaigns() {
               </div>
 
               {/* Actions */}
-              <div className="flex items-center gap-4 pt-4 border-t border-white/5">
+              <div className="pt-4 border-t border-white/5">
                 <button 
                   onClick={handleSendCampaign} disabled={isSending}
-                  className={`flex-1 bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-400 hover:to-purple-400 text-white py-4 rounded-xl text-[13px] font-black uppercase tracking-widest flex items-center justify-center gap-2 shadow-[0_10px_20px_rgba(236,72,153,0.3)] disabled:opacity-50 ${btnHover}`}
+                  className={`w-full md:w-auto px-10 bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-400 hover:to-purple-400 text-white py-4 rounded-xl text-[13px] font-black uppercase tracking-widest flex items-center justify-center gap-2 shadow-[0_10px_20px_rgba(236,72,153,0.3)] disabled:opacity-50 ${btnHover}`}
                 >
                   {isSending ? <Activity className="w-5 h-5 animate-spin"/> : <Send className="w-5 h-5"/>}
                   {isSending ? "Dispatching..." : "Send Campaign"}
@@ -140,7 +215,12 @@ export default function InstagramCampaigns() {
               className="bg-[#0A0A0D] border border-white/5 rounded-[24px] p-5 shadow-[0_10px_40px_rgba(0,0,0,0.5)] flex flex-col h-[500px]">
               
               <div className="flex-1 overflow-y-auto custom-scrollbar pr-2 space-y-3">
-                {campaigns.map((camp) => (
+                {campaigns.length === 0 ? (
+                  <div className="text-center py-10">
+                    <Activity className="w-8 h-8 text-gray-600 mx-auto mb-3" />
+                    <p className="text-sm text-gray-500">No campaigns launched yet.</p>
+                  </div>
+                ) : campaigns.map((camp) => (
                   <div key={camp.id} className="bg-[#111114] border border-white/5 p-4 rounded-2xl hover:border-pink-500/30 transition-colors group cursor-pointer">
                     <div className="flex justify-between items-start mb-2">
                       <h4 className="text-[13px] font-bold text-white truncate max-w-[150px]">{camp.name}</h4>
