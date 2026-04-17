@@ -6,12 +6,13 @@
  * ==============================================================================================
  * @file app/dashboard/telegram/flow/page.tsx
  * @description Advanced Drag & Drop Visual Automation Builder using React Flow.
- * Allows users to visually map out /start commands, keyword triggers, and multi-step funnels.
+ * 🚀 SECURED: Compiles visual graph to JSON payload for Telegram Webhook DB.
+ * 🚀 FIXED: Added proper TypeScript types to fix 'onConnect' red line errors.
  * * ALL RIGHTS RESERVED. CLAWLINK INC.
  * ==============================================================================================
  */
 
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import ReactFlow, {
   ReactFlowProvider,
   addEdge,
@@ -21,14 +22,15 @@ import ReactFlow, {
   Background,
   Panel,
   Handle,
-  Position
+  Position,
+  Connection,
+  Edge
 } from 'reactflow';
-import 'reactflow/dist/style.css';
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { 
-  MessageSquare, Zap, Play, Save, Settings, Trash2, 
-  Image as ImageIcon, MoreHorizontal, ArrowRight
+  MessageSquare, Zap, Play, Save, Trash2, 
+  Image as ImageIcon, MoreHorizontal, Activity, Workflow
 } from "lucide-react";
 import TopHeader from "@/components/TopHeader";
 
@@ -36,10 +38,9 @@ import TopHeader from "@/components/TopHeader";
 // 🎨 CUSTOM NODE COMPONENTS
 // ==========================================
 
-// 1. Trigger Node (Starting point of a flow)
 const TriggerNode = ({ data, isConnectable }: any) => {
   return (
-    <div className="bg-[#111114] border border-orange-500/50 shadow-[0_0_15px_rgba(249,115,22,0.15)] rounded-xl w-[250px] overflow-hidden">
+    <div className="bg-[#111114] border border-orange-500/50 shadow-[0_0_15px_rgba(249,115,22,0.15)] rounded-xl w-[250px] overflow-hidden group">
       <div className="bg-orange-500/10 px-3 py-2 flex items-center gap-2 border-b border-orange-500/20">
         <Zap className="w-4 h-4 text-orange-500" />
         <span className="text-[11px] font-black uppercase tracking-widest text-orange-400">Trigger</span>
@@ -53,7 +54,6 @@ const TriggerNode = ({ data, isConnectable }: any) => {
   );
 };
 
-// 2. Action Node (Send message, media, etc.)
 const ActionNode = ({ data, isConnectable }: any) => {
   return (
     <div className="bg-[#111114] border border-blue-500/30 shadow-[0_4px_20px_rgba(0,0,0,0.4)] rounded-xl w-[250px] overflow-hidden group hover:border-blue-500/60 transition-colors">
@@ -64,7 +64,7 @@ const ActionNode = ({ data, isConnectable }: any) => {
           {data.type === 'media' ? <ImageIcon className="w-4 h-4 text-blue-400" /> : <MessageSquare className="w-4 h-4 text-blue-400" />}
           <span className="text-[11px] font-black uppercase tracking-widest text-blue-400">Action</span>
         </div>
-        <button className="text-gray-500 hover:text-white transition-colors"><MoreHorizontal className="w-4 h-4"/></button>
+        <button title="More options" className="text-gray-500 hover:text-white transition-colors"><MoreHorizontal className="w-4 h-4"/></button>
       </div>
       <div className="p-4">
         <p className="text-[13px] font-bold text-white mb-2">{data.label}</p>
@@ -78,7 +78,6 @@ const ActionNode = ({ data, isConnectable }: any) => {
   );
 };
 
-// Register custom nodes
 const nodeTypes = {
   triggerNode: TriggerNode,
   actionNode: ActionNode,
@@ -88,42 +87,31 @@ const nodeTypes = {
 // 🚀 MAIN BUILDER COMPONENT
 // ==========================================
 
-const initialNodes = [
-  {
-    id: 'trigger-1',
-    type: 'triggerNode',
-    position: { x: 50, y: 150 },
-    data: { label: 'User sends /start', detail: 'Matches exact command' },
-  },
-];
-
-const initialEdges: any[] = [];
-
-let id = 1;
-const getId = () => `node_${id++}`;
-
 export default function TelegramFlowBuilder() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
   
-  const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
-  const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
+  // Initial starting node
+  const [nodes, setNodes, onNodesChange] = useNodesState([
+    { id: 'telegram-trigger-1', type: 'triggerNode', position: { x: 50, y: 150 }, data: { label: 'User sends /start', detail: 'Matches exact command' } }
+  ]);
+  const [edges, setEdges, onEdgesChange] = useEdgesState([]);
+  
   const [reactFlowInstance, setReactFlowInstance] = useState<any>(null);
   const [isSaving, setIsSaving] = useState(false);
 
-  // Redirect if not logged in
-  if (status === "unauthenticated") {
-    router.push("/");
-  }
+  useEffect(() => {
+    if (status === "unauthenticated") router.replace("/");
+  }, [status, router]);
 
-  const onConnect = useCallback((params: any) => {
-    // Add custom styling to edges
+  // FIX: Added proper Connection/Edge typing to prevent TS red line error
+  const onConnect = useCallback((params: Connection | Edge) => {
     const animatedEdge = { 
         ...params, 
         animated: true, 
         style: { stroke: '#4b5563', strokeWidth: 2 },
-        type: 'smoothstep' // Use curved lines
+        type: 'smoothstep' 
     };
     setEdges((eds) => addEdge(animatedEdge, eds));
   }, [setEdges]);
@@ -133,57 +121,85 @@ export default function TelegramFlowBuilder() {
     event.dataTransfer.dropEffect = 'move';
   }, []);
 
-  const onDrop = useCallback(
-    (event: any) => {
+  const onDrop = useCallback((event: any) => {
       event.preventDefault();
+
+      if (!reactFlowWrapper.current || !reactFlowInstance) return;
 
       const type = event.dataTransfer.getData('application/reactflow');
       const nodeLabel = event.dataTransfer.getData('application/label');
       const nodeActionType = event.dataTransfer.getData('application/actionType');
 
-      if (typeof type === 'undefined' || !type) {
-        return;
-      }
+      if (!type) return;
 
+      const reactFlowBounds = reactFlowWrapper.current.getBoundingClientRect();
       const position = reactFlowInstance.screenToFlowPosition({
-        x: event.clientX,
-        y: event.clientY,
+        x: event.clientX - reactFlowBounds.left,
+        y: event.clientY - reactFlowBounds.top,
       });
 
       const newNode = {
-        id: getId(),
+        id: `node_${Date.now()}`,
         type,
         position,
         data: { 
             label: nodeLabel,
+            detail: '',
             type: nodeActionType,
             preview: nodeActionType === 'media' ? 'Select file to attach' : 'Type your message here...'
         },
       };
 
-      setNodes((nds) => nds.concat(newNode));
-    },
-    [reactFlowInstance, setNodes],
+      setNodes((nds) => nds.concat([newNode]));
+    }, [reactFlowInstance, setNodes]
   );
 
+  const handleClearCanvas = () => {
+    if(confirm("Are you sure you want to clear the canvas?")) {
+      setNodes([{ id: 'telegram-trigger-1', type: 'triggerNode', position: { x: 50, y: 150 }, data: { label: 'User sends /start', detail: 'Matches exact command' } }]);
+      setEdges([]);
+    }
+  };
+
+  // 🚀 SECURE SAVE LOGIC
   const handleSaveFlow = async () => {
+      if (!session?.user?.email) return;
       setIsSaving(true);
-      // In a real app, you would send `nodes` and `edges` to Supabase here
-      console.log("Saving Flow Data:", { nodes, edges });
       
-      setTimeout(() => {
-          setIsSaving(false);
-          alert("Flow successfully compiled and saved to production!");
-      }, 1000);
+      const payload = {
+        email: session.user.email,
+        channel: "telegram",
+        nodes: reactFlowInstance.getNodes(),
+        edges: reactFlowInstance.getEdges()
+      };
+
+      try {
+        const res = await fetch('/api/telegram/flow', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        
+        const data = await res.json();
+        if(data.success) {
+          alert("🚀 Telegram Flow compiled and saved to production database!");
+        } else {
+          alert("Failed to save flow.");
+        }
+      } catch(err) {
+        console.error("Save error:", err);
+      } finally {
+        setIsSaving(false);
+      }
   };
 
   if (status === "loading") {
-    return <div className="h-screen flex items-center justify-center bg-[#07070A] text-orange-500 font-mono"><Activity className="w-8 h-8 animate-spin mr-3"/> INITIALIZING CANVAS...</div>;
+    return <div className="h-screen flex items-center justify-center bg-[#07070A] text-[#2AABEE] font-mono"><Activity className="w-8 h-8 animate-spin mr-3"/> INITIALIZING CANVAS...</div>;
   }
 
   return (
     <div className="flex flex-col h-screen bg-[#07070A] text-white overflow-hidden">
-      <TopHeader title="Flow Builder" session={session} />
+      <TopHeader title="Telegram Flow Builder" session={session} />
       
       <div className="flex-1 flex overflow-hidden border-t border-white/5">
         
@@ -202,7 +218,7 @@ export default function TelegramFlowBuilder() {
               <p className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500 mb-3 pl-1">Triggers</p>
               <div className="space-y-2">
                 <div 
-                  className="bg-[#111114] border border-orange-500/20 p-3 rounded-xl cursor-grab hover:border-orange-500/50 transition-colors flex items-center gap-3"
+                  className="bg-[#111114] border border-orange-500/20 p-3 rounded-xl cursor-grab hover:border-orange-500/50 transition-colors flex items-center gap-3 shadow-sm"
                   onDragStart={(e) => {
                       e.dataTransfer.setData('application/reactflow', 'triggerNode');
                       e.dataTransfer.setData('application/label', 'Keyword Match');
@@ -213,7 +229,7 @@ export default function TelegramFlowBuilder() {
                   <div className="w-8 h-8 rounded-lg bg-orange-500/10 flex items-center justify-center shrink-0"><Zap className="w-4 h-4 text-orange-400"/></div>
                   <div className="flex flex-col">
                       <span className="text-[12px] font-bold text-gray-200">Keyword Match</span>
-                      <span className="text-[9px] text-gray-500 font-mono">e.g., "price", "help"</span>
+                      <span className="text-[9px] text-gray-500 font-mono">e.g., &quot;price&quot;, &quot;help&quot;</span>
                   </div>
                 </div>
               </div>
@@ -223,7 +239,7 @@ export default function TelegramFlowBuilder() {
               <p className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500 mb-3 pl-1">Actions</p>
               <div className="space-y-2">
                 <div 
-                  className="bg-[#111114] border border-white/10 p-3 rounded-xl cursor-grab hover:border-blue-500/50 transition-colors flex items-center gap-3"
+                  className="bg-[#111114] border border-white/10 p-3 rounded-xl cursor-grab hover:border-blue-500/50 transition-colors flex items-center gap-3 shadow-sm"
                   onDragStart={(e) => {
                       e.dataTransfer.setData('application/reactflow', 'actionNode');
                       e.dataTransfer.setData('application/label', 'Send Message');
@@ -240,7 +256,7 @@ export default function TelegramFlowBuilder() {
                 </div>
 
                 <div 
-                  className="bg-[#111114] border border-white/10 p-3 rounded-xl cursor-grab hover:border-blue-500/50 transition-colors flex items-center gap-3"
+                  className="bg-[#111114] border border-white/10 p-3 rounded-xl cursor-grab hover:border-blue-500/50 transition-colors flex items-center gap-3 shadow-sm"
                   onDragStart={(e) => {
                       e.dataTransfer.setData('application/reactflow', 'actionNode');
                       e.dataTransfer.setData('application/label', 'Send Media');
@@ -277,19 +293,23 @@ export default function TelegramFlowBuilder() {
               fitView
               className="bg-[#07070A]"
             >
-              {/* Subtle grid background to look like a blueprint */}
-              <Background color="#ffffff" gap={24} size={1} opacity={0.05} />
-              <Controls className="bg-[#111114] border border-white/10 rounded-lg overflow-hidden fill-white" showInteractive={false}/>
+              <Background color="#ffffff" gap={24} size={1} />
+              <Controls className="bg-[#111114] border border-white/10 rounded-lg overflow-hidden fill-white shadow-lg" showInteractive={false}/>
               
-              {/* Top Right Controls Overlay */}
-              <Panel position="top-right" className="flex gap-3 m-4">
-                <button className="bg-[#111114] border border-white/10 hover:bg-white/5 text-white px-4 py-2 rounded-xl text-[11px] font-bold uppercase tracking-widest flex items-center gap-2 transition-colors">
+              <Panel position="top-right" className="flex items-center gap-3 m-4">
+                <button onClick={handleClearCanvas} className="text-[11px] font-bold uppercase tracking-widest text-gray-500 hover:text-red-400 transition-colors flex items-center gap-1.5 px-3">
+                  <Trash2 className="w-3.5 h-3.5" /> Clear
+                </button>
+
+                <div className="h-6 w-px bg-white/10 mx-1"></div>
+
+                <button className="bg-[#111114] border border-white/10 hover:bg-white/5 text-white px-4 py-2 rounded-xl text-[11px] font-bold uppercase tracking-widest flex items-center gap-2 transition-colors shadow-lg">
                   <Play className="w-3 h-3 text-green-400" /> Test
                 </button>
                 <button 
                   onClick={handleSaveFlow}
                   disabled={isSaving}
-                  className="bg-[#2AABEE] hover:bg-[#2298D6] text-white px-6 py-2 rounded-xl text-[11px] font-bold uppercase tracking-widest flex items-center gap-2 transition-colors shadow-[0_0_15px_rgba(42,171,238,0.3)] disabled:opacity-50"
+                  className="bg-[#2AABEE] hover:bg-[#2298D6] text-white px-6 py-2.5 rounded-xl text-[11px] font-black uppercase tracking-widest flex items-center gap-2 transition-colors shadow-[0_0_20px_rgba(42,171,238,0.3)] disabled:opacity-50"
                 >
                   {isSaving ? <Activity className="w-4 h-4 animate-spin"/> : <Save className="w-4 h-4" />} 
                   {isSaving ? "Compiling..." : "Save & Publish"}
