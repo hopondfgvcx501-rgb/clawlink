@@ -187,7 +187,7 @@ export default function TelegramUsersCRM() {
                           <button onClick={() => router.push(`/dashboard/crm?chatId=${user.chatId}`)} className="text-gray-500 hover:text-[#2AABEE] transition-colors p-2 bg-black/40 rounded-lg border border-white/5" title="Direct Message">
                             <MessageCircle className="w-4 h-4"/>
                           </button>
-                          <button className="text-gray-600 hover:text-white transition-colors p-2">
+                          <button title="More options" className="text-gray-600 hover:text-white transition-colors p-2">
                             <MoreVertical className="w-4 h-4"/>
                           </button>
                         </div>

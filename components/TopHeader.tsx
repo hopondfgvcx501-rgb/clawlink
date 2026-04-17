@@ -31,7 +31,7 @@ export default function TopHeader({ title, session, onBotClick }: HeaderProps) {
           <Search className="w-4 h-4 text-gray-500" />
           <input type="text" placeholder="Search..." className="bg-transparent border-none outline-none text-sm ml-2 text-white placeholder-gray-600 w-32 font-mono" />
         </div>
-        <button className="relative p-2.5 bg-[#1A1A1A] border border-white/10 rounded-full hover:bg-white/10 transition-colors">
+        <button title="Notifications" className="relative p-2.5 bg-[#1A1A1A] border border-white/10 rounded-full hover:bg-white/10 transition-colors">
           <Bell className="w-5 h-5 text-gray-400" />
           <span className="absolute top-0 right-0 w-2.5 h-2.5 bg-orange-500 rounded-full border-2 border-[#111]"></span>
         </button>

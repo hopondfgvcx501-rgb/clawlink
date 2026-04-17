@@ -208,7 +208,7 @@ export default function TelegramAutomations() {
               <div className="bg-[#111114] border border-white/10 p-5 rounded-2xl mb-6 flex flex-wrap gap-4 items-end shadow-inner">
                   <div className="flex-1 min-w-[200px]">
                       <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2 block">If message</label>
-                      <select value={newRule.matchType} onChange={(e)=> setNewRule({...newRule, matchType: e.target.value})} className="w-full bg-[#0A0A0D] border border-white/10 rounded-lg p-2.5 text-sm text-white outline-none focus:border-[#2AABEE]/50">
+                      <select title="Select match type" value={newRule.matchType} onChange={(e)=> setNewRule({...newRule, matchType: e.target.value})} className="w-full bg-[#0A0A0D] border border-white/10 rounded-lg p-2.5 text-sm text-white outline-none focus:border-[#2AABEE]/50">
                           <option value="contains">Contains</option>
                           <option value="exact">Is Exactly</option>
                       </select>
@@ -219,7 +219,7 @@ export default function TelegramAutomations() {
                   </div>
                   <div className="flex-1 min-w-[200px]">
                       <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2 block">Then trigger</label>
-                      <select value={newRule.actionType} onChange={(e)=> setNewRule({...newRule, actionType: e.target.value})} className="w-full bg-[#0A0A0D] border border-white/10 rounded-lg p-2.5 text-sm text-white outline-none focus:border-[#2AABEE]/50">
+                      <select title="Select action type" value={newRule.actionType} onChange={(e)=> setNewRule({...newRule, actionType: e.target.value})} className="w-full bg-[#0A0A0D] border border-white/10 rounded-lg p-2.5 text-sm text-white outline-none focus:border-[#2AABEE]/50">
                           <option value="text">Text Reply</option>
                           <option value="flow">Trigger Flow</option>
                       </select>
@@ -228,7 +228,7 @@ export default function TelegramAutomations() {
                       <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2 block">Content / Flow Name</label>
                       <input type="text" placeholder="Content to send..." value={newRule.content} onChange={(e)=> setNewRule({...newRule, content: e.target.value})} className="w-full bg-[#0A0A0D] border border-white/10 rounded-lg p-2.5 text-sm text-white outline-none focus:border-[#2AABEE]/50" />
                   </div>
-                  <button onClick={handleAddRule} className={`bg-white/10 hover:bg-white/20 text-white px-5 py-3 rounded-lg text-sm font-bold transition-all ${btnHover}`}>
+                  <button title="Add rule" onClick={handleAddRule} className={`bg-white/10 hover:bg-white/20 text-white px-5 py-3 rounded-lg text-sm font-bold transition-all ${btnHover}`}>
                       <Plus className="w-5 h-5" />
                   </button>
               </div>
@@ -261,7 +261,7 @@ export default function TelegramAutomations() {
                         </div>
                       </div>
                     </div>
-                    <button onClick={() => handleDeleteRule(rule.id)} className="ml-4 p-2.5 text-gray-600 hover:text-red-500 hover:bg-red-500/10 rounded-xl transition-colors">
+                    <button title="Delete rule" onClick={() => handleDeleteRule(rule.id)} className="ml-4 p-2.5 text-gray-600 hover:text-red-500 hover:bg-red-500/10 rounded-xl transition-colors">
                       <Trash2 className="w-4 h-4"/>
                     </button>
                   </div>

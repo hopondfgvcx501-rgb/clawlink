@@ -174,11 +174,11 @@ export default function WhatsAppLabels() {
                     </label>
                     <div className="flex flex-wrap gap-2">
                       {PRESET_COLORS.map((color) => (
-                        <button 
-                          key={color}
+                        <button key={color}
+                          title={`Color ${color}`}
                           onClick={() => setNewLabelColor(color)}
+                          data-color={color}
                           className={`w-8 h-8 rounded-full flex items-center justify-center transition-all ${newLabelColor === color ? 'scale-110 ring-2 ring-offset-2 ring-offset-[#0A0A0D] ring-white' : 'hover:scale-110'}`}
-                          style={{ backgroundColor: color }}
                         />
                       ))}
                     </div>
@@ -215,7 +215,7 @@ export default function WhatsAppLabels() {
                   ) : labels.map((label) => (
                     <div key={label.id} className="bg-[#111114] border border-white/5 hover:border-white/10 p-4 rounded-2xl flex items-center justify-between group transition-colors">
                       <div className="flex items-center gap-4">
-                        <div className="w-3 h-10 rounded-full" style={{ backgroundColor: label.color }}></div>
+                        <div className="w-3 h-10 rounded-full bg-blue-500"></div>
                         <div>
                           <h4 className="text-[14px] font-bold text-white">{label.name}</h4>
                           <p className="text-[10px] text-gray-500 font-mono mt-1 uppercase tracking-widest">ID: {label.id.substring(0,8)}</p>
@@ -228,7 +228,7 @@ export default function WhatsAppLabels() {
                           <span className="text-[13px] font-black text-white">{label.userCount.toLocaleString()}</span>
                         </div>
                         <div className="w-px h-8 bg-white/10 hidden sm:block"></div>
-                        <button onClick={() => handleDeleteLabel(label.id)} className="text-gray-600 hover:text-red-500 hover:bg-red-500/10 p-2 rounded-xl transition-colors">
+                        <button title="Delete label" onClick={() => handleDeleteLabel(label.id)} className="text-gray-600 hover:text-red-500 hover:bg-red-500/10 p-2 rounded-xl transition-colors">
                           <Trash2 className="w-4 h-4"/>
                         </button>
                       </div>
@@ -255,6 +255,12 @@ export default function WhatsAppLabels() {
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
+        [data-color="#25D366"] { background-color: #25D366; }
+        [data-color="#3B82F6"] { background-color: #3B82F6; }
+        [data-color="#A855F7"] { background-color: #A855F7; }
+        [data-color="#F97316"] { background-color: #F97316; }
+        [data-color="#EF4444"] { background-color: #EF4444; }
+        [data-color="#EAB308"] { background-color: #EAB308; }
       `}}/>
     </div>
   );

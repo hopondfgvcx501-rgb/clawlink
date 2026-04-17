@@ -11,7 +11,10 @@ const eslintConfig = defineConfig([
       "@typescript-eslint/no-explicit-any": "off",
       "@typescript-eslint/no-unused-vars": "off",
       "prefer-const": "off",
-      "react-hooks/exhaustive-deps": "off"
+      "react-hooks/exhaustive-deps": "off",
+      // Allow CSS variables in inline styles for dynamic theming
+      "react/style-prop-object": "off",
+      "@next/no-style": "off"
     }
   },
   // Override default ignores of eslint-config-next.

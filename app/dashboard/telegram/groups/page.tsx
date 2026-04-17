@@ -163,7 +163,7 @@ export default function TelegramGroups() {
                 <div className="text-center py-16">
                   <ShieldAlert className="w-12 h-12 text-gray-700 mx-auto mb-4 opacity-50" />
                   <p className="text-[14px] font-bold text-gray-300">No communities found.</p>
-                  <p className="text-[12px] text-gray-500 mt-2 max-w-md mx-auto">Add your bot as an Administrator to any Telegram Group or Channel, then click "Sync Communities" to see them here.</p>
+                  <p className="text-[12px] text-gray-500 mt-2 max-w-md mx-auto">Add your bot as an Administrator to any Telegram Group or Channel, then click &quot;Sync Communities&quot; to see them here.</p>
                 </div>
               ) : groups.map((group) => (
                 <motion.div key={group.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-[#111114] border border-white/5 hover:border-[#2AABEE]/30 p-5 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-6 transition-colors group">

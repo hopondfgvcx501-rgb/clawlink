@@ -10,6 +10,8 @@
  * FIXED: Made `hasActivePlan` logic robust to strictly unlock RAG and Live status post-upgrade.
  * FIXED: Changed Live Channel text to "Your bot is Live 🟢" upon activation.
  * FIXED: Replaced static 3-tier platform routing with dynamic single-channel actual traffic.
+ * FIXED: Removed Token Consumption card (Backend managed).
+ * FIXED: Unified loading spinner across the app.
  * * ALL RIGHTS RESERVED. CLAWLINK INC.
  * ==============================================================================================
  */
@@ -493,6 +495,7 @@ export default function Dashboard() {
     alert("Copied to clipboard!"); 
   };
 
+  // 🚀 UNIFIED LOADER COMPONENT (Spinner + Text)
   if (isLoading || status === "loading") {
     return (
       <div className="w-full h-screen bg-[#07070A] flex flex-col items-center justify-center text-orange-500 font-mono">
@@ -609,7 +612,7 @@ export default function Dashboard() {
               exit={{ opacity: 0, scale: 0.95, y: 10 }}
               className="bg-[#0A0A0C] border border-white/10 rounded-2xl p-5 sm:p-8 max-w-5xl w-full relative shadow-[0_20px_60px_rgba(0,0,0,0.8)] max-h-[90vh] flex flex-col"
             >
-              <button onClick={() => setShowPricingPopup(false)} className="absolute top-4 right-4 z-50 p-2 bg-white/5 hover:bg-white/10 rounded-full text-gray-400 hover:text-white transition-colors">
+              <button title="Close pricing popup" onClick={() => setShowPricingPopup(false)} className="absolute top-4 right-4 z-50 p-2 bg-white/5 hover:bg-white/10 rounded-full text-gray-400 hover:text-white transition-colors">
                 <X className="w-5 h-5"/>
               </button>
               
@@ -626,15 +629,15 @@ export default function Dashboard() {
                       const isActive = selectedRenewalPlan === plan.id;
                       return (
                         <div key={plan.id} onClick={() => !isRenewing && setSelectedRenewalPlan(plan.id)}
-                          className={`relative p-5 rounded-2xl cursor-pointer transition-all duration-150 ${btn} ${isActive ? "scale-[1.02]" : "hover:scale-[1.01]"}`}
+                          className={`pricing-card relative p-5 rounded-2xl cursor-pointer transition-all duration-150 ${btn} ${isActive ? "scale-[1.02]" : "hover:scale-[1.01]"}`}
                           style={{
-                            background: isActive ? "rgba(255,255,255,0.05)" : "rgba(255,255,255,0.02)",
-                            border: `1px solid ${isActive ? plan.accent : "rgba(255,255,255,0.07)"}`,
-                            boxShadow: isActive ? `0 0 28px ${plan.accent}40` : "none"
-                          }}>
-                          {plan.badge && <div className="absolute -top-3 left-1/2 -translate-x-1/2 text-white text-[9px] font-bold uppercase px-3 py-1 rounded-full tracking-widest" style={{ background: plan.accent }}>{plan.badge}</div>}
+                            "--pricing-bg": isActive ? "rgba(255,255,255,0.05)" : "rgba(255,255,255,0.02)",
+                            "--pricing-border": plan.accent,
+                            "--pricing-active": isActive ? "1" : "0"
+                          } as React.CSSProperties}>
+                          {plan.badge && <div className="pricing-badge absolute -top-3 left-1/2 -translate-x-1/2 text-white text-[9px] font-bold uppercase px-3 py-1 rounded-full tracking-widest" style={{ "--badge-color": plan.accent } as React.CSSProperties}>{plan.badge}</div>}
                           <h3 className={`font-bold uppercase text-[11px] tracking-widest mb-2 ${plan.color}`}>{plan.name}</h3>
-                          <div className="text-[1.6rem] sm:text-[1.9rem] font-black text-white mb-2">{currencySymbol}{(currency === "INR" ? (plan.inr || 0) : (plan.usd || 0)).toLocaleString()}<span style={{ fontSize: 13, fontWeight: 400, color: "#888" }}>{plan.isYearly ? "/yr" : "/mo"}</span></div>
+                          <div className="text-[1.6rem] sm:text-[1.9rem] font-black text-white mb-2">{currencySymbol}{(currency === "INR" ? (plan.inr || 0) : (plan.usd || 0)).toLocaleString()}<span className="pricing-suffix">{plan.isYearly ? "/yr" : "/mo"}</span></div>
                           <p className="text-[11px] text-gray-400 leading-relaxed mb-3 h-auto sm:h-8">{plan.desc}</p>
                           <span className="inline-block px-2 py-1 bg-white/5 rounded text-[10px] text-gray-300 border border-white/10">{plan.msgs}</span>
                         </div>
@@ -662,9 +665,8 @@ export default function Dashboard() {
       </AnimatePresence>
 
       {/* Ambient Background */}
-      <div className="fixed top-[-20%] right-[-8%] w-[800px] h-[800px] rounded-full pointer-events-none z-0" style={{background:"radial-gradient(circle,rgba(249,115,22,0.18) 0%,transparent 65%)",transform:"translateZ(0)"}}/>
-      <div className="fixed bottom-[-20%] left-[-8%] w-[800px] h-[800px] rounded-full pointer-events-none z-0" style={{background:"radial-gradient(circle,rgba(99,102,241,0.15) 0%,transparent 65%)",transform:"translateZ(0)"}}/>
-
+      <div className="fixed top-[-20%] right-[-8%] w-[800px] h-[800px] rounded-full pointer-events-none z-0 gradient-orange-dark" />
+      <div className="fixed bottom-[-20%] left-[-8%] w-[800px] h-[800px] rounded-full pointer-events-none z-0 gradient-indigo-dark" />
       {/* ─── HEADER ─── */}
       <header className="flex items-center justify-between p-6 md:p-8 border-b border-white/5 bg-[#07070A]/70 backdrop-blur-xl sticky top-0 z-30 transition-all duration-300">
         <div className="flex items-center gap-6">
@@ -684,7 +686,7 @@ export default function Dashboard() {
           
           <div className="hidden md:block border-l border-white/10 pl-6">
             <h1 className="text-xl font-black text-white tracking-tight leading-none">Command Center</h1>
-            <p className="text-xs text-gray-400 mt-1">Welcome back, <span className="capitalize">{session?.user?.name?.split(' ')[0] || 'Agent'}</span>. Your AI fleet is active.</p>
+            <p className="text-xs text-gray-400 mt-1">Welcome back, <span className="capitalize">{session?.user?.name?.split(' ')[0] || 'Agent'}</span>. Your AI Agent is active.</p>
           </div>
         </div>
 
@@ -712,7 +714,7 @@ export default function Dashboard() {
               className="bg-gradient-to-r from-blue-600/20 to-purple-600/20 border border-blue-500/30 rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-lg">
               <div className="flex items-center gap-3 text-blue-200 text-sm font-medium">
                 <Smartphone className="w-5 h-5 text-blue-400 flex-shrink-0" />
-                <p>For optimal reliability, click <strong className="text-white">"Add to Home Screen"</strong> in your browser to deploy the ClawLink Progressive Web App.</p>
+                <p>For optimal reliability, click <strong className="text-white">&quot;Add to Home Screen&quot;</strong> in your browser to deploy the ClawLink Progressive Web App.</p>
               </div>
               <button onClick={() => setShowAppBanner(false)} className="text-gray-400 hover:text-white flex-shrink-0 bg-white/5 p-2 rounded-full">✕</button>
             </motion.div>
@@ -799,7 +801,6 @@ export default function Dashboard() {
                 {exactSelectedChannel && (
                   <p className={`text-[10px] font-mono mt-2 flex items-center gap-1.5 ${primaryChannel.isLive ? 'text-green-500' : 'text-yellow-500'}`}>
                     <span className={`w-1.5 h-1.5 rounded-full ${primaryChannel.dot}`}></span>
-                    {/* 🚀 FIXED: Specific wording requested by CEO */}
                     {primaryChannel.isLive ? "Your bot is Live 🟢" : (primaryChannel.isSetup ? "Sleeping (Needs Upgrade)" : "Pending Setup")}
                   </p>
                 )}
@@ -814,24 +815,8 @@ export default function Dashboard() {
           </motion.div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25, delay: 0.4, ease: "easeOut" }} className="bg-[#111113] border border-white/5 p-6 rounded-[1.5rem] shadow-xl relative overflow-hidden group hover:border-white/10 transition-colors">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-orange-500/5 rounded-full blur-3xl group-hover:bg-orange-500/10 transition-colors"></div>
-            <div className="flex justify-between items-start mb-4 relative z-10">
-              <div className="w-10 h-10 rounded-xl bg-orange-500/10 flex items-center justify-center text-orange-500 border border-orange-500/20"><Zap className="w-5 h-5"/></div>
-              <span className="text-[10px] font-bold uppercase tracking-widest text-gray-500">System Capacity</span>
-            </div>
-            <h3 className="text-2xl font-black text-white relative z-10">
-              {(userData?.tokens_used || 0).toLocaleString()}
-            </h3>
-            <p className="text-xs text-gray-400 mt-1 relative z-10">
-              Tokens Consumed
-            </p>
-            <div className="w-full bg-[#1A1A1A] h-1.5 mt-4 rounded-full overflow-hidden relative z-10">
-              <div className={`h-full bg-orange-500/50 w-full`}></div>
-            </div>
-          </motion.div>
-
+        {/* METRICS ROW (2 COLUMNS) */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25, delay: 0.5, ease: "easeOut" }} className="bg-[#111113] border border-white/5 p-6 rounded-[1.5rem] shadow-xl relative overflow-hidden group hover:border-white/10 transition-colors">
             <div className="absolute top-0 right-0 w-32 h-32 bg-green-500/5 rounded-full blur-3xl group-hover:bg-green-500/10 transition-colors"></div>
             <div className="flex justify-between items-start mb-4 relative z-10">
@@ -875,7 +860,6 @@ export default function Dashboard() {
             </div>
           </motion.div>
 
-          {/* 🚀 FIXED: Replaced static 3-bar logic with Dynamic Single Channel Traffic */}
           <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.3, delay: 0.8, ease: "easeOut" }} className="bg-[#111113] border border-white/5 p-6 md:p-8 rounded-[1.5rem] shadow-xl flex flex-col">
             <h3 className="text-sm font-bold uppercase tracking-widest text-gray-500 mb-8">Channel Traffic</h3>
             <div className="flex-1 flex flex-col justify-center gap-8">
@@ -888,7 +872,7 @@ export default function Dashboard() {
                   <span className="text-xs text-gray-400 font-mono">{stats?.platformStats?.[exactSelectedChannel] || totalMsgs || 0} msgs</span>
                 </div>
                 <div className="w-full bg-[#1A1A1A] h-2 rounded-full overflow-hidden">
-                  <div className={`h-full rounded-full ${exactSelectedChannel === 'whatsapp' ? 'bg-green-500' : exactSelectedChannel === 'instagram' ? 'bg-pink-500' : 'bg-blue-400'}`} style={{ width: totalMsgs > 0 ? '100%' : '0%' }}></div>
+                  <div className={`h-full rounded-full channel-progress ${exactSelectedChannel === 'whatsapp' ? 'bg-green-500' : exactSelectedChannel === 'instagram' ? 'bg-pink-500' : 'bg-blue-400'}`} style={{ "--progress-width": totalMsgs > 0 ? '100%' : '0%' } as React.CSSProperties}></div>
                 </div>
               </div>
             </div>
@@ -938,21 +922,21 @@ export default function Dashboard() {
             <p className="text-sm text-gray-400 mb-6 relative z-10">Train your AI with your specific business data. Paste product details, FAQs, or policies below to convert them into vectors.</p>
             
             {exactSelectedChannel && (exactSelectedChannel === "whatsapp" || exactSelectedChannel === "instagram") && (
-              <div className="mb-6 p-4 rounded-xl relative z-10" style={{background: "rgba(0,0,0,0.3)", border: `1px dashed ${exactSelectedChannel === 'whatsapp' ? 'rgba(37,211,102,0.3)' : 'rgba(236,72,153,0.3)'}`}}>
+              <div className="mb-6 p-4 rounded-xl relative z-10 webhook-box" data-channel={exactSelectedChannel}>
                 <p className={`text-[11px] font-bold mb-3 flex items-center gap-2 ${exactSelectedChannel === 'whatsapp' ? 'text-[#25D366]' : 'text-pink-500'}`}>
                   🔗 Step 1: Copy these to Meta Webhook
                 </p>
                 <div className="mb-3">
                   <label className="block text-[9px] font-bold uppercase tracking-widest text-gray-500 mb-1.5">Webhook URL</label>
                   <div className="flex items-center gap-2">
-                    <input readOnly value={`https://www.clawlinkai.com/api/webhook/${exactSelectedChannel}`} className="w-full bg-black/50 text-gray-300 p-2.5 rounded-lg text-[11px] border border-white/10 outline-none font-mono" />
+                    <input title="Webhook URL" readOnly value={`https://www.clawlinkai.com/api/webhook/${exactSelectedChannel}`} className="w-full bg-black/50 text-gray-300 p-2.5 rounded-lg text-[11px] border border-white/10 outline-none font-mono" />
                     <button type="button" onClick={() => copyToClipboard(`https://www.clawlinkai.com/api/webhook/${exactSelectedChannel}`)} className="bg-white/10 hover:bg-white/20 text-white px-4 py-2.5 rounded-lg text-[11px] font-bold transition-all">Copy</button>
                   </div>
                 </div>
                 <div>
                   <label className="block text-[9px] font-bold uppercase tracking-widest text-gray-500 mb-1.5">Verify Token</label>
                   <div className="flex items-center gap-2">
-                    <input readOnly value="clawlinkmeta2026" className="w-full bg-black/50 text-gray-300 p-2.5 rounded-lg text-[11px] border border-white/10 outline-none font-mono" />
+                    <input title="Verify token" readOnly value="clawlinkmeta2026" className="w-full bg-black/50 text-gray-300 p-2.5 rounded-lg text-[11px] border border-white/10 outline-none font-mono" />
                     <button type="button" onClick={() => copyToClipboard("clawlinkmeta2026")} className="bg-white/10 hover:bg-white/20 text-white px-4 py-2.5 rounded-lg text-[11px] font-bold transition-all">Copy</button>
                   </div>
                 </div>
@@ -1025,6 +1009,44 @@ export default function Dashboard() {
         </motion.div>
 
       </main>
+
+      <style dangerouslySetInnerHTML={{__html:`
+        .gradient-orange-dark {
+          background: radial-gradient(circle, rgba(249,115,22,0.18) 0%, transparent 65%);
+          transform: translateZ(0);
+        }
+        .gradient-indigo-dark {
+          background: radial-gradient(circle, rgba(99,102,241,0.15) 0%, transparent 65%);
+          transform: translateZ(0);
+        }
+        .pricing-suffix {
+          font-size: 13px;
+          font-weight: 400;
+          color: #888;
+        }
+        .pricing-card {
+          background: var(--pricing-bg, rgba(255,255,255,0.02));
+          border: 1px solid var(--pricing-border, rgba(255,255,255,0.07));
+          box-shadow: var(--pricing-shadow, none);
+        }
+        .pricing-card[style*="--pricing-active: 1"] {
+          box-shadow: 0 0 28px var(--pricing-border);
+        }
+        .pricing-badge {
+          background: var(--badge-color);
+        }
+        .channel-progress {
+          width: var(--progress-width, 0%);
+        }
+        .webhook-box[data-channel="whatsapp"] {
+          background: rgba(0,0,0,0.3);
+          border: 1px dashed rgba(37,211,102,0.3);
+        }
+        .webhook-box[data-channel="instagram"] {
+          background: rgba(0,0,0,0.3);
+          border: 1px dashed rgba(236,72,153,0.3);
+        }
+      `}} />
     </div>
   );
 }
