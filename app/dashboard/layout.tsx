@@ -6,7 +6,8 @@
  * ==============================================================================================
  * @file app/dashboard/layout.tsx
  * @description Master layout wrapper. Dynamically renders "Active Channels" in the sidebar
- * ONLY if the user has successfully deployed/paid for that channel (verified via tokens).
+ * and routes to the exact Advanced PRO Features based on the platform.
+ * FIXED: Integrated full SaaS feature lists for TG, WA, and IG. Removed individual API tabs.
  * * ALL RIGHTS RESERVED. CLAWLINK INC.
  * ==============================================================================================
  */
@@ -19,7 +20,7 @@ import {
   LayoutDashboard, Inbox, BarChart3, Settings, LogOut, 
   MessageCircle, Bot, Workflow, Megaphone, Users, Tag, 
   Sparkles, MessageSquareQuote, UsersRound, Folder, 
-  ChevronDown, Activity, AlertCircle
+  ChevronDown, Activity, AlertCircle, Menu, X, Cpu, BrainCircuit
 } from "lucide-react";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -28,8 +29,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const pathname = usePathname();
 
   const [expandedChannel, setExpandedChannel] = useState<string | null>(null);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false); 
   
-  // 🚀 DYNAMIC STATE: Default to false. Will be overridden by DB fetch.
+  // 🚀 DYNAMIC STATE: Defaults to false. Overridden by real DB fetch.
   const [activeChannels, setActiveChannels] = useState({
     telegram: false,
     whatsapp: false,
@@ -39,24 +41,30 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [isLoadingChannels, setIsLoadingChannels] = useState(true);
 
   useEffect(() => {
-    if (status === "unauthenticated") {
-      router.push("/");
-    }
+    if (status === "unauthenticated") router.push("/");
   }, [status, router]);
 
-  // 🚀 REAL-TIME FETCH LOGIC: Checks database to see which bots are LIVE
+  useEffect(() => {
+    setIsMobileMenuOpen(false);
+  }, [pathname]);
+
+  // 🚀 REAL-TIME FETCH LOGIC
   useEffect(() => {
     if (status === "authenticated" && session?.user?.email) {
       fetch(`/api/user?email=${session.user.email}`)
         .then(res => res.json())
         .then(data => {
           if (data.success && data.data) {
-            // Channel is ONLY active if the token exists in the database
             setActiveChannels({
               telegram: !!data.data.telegram_token,    
-              whatsapp: !!data.data.whatsapp_token,    
-              instagram: !!data.data.instagram_token   
+              whatsapp: !!data.data.whatsapp_phone_id || !!data.data.whatsapp_token,    
+              instagram: !!data.data.instagram_account_id || !!data.data.instagram_token   
             });
+            
+            // Auto-expand the active channel if there's only one, or match it to the current URL
+            if (data.data.selected_channel) {
+              setExpandedChannel(data.data.selected_channel);
+            }
           }
           setIsLoadingChannels(false);
         })
@@ -71,29 +79,46 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     setExpandedChannel(prev => prev === channel ? null : channel);
   };
 
-  // Channel-specific tools mapping
+  // 🚀 ADVANCED PRO FEATURES ROUTING MATRIX
   const menuItems = {
     whatsapp: [
       { name: "Inbox", icon: MessageCircle, path: "/dashboard/crm" },
-      { name: "Automation", icon: Bot, path: "/dashboard/whatsapp/automation" },
+      { name: "Automation", icon: Cpu, path: "/dashboard/whatsapp/automation" },
       { name: "Flow Builder", icon: Workflow, path: "/dashboard/whatsapp/flow" },
       { name: "Broadcast", icon: Megaphone, path: "/dashboard/whatsapp/broadcast" },
+      { name: "Contacts (CRM)", icon: Users, path: "/dashboard/whatsapp/contacts" },
       { name: "Labels", icon: Tag, path: "/dashboard/whatsapp/labels" },
+      { name: "Analytics", icon: BarChart3, path: "/dashboard/analytics" },
+      { name: "AI Copilot", icon: BrainCircuit, path: "/dashboard/whatsapp/copilot" },
+      { name: "Team", icon: UsersRound, path: "/dashboard/team" },
+      { name: "Settings", icon: Settings, path: "/dashboard/whatsapp/settings" },
     ],
     instagram: [
       { name: "Inbox", icon: MessageCircle, path: "/dashboard/crm" },
-      { name: "Automations", icon: Bot, path: "/dashboard/instagram/automations" },
       { name: "Comments", icon: MessageSquareQuote, path: "/dashboard/instagram/comments" },
+      { name: "Automation", icon: Cpu, path: "/dashboard/instagram/automations" },
+      { name: "Flow Builder", icon: Workflow, path: "/dashboard/instagram/flow" },
+      { name: "Leads (CRM)", icon: Users, path: "/dashboard/instagram/leads" },
       { name: "Campaigns", icon: Megaphone, path: "/dashboard/instagram/campaigns" },
       { name: "Growth Tools", icon: Sparkles, path: "/dashboard/instagram/growth" },
+      { name: "Analytics", icon: BarChart3, path: "/dashboard/analytics" },
+      { name: "AI Copilot", icon: BrainCircuit, path: "/dashboard/instagram/copilot" },
+      { name: "Team", icon: UsersRound, path: "/dashboard/team" },
+      { name: "Settings", icon: Settings, path: "/dashboard/instagram/settings" },
     ],
     telegram: [
       { name: "Inbox", icon: MessageCircle, path: "/dashboard/crm" },
       { name: "Bots", icon: Bot, path: "/dashboard/telegram/bots" },
+      { name: "Automation", icon: Cpu, path: "/dashboard/telegram/automation" },
       { name: "Flow Builder", icon: Workflow, path: "/dashboard/telegram/flow" },
       { name: "Broadcast", icon: Megaphone, path: "/dashboard/telegram/broadcast" },
       { name: "Groups & Channels", icon: UsersRound, path: "/dashboard/telegram/groups" },
       { name: "Media Library", icon: Folder, path: "/dashboard/telegram/media" },
+      { name: "Users (CRM)", icon: Users, path: "/dashboard/telegram/users" },
+      { name: "Analytics", icon: BarChart3, path: "/dashboard/analytics" },
+      { name: "AI Copilot", icon: BrainCircuit, path: "/dashboard/telegram/copilot" },
+      { name: "Team", icon: UsersRound, path: "/dashboard/team" },
+      { name: "Settings", icon: Settings, path: "/dashboard/telegram/settings" },
     ]
   };
 
@@ -121,33 +146,46 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     return null;
   };
 
-  if (status === "loading") {
-    return <div className="min-h-screen bg-[#07070A] flex flex-col items-center justify-center text-orange-500 font-mono tracking-widest"><Activity className="w-8 h-8 animate-spin mb-4"/>LOADING INTERFACE...</div>;
-  }
+  if (status === "loading") return null;
 
-  // Filter ONLY the channels that returned true (meaning they have tokens deployed in DB)
   const deployedChannels = Object.keys(activeChannels).filter(k => activeChannels[k as keyof typeof activeChannels]);
 
   return (
     <div className="flex h-screen bg-[#07070A] text-[#E8E8EC] font-sans overflow-hidden selection:bg-orange-500/30">
       
-      {/* 🚀 SMART SIDEBAR */}
-      <aside className="w-[280px] bg-[#0A0A0D] border-r border-white/5 flex flex-col shrink-0 relative z-50 shadow-[5px_0_30px_rgba(0,0,0,0.5)]">
+      {/* 📱 MOBILE OVERLAY BACKDROP */}
+      <AnimatePresence>
+        {isMobileMenuOpen && (
+          <motion.div 
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            onClick={() => setIsMobileMenuOpen(false)}
+            className="fixed inset-0 bg-black/70 backdrop-blur-sm z-40 md:hidden"
+          />
+        )}
+      </AnimatePresence>
+
+      {/* 🚀 SMART SIDEBAR (Mobile & Desktop Responsive) */}
+      <aside className={`fixed md:relative inset-y-0 left-0 w-[280px] bg-[#0A0A0D] border-r border-white/5 flex flex-col shrink-0 z-50 shadow-[5px_0_30px_rgba(0,0,0,0.5)] transform transition-transform duration-300 ease-in-out ${isMobileMenuOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"}`}>
         
         {/* Header / Logo */}
-        <div className="h-[72px] flex items-center px-6 border-b border-white/5 shrink-0 cursor-pointer" onClick={() => router.push("/")}>
-          <svg width="120" height="20" viewBox="0 0 152 26" fill="none">
-            <path d="M22 3C18 .5 10 .5 7 4.5S3.5 18 7 22.5 18 26 22 23" stroke="#fff" strokeWidth="4.5" strokeLinecap="round" fill="none"/>
-            <line x1="7.5" y1="3" x2="14.5" y2="11.5" stroke="#f97316" strokeWidth="2.2" strokeLinecap="round"/>
-            <line x1="12.5" y1="1.5" x2="19.5" y2="10" stroke="#f97316" strokeWidth="2.2" strokeLinecap="round"/>
-            <line x1="17.5" y1="2.5" x2="24" y2="10.5" stroke="#f97316" strokeWidth="2" strokeLinecap="round"/>
-            <text x="30" y="18" fontFamily="sans-serif" fontSize="14.5" fontWeight="800" letterSpacing="1.4" fill="#fff">LAWLINK</text>
-          </svg>
+        <div className="h-[72px] flex items-center justify-between px-6 border-b border-white/5 shrink-0">
+          <div className="cursor-pointer" onClick={() => router.push("/")}>
+            <svg width="120" height="20" viewBox="0 0 152 26" fill="none">
+              <path d="M22 3C18 .5 10 .5 7 4.5S3.5 18 7 22.5 18 26 22 23" stroke="#fff" strokeWidth="4.5" strokeLinecap="round" fill="none"/>
+              <line x1="7.5" y1="3" x2="14.5" y2="11.5" stroke="#f97316" strokeWidth="2.2" strokeLinecap="round"/>
+              <line x1="12.5" y1="1.5" x2="19.5" y2="10" stroke="#f97316" strokeWidth="2.2" strokeLinecap="round"/>
+              <line x1="17.5" y1="2.5" x2="24" y2="10.5" stroke="#f97316" strokeWidth="2" strokeLinecap="round"/>
+              <text x="30" y="18" fontFamily="sans-serif" fontSize="14.5" fontWeight="800" letterSpacing="1.4" fill="#fff">LAWLINK</text>
+            </svg>
+          </div>
+          <button onClick={() => setIsMobileMenuOpen(false)} className="md:hidden text-gray-500 hover:text-white transition-colors">
+            <X className="w-5 h-5" />
+          </button>
         </div>
 
         <div className="flex-1 overflow-y-auto custom-scrollbar p-4 space-y-6">
           
-          {/* Core Tools (Always Visible) */}
+          {/* Core Enterprise Tools */}
           <div>
             <p className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500 mb-3 pl-2">Enterprise Tools</p>
             <div className="space-y-1">
@@ -160,37 +198,38 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <button onClick={() => router.push("/dashboard/analytics")} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] font-bold transition-all ${pathname === "/dashboard/analytics" ? "bg-white/10 text-white" : "text-gray-400 hover:bg-white/5 hover:text-gray-200"}`}>
                 <BarChart3 className="w-4 h-4"/> Data Analytics
               </button>
+              <button onClick={() => router.push("/dashboard/settings")} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] font-bold transition-all ${pathname === "/dashboard/settings" ? "bg-white/10 text-white" : "text-gray-400 hover:bg-white/5 hover:text-gray-200"}`}>
+                <Settings className="w-4 h-4"/> Global Settings
+              </button>
             </div>
           </div>
 
-          {/* Dynamic Channels (Only Visible if Deployed) */}
+          {/* Dynamic Channels & Sub-features */}
           <div>
             <p className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500 mb-3 pl-2">Active Channels</p>
             
             {isLoadingChannels ? (
                <div className="pl-3 py-2 text-[11px] text-gray-600 font-mono flex items-center gap-2">
-                 <Activity className="w-3 h-3 animate-spin"/> Syncing Deployment Status...
+                 <Activity className="w-3 h-3 animate-spin"/> Syncing Capabilities...
                </div>
             ) : deployedChannels.length > 0 ? (
               <div className="space-y-2">
                 {deployedChannels.map((channel) => (
-                  <div key={channel} className="flex flex-col border border-white/5 rounded-2xl overflow-hidden bg-[#111114]">
+                  <div key={channel} className={`flex flex-col border transition-all duration-300 rounded-2xl overflow-hidden ${expandedChannel === channel ? 'bg-[#111114] border-white/10 shadow-xl' : 'bg-transparent border-transparent'}`}>
                     
-                    {/* Parent Toggle */}
                     <button 
                       onClick={() => toggleChannel(channel)}
-                      className={`flex items-center justify-between w-full p-3 transition-colors ${expandedChannel === channel ? 'bg-white/5' : 'hover:bg-white/5'}`}
+                      className={`flex items-center justify-between w-full p-3 transition-colors rounded-xl ${expandedChannel === channel ? '' : 'hover:bg-white/5'}`}
                     >
                       <div className="flex items-center gap-3">
                         <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${getBrandColor(channel)}`}>
                           <BrandIcon channel={channel} />
                         </div>
-                        <span className="text-[13px] font-bold text-white capitalize">My {channel}</span>
+                        <span className="text-[13px] font-bold text-white capitalize">{channel} Suite</span>
                       </div>
-                      <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform duration-200 ${expandedChannel === channel ? "rotate-180" : ""}`}/>
+                      <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform duration-200 ${expandedChannel === channel ? "rotate-180 text-white" : ""}`}/>
                     </button>
 
-                    {/* Children (Animated Accordion) */}
                     <AnimatePresence initial={false}>
                       {expandedChannel === channel && (
                         <motion.div
@@ -200,7 +239,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                           transition={{ duration: 0.3, ease: "easeInOut" }}
                           className="overflow-hidden"
                         >
-                          <div className="p-2 pt-0 pb-3 space-y-0.5 border-t border-white/5 mt-1 bg-black/20">
+                          <div className="p-2 pt-0 pb-3 space-y-0.5 mt-1 border-t border-white/5 bg-black/20">
                             {menuItems[channel as keyof typeof menuItems].map((item, idx) => (
                               <button 
                                 key={idx} 
@@ -215,12 +254,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                         </motion.div>
                       )}
                     </AnimatePresence>
-
                   </div>
                 ))}
               </div>
             ) : (
-              // Empty State: If no bots are deployed yet
               <div className="bg-[#111114] border border-dashed border-white/10 rounded-xl p-4 text-center mx-2 mt-2">
                 <AlertCircle className="w-5 h-5 text-orange-500/50 mx-auto mb-2" />
                 <p className="text-[11px] text-gray-400 leading-relaxed mb-3">No bots deployed yet.</p>
@@ -228,7 +265,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   onClick={() => router.push('/dashboard/settings')} 
                   className="bg-orange-500/10 hover:bg-orange-500/20 text-orange-400 border border-orange-500/20 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-colors w-full"
                 >
-                  Connect API Keys
+                  Configure Keys
                 </button>
               </div>
             )}
@@ -252,14 +289,32 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </button>
           </div>
         </div>
-
       </aside>
 
       {/* 🚀 MAIN CONTENT AREA */}
-      <main className="flex-1 flex flex-col bg-[#07070A] overflow-hidden relative">
-        {/* Content injected here (page.tsx, crm/page.tsx, etc.) */}
-        {children}
-      </main>
+      <div className="flex-1 flex flex-col min-w-0 bg-[#07070A] overflow-hidden relative">
+        
+        {/* 📱 Mobile Top Navbar */}
+        <header className="md:hidden flex items-center justify-between p-4 border-b border-white/5 bg-[#0A0A0D] z-30 shrink-0">
+           <div className="flex items-center gap-2">
+             <svg width="90" height="16" viewBox="0 0 152 26" fill="none">
+               <path d="M22 3C18 .5 10 .5 7 4.5S3.5 18 7 22.5 18 26 22 23" stroke="#fff" strokeWidth="4.5" strokeLinecap="round" fill="none"/>
+               <line x1="7.5" y1="3" x2="14.5" y2="11.5" stroke="#f97316" strokeWidth="2.2" strokeLinecap="round"/>
+               <line x1="12.5" y1="1.5" x2="19.5" y2="10" stroke="#f97316" strokeWidth="2.2" strokeLinecap="round"/>
+               <line x1="17.5" y1="2.5" x2="24" y2="10.5" stroke="#f97316" strokeWidth="2" strokeLinecap="round"/>
+               <text x="30" y="18" fontFamily="sans-serif" fontSize="14.5" fontWeight="800" letterSpacing="1.4" fill="#fff">LAWLINK</text>
+             </svg>
+           </div>
+           <button onClick={() => setIsMobileMenuOpen(true)} className="p-1.5 bg-white/5 border border-white/10 rounded-md text-white hover:bg-white/10 transition-colors">
+             <Menu className="w-5 h-5" />
+           </button>
+        </header>
+
+        {/* Dashboard Content */}
+        <main className="flex-1 overflow-y-auto custom-scrollbar relative">
+          {children}
+        </main>
+      </div>
 
     </div>
   );
