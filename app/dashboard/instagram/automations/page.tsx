@@ -7,11 +7,14 @@
  * @file app/dashboard/instagram/automations/page.tsx
  * @description The "ManyChat Killer" module. Maps specific comments on Posts/Reels to 
  * automated Direct Messages (DMs) using Meta's Graph API.
+ * 🚀 SECURED: Strict caching prevention and session verification.
+ * 🚀 UPGRADED: Real-time DB sync for Viral Funnels (Comment-to-DM).
+ * 🚀 FIXED: Enforced strict "Instagram" naming. No shorthand.
  * * ALL RIGHTS RESERVED. CLAWLINK INC.
  * ==============================================================================================
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
@@ -22,10 +25,19 @@ import {
 } from "lucide-react";
 import TopHeader from "@/components/TopHeader";
 
+interface AutoDMRule {
+  id: string;
+  trigger: string;
+  type: string;
+  reply: string;
+  dmText: string;
+}
+
 export default function InstagramAutomations() {
   const { data: session, status } = useSession();
   const router = useRouter();
 
+  const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
 
   // Global Settings State
@@ -34,35 +46,113 @@ export default function InstagramAutomations() {
     autoLikeComments: true,
   });
 
-  // Auto-DM Rules State
-  const [autoDMRules, setAutoDMRules] = useState([
-    { id: 1, trigger: "link, send, price", type: "Comment on Any Post", reply: "I've sent the details directly to your DM! 🚀", dmText: "Here is the secret link you asked for: https://clawlinkai.com" },
-    { id: 2, trigger: "demo, test", type: "Comment on Specific Reel", reply: "Check your DMs for the demo access! 🔥", dmText: "Hey! Ready to test the ClawLink Engine? Here you go..." },
-  ]);
+  // Auto-DM Rules State (Fetched from DB)
+  const [autoDMRules, setAutoDMRules] = useState<AutoDMRule[]>([]);
 
-  if (status === "unauthenticated") router.push("/");
+  // New Funnel Form State
+  const [newRule, setNewRule] = useState({
+    trigger: "",
+    type: "Comment on Any Post",
+    reply: "",
+    dmText: ""
+  });
+
+  if (status === "unauthenticated") router.replace("/");
+
+  // 🚀 SECURE REAL-TIME FETCH LOGIC
+  useEffect(() => {
+    const fetchRules = async () => {
+      if (status === "authenticated" && session?.user?.email) {
+        try {
+          const res = await fetch(`/api/automation?email=${encodeURIComponent(session.user.email)}&channel=instagram&t=${Date.now()}`, {
+            headers: { 'Cache-Control': 'no-store' }
+          });
+          if (!res.ok) throw new Error("Secure fetch failed");
+          
+          const data = await res.json();
+          if (data.success && data.rules) {
+             setAutoDMRules(data.rules);
+          }
+          if (data.success && data.settings) {
+             setGlobalSettings(data.settings);
+          }
+        } catch (error) {
+          console.error("[INSTAGRAM_AUTOMATION_ERROR] Failed to load rules safely", error);
+        } finally {
+          setIsLoading(false);
+        }
+      }
+    };
+    fetchRules();
+  }, [session, status]);
 
   const handleToggle = (key: keyof typeof globalSettings) => {
     setGlobalSettings(prev => ({ ...prev, [key]: !prev[key] }));
   };
 
-  const handleDeleteRule = (id: number) => {
+  const handleAddRule = () => {
+    if (!newRule.trigger || !newRule.dmText) {
+      alert("Trigger Keyword and Secret DM Text are required to build a funnel.");
+      return;
+    }
+    const tempId = `temp_insta_${Date.now()}`;
+    setAutoDMRules([{ id: tempId, ...newRule }, ...autoDMRules]);
+    setNewRule({ trigger: "", type: "Comment on Any Post", reply: "", dmText: "" }); // Reset
+  };
+
+  const handleDeleteRule = (id: string) => {
     setAutoDMRules(autoDMRules.filter(r => r.id !== id));
   };
 
-  const handleSave = () => {
+  // 🚀 SECURE SAVE TO DATABASE
+  const handleSave = async () => {
+    if (!session?.user?.email) return;
     setIsSaving(true);
-    setTimeout(() => {
+    
+    try {
+      const res = await fetch("/api/automation", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: session.user.email,
+          channel: "instagram",
+          rules: autoDMRules,
+          settings: globalSettings
+        })
+      });
+
+      const data = await res.json();
+      
+      if (data.success) {
+        alert("📸 Instagram Viral Funnels and Automations synced securely with Meta Graph API!");
+        const refreshRes = await fetch(`/api/automation?email=${encodeURIComponent(session.user.email)}&channel=instagram`);
+        const refreshData = await refreshRes.json();
+        if (refreshData.success && refreshData.rules) setAutoDMRules(refreshData.rules);
+      } else {
+        alert("Failed to save configuration: " + data.error);
+      }
+    } catch (error) {
+      alert("Network error while syncing rules.");
+    } finally {
       setIsSaving(false);
-      alert("📸 Instagram Auto-DM Rules synced securely with Meta Graph API!");
-    }, 1500);
+    }
   };
 
   const btnHover = "transition-all duration-[120ms] ease-out active:scale-[0.95] transform-gpu will-change-transform";
 
+  // Secure Anti-Flicker Loading State
+  if (isLoading || status === "loading") {
+    return (
+      <div className="w-full h-screen bg-[#07070A] flex flex-col items-center justify-center text-pink-500 font-mono">
+        <Activity className="w-10 h-10 animate-spin mb-4" />
+        CONNECTING INSTAGRAM GRAPH API...
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col h-screen bg-[#07070A] text-white overflow-hidden selection:bg-pink-500/30">
-      <TopHeader title="IG Automations" session={session} />
+      <TopHeader title="Instagram Automations" session={session} />
       
       <div className="flex-1 overflow-y-auto custom-scrollbar p-6 md:p-8">
         <div className="max-w-[1400px] mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -124,26 +214,61 @@ export default function InstagramAutomations() {
                   <h3 className="text-2xl font-black text-white flex items-center gap-3">
                     <MessageSquare className="w-6 h-6 text-pink-500"/> Comment-to-DM Engine
                   </h3>
-                  <p className="text-[13px] text-gray-400 mt-2">Create viral funnels. Reply to specific comments and instantly send a DM.</p>
+                  <p className="text-[13px] text-gray-400 mt-2">Create viral funnels. Reply to specific comments and instantly send a Direct Message.</p>
                 </div>
                 <button 
                   onClick={handleSave} disabled={isSaving}
-                  className={`bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-400 hover:to-purple-400 text-white px-6 py-3.5 rounded-xl text-[12px] font-black uppercase tracking-widest flex items-center gap-2 shadow-[0_0_20px_rgba(236,72,153,0.3)] disabled:opacity-50 ${btnHover}`}
+                  className={`bg-gradient-to-r from-[#f09433] via-[#e6683c] to-[#bc1888] text-white px-6 py-3.5 rounded-xl text-[12px] font-black uppercase tracking-widest flex items-center gap-2 shadow-[0_0_20px_rgba(236,72,153,0.3)] disabled:opacity-50 ${btnHover}`}
                 >
                   {isSaving ? <Activity className="w-4 h-4 animate-spin"/> : <Save className="w-4 h-4"/>}
-                  {isSaving ? "Syncing..." : "Deploy Rules"}
+                  {isSaving ? "Syncing..." : "Deploy Funnels"}
                 </button>
+              </div>
+
+              {/* Add New Funnel Form */}
+              <div className="bg-[#111114] border border-pink-500/20 p-5 rounded-2xl mb-8 flex flex-col gap-4 shadow-inner">
+                <h4 className="text-[11px] font-black uppercase tracking-widest text-pink-400 flex items-center gap-2">
+                  <Plus className="w-4 h-4"/> Create New Viral Funnel
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2 block">Target Post Type</label>
+                    <select value={newRule.type} onChange={(e)=> setNewRule({...newRule, type: e.target.value})} className="w-full bg-[#0A0A0D] border border-white/10 rounded-lg p-2.5 text-sm text-white outline-none focus:border-pink-500/50">
+                        <option value="Comment on Any Post">Any Post or Reel</option>
+                        <option value="Comment on Specific Reel">Specific Reel (Select Later)</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2 block">Trigger Keyword (comma separated)</label>
+                    <input type="text" placeholder="e.g. link, send, price" value={newRule.trigger} onChange={(e)=> setNewRule({...newRule, trigger: e.target.value})} className="w-full bg-[#0A0A0D] border border-white/10 rounded-lg p-2.5 text-sm text-white outline-none focus:border-pink-500/50" />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2 block">Public Comment Reply (Optional)</label>
+                    <input type="text" placeholder="e.g. Sent you a DM! 🚀" value={newRule.reply} onChange={(e)=> setNewRule({...newRule, reply: e.target.value})} className="w-full bg-[#0A0A0D] border border-white/10 rounded-lg p-2.5 text-sm text-white outline-none focus:border-pink-500/50" />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2 block">Secret DM Content</label>
+                    <input type="text" placeholder="e.g. Here is the link you requested: https..." value={newRule.dmText} onChange={(e)=> setNewRule({...newRule, dmText: e.target.value})} className="w-full bg-[#0A0A0D] border border-pink-500/30 rounded-lg p-2.5 text-sm text-white outline-none focus:border-pink-500/80" />
+                  </div>
+                </div>
+                <div className="flex justify-end mt-2">
+                  <button onClick={handleAddRule} className={`bg-pink-500/10 hover:bg-pink-500/20 text-pink-400 border border-pink-500/20 px-6 py-2.5 rounded-lg text-xs font-black uppercase tracking-widest transition-all ${btnHover}`}>
+                    Add Funnel
+                  </button>
+                </div>
               </div>
 
               <div className="flex justify-between items-center mb-4">
-                <p className="text-[10px] font-black uppercase tracking-widest text-gray-500">Active Funnels</p>
-                <button className={`bg-[#111114] hover:bg-white/5 text-white border border-white/10 px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 transition-all ${btnHover}`}>
-                  <Plus className="w-3 h-3"/> Create New Funnel
-                </button>
+                <p className="text-[10px] font-black uppercase tracking-widest text-gray-500">Active Funnels Database</p>
               </div>
 
               <div className="space-y-4">
-                {autoDMRules.map((rule) => (
+                {autoDMRules.length === 0 ? (
+                  <div className="text-center py-10">
+                      <Activity className="w-8 h-8 text-gray-600 mx-auto mb-3" />
+                      <p className="text-sm text-gray-500">No viral funnels configured yet.</p>
+                  </div>
+                ) : autoDMRules.map((rule) => (
                   <div key={rule.id} className="bg-[#111114] border border-white/5 hover:border-pink-500/30 p-5 rounded-2xl flex flex-col gap-4 group transition-all">
                     
                     <div className="flex items-center justify-between border-b border-white/5 pb-3">
@@ -165,7 +290,7 @@ export default function InstagramAutomations() {
                         
                         <p className="text-[10px] uppercase tracking-widest text-gray-500 mb-1">Public Reply:</p>
                         <div className="bg-black/30 border border-white/5 px-3 py-2 rounded-lg">
-                          <span className="text-[12px] text-gray-300">{rule.reply}</span>
+                          <span className="text-[12px] text-gray-300">{rule.reply || "No public reply"}</span>
                         </div>
                       </div>
 
