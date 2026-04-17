@@ -173,7 +173,7 @@ export default function InstagramGrowthTools() {
 
               <div className="bg-[#111114] border border-white/5 rounded-2xl p-5 flex flex-col md:flex-row items-center gap-4">
                 <div className="flex-1 w-full">
-                  <p className="text-[10px] uppercase tracking-widest text-gray-500 mb-2 font-bold">Generated Link (Triggers 'VIP Promo' Flow)</p>
+                  <p className="text-[10px] uppercase tracking-widest text-gray-500 mb-2 font-bold\">Generated Link (Triggers &apos;VIP Promo&apos; Flow)</p>
                   <div className="flex items-center gap-2 bg-black/40 border border-white/10 p-3 rounded-xl overflow-hidden">
                     <span className="text-[13px] font-mono text-gray-300 truncate select-all">https://ig.me/m/clawlinkai?ref=vip_promo</span>
                   </div>

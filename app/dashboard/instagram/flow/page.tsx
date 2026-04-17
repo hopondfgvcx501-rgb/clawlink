@@ -17,7 +17,6 @@ import ReactFlow, {
   ReactFlowProvider, addEdge, useNodesState, useEdgesState,
   Controls, Background, Panel, Handle, Position
 } from 'reactflow';
-import 'reactflow/dist/style.css';
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { 
@@ -100,8 +99,8 @@ export default function InstagramFlowBuilder() {
       if (!type || !reactFlowInstance) return;
 
       const position = reactFlowInstance.screenToFlowPosition({ x: event.clientX, y: event.clientY });
-      const newNode = { id: `insta_node_${Date.now()}`, type, position, data: { label: nodeLabel, type: nodeActionType, preview: 'Drag edge to configure' } };
-      setNodes((nds) => nds.concat(newNode));
+      const newNode = { id: `insta_node_${Date.now()}`, type, position, data: { label: nodeLabel, detail: '', type: nodeActionType, preview: 'Drag edge to configure' } };
+      setNodes((nds) => nds.concat([newNode]));
     }, [reactFlowInstance, setNodes]
   );
 
@@ -187,7 +186,7 @@ export default function InstagramFlowBuilder() {
         <div className="flex-1 relative" ref={reactFlowWrapper}>
           <ReactFlowProvider>
             <ReactFlow nodes={nodes} edges={edges} onNodesChange={onNodesChange} onEdgesChange={onEdgesChange} onConnect={onConnect} onInit={setReactFlowInstance} onDrop={onDrop} onDragOver={onDragOver} nodeTypes={nodeTypes} fitView className="bg-[#07070A]">
-              <Background color="#ffffff" gap={24} size={1} opacity={0.05} />
+              <Background color="#ffffff" gap={24} size={1} />
               <Controls className="bg-[#111114] border border-white/10 rounded-lg overflow-hidden fill-white" showInteractive={false}/>
               <Panel position="top-right" className="flex gap-3 m-4">
                 <button onClick={handleSaveFlow} disabled={isSaving} className="bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-400 hover:to-purple-400 text-white px-6 py-2.5 rounded-xl text-[11px] font-black uppercase tracking-widest flex items-center gap-2 transition-colors shadow-[0_0_15px_rgba(236,72,153,0.3)] disabled:opacity-50">

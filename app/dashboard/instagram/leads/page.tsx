@@ -185,10 +185,10 @@ export default function InstagramLeadsCRM() {
                       </td>
                       <td className="p-5 pr-6 text-right">
                         <div className="flex items-center justify-end gap-3">
-                          <button onClick={() => router.push(`/dashboard/crm?handle=${lead.handle}`)} className="text-gray-500 hover:text-pink-500 transition-colors p-2 bg-black/40 rounded-lg border border-white/5">
+                          <button title="Send message" onClick={() => router.push(`/dashboard/crm?handle=${lead.handle}`)} className="text-gray-500 hover:text-pink-500 transition-colors p-2 bg-black/40 rounded-lg border border-white/5">
                             <MessageCircle className="w-4 h-4"/>
                           </button>
-                          <button className="text-gray-600 hover:text-white transition-colors p-2">
+                          <button title="More options" className="text-gray-600 hover:text-white transition-colors p-2">
                             <MoreVertical className="w-4 h-4"/>
                           </button>
                         </div>

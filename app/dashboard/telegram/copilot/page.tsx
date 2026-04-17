@@ -129,7 +129,7 @@ export default function TelegramCopilot() {
                   </div>
                   <div>
                     <h2 className="text-xl font-black text-white">Bot Persona</h2>
-                    <p className="text-[12px] text-gray-500">Train your Telegram AI's character.</p>
+                    <p className="text-[12px] text-gray-500">Train your Telegram AI&apos;s character.</p>
                   </div>
                 </div>
                 <button onClick={handleSaveConfig} disabled={isSaving}
@@ -158,7 +158,7 @@ export default function TelegramCopilot() {
                   <label className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500 mb-3 block">Conversation Tone</label>
                   <div className="relative">
                     <Sparkles className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-600" />
-                    <select 
+                    <select title="Select conversation tone"
                       value={config.agentTone}
                       onChange={(e) => setConfig({...config, agentTone: e.target.value})}
                       className="w-full bg-[#111114] border border-white/10 rounded-xl pl-12 pr-4 py-3.5 text-sm text-white focus:border-[#2AABEE]/50 outline-none appearance-none cursor-pointer"

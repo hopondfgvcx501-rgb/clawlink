@@ -151,7 +151,7 @@ export default function InstagramComments() {
                   className="bg-transparent border-none outline-none text-[13px] text-white ml-3 w-full placeholder-gray-600"
                 />
               </div>
-              <select 
+              <select title="Select comment filter" 
                 value={filter} onChange={(e) => setFilter(e.target.value)}
                 className="bg-[#0A0A0D] border border-white/10 text-white px-4 py-3 rounded-xl text-[13px] outline-none cursor-pointer w-full sm:w-auto hover:bg-white/5 transition-colors"
               >
@@ -189,7 +189,7 @@ export default function InstagramComments() {
                   
                   <div className="col-span-12 sm:col-span-5 pr-4 border-l border-white/5 sm:border-none pl-4 sm:pl-0 mt-2 sm:mt-0">
                     <p className={`text-[13px] leading-relaxed ${comment.status.includes('hidden') ? 'text-gray-500 line-through' : 'text-gray-300'}`}>
-                      "{comment.text}"
+                      &quot;{comment.text}&quot;
                     </p>
                     <p className="text-[10px] text-pink-400 mt-2 flex items-center gap-1.5 font-medium">
                       <Instagram className="w-3 h-3"/> Post: {comment.post}

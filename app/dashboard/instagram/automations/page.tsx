@@ -184,7 +184,7 @@ export default function InstagramAutomations() {
                       <motion.div layout className={`w-4 h-4 bg-white rounded-full shadow-sm ${globalSettings.storyMentions ? 'ml-5' : 'ml-0'}`} />
                     </div>
                   </div>
-                  <p className="text-[10px] text-gray-500 leading-relaxed">Automatically send a 'Thank You' DM when someone tags your account in their story.</p>
+                  <p className="text-[10px] text-gray-500 leading-relaxed">Automatically send a &apos;Thank You&apos; DM when someone tags your account in their story.</p>
                 </div>
 
                 {/* Auto Like Comments */}
@@ -233,7 +233,7 @@ export default function InstagramAutomations() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2 block">Target Post Type</label>
-                    <select value={newRule.type} onChange={(e)=> setNewRule({...newRule, type: e.target.value})} className="w-full bg-[#0A0A0D] border border-white/10 rounded-lg p-2.5 text-sm text-white outline-none focus:border-pink-500/50">
+                    <select value={newRule.type} onChange={(e)=> setNewRule({...newRule, type: e.target.value})} title="Select rule type" className="w-full bg-[#0A0A0D] border border-white/10 rounded-lg p-2.5 text-sm text-white outline-none focus:border-pink-500/50">
                         <option value="Comment on Any Post">Any Post or Reel</option>
                         <option value="Comment on Specific Reel">Specific Reel (Select Later)</option>
                     </select>
@@ -276,7 +276,7 @@ export default function InstagramAutomations() {
                         <Hash className="w-4 h-4 text-pink-500" />
                         <span className="text-[13px] font-bold text-gray-300">{rule.type}</span>
                       </div>
-                      <button onClick={() => handleDeleteRule(rule.id)} className="p-2 text-gray-600 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors">
+                      <button title="Delete rule" onClick={() => handleDeleteRule(rule.id)} className="p-2 text-gray-600 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors">
                         <Trash2 className="w-4 h-4"/>
                       </button>
                     </div>

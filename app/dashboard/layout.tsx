@@ -160,7 +160,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor"><path d="M12 24c6.627 0 12-5.373 12-12S18.627 0 12 0 0 5.373 0 12s5.373 12 12 12z" fill="currentColor"/><path d="M5.425 11.871L16.48 7.61c.526-.196 1.006.124.819.86l-1.892 8.92c-.167.755-.615.939-1.242.593L10.73 15.45l-1.657 1.588c-.183.183-.338.338-.692.338l.245-3.528 6.425-5.8c.28-.249-.06-.388-.435-.138L6.68 12.89l-3.417-1.066c-.744-.233-.759-.745.155-1.103z" fill="#fff"/></svg>
     );
     if (channel === "instagram") return (
-      <div style={{ width: size, height: size }} className={`rounded-[4px] bg-gradient-to-tr from-[#f09433] via-[#e6683c] to-[#bc1888] flex items-center justify-center transform-gpu shrink-0`}>
+      <div className={`w-[${size}px] h-[${size}px] rounded-[4px] bg-gradient-to-tr from-[#f09433] via-[#e6683c] to-[#bc1888] flex items-center justify-center transform-gpu shrink-0`}>
         <div className="w-[60%] h-[60%] border-[1.5px] border-white rounded-[3px] flex items-center justify-center">
           <div className="w-[30%] h-[30%] bg-white rounded-full"/>
         </div>
@@ -208,7 +208,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <text x="30" y="18" fontFamily="sans-serif" fontSize="14.5" fontWeight="800" letterSpacing="1.4" fill="#fff">LAWLINK</text>
             </svg>
           </div>
-          <button onClick={() => setIsMobileMenuOpen(false)} className="md:hidden text-gray-500 hover:text-white transition-colors">
+          <button title="Close menu" onClick={() => setIsMobileMenuOpen(false)} className="md:hidden text-gray-500 hover:text-white transition-colors">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -335,7 +335,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                <text x="30" y="18" fontFamily="sans-serif" fontSize="14.5" fontWeight="800" letterSpacing="1.4" fill="#fff">LAWLINK</text>
              </svg>
            </div>
-           <button onClick={() => setIsMobileMenuOpen(true)} className="p-1.5 bg-white/5 border border-white/10 rounded-md text-white hover:bg-white/10 transition-colors">
+           <button title="Open menu" onClick={() => setIsMobileMenuOpen(true)} className="p-1.5 bg-white/5 border border-white/10 rounded-md text-white hover:bg-white/10 transition-colors">
              <Menu className="w-5 h-5" />
            </button>
         </header>
