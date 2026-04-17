@@ -7,7 +7,8 @@
  * @file app/dashboard/layout.tsx
  * @description Master layout wrapper. Dynamically renders "Active Channels" in the sidebar
  * and routes to the exact Advanced PRO Features based on the platform.
- * FIXED: Integrated full SaaS feature lists for TG, WA, and IG. Removed individual API tabs.
+ * FIXED: Enforced strict full-name channel rendering (WhatsApp, Instagram, Telegram) with exact casing.
+ * FIXED: Removed "Suite" and all shorthand text.
  * * ALL RIGHTS RESERVED. CLAWLINK INC.
  * ==============================================================================================
  */
@@ -129,6 +130,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     return "text-gray-400";
   };
 
+  // Helper to ensure perfect Enterprise Naming and Casing
+  const getExactChannelName = (channel: string) => {
+    if (channel === "whatsapp") return "WhatsApp";
+    if (channel === "instagram") return "Instagram";
+    if (channel === "telegram") return "Telegram";
+    return channel;
+  };
+
   const BrandIcon = ({ channel, size = 18 }: { channel: string, size?: number }) => {
     if (channel === "whatsapp") return (
       <svg width={size} height={size} viewBox="0 0 100 100" fill="currentColor"><path d="M50 15c-19.3 0-35 15.7-35 35 0 6.2 1.6 12.2 4.7 17.5L15 85l17.5-4.7c5.3 3.1 11.3 4.7 17.5 4.7 19.3 0 35-15.7 35-35S69.3 15 50 15zm0 63.8c-5.2 0-10.4-1.4-15-4.1l-1.1-.6-11.1 2.9 2.9-10.8-.7-1.1c-2.9-4.7-4.5-10.1-4.5-15.6 0-16.2 13.2-29.4 29.4-29.4s29.4 13.2 29.4 29.4-13.2 29.4-29.4 29.4z"/><path d="M42 34h9.5c5.5 0 8.5 2.5 8.5 5.5s-2.8 4.2-5.5 4.8c4 1 7 3.5 7 7.5 0 5.5-5.5 7.2-10 7.2H42V34zm5 5.5v7h4c2 0 4-1 4-3.5s-2-3.5-4-3.5h-4zm0 11v8h4.5c3 0 4.5-1.5 4.5-4s-2-4-4.5-4H47z"/></svg>
@@ -225,7 +234,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                         <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${getBrandColor(channel)}`}>
                           <BrandIcon channel={channel} />
                         </div>
-                        <span className="text-[13px] font-bold text-white capitalize">{channel} Suite</span>
+                        <span className="text-[13px] font-bold text-white">{getExactChannelName(channel)}</span>
                       </div>
                       <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform duration-200 ${expandedChannel === channel ? "rotate-180 text-white" : ""}`}/>
                     </button>
