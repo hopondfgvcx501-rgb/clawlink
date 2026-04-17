@@ -5,13 +5,13 @@
  * CLAWLINK ENTERPRISE COMMAND CENTER (DASHBOARD)
  * ==============================================================================================
  * @file app/dashboard/page.tsx
- * @version 12.1.0 (UI Sync & Dynamic Traffic Polish)
+ * @version 12.1.1 (UI Sync & Dynamic Traffic Polish)
  * @description The central hub for users to monitor their AI Agents.
  * FIXED: Made `hasActivePlan` logic robust to strictly unlock RAG and Live status post-upgrade.
  * FIXED: Changed Live Channel text to "Your bot is Live 🟢" upon activation.
  * FIXED: Replaced static 3-tier platform routing with dynamic single-channel actual traffic.
  * FIXED: Removed Token Consumption card (Backend managed).
- * FIXED: Unified loading spinner across the app.
+ * FIXED: Implemented EXACT Custom Spinner + Counter requested by CEO.
  * * ALL RIGHTS RESERVED. CLAWLINK INC.
  * ==============================================================================================
  */
@@ -29,6 +29,7 @@ import {
   Receipt, Download, Smartphone, BrainCircuit, Search, Crown, Copy, Check, Bot, Database, Save, ArrowUpRight, TrendingUp, Shield, Mail
 } from "lucide-react";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
+import SpinnerCounter from "@/components/SpinnerCounter"; // 🚀 UNIVERSAL CUSTOM LOADER IMPORTED
 
 // Initialize Supabase Client
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
@@ -213,7 +214,6 @@ export default function Dashboard() {
     isExpired = new Date() > new Date(userData.plan_expiry_date);
   }
 
-  // 🚀 FIXED: Extremely robust logic to ensure if user paid, the UI unlocks properly regardless of exact string casing.
   const isStatusActive = (userData?.plan_status || "").toLowerCase() === "active" || (userData?.bot_status || "").toLowerCase() === "active";
   const hasActivePlan = (!isFreePlan && !isExpired) || isStatusActive;
   const isPremium = !isFreePlan || isStatusActive;
@@ -283,7 +283,6 @@ export default function Dashboard() {
         handler: async function (response: any) {
           try {
             alert("Payment gateway confirmed. Verifying with server... Please wait.");
-            console.log("[RAZORPAY_SUCCESS] Triggering backend verification...");
             
             const verifyRes = await fetch("/api/payment/verify", {
               method: "POST", headers: { "Content-Type": "application/json" },
@@ -295,7 +294,6 @@ export default function Dashboard() {
             });
 
            const verifyData = await verifyRes.json();
-            console.log("Verify Response:", verifyData);
 
             if (verifyData.success) {
               alert("✅ Payment Verified & Bot Activated!");
@@ -495,14 +493,9 @@ export default function Dashboard() {
     alert("Copied to clipboard!"); 
   };
 
-  // 🚀 UNIFIED LOADER COMPONENT (Spinner + Text)
+  // 🚀 CUSTOM SPINNER LOADER REPLACED HERE 
   if (isLoading || status === "loading") {
-    return (
-      <div className="w-full h-screen bg-[#07070A] flex flex-col items-center justify-center text-orange-500 font-mono">
-        <Activity className="w-10 h-10 animate-spin mb-4" />
-        INITIALIZING COMMAND CENTER...
-      </div>
-    );
+    return <SpinnerCounter text="INITIALIZING COMMAND CENTER..." />;
   }
 
   const totalMsgs = (stats?.platformStats?.whatsapp || 0) + (stats?.platformStats?.telegram || 0) + (stats?.platformStats?.web || 0) + (stats?.platformStats?.instagram || 0);
@@ -513,7 +506,6 @@ export default function Dashboard() {
   const hasWaId = !!userData?.whatsapp_phone_id && userData?.whatsapp_phone_id !== "";
   const hasIgId = !!userData?.instagram_account_id && userData?.instagram_account_id !== "";
 
-  // 🚀 FIXED: Display "Your bot is Live 🟢" exactly as requested when hasActivePlan is true
   const getPrimaryLiveChannel = () => {
       if (exactSelectedChannel === "telegram") {
           return { 
@@ -667,6 +659,7 @@ export default function Dashboard() {
       {/* Ambient Background */}
       <div className="fixed top-[-20%] right-[-8%] w-[800px] h-[800px] rounded-full pointer-events-none z-0 gradient-orange-dark" />
       <div className="fixed bottom-[-20%] left-[-8%] w-[800px] h-[800px] rounded-full pointer-events-none z-0 gradient-indigo-dark" />
+      
       {/* ─── HEADER ─── */}
       <header className="flex items-center justify-between p-6 md:p-8 border-b border-white/5 bg-[#07070A]/70 backdrop-blur-xl sticky top-0 z-30 transition-all duration-300">
         <div className="flex items-center gap-6">
