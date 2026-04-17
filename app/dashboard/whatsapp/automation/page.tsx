@@ -6,26 +6,35 @@
  * ==============================================================================================
  * @file app/dashboard/whatsapp/automation/page.tsx
  * @description Core control panel for WhatsApp Business API automations.
- * Manages Welcome messages, Away messages, and intelligent Keyword Routing.
+ * 🚀 UPGRADED: Removed dummy states. Now fetches and saves real rules to the Supabase Database.
  * * ALL RIGHTS RESERVED. CLAWLINK INC.
  * ==============================================================================================
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { 
-  Bot, MessageSquare, Clock, Zap, Plus, 
+  MessageSquare, Clock, Zap, Plus, 
   Trash2, Save, Activity, Phone, FileText,
   MessageCircle, LayoutTemplate
 } from "lucide-react";
 import TopHeader from "@/components/TopHeader";
 
+interface KeywordRule {
+  id: string; // Real DB IDs are UUIDs/Strings
+  keyword: string;
+  matchType: string;
+  actionType: string;
+  content: string;
+}
+
 export default function WhatsAppAutomation() {
   const { data: session, status } = useSession();
   const router = useRouter();
 
+  const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
 
   // Global Settings State
@@ -35,29 +44,88 @@ export default function WhatsAppAutomation() {
     businessHours: true,
   });
 
-  // Keyword Rules State
-  const [keywordRules, setKeywordRules] = useState([
-    { id: 1, keyword: "pricing, price, cost", matchType: "contains", actionType: "template", content: "saas_pricing_v2" },
-    { id: 2, keyword: "support, help, agent", matchType: "exact", actionType: "text", content: "Hold on, connecting you to a human agent..." },
-    { id: 3, keyword: "menu, hi, hello", matchType: "contains", actionType: "flow", content: "Main Welcome Funnel" },
-  ]);
+  // Keyword Rules State (Initially Empty, fetched from DB)
+  const [keywordRules, setKeywordRules] = useState<KeywordRule[]>([]);
 
-  if (status === "unauthenticated") router.push("/");
+  // Form State for New Rule
+  const [newRule, setNewRule] = useState({ keyword: "", matchType: "contains", actionType: "text", content: "" });
+
+  useEffect(() => {
+    if (status === "unauthenticated") router.push("/");
+  }, [status, router]);
+
+  // 🚀 FETCH REAL RULES FROM BACKEND
+  useEffect(() => {
+    const fetchRules = async () => {
+      if (status === "authenticated" && session?.user?.email) {
+        try {
+          // Fetch rules specific to WhatsApp for this user
+          const res = await fetch(`/api/automation?email=${session.user.email}&channel=whatsapp`);
+          const data = await res.json();
+          if (data.success && data.rules) {
+             setKeywordRules(data.rules);
+          }
+        } catch (error) {
+          console.error("Failed to load real rules", error);
+        } finally {
+          setIsLoading(false);
+        }
+      }
+    };
+    fetchRules();
+  }, [session, status]);
 
   const handleToggle = (key: keyof typeof globalSettings) => {
     setGlobalSettings(prev => ({ ...prev, [key]: !prev[key] }));
   };
 
-  const handleDeleteRule = (id: number) => {
+  const handleAddRule = () => {
+      if (!newRule.keyword || !newRule.content) {
+          alert("Keyword and Content are required.");
+          return;
+      }
+      // Optimistic UI Update (temporary ID until saved)
+      const tempId = `temp_${Date.now()}`;
+      setKeywordRules([...keywordRules, { id: tempId, ...newRule }]);
+      setNewRule({ keyword: "", matchType: "contains", actionType: "text", content: "" }); // Reset form
+  };
+
+  const handleDeleteRule = (id: string) => {
     setKeywordRules(keywordRules.filter(r => r.id !== id));
   };
 
-  const handleSave = () => {
+  // 🚀 SAVE REAL RULES TO BACKEND
+  const handleSave = async () => {
+    if (!session?.user?.email) return;
     setIsSaving(true);
-    setTimeout(() => {
-      setIsSaving(false);
-      alert("🟢 WhatsApp Automation Rules synced securely with Meta Graph API!");
-    }, 1500);
+    
+    try {
+      const res = await fetch("/api/automation", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+              email: session.user.email,
+              channel: "whatsapp",
+              rules: keywordRules
+          })
+      });
+
+      const data = await res.json();
+      
+      if (data.success) {
+          alert("🟢 WhatsApp Automation Rules Synced Live!");
+          // Re-fetch to get real DB IDs instead of temp IDs
+          const refreshRes = await fetch(`/api/automation?email=${session.user.email}&channel=whatsapp`);
+          const refreshData = await refreshRes.json();
+          if (refreshData.success && refreshData.rules) setKeywordRules(refreshData.rules);
+      } else {
+          alert("Failed to save rules: " + data.error);
+      }
+    } catch (error) {
+        alert("Network error while syncing rules.");
+    } finally {
+        setIsSaving(false);
+    }
   };
 
   const btnHover = "transition-all duration-[120ms] ease-out active:scale-[0.95] transform-gpu will-change-transform";
@@ -67,6 +135,15 @@ export default function WhatsAppAutomation() {
     if (type === 'flow') return <Zap className="w-4 h-4 text-purple-400" />;
     return <MessageCircle className="w-4 h-4 text-blue-400" />;
   };
+
+  if (isLoading || status === "loading") {
+    return (
+      <div className="w-full h-screen bg-[#07070A] flex flex-col items-center justify-center text-[#25D366] font-mono">
+        <Activity className="w-10 h-10 animate-spin mb-4" />
+        CONNECTING WHATSAPP RULES ENGINE...
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col h-screen bg-[#07070A] text-white overflow-hidden selection:bg-[#25D366]/30">
@@ -140,7 +217,7 @@ export default function WhatsAppAutomation() {
           {/* 🟢 RIGHT: KEYWORD ROUTING ENGINE */}
           <div className="lg:col-span-2 space-y-6">
             <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.1 }}
-              className="bg-[#0A0A0D] border border-white/5 rounded-[24px] p-6 md:p-8 shadow-[0_10px_40px_rgba(0,0,0,0.5)]">
+              className="bg-[#0A0A0D] border border-white/5 rounded-[24px] p-6 md:p-8 shadow-[0_10px_40px_rgba(0,0,0,0.5)] flex flex-col min-h-[600px]">
               
               <div className="flex justify-between items-center mb-8 border-b border-white/5 pb-6">
                 <div>
@@ -158,15 +235,47 @@ export default function WhatsAppAutomation() {
                 </button>
               </div>
 
-              <div className="flex justify-between items-center mb-4">
-                <p className="text-[10px] font-black uppercase tracking-widest text-gray-500">Active Routing Logic</p>
-                <button className={`bg-[#111114] hover:bg-white/5 text-white border border-white/10 px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 transition-all ${btnHover}`}>
-                  <Plus className="w-3 h-3"/> Add Keyword Rule
-                </button>
+              {/* Add New Rule Form */}
+              <div className="bg-[#111114] border border-white/10 p-5 rounded-2xl mb-6 flex flex-wrap gap-4 items-end">
+                  <div className="flex-1 min-w-[200px]">
+                      <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2 block">If message</label>
+                      <select value={newRule.matchType} onChange={(e)=> setNewRule({...newRule, matchType: e.target.value})} className="w-full bg-[#0A0A0D] border border-white/10 rounded-lg p-2.5 text-sm text-white outline-none">
+                          <option value="contains">Contains</option>
+                          <option value="exact">Is Exactly</option>
+                      </select>
+                  </div>
+                  <div className="flex-[2] min-w-[200px]">
+                      <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2 block">Keyword(s) - comma separated</label>
+                      <input type="text" placeholder="e.g. pricing, cost" value={newRule.keyword} onChange={(e)=> setNewRule({...newRule, keyword: e.target.value})} className="w-full bg-[#0A0A0D] border border-white/10 rounded-lg p-2.5 text-sm text-white outline-none" />
+                  </div>
+                  <div className="flex-1 min-w-[200px]">
+                      <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2 block">Then trigger</label>
+                      <select value={newRule.actionType} onChange={(e)=> setNewRule({...newRule, actionType: e.target.value})} className="w-full bg-[#0A0A0D] border border-white/10 rounded-lg p-2.5 text-sm text-white outline-none">
+                          <option value="text">Text Reply</option>
+                          <option value="template">WA Template</option>
+                          <option value="flow">Trigger Flow</option>
+                      </select>
+                  </div>
+                  <div className="flex-[2] min-w-[200px]">
+                      <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2 block">Content / Template ID</label>
+                      <input type="text" placeholder="Content to send..." value={newRule.content} onChange={(e)=> setNewRule({...newRule, content: e.target.value})} className="w-full bg-[#0A0A0D] border border-white/10 rounded-lg p-2.5 text-sm text-white outline-none" />
+                  </div>
+                  <button onClick={handleAddRule} className={`bg-white/10 hover:bg-white/20 text-white px-5 py-3 rounded-lg text-sm font-bold transition-all ${btnHover}`}>
+                      <Plus className="w-5 h-5" />
+                  </button>
               </div>
 
-              <div className="space-y-4">
-                {keywordRules.map((rule) => (
+              <div className="flex justify-between items-center mb-4">
+                <p className="text-[10px] font-black uppercase tracking-widest text-gray-500">Active Routing Logic</p>
+              </div>
+
+              <div className="space-y-4 flex-1">
+                {keywordRules.length === 0 ? (
+                    <div className="text-center py-10">
+                        <Activity className="w-8 h-8 text-gray-600 mx-auto mb-3" />
+                        <p className="text-sm text-gray-500">No automation rules configured yet.</p>
+                    </div>
+                ) : keywordRules.map((rule) => (
                   <div key={rule.id} className="bg-[#111114] border border-white/5 hover:border-[#25D366]/30 p-5 rounded-2xl flex items-center justify-between group transition-all">
                     
                     <div className="flex-1 grid grid-cols-12 gap-4 items-center">
