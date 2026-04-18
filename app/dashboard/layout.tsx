@@ -10,7 +10,7 @@
  * 🚀 SECURED: Added Cache-Control and timestamping to prevent stale data leaks.
  * 🚀 SECURED: Strict null checks and anti-flicker UI for session loading.
  * 🚀 FIXED: Enforced strict full-name channel rendering (WhatsApp, Instagram, Telegram).
- * 🚀 FIXED: Removed redundant API Configurations and Channel Settings per CEO directive.
+ * 🚀 FIXED: Replaced legacy <Activity /> icon with the new premium <SpinnerCounter />.
  * * ALL RIGHTS RESERVED. CLAWLINK INC.
  * ==============================================================================================
  */
@@ -23,8 +23,9 @@ import {
   LayoutDashboard, Inbox, BarChart3, Settings, LogOut, 
   MessageCircle, Bot, Workflow, Megaphone, Users, Tag, 
   Sparkles, MessageSquareQuote, UsersRound, Folder, 
-  ChevronDown, Activity, AlertCircle, Menu, X, Cpu, BrainCircuit
+  ChevronDown, AlertCircle, Menu, X, Cpu, BrainCircuit
 } from "lucide-react";
+import SpinnerCounter from "@/components/SpinnerCounter"; // 🚀 IMPORTED NEW SPINNER
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { data: session, status } = useSession();
@@ -167,13 +168,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     return null;
   };
 
-  // Secure Anti-Flicker Loading State
+  // 🚀 FIXED: REPLACED OLD 'ACTIVITY' ZIGZAG WITH NEW SPINNERCOUNTER
   if (status === "loading") {
-    return (
-      <div className="w-full h-screen bg-[#07070A] flex flex-col items-center justify-center">
-        <Activity className="w-8 h-8 text-orange-500 animate-spin opacity-50" />
-      </div>
-    );
+    return <SpinnerCounter text="AUTHENTICATING WORKSPACE..." />;
   }
 
   const deployedChannels = Object.keys(activeChannels).filter(k => activeChannels[k as keyof typeof activeChannels]);
@@ -235,7 +232,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             
             {isLoadingChannels ? (
                <div className="pl-3 py-2 text-[11px] text-gray-600 font-mono flex items-center gap-2">
-                 <Activity className="w-3 h-3 animate-spin"/> Syncing Safely...
+                 <SpinnerCounter text="Syncing..." />
                </div>
             ) : deployedChannels.length > 0 ? (
               <div className="space-y-3">
