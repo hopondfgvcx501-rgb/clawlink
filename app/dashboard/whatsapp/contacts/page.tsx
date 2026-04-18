@@ -6,7 +6,9 @@
  * ==============================================================================================
  * @file app/dashboard/whatsapp/contacts/page.tsx
  * @description Real-time CRM for WhatsApp. Displays captured leads, phone numbers, and tags.
- * 🚀 BUILT: Connected to real database fetch for WhatsApp leads.
+ * 🚀 SECURED: 100% Real database fetch with strict cache-busting.
+ * 🚀 FIXED: Upgraded to premium SpinnerCounter.
+ * 🚀 FIXED: Added strict error handling for database synchronization.
  * * ALL RIGHTS RESERVED. CLAWLINK INC.
  * ==============================================================================================
  */
@@ -21,6 +23,7 @@ import {
   Phone, Calendar, Tag as TagIcon
 } from "lucide-react";
 import TopHeader from "@/components/TopHeader";
+import SpinnerCounter from "@/components/SpinnerCounter"; // 🚀 Premium Loader Imported
 
 interface Contact {
   id: string;
@@ -39,20 +42,27 @@ export default function WhatsAppContacts() {
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
 
-  if (status === "unauthenticated") router.push("/");
+  useEffect(() => {
+    if (status === "unauthenticated") router.replace("/");
+  }, [status, router]);
 
   // 🚀 FETCH REAL WHATSAPP CONTACTS FROM DB
   useEffect(() => {
     const fetchContacts = async () => {
       if (status === "authenticated" && session?.user?.email) {
         try {
-          const res = await fetch(`/api/crm/contacts?email=${session.user.email}&channel=whatsapp`);
+          const res = await fetch(`/api/crm/contacts?email=${encodeURIComponent(session.user.email)}&channel=whatsapp&t=${Date.now()}`, {
+             headers: { 'Cache-Control': 'no-store' }
+          });
+          
+          if (!res.ok) throw new Error(`HTTP Error ${res.status}`);
+          
           const data = await res.json();
           if (data.success && data.contacts) {
              setContacts(data.contacts);
           }
         } catch (error) {
-          console.error("Failed to load contacts", error);
+          console.error("Failed to load real contacts from DB", error);
         } finally {
           setIsLoading(false);
         }
@@ -73,13 +83,9 @@ export default function WhatsAppContacts() {
 
   const btnHover = "transition-all duration-[120ms] ease-out active:scale-[0.95] transform-gpu will-change-transform";
 
+  // 🚀 Premium Loader
   if (isLoading || status === "loading") {
-    return (
-      <div className="w-full h-screen bg-[#07070A] flex flex-col items-center justify-center text-[#25D366] font-mono">
-        <Activity className="w-10 h-10 animate-spin mb-4" />
-        SYNCING WHATSAPP CRM...
-      </div>
-    );
+    return <SpinnerCounter text="SYNCING WHATSAPP CRM..." />;
   }
 
   return (

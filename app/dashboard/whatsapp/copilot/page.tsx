@@ -6,7 +6,10 @@
  * ==============================================================================================
  * @file app/dashboard/whatsapp/copilot/page.tsx
  * @description Advanced control center to train and configure the WhatsApp AI Agent's behavior.
- * 🚀 UPGRADED: Full real-time synchronization with Supabase User Configuration.
+ * 🚀 SECURED: Full real-time synchronization with Supabase User Configuration.
+ * 🚀 FIXED: Upgraded to premium SpinnerCounter.
+ * 🚀 FIXED: Corrected the AI Model payload parameter from 'configModel' to 'aiModel'.
+ * 🚀 FIXED: Implemented strict backend error surfacing.
  * * ALL RIGHTS RESERVED. CLAWLINK INC.
  * ==============================================================================================
  */
@@ -21,6 +24,7 @@ import {
   Languages, UserCircle
 } from "lucide-react";
 import TopHeader from "@/components/TopHeader";
+import SpinnerCounter from "@/components/SpinnerCounter"; // 🚀 Premium Loader Imported
 
 export default function WhatsAppCopilot() {
   const { data: session, status } = useSession();
@@ -39,14 +43,18 @@ export default function WhatsAppCopilot() {
     language: "multilingual"
   });
 
-  if (status === "unauthenticated") router.push("/");
+  useEffect(() => {
+    if (status === "unauthenticated") router.replace("/");
+  }, [status, router]);
 
   // 🚀 FETCH REAL AI CONFIGURATION FROM DB
   useEffect(() => {
     const fetchConfig = async () => {
       if (status === "authenticated" && session?.user?.email) {
         try {
-          const res = await fetch(`/api/user?email=${session.user.email}`);
+          const res = await fetch(`/api/user?email=${encodeURIComponent(session.user.email)}&t=${Date.now()}`, {
+             headers: { 'Cache-Control': 'no-store' }
+          });
           const data = await res.json();
           if (data.success && data.data) {
             setConfig({
@@ -68,7 +76,7 @@ export default function WhatsAppCopilot() {
     fetchConfig();
   }, [session, status]);
 
-  // 🚀 SAVE CONFIG TO DB
+  // 🚀 SAVE CONFIG TO DB WITH STRICT ERROR HANDLING
   const handleSaveConfig = async () => {
     if (!session?.user?.email) return;
     setIsSaving(true);
@@ -83,18 +91,30 @@ export default function WhatsAppCopilot() {
           botName: config.agentName,
           agentTone: config.agentTone,
           systemPrompt: config.systemPrompt,
-          aiModel: config.configModel
+          aiModel: config.aiModel // 🚀 Fixed variable name to map correctly to state
         })
       });
+
+      if (!res.ok) {
+         let errorDetail = `HTTP Error ${res.status}`;
+         try {
+            const errData = await res.json();
+            errorDetail = errData.error || errorDetail;
+         } catch(e) {
+            errorDetail = await res.text();
+         }
+         throw new Error(errorDetail);
+      }
 
       const data = await res.json();
       if (data.success) {
         alert("✨ WhatsApp AI Persona updated successfully across all nodes!");
       } else {
-        alert("Update failed: " + data.error);
+        alert(`Update failed: ${data.error}`);
       }
-    } catch (error) {
-      alert("Network error while saving AI persona.");
+    } catch (error: any) {
+        console.error("Persona Save Error:", error);
+        alert(`Backend Error: ${error.message || "Network error while saving AI persona."}`);
     } finally {
       setIsSaving(false);
     }
@@ -102,17 +122,13 @@ export default function WhatsAppCopilot() {
 
   const btnHover = "transition-all duration-[120ms] ease-out active:scale-[0.95] transform-gpu will-change-transform";
 
+  // 🚀 Premium Loader
   if (isLoading || status === "loading") {
-    return (
-      <div className="w-full h-screen bg-[#07070A] flex flex-col items-center justify-center text-orange-500 font-mono">
-        <Activity className="w-10 h-10 animate-spin mb-4" />
-        INITIALIZING AI BRAIN...
-      </div>
-    );
+    return <SpinnerCounter text="INITIALIZING AI BRAIN..." />;
   }
 
   return (
-    <div className="flex flex-col h-screen bg-[#07070A] text-white overflow-hidden selection:bg-orange-500/30">
+    <div className="flex flex-col h-screen bg-[#07070A] text-white overflow-hidden selection:bg-[#25D366]/30">
       <TopHeader title="WhatsApp AI Copilot" session={session} />
       
       <div className="flex-1 overflow-y-auto custom-scrollbar p-6 md:p-8">
@@ -125,8 +141,8 @@ export default function WhatsAppCopilot() {
               
               <div className="flex items-center justify-between mb-8 pb-6 border-b border-white/5">
                 <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-xl bg-orange-500/10 flex items-center justify-center border border-orange-500/20 shadow-[0_0_20px_rgba(249,115,22,0.15)]">
-                    <BrainCircuit className="w-6 h-6 text-orange-500" />
+                  <div className="w-12 h-12 rounded-xl bg-[#25D366]/10 flex items-center justify-center border border-[#25D366]/20 shadow-[0_0_20px_rgba(37,211,102,0.15)]">
+                    <BrainCircuit className="w-6 h-6 text-[#25D366]" />
                   </div>
                   <div>
                     <h2 className="text-xl font-black text-white">Agent Persona</h2>
@@ -134,7 +150,7 @@ export default function WhatsAppCopilot() {
                   </div>
                 </div>
                 <button onClick={handleSaveConfig} disabled={isSaving}
-                  className={`bg-white text-black px-6 py-3 rounded-xl text-[12px] font-black uppercase tracking-widest flex items-center gap-2 shadow-lg disabled:opacity-50 ${btnHover}`}>
+                  className={`bg-[#25D366] hover:bg-[#20bd5a] text-black px-6 py-3 rounded-xl text-[12px] font-black uppercase tracking-widest flex items-center gap-2 shadow-[0_0_15px_rgba(37,211,102,0.3)] disabled:opacity-50 ${btnHover}`}>
                   {isSaving ? <Activity className="w-4 h-4 animate-spin"/> : <Save className="w-4 h-4"/>}
                   {isSaving ? "Saving..." : "Deploy Persona"}
                 </button>
@@ -150,7 +166,7 @@ export default function WhatsAppCopilot() {
                       value={config.agentName}
                       onChange={(e) => setConfig({...config, agentName: e.target.value})}
                       placeholder="e.g. ClawLink Pro"
-                      className="w-full bg-[#111114] border border-white/10 rounded-xl pl-12 pr-4 py-3.5 text-sm text-white focus:border-orange-500 outline-none transition-all"
+                      className="w-full bg-[#111114] border border-white/10 rounded-xl pl-12 pr-4 py-3.5 text-sm text-white focus:border-[#25D366]/50 outline-none transition-all"
                     />
                   </div>
                 </div>
@@ -162,7 +178,7 @@ export default function WhatsAppCopilot() {
                     <select 
                       value={config.agentTone}
                       onChange={(e) => setConfig({...config, agentTone: e.target.value})}
-                      className="w-full bg-[#111114] border border-white/10 rounded-xl pl-12 pr-4 py-3.5 text-sm text-white focus:border-orange-500 outline-none appearance-none cursor-pointer"
+                      className="w-full bg-[#111114] border border-white/10 rounded-xl pl-12 pr-4 py-3.5 text-sm text-white focus:border-[#25D366]/50 outline-none appearance-none cursor-pointer"
                     >
                       <option value="professional">Professional & Direct</option>
                       <option value="friendly">Friendly & Casual</option>
@@ -182,7 +198,7 @@ export default function WhatsAppCopilot() {
                     value={config.systemPrompt}
                     onChange={(e) => setConfig({...config, systemPrompt: e.target.value})}
                     placeholder="Describe exactly how the agent should behave. E.g. 'You are an expert sales closer for ClawLink. Never mention competitors. Always be polite but push for a meeting...'"
-                    className="w-full bg-[#111114] border border-white/10 rounded-2xl pl-12 pr-4 py-4 text-sm text-white focus:border-orange-500 outline-none transition-all resize-none custom-scrollbar font-mono leading-relaxed"
+                    className="w-full bg-[#111114] border border-white/10 rounded-2xl pl-12 pr-4 py-4 text-sm text-white focus:border-[#25D366]/50 outline-none transition-all resize-none custom-scrollbar font-mono leading-relaxed"
                   />
                 </div>
                 <p className="text-[10px] text-gray-600 mt-3 flex items-center gap-2">
@@ -219,11 +235,11 @@ export default function WhatsAppCopilot() {
                   </div>
                 </div>
 
-                <div className="bg-orange-500/5 border border-orange-500/10 p-5 rounded-2xl">
-                  <h4 className="text-[12px] font-black text-orange-500 uppercase mb-2 flex items-center gap-2">
+                <div className="bg-[#25D366]/5 border border-[#25D366]/10 p-5 rounded-2xl">
+                  <h4 className="text-[12px] font-black text-[#25D366] uppercase mb-2 flex items-center gap-2">
                     <Sparkles className="w-3.5 h-3.5" /> Pro Tip
                   </h4>
-                  <p className="text-[11px] text-orange-200/60 leading-relaxed">
+                  <p className="text-[11px] text-[#25D366]/60 leading-relaxed">
                     Be specific about your business hours and contact info in the System Prompt. This helps the AI answer FAQs without human intervention.
                   </p>
                 </div>
@@ -231,14 +247,14 @@ export default function WhatsAppCopilot() {
             </motion.div>
 
             {/* AI Usage Card */}
-            <div className="bg-gradient-to-br from-blue-600/10 to-purple-600/10 border border-blue-500/20 rounded-[24px] p-6">
+            <div className="bg-gradient-to-br from-emerald-600/10 to-teal-600/10 border border-emerald-500/20 rounded-[24px] p-6">
               <div className="flex justify-between items-start mb-4">
-                <p className="text-[11px] font-black uppercase tracking-widest text-blue-400">Agent Intelligence</p>
-                <div className="px-2 py-1 bg-blue-500/20 rounded text-[9px] font-black text-blue-300">ULTRA FAST</div>
+                <p className="text-[11px] font-black uppercase tracking-widest text-[#25D366]">Agent Intelligence</p>
+                <div className="px-2 py-1 bg-[#25D366]/20 rounded text-[9px] font-black text-emerald-300">ULTRA FAST</div>
               </div>
               <p className="text-[13px] text-white font-bold mb-4">Your agent is currently analyzing conversation patterns for better accuracy.</p>
               <div className="w-full bg-white/5 h-1.5 rounded-full overflow-hidden">
-                <div className="w-[85%] h-full bg-gradient-to-r from-blue-500 to-purple-500"></div>
+                <div className="w-[85%] h-full bg-gradient-to-r from-emerald-500 to-[#25D366]"></div>
               </div>
             </div>
           </div>
