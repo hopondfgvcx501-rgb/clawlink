@@ -8,7 +8,7 @@
  * @description The "ManyChat Killer" module. Maps specific comments on Posts/Reels to 
  * automated Direct Messages (DMs) using Meta's Graph API.
  * 🚀 SECURED: Strict caching prevention and session verification.
- * 🚀 UPGRADED: Real-time DB sync for Viral Funnels (Comment-to-DM).
+ * 🚀 FIXED: Integrated premium SpinnerCounter and exact backend error surfacing.
  * 🚀 FIXED: Enforced strict "Instagram" naming. No shorthand.
  * * ALL RIGHTS RESERVED. CLAWLINK INC.
  * ==============================================================================================
@@ -24,6 +24,7 @@ import {
   Hash, Heart
 } from "lucide-react";
 import TopHeader from "@/components/TopHeader";
+import SpinnerCounter from "@/components/SpinnerCounter"; // 🚀 Premium Loader Imported
 
 interface AutoDMRule {
   id: string;
@@ -57,7 +58,9 @@ export default function InstagramAutomations() {
     dmText: ""
   });
 
-  if (status === "unauthenticated") router.replace("/");
+  useEffect(() => {
+    if (status === "unauthenticated") router.replace("/");
+  }, [status, router]);
 
   // 🚀 SECURE REAL-TIME FETCH LOGIC
   useEffect(() => {
@@ -67,7 +70,7 @@ export default function InstagramAutomations() {
           const res = await fetch(`/api/automation?email=${encodeURIComponent(session.user.email)}&channel=instagram&t=${Date.now()}`, {
             headers: { 'Cache-Control': 'no-store' }
           });
-          if (!res.ok) throw new Error("Secure fetch failed");
+          if (!res.ok) throw new Error(`HTTP Error ${res.status}`);
           
           const data = await res.json();
           if (data.success && data.rules) {
@@ -104,7 +107,7 @@ export default function InstagramAutomations() {
     setAutoDMRules(autoDMRules.filter(r => r.id !== id));
   };
 
-  // 🚀 SECURE SAVE TO DATABASE
+  // 🚀 SECURE SAVE TO DATABASE WITH STRICT ERROR HANDLING
   const handleSave = async () => {
     if (!session?.user?.email) return;
     setIsSaving(true);
@@ -121,18 +124,30 @@ export default function InstagramAutomations() {
         })
       });
 
+      if (!res.ok) {
+         let errorDetail = `HTTP Error ${res.status}`;
+         try {
+            const errData = await res.json();
+            errorDetail = errData.error || errorDetail;
+         } catch(e) {
+            errorDetail = await res.text();
+         }
+         throw new Error(errorDetail);
+      }
+
       const data = await res.json();
       
       if (data.success) {
         alert("📸 Instagram Viral Funnels and Automations synced securely with Meta Graph API!");
-        const refreshRes = await fetch(`/api/automation?email=${encodeURIComponent(session.user.email)}&channel=instagram`);
+        const refreshRes = await fetch(`/api/automation?email=${encodeURIComponent(session.user.email)}&channel=instagram&t=${Date.now()}`);
         const refreshData = await refreshRes.json();
         if (refreshData.success && refreshData.rules) setAutoDMRules(refreshData.rules);
       } else {
-        alert("Failed to save configuration: " + data.error);
+        alert(`Failed to save configuration: ${data.error}`);
       }
-    } catch (error) {
-      alert("Network error while syncing rules.");
+    } catch (error: any) {
+      console.error("Automation Sync Error:", error);
+      alert(`Backend Error: ${error.message || "Network error while syncing rules."}`);
     } finally {
       setIsSaving(false);
     }
@@ -140,14 +155,9 @@ export default function InstagramAutomations() {
 
   const btnHover = "transition-all duration-[120ms] ease-out active:scale-[0.95] transform-gpu will-change-transform";
 
-  // Secure Anti-Flicker Loading State
+  // 🚀 Premium Loader
   if (isLoading || status === "loading") {
-    return (
-      <div className="w-full h-screen bg-[#07070A] flex flex-col items-center justify-center text-pink-500 font-mono">
-        <Activity className="w-10 h-10 animate-spin mb-4" />
-        CONNECTING INSTAGRAM GRAPH API...
-      </div>
-    );
+    return <SpinnerCounter text="CONNECTING INSTAGRAM GRAPH API..." />;
   }
 
   return (

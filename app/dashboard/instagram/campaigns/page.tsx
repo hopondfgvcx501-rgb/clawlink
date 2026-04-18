@@ -8,8 +8,8 @@
  * @description Allows sending bulk messages to followers who have interacted within 24h.
  * Fully compliant with Meta's Messenger API guidelines for Instagram.
  * 🚀 SECURED: Strict cache-busting for real-time campaign logs.
- * 🚀 UPGRADED: Removed dummy array. Connected to live PostgreSQL / API sync.
- * 🚀 FIXED: Enforced strict "Instagram" terminology. No "IG" shorthand.
+ * 🚀 FIXED: Upgraded loader to premium SpinnerCounter.
+ * 🚀 FIXED: Added strict backend error parsing for campaign dispatch.
  * * ALL RIGHTS RESERVED. CLAWLINK INC.
  * ==============================================================================================
  */
@@ -23,6 +23,7 @@ import {
   BarChart3, AlertCircle, Image as ImageIcon 
 } from "lucide-react";
 import TopHeader from "@/components/TopHeader";
+import SpinnerCounter from "@/components/SpinnerCounter"; // 🚀 Premium Loader Imported
 
 interface Campaign {
   id: string | number;
@@ -46,7 +47,9 @@ export default function InstagramCampaigns() {
   // Real Database Campaign History
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
 
-  if (status === "unauthenticated") router.replace("/");
+  useEffect(() => {
+     if (status === "unauthenticated") router.replace("/");
+  }, [status, router]);
 
   // 🚀 SECURE REAL-TIME FETCH LOGIC
   useEffect(() => {
@@ -73,7 +76,7 @@ export default function InstagramCampaigns() {
     fetchCampaigns();
   }, [session, status]);
 
-  // 🚀 SECURE DISPATCH TO META API
+  // 🚀 SECURE DISPATCH TO META API WITH STRICT ERROR HANDLING
   const handleSendCampaign = async () => {
     if (!message.trim()) {
       alert("Message cannot be empty!");
@@ -96,20 +99,32 @@ export default function InstagramCampaigns() {
         })
       });
 
+      if (!res.ok) {
+         let errorDetail = `HTTP Error ${res.status}`;
+         try {
+            const errData = await res.json();
+            errorDetail = errData.error || errorDetail;
+         } catch(e) {
+            errorDetail = await res.text();
+         }
+         throw new Error(errorDetail);
+      }
+
       const data = await res.json();
       
       if (data.success) {
         alert("📸 Instagram DM Campaign successfully queued via Meta API!");
         setMessage('');
         // Re-fetch the live history
-        const refreshRes = await fetch(`/api/broadcast?email=${encodeURIComponent(session.user.email)}&channel=instagram`);
+        const refreshRes = await fetch(`/api/broadcast?email=${encodeURIComponent(session.user.email)}&channel=instagram&t=${Date.now()}`);
         const refreshData = await refreshRes.json();
         if (refreshData.success && refreshData.campaigns) setCampaigns(refreshData.campaigns);
       } else {
-        alert("Failed to queue campaign: " + data.error);
+        alert(`Failed to queue campaign: ${data.error}`);
       }
-    } catch (error) {
-      alert("Network error while dispatching campaign.");
+    } catch (error: any) {
+      console.error("Campaign Dispatch Error:", error);
+      alert(`Backend Error: ${error.message || "Network error while dispatching campaign."}`);
     } finally {
       setIsSending(false);
     }
@@ -117,14 +132,9 @@ export default function InstagramCampaigns() {
 
   const btnHover = "transition-all duration-[120ms] ease-out active:scale-[0.95] transform-gpu will-change-transform";
 
-  // Secure Anti-Flicker Loading State
+  // 🚀 Premium Loader
   if (isLoading || status === "loading") {
-    return (
-      <div className="w-full h-screen bg-[#07070A] flex flex-col items-center justify-center text-pink-500 font-mono">
-        <Activity className="w-10 h-10 animate-spin mb-4" />
-        LOADING CAMPAIGN HISTORY...
-      </div>
-    );
+    return <SpinnerCounter text="LOADING CAMPAIGN HISTORY..." />;
   }
 
   return (
@@ -154,7 +164,7 @@ export default function InstagramCampaigns() {
                 <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-gray-500 mb-3">1. Select Meta-Compliant Audience</label>
                 <div className="flex flex-wrap gap-3">
                   {[
-                    { id: 'active_24h', label: 'Active (Last 24h)', count: 'Syncing...' },
+                    { id: 'active_24h', label: 'Active (Last 24h)', count: 'Live DB' },
                   ].map((seg) => (
                     <button 
                       key={seg.id}
@@ -165,7 +175,7 @@ export default function InstagramCampaigns() {
                         : 'bg-[#111114] border-white/10 text-gray-400'
                       }`}
                     >
-                      <Users className="w-4 h-4"/> {seg.label}
+                      <Users className="w-4 h-4"/> {seg.label} <span className="opacity-50 text-[10px] font-mono">({seg.count})</span>
                     </button>
                   ))}
                 </div>
