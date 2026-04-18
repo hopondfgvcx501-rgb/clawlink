@@ -7,6 +7,7 @@
  * @file app/dashboard/telegram/copilot/page.tsx
  * @description Advanced control center to train and configure the Telegram AI Agent's behavior.
  * 🚀 SECURED: Full real-time synchronization with Supabase configuration.
+ * 🚀 FIXED: Integrated premium SpinnerCounter for consistent enterprise loading UI.
  * * ALL RIGHTS RESERVED. CLAWLINK INC.
  * ==============================================================================================
  */
@@ -21,6 +22,7 @@ import {
   Languages, UserCircle, Bot
 } from "lucide-react";
 import TopHeader from "@/components/TopHeader";
+import SpinnerCounter from "@/components/SpinnerCounter"; // 🚀 Premium Loader Imported
 
 export default function TelegramCopilot() {
   const { data: session, status } = useSession();
@@ -101,13 +103,9 @@ export default function TelegramCopilot() {
 
   const btnHover = "transition-all duration-[120ms] ease-out active:scale-[0.95] transform-gpu will-change-transform";
 
+  // 🚀 Secure Premium Anti-Flicker Loading State
   if (isLoading || status === "loading") {
-    return (
-      <div className="w-full h-screen bg-[#07070A] flex flex-col items-center justify-center text-[#2AABEE] font-mono">
-        <Activity className="w-10 h-10 animate-spin mb-4" />
-        INITIALIZING TELEGRAM BRAIN...
-      </div>
-    );
+    return <SpinnerCounter text="INITIALIZING TELEGRAM BRAIN..." />;
   }
 
   return (
