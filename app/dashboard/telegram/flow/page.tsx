@@ -7,7 +7,8 @@
  * @file app/dashboard/telegram/flow/page.tsx
  * @description Advanced Drag & Drop Visual Automation Builder using React Flow.
  * 🚀 SECURED: Compiles visual graph to JSON payload for Telegram Webhook DB.
- * 🚀 FIXED: Added proper TypeScript types to fix 'onConnect' red line errors.
+ * 🚀 FIXED: Added real-time secure fetch to load existing saved flows from the Database.
+ * 🚀 FIXED: Integrated premium SpinnerCounter for consistent enterprise loading UI.
  * * ALL RIGHTS RESERVED. CLAWLINK INC.
  * ==============================================================================================
  */
@@ -33,6 +34,7 @@ import {
   Image as ImageIcon, MoreHorizontal, Activity, Workflow
 } from "lucide-react";
 import TopHeader from "@/components/TopHeader";
+import SpinnerCounter from "@/components/SpinnerCounter"; // 🚀 Premium Loader Imported
 
 // ==========================================
 // 🎨 CUSTOM NODE COMPONENTS
@@ -92,20 +94,48 @@ export default function TelegramFlowBuilder() {
   const router = useRouter();
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
   
-  // Initial starting node
-  const [nodes, setNodes, onNodesChange] = useNodesState([
-    { id: 'telegram-trigger-1', type: 'triggerNode', position: { x: 50, y: 150 }, data: { label: 'User sends /start', detail: 'Matches exact command' } }
-  ]);
+  const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   
   const [reactFlowInstance, setReactFlowInstance] = useState<any>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [isLoadingFlow, setIsLoadingFlow] = useState(true);
 
   useEffect(() => {
     if (status === "unauthenticated") router.replace("/");
   }, [status, router]);
 
-  // FIX: Added proper Connection/Edge typing to prevent TS red line error
+  // 🚀 SECURE DATA FETCH: Load existing Flow from Database
+  useEffect(() => {
+    const fetchSavedFlow = async () => {
+      if (status === "authenticated" && session?.user?.email) {
+        try {
+          const res = await fetch(`/api/telegram/flow?email=${encodeURIComponent(session.user.email)}&channel=telegram&t=${Date.now()}`, {
+            headers: { 'Cache-Control': 'no-store' }
+          });
+          const data = await res.json();
+          
+          if (data.success && data.data && data.data.nodes && data.data.nodes.length > 0) {
+            setNodes(data.data.nodes);
+            setEdges(data.data.edges || []);
+          } else {
+            // Fallback to default starting node if no data exists in DB
+            setNodes([{ id: 'telegram-trigger-1', type: 'triggerNode', position: { x: 50, y: 150 }, data: { label: 'User sends /start', detail: 'Matches exact command' } }]);
+          }
+        } catch (error) {
+          console.error("[SECURITY_LOG] Failed to load flow data", error);
+          // Ensure canvas is not empty on error
+          setNodes([{ id: 'telegram-trigger-1', type: 'triggerNode', position: { x: 50, y: 150 }, data: { label: 'User sends /start', detail: 'Matches exact command' } }]);
+        } finally {
+          setIsLoadingFlow(false);
+        }
+      }
+    };
+
+    fetchSavedFlow();
+  }, [session, status, setNodes, setEdges]);
+
+  // Proper Connection/Edge typing to prevent TS red line error
   const onConnect = useCallback((params: Connection | Edge) => {
     const animatedEdge = { 
         ...params, 
@@ -193,8 +223,9 @@ export default function TelegramFlowBuilder() {
       }
   };
 
-  if (status === "loading") {
-    return <div className="h-screen flex items-center justify-center bg-[#07070A] text-[#2AABEE] font-mono"><Activity className="w-8 h-8 animate-spin mr-3"/> INITIALIZING CANVAS...</div>;
+  // 🚀 Premium Loader replacing hardcoded text
+  if (status === "loading" || isLoadingFlow) {
+    return <SpinnerCounter text="SYNCHRONIZING CANVAS..." />;
   }
 
   return (
