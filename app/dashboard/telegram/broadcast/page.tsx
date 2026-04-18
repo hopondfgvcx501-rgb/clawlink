@@ -8,6 +8,8 @@
  * @description Advanced bulk messaging system. Replaces email marketing.
  * 🚀 SECURED: Real-time PostgreSQL database sync for campaigns. Removed mock arrays.
  * 🚀 FIXED: Strict cache-busting applied. Cleaned all TypeScript/Syntax errors.
+ * 🚀 FIXED: Upgraded loading state to premium SpinnerCounter.
+ * 🚀 FIXED: Exposed true backend API errors during dispatch instead of generic "Network Error".
  * * ALL RIGHTS RESERVED. CLAWLINK INC.
  * ==============================================================================================
  */
@@ -22,6 +24,7 @@ import {
   CheckCircle2, Clock, BarChart3, AlertCircle
 } from "lucide-react";
 import TopHeader from "@/components/TopHeader";
+import SpinnerCounter from "@/components/SpinnerCounter"; // 🚀 Premium Loader Imported
 
 interface Campaign {
   id: string | number;
@@ -79,7 +82,7 @@ export default function TelegramBroadcast() {
     setMessage(prev => prev + variable);
   };
 
-  // 🚀 SECURE DISPATCH TO TELEGRAM API
+  // 🚀 SECURE DISPATCH TO TELEGRAM API WITH EXACT ERROR SURFACING
   const handleSendBroadcast = async () => {
     if (!message.trim()) {
       alert("Message cannot be empty!");
@@ -102,6 +105,18 @@ export default function TelegramBroadcast() {
         })
       });
 
+      // 🚀 Prevent JSON parse crash and expose true backend error
+      if (!res.ok) {
+         let errorDetail = `HTTP Error ${res.status}`;
+         try {
+            const errData = await res.json();
+            errorDetail = errData.error || errorDetail;
+         } catch(e) {
+            errorDetail = await res.text();
+         }
+         throw new Error(errorDetail);
+      }
+
       const data = await res.json();
       
       if (data.success) {
@@ -112,10 +127,11 @@ export default function TelegramBroadcast() {
         const refreshData = await refreshRes.json();
         if (refreshData.success && refreshData.campaigns) setCampaigns(refreshData.campaigns);
       } else {
-        alert("Failed to queue campaign: " + data.error);
+        alert(`Failed to queue campaign: ${data.error}`);
       }
-    } catch (error) {
-      alert("Network error while dispatching campaign.");
+    } catch (error: any) {
+      console.error("Broadcast Dispatch Error:", error);
+      alert(`Backend Error: ${error.message || "Failed to reach server."}`);
     } finally {
       setIsSending(false);
     }
@@ -123,14 +139,9 @@ export default function TelegramBroadcast() {
 
   const btnHover = "transition-all duration-[120ms] ease-out active:scale-[0.95] transform-gpu will-change-transform";
 
-  // Secure Anti-Flicker Loading State
+  // 🚀 Secure Premium Anti-Flicker Loading State
   if (isLoading || status === "loading") {
-    return (
-      <div className="w-full h-screen bg-[#07070A] flex flex-col items-center justify-center text-[#2AABEE] font-mono">
-        <Activity className="w-10 h-10 animate-spin mb-4" />
-        LOADING TELEGRAM LOGS...
-      </div>
-    );
+    return <SpinnerCounter text="LOADING TELEGRAM LOGS..." />;
   }
 
   return (
