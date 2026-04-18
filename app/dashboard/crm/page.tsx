@@ -9,6 +9,7 @@
  * 🚀 SECURED: Real-time database fetching for chats.
  * 🚀 FIXED: Strict isolated channel view with dynamic switcher. No mashed-up UI.
  * 🚀 FIXED: Uses custom SpinnerCounter for loading states.
+ * 🚀 FIXED: Resolved syntax parsing error on line 129 preventing production builds.
  * * ALL RIGHTS RESERVED. CLAWLINK INC.
  * ==============================================================================================
  */
@@ -20,7 +21,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { 
   MessageSquare, Search, Phone, 
   MoreVertical, Send, Paperclip, Smile,
-  Bot, User, Activity, PauseCircle, PlayCircle, Clock
+  Bot, User, Activity, PauseCircle, PlayCircle, Clock, Shield
 } from "lucide-react";
 import TopHeader from "@/components/TopHeader";
 import SpinnerCounter from "@/components/SpinnerCounter";
@@ -122,11 +123,7 @@ export default function LiveCRMInbox() {
     
     // In production, fetch specific messages for this chatId. 
     // Simulating secure 
-    // 
-    
-    
-    
-    response structure here:
+    // response structure here:  <-- THIS LINE HAS BEEN CORRECTED (Commented out)
     setMessages([
         { id: '1', sender: 'user', text: 'Hi, I need help with my order.', time: '10:00 AM' },
         { id: '2', sender: 'bot', text: 'Hello! I can help with that. Please provide your Order ID.', time: '10:00 AM' },
