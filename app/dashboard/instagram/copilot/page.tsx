@@ -7,8 +7,8 @@
  * @file app/dashboard/instagram/copilot/page.tsx
  * @description Advanced control center to train and configure the Instagram AI Agent's behavior.
  * 🚀 SECURED: Strict cache-busting and session verification.
- * 🚀 UPGRADED: Full real-time synchronization with Supabase User Configuration.
- * 🚀 FIXED: Enforced strict "Instagram" terminology.
+ * 🚀 FIXED: Integrated premium SpinnerCounter.
+ * 🚀 FIXED: Implemented strict backend error parsing for database save operations.
  * * ALL RIGHTS RESERVED. CLAWLINK INC.
  * ==============================================================================================
  */
@@ -23,6 +23,7 @@ import {
   Languages, UserCircle, Instagram
 } from "lucide-react";
 import TopHeader from "@/components/TopHeader";
+import SpinnerCounter from "@/components/SpinnerCounter"; // 🚀 Premium Loader Imported
 
 export default function InstagramCopilot() {
   const { data: session, status } = useSession();
@@ -41,7 +42,9 @@ export default function InstagramCopilot() {
     language: "multilingual"
   });
 
-  if (status === "unauthenticated") router.replace("/");
+  useEffect(() => {
+     if (status === "unauthenticated") router.replace("/");
+  }, [status, router]);
 
   // 🚀 SECURE FETCH AI CONFIGURATION FROM DB
   useEffect(() => {
@@ -57,7 +60,7 @@ export default function InstagramCopilot() {
           const data = await res.json();
           if (data.success && data.data) {
             setConfig({
-              agentName: data.data.bot_name || "ClawLink Instagram Assistant",
+              agentName: data.data.bot_name_instagram || "ClawLink Instagram Assistant",
               agentTone: data.data.agent_tone_instagram || "trendy",
               systemPrompt: data.data.system_prompt_instagram || "",
               autoReply: data.data.instagram_bot_status === "active",
@@ -75,7 +78,7 @@ export default function InstagramCopilot() {
     fetchConfig();
   }, [session, status]);
 
-  // 🚀 SECURE SAVE CONFIG TO DB
+  // 🚀 SECURE SAVE CONFIG TO DB WITH ERROR HANDLING
   const handleSaveConfig = async () => {
     if (!session?.user?.email) return;
     setIsSaving(true);
@@ -87,22 +90,34 @@ export default function InstagramCopilot() {
         body: JSON.stringify({
           email: session.user.email,
           channel: "instagram",
-          botName: config.agentName,
-          agentTone: config.agentTone,
-          systemPrompt: config.systemPrompt,
+          botNameInstagram: config.agentName,
+          agentToneInstagram: config.agentTone,
+          systemPromptInstagram: config.systemPrompt,
           autoReply: config.autoReply,
           aiModel: config.aiModel
         })
       });
 
+      if (!res.ok) {
+         let errorDetail = `HTTP Error ${res.status}`;
+         try {
+            const errData = await res.json();
+            errorDetail = errData.error || errorDetail;
+         } catch(e) {
+            errorDetail = await res.text();
+         }
+         throw new Error(errorDetail);
+      }
+
       const data = await res.json();
       if (data.success) {
         alert("✨ Instagram AI Persona updated successfully across all nodes!");
       } else {
-        alert("Update failed: " + data.error);
+        alert(`Update failed: ${data.error}`);
       }
-    } catch (error) {
-      alert("Network error while saving AI persona.");
+    } catch (error: any) {
+      console.error("Copilot Sync Error:", error);
+      alert(`Backend Error: ${error.message || "Network error while saving AI persona."}`);
     } finally {
       setIsSaving(false);
     }
@@ -110,14 +125,9 @@ export default function InstagramCopilot() {
 
   const btnHover = "transition-all duration-[120ms] ease-out active:scale-[0.95] transform-gpu will-change-transform";
 
-  // Secure Anti-Flicker Loading State
+  // 🚀 Premium Loader
   if (isLoading || status === "loading") {
-    return (
-      <div className="w-full h-screen bg-[#07070A] flex flex-col items-center justify-center text-pink-500 font-mono">
-        <Activity className="w-10 h-10 animate-spin mb-4" />
-        INITIALIZING INSTAGRAM BRAIN...
-      </div>
-    );
+    return <SpinnerCounter text="INITIALIZING INSTAGRAM BRAIN..." />;
   }
 
   return (

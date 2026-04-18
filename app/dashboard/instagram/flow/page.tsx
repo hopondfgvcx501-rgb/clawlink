@@ -6,8 +6,9 @@
  * ==============================================================================================
  * @file app/dashboard/instagram/flow/page.tsx
  * @description Visual Drag & Drop Builder for Instagram DM Funnels.
- * 🚀 SECURED: Compiles visual graph to JSON payload for Meta API.
- * 🚀 FIXED: Strict "Instagram" naming compliance. Removed "IG" shorthand.
+ * 🚀 SECURED: 100% Real Database Fetch logic added (no dummy initial nodes).
+ * 🚀 FIXED: Integrated premium SpinnerCounter.
+ * 🚀 FIXED: Added strict backend error parsing for flow compilation.
  * * ALL RIGHTS RESERVED. CLAWLINK INC.
  * ==============================================================================================
  */
@@ -24,6 +25,7 @@ import {
   MousePointer, MessageCircle
 } from "lucide-react";
 import TopHeader from "@/components/TopHeader";
+import SpinnerCounter from "@/components/SpinnerCounter"; // 🚀 Premium Loader Imported
 
 // ==========================================
 // 📸 CUSTOM INSTAGRAM NODE COMPONENTS
@@ -69,16 +71,45 @@ export default function InstagramFlowBuilder() {
   const router = useRouter();
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
   
-  const [nodes, setNodes, onNodesChange] = useNodesState([
-    { id: 'insta-trigger-1', type: 'triggerNode', position: { x: 50, y: 150 }, data: { label: 'User Comments "LINK"', detail: 'Triggers on any Reel/Post' } }
-  ]);
+  const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const [reactFlowInstance, setReactFlowInstance] = useState<any>(null);
+  
   const [isSaving, setIsSaving] = useState(false);
+  const [isLoadingFlow, setIsLoadingFlow] = useState(true);
 
   useEffect(() => {
     if (status === "unauthenticated") router.replace("/");
   }, [status, router]);
+
+  // 🚀 SECURE REAL-TIME DB FETCH FOR FLOW
+  useEffect(() => {
+    const fetchSavedFlow = async () => {
+      if (status === "authenticated" && session?.user?.email) {
+        try {
+          const res = await fetch(`/api/instagram/flow?email=${encodeURIComponent(session.user.email)}&channel=instagram&t=${Date.now()}`, {
+            headers: { 'Cache-Control': 'no-store' }
+          });
+          const data = await res.json();
+          
+          if (data.success && data.data && data.data.nodes && data.data.nodes.length > 0) {
+            setNodes(data.data.nodes);
+            setEdges(data.data.edges || []);
+          } else {
+            // Default Node if none exists
+            setNodes([{ id: 'insta-trigger-1', type: 'triggerNode', position: { x: 50, y: 150 }, data: { label: 'User Comments "LINK"', detail: 'Triggers on any Reel/Post' } }]);
+          }
+        } catch (error) {
+          console.error("Failed to load flow data", error);
+          setNodes([{ id: 'insta-trigger-1', type: 'triggerNode', position: { x: 50, y: 150 }, data: { label: 'User Comments "LINK"', detail: 'Triggers on any Reel/Post' } }]);
+        } finally {
+          setIsLoadingFlow(false);
+        }
+      }
+    };
+    fetchSavedFlow();
+  }, [session, status, setNodes, setEdges]);
+
 
   const onConnect = useCallback((params: any) => {
     const animatedEdge = { ...params, animated: true, style: { stroke: '#ec4899', strokeWidth: 2 }, type: 'smoothstep' };
@@ -104,6 +135,7 @@ export default function InstagramFlowBuilder() {
     }, [reactFlowInstance, setNodes]
   );
 
+  // 🚀 SECURE FLOW SAVE WITH STRICT ERROR HANDLING
   const handleSaveFlow = async () => {
       if (!session?.user?.email) return;
       setIsSaving(true);
@@ -122,18 +154,35 @@ export default function InstagramFlowBuilder() {
           body: JSON.stringify(payload)
         });
         
+        if (!res.ok) {
+           let errorDetail = `HTTP Error ${res.status}`;
+           try {
+              const errData = await res.json();
+              errorDetail = errData.error || errorDetail;
+           } catch(e) {
+              errorDetail = await res.text();
+           }
+           throw new Error(errorDetail);
+        }
+
         const data = await res.json();
         if(data.success) {
           alert("📸 Instagram Funnel compiled and synced to Meta Graph API!");
         } else {
-          alert("Failed to save flow.");
+          alert(`Failed to save flow: ${data.error}`);
         }
-      } catch(err) {
-        console.error(err);
+      } catch(err: any) {
+        console.error("Save Flow Error:", err);
+        alert(`Backend Error: ${err.message || "Failed to reach server."}`);
       } finally {
         setIsSaving(false);
       }
   };
+
+  // 🚀 Premium Loader
+  if (status === "loading" || isLoadingFlow) {
+    return <SpinnerCounter text="SYNCHRONIZING CANVAS..." />;
+  }
 
   return (
     <div className="flex flex-col h-screen bg-[#07070A] text-white overflow-hidden selection:bg-pink-500/30">

@@ -8,7 +8,7 @@
  * @description Centralized dashboard for monitoring Instagram comments. 
  * Highlights AI auto-moderation actions (anti-spam, hate speech hiding).
  * 🚀 SECURED: Strict cache-busting and session verification for live comment sync.
- * 🚀 UPGRADED: Connected to live database fetch. Removed dummy placeholder arrays.
+ * 🚀 FIXED: Integrated premium SpinnerCounter and exact backend error surfacing for deletes.
  * 🚀 FIXED: Enforced strict "Instagram" casing and terminology.
  * * ALL RIGHTS RESERVED. CLAWLINK INC.
  * ==============================================================================================
@@ -23,6 +23,7 @@ import {
   EyeOff, Search, Activity, Instagram
 } from "lucide-react";
 import TopHeader from "@/components/TopHeader";
+import SpinnerCounter from "@/components/SpinnerCounter"; // 🚀 Premium Loader Imported
 
 interface CommentLog {
   id: string | number;
@@ -43,37 +44,37 @@ export default function InstagramComments() {
   const [isLoading, setIsLoading] = useState(true);
   const [comments, setComments] = useState<CommentLog[]>([]);
 
-  // Secure Auth Redirect
   useEffect(() => {
     if (status === "unauthenticated") router.replace("/");
   }, [status, router]);
 
   // 🚀 SECURE REAL-TIME FETCH LOGIC
-  useEffect(() => {
-    const fetchComments = async () => {
-      if (status === "authenticated" && session?.user?.email) {
-        try {
-          const res = await fetch(`/api/instagram/comments?email=${encodeURIComponent(session.user.email)}&t=${Date.now()}`, {
-            headers: { 'Cache-Control': 'no-store' }
-          });
-          
-          if (!res.ok) throw new Error("Secure fetch failed");
-          
-          const data = await res.json();
-          if (data.success && data.comments) {
-             setComments(data.comments);
-          }
-        } catch (error) {
-          console.error("[INSTAGRAM_COMMENTS_ERROR] Failed to sync comment logs", error);
-        } finally {
-          setIsLoading(false);
+  const fetchComments = async () => {
+    if (status === "authenticated" && session?.user?.email) {
+      try {
+        const res = await fetch(`/api/instagram/comments?email=${encodeURIComponent(session.user.email)}&t=${Date.now()}`, {
+          headers: { 'Cache-Control': 'no-store' }
+        });
+        
+        if (!res.ok) throw new Error("Secure fetch failed");
+        
+        const data = await res.json();
+        if (data.success && data.comments) {
+           setComments(data.comments);
         }
+      } catch (error) {
+        console.error("[INSTAGRAM_COMMENTS_ERROR] Failed to sync comment logs", error);
+      } finally {
+        setIsLoading(false);
       }
-    };
+    }
+  };
+
+  useEffect(() => {
     fetchComments();
   }, [session, status]);
 
-  // Secure Delete Action
+  // 🚀 SECURE DELETE ACTION WITH ERROR SURFACING
   const handleDelete = async (id: string | number) => {
     if(!confirm("Are you sure you want to permanently delete this comment from Instagram?")) return;
     
@@ -81,18 +82,35 @@ export default function InstagramComments() {
     setComments(comments.filter(c => c.id !== id));
     
     try {
-      // In production, this would trigger the Meta Graph API DELETE request
-      await fetch(`/api/instagram/comments`, {
+      const res = await fetch(`/api/instagram/comments`, {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: session?.user?.email, commentId: id })
       });
-    } catch (error) {
-      console.error("Failed to delete comment on server.");
+
+      if (!res.ok) {
+         let errorDetail = `HTTP Error ${res.status}`;
+         try {
+            const errData = await res.json();
+            errorDetail = errData.error || errorDetail;
+         } catch(e) {
+            errorDetail = await res.text();
+         }
+         throw new Error(errorDetail);
+      }
+
+      const data = await res.json();
+      if(!data.success) {
+          alert(`Failed to delete comment: ${data.error}`);
+          fetchComments(); // Revert optimistic update
+      }
+    } catch (error: any) {
+      console.error("Delete Error:", error);
+      alert(`Backend Error: ${error.message || "Failed to delete comment on server."}`);
+      fetchComments(); // Revert optimistic update
     }
   };
 
-  // Advanced Filtering
   const filteredComments = comments.filter(c => {
     const matchesFilter = filter === 'all' || c.status.includes(filter);
     const matchesSearch = c.user.toLowerCase().includes(searchQuery.toLowerCase()) || 
@@ -109,14 +127,9 @@ export default function InstagramComments() {
     }
   };
 
-  // Secure Anti-Flicker Loading State
+  // 🚀 Premium Loader
   if (isLoading || status === "loading") {
-    return (
-      <div className="w-full h-screen bg-[#07070A] flex flex-col items-center justify-center text-pink-500 font-mono">
-        <Activity className="w-10 h-10 animate-spin mb-4" />
-        SYNCING INSTAGRAM COMMENTS...
-      </div>
-    );
+    return <SpinnerCounter text="SYNCING INSTAGRAM COMMENTS..." />;
   }
 
   return (
