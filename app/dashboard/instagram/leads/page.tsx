@@ -6,7 +6,8 @@
  * ==============================================================================================
  * @file app/dashboard/instagram/leads/page.tsx
  * @description Real-time CRM for Instagram. Displays captured DM leads, handles, and tags.
- * 🚀 BUILT: Connected to real database fetch for Instagram prospects.
+ * 🚀 SECURED: Strict real-time database fetch with cache-busting logic.
+ * 🚀 FIXED: Upgraded to premium SpinnerCounter.
  * * ALL RIGHTS RESERVED. CLAWLINK INC.
  * ==============================================================================================
  */
@@ -20,6 +21,7 @@ import {
   MoreVertical, Filter, Activity, Instagram, Calendar, Tag
 } from "lucide-react";
 import TopHeader from "@/components/TopHeader";
+import SpinnerCounter from "@/components/SpinnerCounter"; // 🚀 Premium Loader Imported
 
 interface IGLead {
   id: string;
@@ -43,7 +45,7 @@ export default function InstagramLeadsCRM() {
     if (status === "unauthenticated") router.replace("/");
   }, [status, router]);
 
-  // 🚀 FETCH REAL INSTAGRAM LEADS
+  // 🚀 FETCH REAL INSTAGRAM LEADS WITH CACHE BUSTING
   useEffect(() => {
     const fetchLeads = async () => {
       if (status === "authenticated" && session?.user?.email) {
@@ -51,6 +53,9 @@ export default function InstagramLeadsCRM() {
           const res = await fetch(`/api/crm/leads?email=${encodeURIComponent(session.user.email)}&channel=instagram&t=${Date.now()}`, {
             headers: { 'Cache-Control': 'no-store' }
           });
+          
+          if (!res.ok) throw new Error("Secure fetch failed");
+
           const data = await res.json();
           if (data.success && data.leads) {
              setLeads(data.leads);
@@ -76,13 +81,9 @@ export default function InstagramLeadsCRM() {
 
   const btnHover = "transition-all duration-[120ms] ease-out active:scale-[0.95] transform-gpu will-change-transform";
 
+  // 🚀 Premium Loader
   if (isLoading || status === "loading") {
-    return (
-      <div className="w-full h-screen bg-[#07070A] flex flex-col items-center justify-center text-pink-500 font-mono">
-        <Activity className="w-10 h-10 animate-spin mb-4" />
-        SYNCING INSTAGRAM CRM...
-      </div>
-    );
+    return <SpinnerCounter text="SYNCING INSTAGRAM CRM..." />;
   }
 
   return (
@@ -202,6 +203,13 @@ export default function InstagramLeadsCRM() {
           </motion.div>
         </div>
       </div>
+
+      <style dangerouslySetInnerHTML={{__html:`
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; height: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
+      `}}/>
     </div>
   );
 }

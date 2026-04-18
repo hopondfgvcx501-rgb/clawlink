@@ -7,8 +7,9 @@
  * @file app/dashboard/instagram/growth/page.tsx
  * @description Advanced entry points for Instagram Automations. Manage Story Mentions, 
  * Live Comments, and custom ig.me referral links.
- * 🚀 SECURED: Connects to real DB to fetch active tools state.
- * 🚀 FIXED: Replaced "IG" shorthand with "Instagram".
+ * 🚀 SECURED: Connects to real DB to fetch active tools state with strict cache-busting.
+ * 🚀 FIXED: Upgraded to premium SpinnerCounter loader.
+ * 🚀 FIXED: Implemented strict backend error parsing for state updates.
  * * ALL RIGHTS RESERVED. CLAWLINK INC.
  * ==============================================================================================
  */
@@ -22,6 +23,7 @@ import {
   Settings2, Activity, Copy, ArrowRight
 } from "lucide-react";
 import TopHeader from "@/components/TopHeader";
+import SpinnerCounter from "@/components/SpinnerCounter"; // 🚀 Premium Loader Imported
 
 interface GrowthTool {
   id: string;
@@ -42,7 +44,7 @@ export default function InstagramGrowthTools() {
     if (status === "unauthenticated") router.replace("/");
   }, [status, router]);
 
-  // 🚀 FETCH REAL TOOL STATES
+  // 🚀 FETCH REAL TOOL STATES WITH CACHE BUSTING
   useEffect(() => {
     const fetchTools = async () => {
       if (status === "authenticated" && session?.user?.email) {
@@ -54,7 +56,7 @@ export default function InstagramGrowthTools() {
           if (data.success && data.tools) {
              setTools(data.tools);
           } else {
-             // Fallback default
+             // Fallback default if no tools exist in DB for this user yet
              setTools([
                { id: 'story', title: 'Story Mention Reply', desc: 'Instantly send a DM when someone tags you in their Instagram Story.', active: true, iconType: 'camera' },
                { id: 'live', title: 'Instagram Live Comments', desc: 'Trigger auto-DMs when viewers comment a specific keyword during your Live.', active: false, iconType: 'video' },
@@ -70,19 +72,41 @@ export default function InstagramGrowthTools() {
     fetchTools();
   }, [session, status]);
 
+  // 🚀 SECURE DB SYNC WITH STRICT ERROR HANDLING
   const toggleTool = async (id: string) => {
+    // Optimistic UI Update
     const updatedTools = tools.map(t => t.id === id ? { ...t, active: !t.active } : t);
     setTools(updatedTools);
     
-    // Background DB Sync
     try {
-      await fetch('/api/instagram/growth', {
+      const res = await fetch('/api/instagram/growth', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: session?.user?.email, tools: updatedTools })
       });
-    } catch(err) {
-      console.error("Failed to sync tool state");
+
+      if (!res.ok) {
+         let errorDetail = `HTTP Error ${res.status}`;
+         try {
+            const errData = await res.json();
+            errorDetail = errData.error || errorDetail;
+         } catch(e) {
+            errorDetail = await res.text();
+         }
+         throw new Error(errorDetail);
+      }
+
+      const data = await res.json();
+      if (!data.success) {
+         alert(`Failed to sync tool state: ${data.error}`);
+         // Revert Optimistic Update
+         setTools(tools);
+      }
+    } catch(err: any) {
+      console.error("Tool Sync Error:", err);
+      alert(`Backend Error: ${err.message || "Failed to reach server."}`);
+      // Revert Optimistic Update
+      setTools(tools);
     }
   };
 
@@ -98,13 +122,9 @@ export default function InstagramGrowthTools() {
     return <Video className="w-5 h-5 text-pink-400"/>;
   };
 
+  // 🚀 Premium Loader
   if (isLoading || status === "loading") {
-    return (
-      <div className="w-full h-screen bg-[#07070A] flex flex-col items-center justify-center text-pink-500 font-mono">
-        <Activity className="w-8 h-8 animate-spin mb-4" />
-        SYNCING GROWTH ENGINE...
-      </div>
-    );
+    return <SpinnerCounter text="SYNCING GROWTH ENGINE..." />;
   }
 
   return (
@@ -173,7 +193,7 @@ export default function InstagramGrowthTools() {
 
               <div className="bg-[#111114] border border-white/5 rounded-2xl p-5 flex flex-col md:flex-row items-center gap-4">
                 <div className="flex-1 w-full">
-                  <p className="text-[10px] uppercase tracking-widest text-gray-500 mb-2 font-bold\">Generated Link (Triggers &apos;VIP Promo&apos; Flow)</p>
+                  <p className="text-[10px] uppercase tracking-widest text-gray-500 mb-2 font-bold">Generated Link (Triggers 'VIP Promo' Flow)</p>
                   <div className="flex items-center gap-2 bg-black/40 border border-white/10 p-3 rounded-xl overflow-hidden">
                     <span className="text-[13px] font-mono text-gray-300 truncate select-all">https://ig.me/m/clawlinkai?ref=vip_promo</span>
                   </div>
