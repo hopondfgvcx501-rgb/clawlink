@@ -7,8 +7,9 @@
  * @file app/dashboard/analytics/page.tsx
  * @description Detailed metrics, AI Copilot success rate, and traffic analysis.
  * 🚀 SECURED: Real-time DB fetch with strict cache-busting.
- * 🚀 FIXED: Isolated channel view (No mashed-up data). Channel specific UI.
- * 🚀 FIXED: Uses custom SpinnerCounter for loading states.
+ * 🚀 FIXED: Added missing 'Users' import which caused the client-side fatal crash.
+ * 🚀 FIXED: Aligned data keys (chartData, totalLeads) to fetch from real API response.
+ * 🚀 FIXED: Implemented strict fallback for Recharts to prevent blank screen errors.
  * * ALL RIGHTS RESERVED. CLAWLINK INC.
  * ==============================================================================================
  */
@@ -20,11 +21,11 @@ import { motion } from "framer-motion";
 import { 
   BarChart3, TrendingUp, MessageSquare, Zap, 
   BrainCircuit, Clock, Calendar, Activity, 
-  Smartphone, Radio, Filter
+  Smartphone, Radio, Filter, Users // 🚀 FIXED: Imported missing 'Users' icon
 } from "lucide-react";
 import { 
   AreaChart, Area, XAxis, YAxis, Tooltip, 
-  ResponsiveContainer, CartesianGrid, BarChart, Bar 
+  ResponsiveContainer, CartesianGrid 
 } from "recharts";
 import TopHeader from "@/components/TopHeader";
 import SpinnerCounter from "@/components/SpinnerCounter";
@@ -104,6 +105,9 @@ export default function AnalyticsDashboard() {
   const theme = getTheme();
   const btnHover = "transition-all duration-[120ms] ease-out active:scale-[0.95]";
 
+  // 🚀 Calculate real total messages dynamically from platform stats if explicitly present, else fallback to 0
+  const totalMsgs = analyticsData?.platformStats?.[activeChannel] || analyticsData?.totalMessages || 0;
+
   return (
     <div className="flex flex-col h-screen bg-[#07070A] text-white overflow-hidden">
       <TopHeader title="Universal Analytics" session={session} />
@@ -125,7 +129,7 @@ export default function AnalyticsDashboard() {
             
             <div className="flex items-center gap-3 bg-[#111114] p-1.5 rounded-xl border border-white/10">
               {['whatsapp', 'instagram', 'telegram'].map((chan) => {
-                // Only show channels they have actually configured (optional logic, but good for UX)
+                // Only show channels they have actually configured
                 const isConfigured = 
                     (chan === 'whatsapp' && userData?.whatsapp_phone_id) ||
                     (chan === 'telegram' && userData?.telegram_token) ||
@@ -157,8 +161,8 @@ export default function AnalyticsDashboard() {
                 <div className={`w-10 h-10 rounded-xl ${theme.bg} ${theme.text} flex items-center justify-center`}><MessageSquare className="w-5 h-5"/></div>
                 <span className="text-[10px] font-bold uppercase tracking-widest text-gray-500">Total Messages</span>
               </div>
-              <h3 className="text-3xl font-black text-white">{(analyticsData?.totalMessages || 0).toLocaleString()}</h3>
-              <p className={`text-xs ${theme.text} mt-2 flex items-center gap-1`}><TrendingUp className="w-3 h-3"/> +12% this week</p>
+              <h3 className="text-3xl font-black text-white">{totalMsgs.toLocaleString()}</h3>
+              <p className={`text-xs ${theme.text} mt-2 flex items-center gap-1`}><TrendingUp className="w-3 h-3"/> Real-time fetch</p>
             </motion.div>
 
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="bg-[#0A0A0D] border border-white/5 p-6 rounded-[20px] shadow-xl">
@@ -176,7 +180,7 @@ export default function AnalyticsDashboard() {
                 <span className="text-[10px] font-bold uppercase tracking-widest text-gray-500">Avg Response Time</span>
               </div>
               <h3 className="text-3xl font-black text-white">{analyticsData?.avgResponseTime || "< 1.2s"}</h3>
-              <p className="text-xs text-orange-400 mt-2 flex items-center gap-1"><TrendingUp className="w-3 h-3 rotate-180"/> 0.3s faster than avg</p>
+              <p className="text-xs text-orange-400 mt-2 flex items-center gap-1"><TrendingUp className="w-3 h-3 rotate-180"/> Ultra-low latency</p>
             </motion.div>
 
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="bg-[#0A0A0D] border border-white/5 p-6 rounded-[20px] shadow-xl">
@@ -184,13 +188,13 @@ export default function AnalyticsDashboard() {
                 <div className={`w-10 h-10 rounded-xl ${theme.bg} ${theme.text} flex items-center justify-center`}><Users className="w-5 h-5"/></div>
                 <span className="text-[10px] font-bold uppercase tracking-widest text-gray-500">Active Leads</span>
               </div>
-              <h3 className="text-3xl font-black text-white">{(analyticsData?.activeLeads || 0).toLocaleString()}</h3>
-              <p className="text-xs text-gray-400 mt-2 flex items-center gap-1">In the last 30 days</p>
+              <h3 className="text-3xl font-black text-white">{(analyticsData?.totalLeads || 0).toLocaleString()}</h3>
+              <p className="text-xs text-gray-400 mt-2 flex items-center gap-1">Captured securely in DB</p>
             </motion.div>
           </div>
 
           {/* Main Chart */}
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }} className="bg-[#0A0A0D] border border-white/5 p-6 md:p-8 rounded-[24px] shadow-2xl">
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }} className="bg-[#0A0A0D] border border-white/5 p-6 md:p-8 rounded-[24px] shadow-2xl relative">
             <div className="flex items-center justify-between mb-8">
               <h3 className="text-sm font-bold uppercase tracking-widest text-gray-500">Message Volume (7 Days)</h3>
               <div className="flex items-center gap-2 bg-[#111114] border border-white/10 px-3 py-1.5 rounded-lg">
@@ -199,22 +203,29 @@ export default function AnalyticsDashboard() {
               </div>
             </div>
             
-            <div className="h-[350px] w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={analyticsData?.trafficChart || []} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                  <defs>
-                    <linearGradient id="colorMetric" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor={theme.primary} stopOpacity={0.4}/>
-                      <stop offset="95%" stopColor={theme.primary} stopOpacity={0}/>
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" vertical={false} />
-                  <XAxis dataKey="date" stroke="#ffffff50" fontSize={10} tickLine={false} axisLine={false} />
-                  <YAxis stroke="#ffffff50" fontSize={10} tickLine={false} axisLine={false} />
-                  <Tooltip contentStyle={{ backgroundColor: '#111114', borderColor: '#ffffff20', borderRadius: '12px', fontSize: '12px', color: '#fff' }} itemStyle={{ color: theme.primary, fontWeight: 'bold' }} />
-                  <Area type="monotone" dataKey="messages" stroke={theme.primary} strokeWidth={3} fillOpacity={1} fill="url(#colorMetric)" />
-                </AreaChart>
-              </ResponsiveContainer>
+            <div className="h-[350px] w-full relative">
+              {(!analyticsData?.chartData || analyticsData.chartData.length === 0) ? (
+                <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#07070A]/50 rounded-xl border border-white/5 z-10">
+                  <BarChart3 className="w-8 h-8 text-gray-600 mb-3" />
+                  <p className="text-xs font-mono text-gray-400 uppercase tracking-widest">Awaiting Traffic Data...</p>
+                </div>
+              ) : (
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={analyticsData.chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                    <defs>
+                      <linearGradient id="colorMetric" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor={theme.primary} stopOpacity={0.4}/>
+                        <stop offset="95%" stopColor={theme.primary} stopOpacity={0}/>
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" vertical={false} />
+                    <XAxis dataKey="name" stroke="#ffffff50" fontSize={10} tickLine={false} axisLine={false} />
+                    <YAxis stroke="#ffffff50" fontSize={10} tickLine={false} axisLine={false} />
+                    <Tooltip contentStyle={{ backgroundColor: '#111114', borderColor: '#ffffff20', borderRadius: '12px', fontSize: '12px', color: '#fff' }} itemStyle={{ color: theme.primary, fontWeight: 'bold' }} />
+                    <Area type="monotone" dataKey="messages" stroke={theme.primary} strokeWidth={3} fillOpacity={1} fill="url(#colorMetric)" />
+                  </AreaChart>
+                </ResponsiveContainer>
+              )}
             </div>
           </motion.div>
 
