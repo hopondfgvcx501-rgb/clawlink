@@ -6,13 +6,14 @@
  * ==============================================================================================
  * @file app/dashboard/whatsapp/flow/page.tsx
  * @description Enterprise-grade Visual Drag & Drop Builder for WhatsApp Interactive Messages.
- * 🚀 UPGRADED: Full React Flow integration with custom interactive nodes.
- * 🚀 UPGRADED: True Drag & Drop payload extraction and JSON graph compilation for DB saving.
+ * 🚀 SECURED: Compiles visual graph to JSON payload for real database saving.
+ * 🚀 FIXED: Integrated premium SpinnerCounter.
+ * 🚀 FIXED: Implemented strict backend error surfacing.
  * * ALL RIGHTS RESERVED. CLAWLINK INC.
  * ==============================================================================================
  */
 
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import ReactFlow, {
   ReactFlowProvider,
   addEdge,
@@ -34,6 +35,7 @@ import {
   MessageSquare, Trash2, Settings2, Play
 } from "lucide-react";
 import TopHeader from "@/components/TopHeader";
+import SpinnerCounter from "@/components/SpinnerCounter"; // 🚀 Premium Loader Imported
 
 // ==========================================
 // 🟢 CUSTOM ENTERPRISE NODE COMPONENTS
@@ -131,15 +133,43 @@ export default function WhatsAppFlowBuilder() {
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
   
   // Initial Canvas State
-  const [nodes, setNodes, onNodesChange] = useNodesState([
-    { id: 'trigger-1', type: 'triggerNode', position: { x: 100, y: 250 }, data: { label: 'START' } }
-  ]);
+  const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const [reactFlowInstance, setReactFlowInstance] = useState<any>(null);
   
   const [isSaving, setIsSaving] = useState(false);
+  const [isLoadingFlow, setIsLoadingFlow] = useState(true);
 
-  if (status === "unauthenticated") router.push("/");
+  useEffect(() => {
+    if (status === "unauthenticated") router.push("/");
+  }, [status, router]);
+
+  // 🚀 SECURE REAL-TIME DB FETCH
+  useEffect(() => {
+    const fetchSavedFlow = async () => {
+      if (status === "authenticated" && session?.user?.email) {
+        try {
+          const res = await fetch(`/api/whatsapp/flow?email=${encodeURIComponent(session.user.email)}&channel=whatsapp&t=${Date.now()}`, {
+            headers: { 'Cache-Control': 'no-store' }
+          });
+          const data = await res.json();
+          
+          if (data.success && data.data && data.data.nodes && data.data.nodes.length > 0) {
+            setNodes(data.data.nodes);
+            setEdges(data.data.edges || []);
+          } else {
+            setNodes([{ id: 'trigger-1', type: 'triggerNode', position: { x: 100, y: 250 }, data: { label: 'START' } }]);
+          }
+        } catch (error) {
+          console.error("Failed to load flow data", error);
+          setNodes([{ id: 'trigger-1', type: 'triggerNode', position: { x: 100, y: 250 }, data: { label: 'START' } }]);
+        } finally {
+          setIsLoadingFlow(false);
+        }
+      }
+    };
+    fetchSavedFlow();
+  }, [session, status, setNodes, setEdges]);
 
   // Handle Edge Connection
   const onConnect = useCallback((params: Connection | Edge) => {
@@ -184,22 +214,48 @@ export default function WhatsAppFlowBuilder() {
     }, [reactFlowInstance, setNodes]
   );
 
-  // 🚀 SAVE LOGIC: Compiles graph to JSON for Database
+  // 🚀 SECURE DB SAVE
   const handleSaveFlow = async () => {
+      if (!session?.user?.email) return;
       setIsSaving(true);
       
-      const flowPayload = {
+      const payload = {
+        email: session.user.email,
+        channel: "whatsapp",
         nodes: reactFlowInstance.getNodes(),
-        edges: reactFlowInstance.getEdges(),
+        edges: reactFlowInstance.getEdges()
       };
 
-      console.log("[FLOW_COMPILED] Payload ready for DB:", JSON.stringify(flowPayload, null, 2));
+      try {
+        const res = await fetch('/api/whatsapp/flow', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        
+        if (!res.ok) {
+           let errorDetail = `HTTP Error ${res.status}`;
+           try {
+              const errData = await res.json();
+              errorDetail = errData.error || errorDetail;
+           } catch(e) {
+              errorDetail = await res.text();
+           }
+           throw new Error(errorDetail);
+        }
 
-      // Simulate API Call to Supabase
-      setTimeout(() => { 
-        setIsSaving(false); 
-        alert("🟢 Graph Compiled Successfully! WhatsApp Cloud webhook updated."); 
-      }, 1500);
+        const data = await res.json();
+        if(data.success) {
+          alert("🟢 Graph Compiled Successfully! WhatsApp Cloud webhook updated.");
+        } else {
+          alert(`Failed to save flow: ${data.error}`);
+        }
+      } catch(err: any) {
+        console.error("Save error:", err);
+        alert(`Backend Error: ${err.message || "Failed to reach server."}`);
+      } finally {
+        setIsSaving(false);
+      }
   };
 
   const handleClearCanvas = () => {
@@ -208,6 +264,10 @@ export default function WhatsAppFlowBuilder() {
       setEdges([]);
     }
   };
+
+  if (status === "loading" || isLoadingFlow) {
+     return <SpinnerCounter text="SYNCHRONIZING CANVAS..." />;
+  }
 
   return (
     <div className="flex flex-col h-screen bg-[#07070A] text-white overflow-hidden selection:bg-[#25D366]/30">
@@ -219,7 +279,7 @@ export default function WhatsAppFlowBuilder() {
         <aside className="w-[300px] bg-[#0A0A0D] border-r border-white/5 flex flex-col z-20 shadow-[5px_0_30px_rgba(0,0,0,0.5)] relative">
           <div className="p-6 border-b border-white/5">
             <h2 className="text-[14px] font-black uppercase tracking-[0.15em] text-white flex items-center gap-2">
-              <Workflow className="w-5 h-5 text-[#25D366]" /> Node Library
+              <List className="w-5 h-5 text-[#25D366]" /> Node Library
             </h2>
             <p className="text-[11px] text-gray-500 mt-2 leading-relaxed">Drag and drop nodes onto the canvas to construct your automated workflow.</p>
           </div>

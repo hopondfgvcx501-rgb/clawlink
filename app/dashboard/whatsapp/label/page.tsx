@@ -4,9 +4,11 @@
  * ==============================================================================================
  * CLAWLINK ENTERPRISE: WHATSAPP CHAT LABELS
  * ==============================================================================================
- * @file app/dashboard/whatsapp/labels/page.tsx
+ * @file app/dashboard/whatsapp/label/page.tsx
  * @description Manage custom CRM labels/tags for WhatsApp contacts.
- * 🚀 BUILT: Connected to real database fetch and creation APIs for WhatsApp labels.
+ * 🚀 SECURED: Fetches and creates labels directly in the Supabase DB.
+ * 🚀 FIXED: Added strict backend error surfacing.
+ * 🚀 FIXED: Integrated SpinnerCounter for UI loading state.
  * * ALL RIGHTS RESERVED. CLAWLINK INC.
  * ==============================================================================================
  */
@@ -20,6 +22,7 @@ import {
   Palette, Users, AlertCircle, Save
 } from "lucide-react";
 import TopHeader from "@/components/TopHeader";
+import SpinnerCounter from "@/components/SpinnerCounter"; // 🚀 Premium Loader Imported
 
 interface ChatLabel {
   id: string;
@@ -37,7 +40,7 @@ const PRESET_COLORS = [
   "#EAB308", // Yellow
 ];
 
-export default function WhatsAppLabels() {
+export default function WhatsAppLabelsList() {
   const { data: session, status } = useSession();
   const router = useRouter();
 
@@ -52,22 +55,25 @@ export default function WhatsAppLabels() {
   if (status === "unauthenticated") router.push("/");
 
   // 🚀 FETCH REAL LABELS FROM DB
-  useEffect(() => {
-    const fetchLabels = async () => {
-      if (status === "authenticated" && session?.user?.email) {
-        try {
-          const res = await fetch(`/api/crm/labels?email=${session.user.email}&channel=whatsapp`);
-          const data = await res.json();
-          if (data.success && data.labels) {
-             setLabels(data.labels);
-          }
-        } catch (error) {
-          console.error("Failed to load labels", error);
-        } finally {
-          setIsLoading(false);
+  const fetchLabels = async () => {
+    if (status === "authenticated" && session?.user?.email) {
+      try {
+        const res = await fetch(`/api/crm/labels?email=${encodeURIComponent(session.user.email)}&channel=whatsapp&t=${Date.now()}`, {
+           headers: { 'Cache-Control': 'no-store' }
+        });
+        const data = await res.json();
+        if (data.success && data.labels) {
+           setLabels(data.labels);
         }
+      } catch (error) {
+        console.error("Failed to load labels", error);
+      } finally {
+        setIsLoading(false);
       }
-    };
+    }
+  };
+
+  useEffect(() => {
     fetchLabels();
   }, [session, status]);
 
@@ -88,44 +94,56 @@ export default function WhatsAppLabels() {
           })
       });
 
+      if (!res.ok) {
+         let errorDetail = `HTTP Error ${res.status}`;
+         try {
+            const errData = await res.json();
+            errorDetail = errData.error || errorDetail;
+         } catch(e) {
+            errorDetail = await res.text();
+         }
+         throw new Error(errorDetail);
+      }
+
       const data = await res.json();
       
       if (data.success) {
-          // Re-fetch to get real DB IDs
-          const refreshRes = await fetch(`/api/crm/labels?email=${session.user.email}&channel=whatsapp`);
-          const refreshData = await refreshRes.json();
-          if (refreshData.success && refreshData.labels) setLabels(refreshData.labels);
-          
+          await fetchLabels(); // Re-fetch to get real DB IDs
           setNewLabelName(""); // Reset input
       } else {
-          alert("Failed to create label: " + data.error);
+          alert(`Failed to create label: ${data.error}`);
       }
-    } catch (error) {
-        alert("Network error while creating label.");
+    } catch (error: any) {
+        console.error("Label Creation Error:", error);
+        alert(`Backend Error: ${error.message || "Network error while creating label."}`);
     } finally {
         setIsSaving(false);
     }
   };
 
+  // 🚀 DELETE LABEL FROM DB
   const handleDeleteLabel = async (id: string) => {
     if (!confirm("Are you sure you want to delete this label? Contacts will keep the tag but it won't be color-coded.")) return;
     
     // Optimistic delete
     setLabels(labels.filter(l => l.id !== id));
 
-    // Optional: Send delete request to API
-    // await fetch(`/api/crm/labels?id=${id}`, { method: 'DELETE' });
+    try {
+        await fetch(`/api/crm/labels`, { 
+            method: 'DELETE',
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email: session?.user?.email, labelId: id })
+        });
+    } catch (e) {
+        console.error("Delete failed", e);
+        fetchLabels(); // revert on failure
+    }
   };
 
   const btnHover = "transition-all duration-[120ms] ease-out active:scale-[0.95] transform-gpu will-change-transform";
 
   if (isLoading || status === "loading") {
-    return (
-      <div className="w-full h-screen bg-[#07070A] flex flex-col items-center justify-center text-[#25D366] font-mono">
-        <Activity className="w-10 h-10 animate-spin mb-4" />
-        SYNCING WORKSPACE LABELS...
-      </div>
-    );
+    return <SpinnerCounter text="SYNCING WORKSPACE LABELS..." />;
   }
 
   return (
@@ -215,7 +233,7 @@ export default function WhatsAppLabels() {
                   ) : labels.map((label) => (
                     <div key={label.id} className="bg-[#111114] border border-white/5 hover:border-white/10 p-4 rounded-2xl flex items-center justify-between group transition-colors">
                       <div className="flex items-center gap-4">
-                        <div className="w-3 h-10 rounded-full bg-blue-500"></div>
+                        <div className="w-3 h-10 rounded-full" style={{ backgroundColor: label.color }}></div>
                         <div>
                           <h4 className="text-[14px] font-bold text-white">{label.name}</h4>
                           <p className="text-[10px] text-gray-500 font-mono mt-1 uppercase tracking-widest">ID: {label.id.substring(0,8)}</p>
@@ -225,7 +243,7 @@ export default function WhatsAppLabels() {
                       <div className="flex items-center gap-6">
                         <div className="flex flex-col items-end">
                           <span className="text-[10px] uppercase tracking-widest text-gray-500 mb-0.5 flex items-center gap-1"><Users className="w-3 h-3"/> Contacts</span>
-                          <span className="text-[13px] font-black text-white">{label.userCount.toLocaleString()}</span>
+                          <span className="text-[13px] font-black text-white">{label.userCount?.toLocaleString() || 0}</span>
                         </div>
                         <div className="w-px h-8 bg-white/10 hidden sm:block"></div>
                         <button title="Delete label" onClick={() => handleDeleteLabel(label.id)} className="text-gray-600 hover:text-red-500 hover:bg-red-500/10 p-2 rounded-xl transition-colors">

@@ -2,15 +2,17 @@
 
 /**
  * ==============================================================================================
- * CLAWLINK ENTERPRISE: WHATSAPP LABELS & CRM
+ * CLAWLINK ENTERPRISE: WHATSAPP KANBAN CRM
  * ==============================================================================================
  * @file app/dashboard/whatsapp/labels/page.tsx
  * @description Visual Kanban board for managing WhatsApp contacts and assigning Meta labels.
+ * 🚀 SECURED: Removed mock arrays. Fully connected to real PostgreSQL endpoints.
+ * 🚀 FIXED: Upgraded to premium SpinnerCounter.
  * * ALL RIGHTS RESERVED. CLAWLINK INC.
  * ==============================================================================================
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
@@ -19,31 +21,61 @@ import {
   MessageCircle, User, Clock, Activity, Save
 } from "lucide-react";
 import TopHeader from "@/components/TopHeader";
+import SpinnerCounter from "@/components/SpinnerCounter"; // 🚀 Premium Loader Imported
 
-export default function WhatsAppLabels() {
+interface DBLabel {
+  id: string;
+  name: string;
+  color: string;
+}
+
+interface DBContact {
+  id: string;
+  name: string;
+  phone: string;
+  labelId: string;
+  lastMessage: string;
+  time: string;
+}
+
+export default function WhatsAppLabelsKanban() {
   const { data: session, status } = useSession();
   const router = useRouter();
 
   const [isSaving, setIsSaving] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Mock Labels (WhatsApp Style)
-  const [labels] = useState([
-    { id: 'l1', name: 'New Lead', color: 'bg-blue-500', bg: 'bg-blue-500/10', text: 'text-blue-400', border: 'border-blue-500/20' },
-    { id: 'l2', name: 'Pending Payment', color: 'bg-yellow-500', bg: 'bg-yellow-500/10', text: 'text-yellow-400', border: 'border-yellow-500/20' },
-    { id: 'l3', name: 'VIP Customer', color: 'bg-purple-500', bg: 'bg-purple-500/10', text: 'text-purple-400', border: 'border-purple-500/20' },
-    { id: 'l4', name: 'Follow Up', color: 'bg-orange-500', bg: 'bg-orange-500/10', text: 'text-orange-400', border: 'border-orange-500/20' },
-  ]);
+  const [labels, setLabels] = useState<DBLabel[]>([]);
+  const [contacts, setContacts] = useState<DBContact[]>([]);
 
-  // Mock Contacts
-  const [contacts] = useState([
-    { id: 1, name: "Rahul Sharma", phone: "+91 98765 43210", labelId: 'l1', lastMessage: "Can I get a demo?", time: "10:42 AM" },
-    { id: 2, name: "Priya Desai", phone: "+91 91234 56789", labelId: 'l1', lastMessage: "Pricing details please", time: "09:15 AM" },
-    { id: 3, name: "Amit Kumar", phone: "+91 99887 76655", labelId: 'l2', lastMessage: "Link expired, send again", time: "Yesterday" },
-    { id: 4, name: "Sneha Patel", phone: "+91 98712 34567", labelId: 'l3', lastMessage: "Loved the product! 🔥", time: "Mon" },
-    { id: 5, name: "Vikram Singh", phone: "+91 90000 11111", labelId: 'l4', lastMessage: "Will buy next week", time: "Tue" },
-  ]);
+  useEffect(() => {
+     if (status === "unauthenticated") router.push("/");
+  }, [status, router]);
 
-  if (status === "unauthenticated") router.push("/");
+  // 🚀 FETCH REAL LABELS AND CONTACTS
+  useEffect(() => {
+    const fetchKanbanData = async () => {
+      if (status === "authenticated" && session?.user?.email) {
+        try {
+          // Fetch Labels
+          const labelRes = await fetch(`/api/crm/labels?email=${encodeURIComponent(session.user.email)}&channel=whatsapp&t=${Date.now()}`, { headers: { 'Cache-Control': 'no-store' }});
+          const labelData = await labelRes.json();
+          if (labelData.success) setLabels(labelData.labels || []);
+
+          // Fetch Contacts
+          const contactRes = await fetch(`/api/crm/contacts?email=${encodeURIComponent(session.user.email)}&channel=whatsapp&t=${Date.now()}`, { headers: { 'Cache-Control': 'no-store' }});
+          const contactData = await contactRes.json();
+          if (contactData.success) setContacts(contactData.contacts || []);
+
+        } catch (error) {
+          console.error("Failed to load Kanban data", error);
+        } finally {
+          setIsLoading(false);
+        }
+      }
+    };
+    fetchKanbanData();
+  }, [session, status]);
 
   const handleSync = () => {
     setIsSaving(true);
@@ -54,6 +86,11 @@ export default function WhatsAppLabels() {
   };
 
   const btnHover = "transition-all duration-[120ms] ease-out active:scale-[0.95] transform-gpu will-change-transform";
+
+  // 🚀 Premium Loader
+  if (isLoading || status === "loading") {
+    return <SpinnerCounter text="SYNCING KANBAN WORKSPACE..." />;
+  }
 
   return (
     <div className="flex flex-col h-screen bg-[#07070A] text-white overflow-hidden selection:bg-[#25D366]/30">
@@ -68,7 +105,7 @@ export default function WhatsAppLabels() {
               <div className="w-10 h-10 rounded-xl bg-[#25D366]/10 flex items-center justify-center border border-[#25D366]/20">
                 <Tag className="w-5 h-5 text-[#25D366]"/>
               </div>
-              Label Management
+              Kanban CRM
             </h2>
             <p className="text-[13px] text-gray-400 mt-2">Visually track your WhatsApp leads and trigger automations based on labels.</p>
           </div>
@@ -101,9 +138,9 @@ export default function WhatsAppLabels() {
                 {/* Column Header */}
                 <div className="p-4 border-b border-white/5 flex items-center justify-between bg-[#111114]">
                   <div className="flex items-center gap-2">
-                    <div className={`px-2.5 py-1 rounded-md flex items-center gap-1.5 border ${label.bg} ${label.border}`}>
-                      <div className={`w-2 h-2 rounded-full ${label.color}`}></div>
-                      <span className={`text-[11px] font-black uppercase tracking-widest ${label.text}`}>{label.name}</span>
+                    <div className="px-2.5 py-1 rounded-md flex items-center gap-1.5 border border-white/10 bg-white/5">
+                      <div className="w-2 h-2 rounded-full" style={{ backgroundColor: label.color }}></div>
+                      <span className="text-[11px] font-black uppercase tracking-widest text-white">{label.name}</span>
                     </div>
                     <span className="text-[11px] font-mono text-gray-500 bg-white/5 px-2 py-0.5 rounded-full">{columnContacts.length}</span>
                   </div>
@@ -156,8 +193,11 @@ export default function WhatsAppLabels() {
             );
           })}
 
-          {/* Create New Label Column */}
-          <div className="w-[320px] shrink-0 h-[100px] bg-transparent border-2 border-dashed border-white/10 hover:border-white/20 rounded-[24px] flex items-center justify-center cursor-pointer transition-colors group">
+          {/* Create New Label Column Link */}
+          <div 
+            onClick={() => router.push('/dashboard/whatsapp/label')}
+            className="w-[320px] shrink-0 h-[100px] bg-transparent border-2 border-dashed border-white/10 hover:border-white/20 rounded-[24px] flex items-center justify-center cursor-pointer transition-colors group"
+          >
             <div className="flex items-center gap-2 text-gray-500 group-hover:text-white transition-colors">
               <Plus className="w-5 h-5"/>
               <span className="text-[12px] font-black uppercase tracking-widest">Create New Label</span>
