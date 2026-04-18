@@ -6,12 +6,15 @@
  * ==============================================================================================
  * @file app/dashboard/telegram/media/page.tsx
  * @description Secure cloud storage for Telegram broadcast and flow media assets.
- * 🚀 SECURED: Fetches files from real database/storage. Removed dummy arrays.
+ * 🚀 SECURED: Fetches and uploads actual files to real database/storage.
+ * 🚀 FIXED: Removed dummy simulation. Integrated real <input type="file"> and FormData POST.
+ * 🚀 FIXED: Implemented HTML5 Drag & Drop event listeners.
+ * 🚀 FIXED: Upgraded to premium SpinnerCounter.
  * * ALL RIGHTS RESERVED. CLAWLINK INC.
  * ==============================================================================================
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
@@ -20,6 +23,7 @@ import {
   Film, FileText, Trash2, Copy, Activity 
 } from "lucide-react";
 import TopHeader from "@/components/TopHeader";
+import SpinnerCounter from "@/components/SpinnerCounter"; // 🚀 Premium Loader Imported
 
 interface MediaFile {
   id: string;
@@ -35,31 +39,36 @@ export default function TelegramMediaLibrary() {
   
   const [isLoading, setIsLoading] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
+  const [isDragging, setIsDragging] = useState(false); // 🚀 Track Drag state
   const [files, setFiles] = useState<MediaFile[]>([]);
+  
+  // 🚀 Reference for the hidden file input
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (status === "unauthenticated") router.replace("/");
   }, [status, router]);
 
   // 🚀 FETCH SECURE MEDIA FILES
-  useEffect(() => {
-    const fetchMedia = async () => {
-      if (status === "authenticated" && session?.user?.email) {
-        try {
-          const res = await fetch(`/api/telegram/media?email=${encodeURIComponent(session.user.email)}&t=${Date.now()}`, {
-            headers: { 'Cache-Control': 'no-store' }
-          });
-          const data = await res.json();
-          if (data.success && data.files) {
-             setFiles(data.files);
-          }
-        } catch (error) {
-          console.error("Failed to load media files", error);
-        } finally {
-          setIsLoading(false);
+  const fetchMedia = async () => {
+    if (status === "authenticated" && session?.user?.email) {
+      try {
+        const res = await fetch(`/api/telegram/media?email=${encodeURIComponent(session.user.email)}&t=${Date.now()}`, {
+          headers: { 'Cache-Control': 'no-store' }
+        });
+        const data = await res.json();
+        if (data.success && data.files) {
+           setFiles(data.files);
         }
+      } catch (error) {
+        console.error("Failed to load media files", error);
+      } finally {
+        setIsLoading(false);
       }
-    };
+    }
+  };
+
+  useEffect(() => {
     fetchMedia();
   }, [session, status]);
 
@@ -71,26 +80,85 @@ export default function TelegramMediaLibrary() {
   const deleteFile = async (id: string) => {
     if(!confirm("Are you sure? Flows using this media will break.")) return;
     
+    // Optimistic UI update
     setFiles(files.filter(f => f.id !== id));
+    
     try {
-      await fetch('/api/telegram/media', {
+      const res = await fetch('/api/telegram/media', {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: session?.user?.email, fileId: id })
       });
+      const data = await res.json();
+      if (!data.success) {
+         alert("Failed to delete from server: " + data.error);
+         fetchMedia(); // Revert optimistic update on failure
+      }
     } catch(err) {
       console.error("Failed to delete from DB");
+      fetchMedia();
     }
   };
 
-  const handleSimulatedUpload = () => {
+  // 🚀 REAL UPLOAD LOGIC TO BACKEND
+  const processFileUpload = async (file: File) => {
+    if (!session?.user?.email) return;
+    
     setIsUploading(true);
-    setTimeout(() => {
-        setIsUploading(false);
-        const newFile = { id: `file_${Date.now()}`, name: "New_Upload.png", type: "image", size: "1.2 MB", date: "Just now" };
-        setFiles([newFile, ...files]);
+    
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('email', session.user.email);
+
+      const res = await fetch('/api/telegram/media', {
+        method: 'POST',
+        body: formData // Note: Do not set Content-Type header manually when using FormData
+      });
+
+      const data = await res.json();
+      
+      if (data.success) {
         alert("File securely uploaded to ClawLink Storage.");
-    }, 2000);
+        await fetchMedia(); // Refresh list with real DB data
+      } else {
+        alert(`Upload Failed: ${data.error}`);
+      }
+    } catch (error) {
+      console.error("Upload Catch Error:", error);
+      alert("Network error during file upload.");
+    } finally {
+      setIsUploading(false);
+      // Reset input value so the same file can be selected again if needed
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
+  // Triggered when user selects a file via dialog
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      processFileUpload(e.target.files[0]);
+    }
+  };
+
+  // 🚀 DRAG AND DROP EVENT HANDLERS
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDragging(false);
+    
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      processFileUpload(e.dataTransfer.files[0]);
+    }
   };
 
   const getFileIcon = (type: string) => {
@@ -104,13 +172,9 @@ export default function TelegramMediaLibrary() {
 
   const btnHover = "transition-all duration-[120ms] ease-out active:scale-[0.95] transform-gpu will-change-transform";
 
+  // 🚀 Secure Premium Anti-Flicker Loading State
   if (isLoading || status === "loading") {
-    return (
-      <div className="w-full h-screen bg-[#07070A] flex flex-col items-center justify-center text-[#2AABEE] font-mono">
-        <Activity className="w-10 h-10 animate-spin mb-4" />
-        SYNCING SECURE MEDIA VAULT...
-      </div>
-    );
+    return <SpinnerCounter text="SYNCING SECURE MEDIA VAULT..." />;
   }
 
   return (
@@ -120,18 +184,39 @@ export default function TelegramMediaLibrary() {
       <div className="flex-1 overflow-y-auto custom-scrollbar p-6 md:p-8">
         <div className="max-w-[1200px] mx-auto space-y-8">
           
-          {/* UPLOAD ZONE */}
+          {/* 🚀 REAL UPLOAD ZONE WITH DRAG & DROP */}
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} 
-            onClick={isUploading ? undefined : handleSimulatedUpload}
-            className={`w-full bg-[#0A0A0D] border-2 border-dashed border-white/10 hover:border-[#2AABEE]/50 rounded-[32px] p-10 flex flex-col items-center justify-center text-center transition-colors group ${isUploading ? 'opacity-50 cursor-wait' : 'cursor-pointer'}`}>
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+            className={`w-full bg-[#0A0A0D] border-2 border-dashed rounded-[32px] p-10 flex flex-col items-center justify-center text-center transition-colors group 
+              ${isDragging ? 'border-[#2AABEE] bg-[#2AABEE]/5 scale-[1.02]' : 'border-white/10 hover:border-[#2AABEE]/50'}
+              ${isUploading ? 'opacity-50 cursor-wait pointer-events-none' : 'cursor-pointer'}
+            `}>
             
-            <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mb-4 group-hover:bg-[#2AABEE]/10 group-hover:scale-110 transition-all">
-              {isUploading ? <Activity className="w-8 h-8 text-[#2AABEE] animate-spin"/> : <UploadCloud className="w-8 h-8 text-gray-400 group-hover:text-[#2AABEE] transition-colors"/>}
+            <div className={`w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mb-4 transition-all ${isDragging ? 'bg-[#2AABEE]/20 scale-110' : 'group-hover:bg-[#2AABEE]/10 group-hover:scale-110'}`}>
+              {isUploading ? <Activity className="w-8 h-8 text-[#2AABEE] animate-spin"/> : <UploadCloud className={`w-8 h-8 transition-colors ${isDragging ? 'text-[#2AABEE]' : 'text-gray-400 group-hover:text-[#2AABEE]'}`}/>}
             </div>
-            <h3 className="text-lg font-black text-white mb-2">{isUploading ? "Uploading Securely..." : "Click or Drag & Drop Media Here"}</h3>
+            
+            <h3 className="text-lg font-black text-white mb-2">
+              {isUploading ? "Uploading Securely..." : isDragging ? "Drop File Here" : "Click or Drag & Drop Media Here"}
+            </h3>
             <p className="text-[13px] text-gray-500 mb-6">Supports Images (JPG, PNG), Videos (MP4), and Documents (PDF) up to 50MB.</p>
             
-            <button disabled={isUploading} className={`bg-[#2AABEE] text-white px-8 py-3 rounded-xl text-[12px] font-black uppercase tracking-widest shadow-[0_0_15px_rgba(42,171,238,0.3)] disabled:opacity-50 ${btnHover}`}>
+            {/* Hidden actual file input */}
+            <input 
+              type="file" 
+              ref={fileInputRef} 
+              onChange={handleFileSelect} 
+              className="hidden" 
+              accept="image/jpeg, image/png, video/mp4, application/pdf"
+            />
+            
+            <button 
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isUploading} 
+              className={`bg-[#2AABEE] text-white px-8 py-3 rounded-xl text-[12px] font-black uppercase tracking-widest shadow-[0_0_15px_rgba(42,171,238,0.3)] disabled:opacity-50 ${btnHover}`}
+            >
               {isUploading ? "Processing..." : "Browse Files"}
             </button>
           </motion.div>
