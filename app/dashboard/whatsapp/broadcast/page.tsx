@@ -6,7 +6,8 @@
  * ==============================================================================================
  * @file app/dashboard/whatsapp/broadcast/page.tsx
  * @description WhatsApp specific bulk messaging requiring Meta-approved templates.
- * 🚀 UPGRADED: Removed dummy campaign state. Connected to real database fetch and dispatch APIs.
+ * 🚀 SECURED: Full DB sync. Integrated strict backend error handling.
+ * 🚀 FIXED: Replaced legacy loader with premium SpinnerCounter.
  * * ALL RIGHTS RESERVED. CLAWLINK INC.
  * ==============================================================================================
  */
@@ -21,6 +22,7 @@ import {
   AlertCircle, LayoutTemplate, Link as LinkIcon
 } from "lucide-react";
 import TopHeader from "@/components/TopHeader";
+import SpinnerCounter from "@/components/SpinnerCounter"; // 🚀 Premium Loader Imported
 
 interface Campaign {
   id: string | number;
@@ -42,14 +44,18 @@ export default function WhatsAppBroadcast() {
 
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
 
-  if (status === "unauthenticated") router.push("/");
+  useEffect(() => {
+      if (status === "unauthenticated") router.push("/");
+  }, [status, router]);
 
   // 🚀 FETCH REAL CAMPAIGN HISTORY FROM BACKEND
   useEffect(() => {
     const fetchCampaigns = async () => {
       if (status === "authenticated" && session?.user?.email) {
         try {
-          const res = await fetch(`/api/broadcast?email=${session.user.email}&channel=whatsapp`);
+          const res = await fetch(`/api/broadcast?email=${encodeURIComponent(session.user.email)}&channel=whatsapp&t=${Date.now()}`, {
+            headers: { 'Cache-Control': 'no-store' }
+          });
           const data = await res.json();
           if (data.success && data.campaigns) {
              setCampaigns(data.campaigns);
@@ -64,7 +70,7 @@ export default function WhatsAppBroadcast() {
     fetchCampaigns();
   }, [session, status]);
 
-  // 🚀 DISPATCH REAL CAMPAIGN TO BACKEND
+  // 🚀 DISPATCH REAL CAMPAIGN WITH STRICT ERROR HANDLING
   const handleSendBroadcast = async () => {
     if (!session?.user?.email) return;
     setIsSending(true);
@@ -77,23 +83,37 @@ export default function WhatsAppBroadcast() {
               email: session.user.email,
               channel: "whatsapp",
               audience: audience,
-              template: template
+              template: template,
+              name: "WhatsApp Template Broadcast"
           })
       });
+
+      // Strict error surfacing
+      if (!res.ok) {
+         let errorDetail = `HTTP Error ${res.status}`;
+         try {
+            const errData = await res.json();
+            errorDetail = errData.error || errorDetail;
+         } catch(e) {
+            errorDetail = await res.text();
+         }
+         throw new Error(errorDetail);
+      }
 
       const data = await res.json();
       
       if (data.success) {
           alert("🟢 WhatsApp Broadcast successfully queued via Meta API!");
           // Re-fetch to get the newly created campaign history
-          const refreshRes = await fetch(`/api/broadcast?email=${session.user.email}&channel=whatsapp`);
+          const refreshRes = await fetch(`/api/broadcast?email=${encodeURIComponent(session.user.email)}&channel=whatsapp`);
           const refreshData = await refreshRes.json();
           if (refreshData.success && refreshData.campaigns) setCampaigns(refreshData.campaigns);
       } else {
-          alert("Failed to send campaign: " + data.error);
+          alert(`Failed to queue campaign: ${data.error}`);
       }
-    } catch (error) {
-        alert("Network error while dispatching campaign.");
+    } catch (error: any) {
+        console.error("Broadcast Dispatch Error:", error);
+        alert(`Backend Error: ${error.message || "Network error while dispatching campaign."}`);
     } finally {
         setIsSending(false);
     }
@@ -101,13 +121,9 @@ export default function WhatsAppBroadcast() {
 
   const btnHover = "transition-all duration-[120ms] ease-out active:scale-[0.95] transform-gpu will-change-transform";
 
+  // 🚀 Premium Loader
   if (isLoading || status === "loading") {
-    return (
-      <div className="w-full h-screen bg-[#07070A] flex flex-col items-center justify-center text-[#25D366] font-mono">
-        <Activity className="w-10 h-10 animate-spin mb-4" />
-        LOADING CAMPAIGN HISTORY...
-      </div>
-    );
+    return <SpinnerCounter text="LOADING CAMPAIGN HISTORY..." />;
   }
 
   return (
@@ -136,7 +152,7 @@ export default function WhatsAppBroadcast() {
               <div className="mb-8">
                 <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-gray-500 mb-3">1. Select Target Audience</label>
                 <div className="flex flex-wrap gap-3">
-                  {[{ id: 'all', label: 'All Contacts', count: '1,205' }, { id: 'active_24h', label: 'Active (Last 24h)', count: '340' }].map((seg) => (
+                  {[{ id: 'all', label: 'All Contacts', count: 'Active' }, { id: 'active_24h', label: 'Active (Last 24h)', count: 'Filter' }].map((seg) => (
                     <button key={seg.id} onClick={() => setAudience(seg.id)}
                       className={`px-4 py-2.5 rounded-xl text-[12px] font-bold flex items-center gap-2 border transition-all ${btnHover} ${audience === seg.id ? 'bg-[#25D366]/10 border-[#25D366]/50 text-[#25D366] shadow-[0_0_15px_rgba(37,211,102,0.15)]' : 'bg-[#111114] border-white/10 text-gray-400 hover:bg-white/5'}`}>
                       <Users className="w-4 h-4"/> {seg.label} <span className="opacity-50 text-[10px] font-mono">({seg.count})</span>
@@ -149,14 +165,14 @@ export default function WhatsAppBroadcast() {
               <div className="mb-6">
                 <div className="flex items-center justify-between mb-3">
                   <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-gray-500">2. Choose Approved Template</label>
-                  <a href="https://business.facebook.com/wa/manage/message-templates/" target="_blank" rel="noopener noreferrer" className="text-[10px] font-bold uppercase tracking-widest text-[#25D366] flex items-center gap-1 hover:text-[#20bd5a]">
+                  <a href="https://business.facebook.com/wa/manage/message-templates/" target="_blank" rel="noopener noreferrer" className="text-[10px] font-bold uppercase tracking-widest text-[#25D366] flex items-center gap-1 hover:text-[#20bd5a] transition-colors">
                     <LinkIcon className="w-3 h-3"/> Meta Template Manager
                   </a>
                 </div>
                 
                 <select 
                   value={template} onChange={(e) => setTemplate(e.target.value)}
-                  className="w-full bg-[#111114] border border-white/10 text-white p-4 rounded-xl text-[13px] outline-none focus:border-[#25D366]/50 cursor-pointer appearance-none"
+                  className="w-full bg-[#111114] border border-white/10 text-white p-4 rounded-xl text-[13px] outline-none focus:border-[#25D366]/50 cursor-pointer appearance-none transition-colors"
                 >
                   <option value="promo_v1">promo_v1 (Marketing - Text + Image)</option>
                   <option value="event_v2">event_v2 (Utility - Text + CTA Button)</option>

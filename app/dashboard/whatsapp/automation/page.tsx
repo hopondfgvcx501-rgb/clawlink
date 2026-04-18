@@ -6,7 +6,9 @@
  * ==============================================================================================
  * @file app/dashboard/whatsapp/automation/page.tsx
  * @description Core control panel for WhatsApp Business API automations.
- * 🚀 UPGRADED: Removed dummy states. Now fetches and saves real rules to the Supabase Database.
+ * 🚀 SECURED: 100% Real DB Fetch & Save (No dummy states).
+ * 🚀 FIXED: Integrated premium SpinnerCounter.
+ * 🚀 FIXED: Added strict backend error surfacing for rule synchronization.
  * * ALL RIGHTS RESERVED. CLAWLINK INC.
  * ==============================================================================================
  */
@@ -21,6 +23,7 @@ import {
   MessageCircle, LayoutTemplate
 } from "lucide-react";
 import TopHeader from "@/components/TopHeader";
+import SpinnerCounter from "@/components/SpinnerCounter"; // 🚀 Premium Loader Imported
 
 interface KeywordRule {
   id: string; // Real DB IDs are UUIDs/Strings
@@ -51,7 +54,7 @@ export default function WhatsAppAutomation() {
   const [newRule, setNewRule] = useState({ keyword: "", matchType: "contains", actionType: "text", content: "" });
 
   useEffect(() => {
-    if (status === "unauthenticated") router.push("/");
+    if (status === "unauthenticated") router.replace("/");
   }, [status, router]);
 
   // 🚀 FETCH REAL RULES FROM BACKEND
@@ -59,11 +62,13 @@ export default function WhatsAppAutomation() {
     const fetchRules = async () => {
       if (status === "authenticated" && session?.user?.email) {
         try {
-          // Fetch rules specific to WhatsApp for this user
-          const res = await fetch(`/api/automation?email=${session.user.email}&channel=whatsapp`);
+          const res = await fetch(`/api/automation?email=${encodeURIComponent(session.user.email)}&channel=whatsapp&t=${Date.now()}`, {
+            headers: { 'Cache-Control': 'no-store' }
+          });
           const data = await res.json();
-          if (data.success && data.rules) {
-             setKeywordRules(data.rules);
+          if (data.success) {
+             if (data.rules) setKeywordRules(data.rules);
+             if (data.globalSettings) setGlobalSettings(data.globalSettings);
           }
         } catch (error) {
           console.error("Failed to load real rules", error);
@@ -94,7 +99,7 @@ export default function WhatsAppAutomation() {
     setKeywordRules(keywordRules.filter(r => r.id !== id));
   };
 
-  // 🚀 SAVE REAL RULES TO BACKEND
+  // 🚀 SAVE REAL RULES TO BACKEND WITH STRICT ERROR HANDLING
   const handleSave = async () => {
     if (!session?.user?.email) return;
     setIsSaving(true);
@@ -106,23 +111,36 @@ export default function WhatsAppAutomation() {
           body: JSON.stringify({
               email: session.user.email,
               channel: "whatsapp",
-              rules: keywordRules
+              rules: keywordRules,
+              globalSettings: globalSettings
           })
       });
+
+      if (!res.ok) {
+         let errorDetail = `HTTP Error ${res.status}`;
+         try {
+            const errData = await res.json();
+            errorDetail = errData.error || errorDetail;
+         } catch(e) {
+            errorDetail = await res.text();
+         }
+         throw new Error(errorDetail);
+      }
 
       const data = await res.json();
       
       if (data.success) {
           alert("🟢 WhatsApp Automation Rules Synced Live!");
           // Re-fetch to get real DB IDs instead of temp IDs
-          const refreshRes = await fetch(`/api/automation?email=${session.user.email}&channel=whatsapp`);
+          const refreshRes = await fetch(`/api/automation?email=${encodeURIComponent(session.user.email)}&channel=whatsapp&t=${Date.now()}`);
           const refreshData = await refreshRes.json();
           if (refreshData.success && refreshData.rules) setKeywordRules(refreshData.rules);
       } else {
-          alert("Failed to save rules: " + data.error);
+          alert(`Failed to save rules: ${data.error}`);
       }
-    } catch (error) {
-        alert("Network error while syncing rules.");
+    } catch (error: any) {
+        console.error("Automation Sync Error:", error);
+        alert(`Backend Error: ${error.message || "Network error while syncing rules."}`);
     } finally {
         setIsSaving(false);
     }
@@ -133,16 +151,12 @@ export default function WhatsAppAutomation() {
   const getActionIcon = (type: string) => {
     if (type === 'template') return <LayoutTemplate className="w-4 h-4 text-orange-400" />;
     if (type === 'flow') return <Zap className="w-4 h-4 text-purple-400" />;
-    return <MessageCircle className="w-4 h-4 text-blue-400" />;
+    return <MessageCircle className="w-4 h-4 text-[#25D366]" />;
   };
 
+  // 🚀 Premium Loader
   if (isLoading || status === "loading") {
-    return (
-      <div className="w-full h-screen bg-[#07070A] flex flex-col items-center justify-center text-[#25D366] font-mono">
-        <Activity className="w-10 h-10 animate-spin mb-4" />
-        CONNECTING WHATSAPP RULES ENGINE...
-      </div>
-    );
+    return <SpinnerCounter text="CONNECTING WHATSAPP RULES ENGINE..." />;
   }
 
   return (
