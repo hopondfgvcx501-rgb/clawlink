@@ -5,13 +5,10 @@
  * CLAWLINK ENTERPRISE COMMAND CENTER (DASHBOARD)
  * ==============================================================================================
  * @file app/dashboard/page.tsx
- * @version 12.1.1 (UI Sync & Dynamic Traffic Polish)
+ * @version 12.1.3 (Ultra-Smooth Loader Clean Up)
  * @description The central hub for users to monitor their AI Agents.
- * FIXED: Made `hasActivePlan` logic robust to strictly unlock RAG and Live status post-upgrade.
- * FIXED: Changed Live Channel text to "Your bot is Live 🟢" upon activation.
- * FIXED: Replaced static 3-tier platform routing with dynamic single-channel actual traffic.
- * FIXED: Removed Token Consumption card (Backend managed).
- * FIXED: Implemented EXACT Custom Spinner + Counter requested by CEO.
+ * FIXED: Removed redundant z-index and motion wrapper to let the custom SpinnerCounter handle its own layout.
+ * FIXED: Added safe fallback for Recharts to prevent client-side application crashes when data is empty.
  * * ALL RIGHTS RESERVED. CLAWLINK INC.
  * ==============================================================================================
  */
@@ -493,7 +490,7 @@ export default function Dashboard() {
     alert("Copied to clipboard!"); 
   };
 
-  // 🚀 CUSTOM SPINNER LOADER REPLACED HERE 
+  // 🚀 DIRECT COMPONENT RETURN (REMOVED REDUNDANT WRAPPERS AND Z-INDEX)
   if (isLoading || status === "loading") {
     return <SpinnerCounter text="INITIALIZING COMMAND CENTER..." />;
   }
@@ -803,7 +800,7 @@ export default function Dashboard() {
               </div>
             </div>
             <button onClick={handleOpenLiveBot} className={`relative z-10 w-full py-3 rounded-xl text-[11px] font-bold uppercase tracking-widest transition-all bg-white/5 text-gray-300 border border-white/10 hover:bg-white/10 flex items-center justify-center gap-2 ${btn}`}>
-               Open Live Bot <ExternalLink className="w-3 h-3"/>
+                Open Live Bot <ExternalLink className="w-3 h-3"/>
             </button>
           </motion.div>
         </div>
@@ -832,24 +829,32 @@ export default function Dashboard() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* 🚀 CRASH-PROOF ANALYTICS CHART BLOCK */}
           <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.3, delay: 0.7, ease: "easeOut" }} className="lg:col-span-2 bg-[#111113] border border-white/5 p-6 md:p-8 rounded-[1.5rem] shadow-xl">
             <h3 className="text-sm font-bold uppercase tracking-widest text-gray-500 mb-8">AI Traffic (Last 7 Days)</h3>
-            <div className="h-[300px] w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={stats?.chartData || []} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                  <defs>
-                    <linearGradient id="colorMsgs" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#f97316" stopOpacity={0.4}/>
-                      <stop offset="95%" stopColor="#f97316" stopOpacity={0}/>
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" vertical={false} />
-                  <XAxis dataKey="name" stroke="#ffffff50" fontSize={10} tickLine={false} axisLine={false} />
-                  <YAxis stroke="#ffffff50" fontSize={10} tickLine={false} axisLine={false} />
-                  <Tooltip contentStyle={{ backgroundColor: '#07070A', borderColor: '#ffffff20', borderRadius: '12px', fontSize: '12px', color: '#fff' }} itemStyle={{ color: '#f97316', fontWeight: 'bold' }} />
-                  <Area type="monotone" dataKey="messages" stroke="#f97316" strokeWidth={3} fillOpacity={1} fill="url(#colorMsgs)" />
-                </AreaChart>
-              </ResponsiveContainer>
+            <div className="h-[300px] w-full relative">
+              {(!stats?.chartData || stats.chartData.length === 0) ? (
+                <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#07070A]/50 rounded-xl border border-white/5">
+                  <BarChart3 className="w-8 h-8 text-orange-500/40 mb-3" />
+                  <p className="text-xs font-mono text-gray-400">Awaiting Real-Time Traffic Data...</p>
+                </div>
+              ) : (
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={stats.chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                    <defs>
+                      <linearGradient id="colorMsgs" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#f97316" stopOpacity={0.4}/>
+                        <stop offset="95%" stopColor="#f97316" stopOpacity={0}/>
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" vertical={false} />
+                    <XAxis dataKey="name" stroke="#ffffff50" fontSize={10} tickLine={false} axisLine={false} />
+                    <YAxis stroke="#ffffff50" fontSize={10} tickLine={false} axisLine={false} />
+                    <Tooltip contentStyle={{ backgroundColor: '#07070A', borderColor: '#ffffff20', borderRadius: '12px', fontSize: '12px', color: '#fff' }} itemStyle={{ color: '#f97316', fontWeight: 'bold' }} />
+                    <Area type="monotone" dataKey="messages" stroke="#f97316" strokeWidth={3} fillOpacity={1} fill="url(#colorMsgs)" />
+                  </AreaChart>
+                </ResponsiveContainer>
+              )}
             </div>
           </motion.div>
 

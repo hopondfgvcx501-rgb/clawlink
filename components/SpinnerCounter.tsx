@@ -30,6 +30,14 @@ export default function SpinnerCounter({ text = "INITIALIZING..." }: SpinnerCoun
     <div className="w-full h-screen bg-[#07070A] flex flex-col items-center justify-center font-mono z-[9999]">
       <div className="relative flex items-center justify-center w-28 h-28 mb-2">
         <svg className="absolute inset-0 w-full h-full transform -rotate-90">
+          <defs>
+            {/* 🚀 CLAWLINK BRAND GRADIENT */}
+            <linearGradient id="clawlinkGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="#f97316" /> {/* Orange 500 */}
+              <stop offset="100%" stopColor="#f59e0b" /> {/* Amber 500 */}
+            </linearGradient>
+          </defs>
+          
           {/* Background Track */}
           <circle 
             cx="56" cy="56" r={radius} 
@@ -37,11 +45,12 @@ export default function SpinnerCounter({ text = "INITIALIZING..." }: SpinnerCoun
             stroke="#1A1A24" 
             strokeWidth="6" 
           />
-          {/* Animated Progress Ring (Teal/Green) */}
+          
+          {/* Animated Progress Ring (ClawLink Gradient) */}
           <circle 
             cx="56" cy="56" r={radius} 
             fill="none" 
-            stroke="#2DD4BF" 
+            stroke="url(#clawlinkGradient)" 
             strokeWidth="6" 
             strokeDasharray={circumference}
             strokeDashoffset={strokeDashoffset}
@@ -49,8 +58,10 @@ export default function SpinnerCounter({ text = "INITIALIZING..." }: SpinnerCoun
             className="transition-all duration-200 ease-out"
           />
         </svg>
-        {/* Percentage Counter */}
-        <span className="text-[#2DD4BF] text-lg font-black">{pct}%</span>
+        {/* Percentage Counter with Gradient Text */}
+        <span className="text-transparent bg-clip-text bg-gradient-to-br from-orange-500 to-amber-500 text-lg font-black">
+          {pct}%
+        </span>
       </div>
       
       {/* Title */}

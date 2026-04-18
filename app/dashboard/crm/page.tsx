@@ -121,7 +121,12 @@ export default function LiveCRMInbox() {
     setIsAiPaused(aiPausedStatus);
     
     // In production, fetch specific messages for this chatId. 
-    // Simulating secure API response structure here:
+    // Simulating secure 
+    // 
+    
+    
+    
+    response structure here:
     setMessages([
         { id: '1', sender: 'user', text: 'Hi, I need help with my order.', time: '10:00 AM' },
         { id: '2', sender: 'bot', text: 'Hello! I can help with that. Please provide your Order ID.', time: '10:00 AM' },

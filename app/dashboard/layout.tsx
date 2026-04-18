@@ -10,6 +10,7 @@
  * 🚀 SECURED: Added Cache-Control and timestamping to prevent stale data leaks.
  * 🚀 SECURED: Strict null checks and anti-flicker UI for session loading.
  * 🚀 FIXED: Enforced strict full-name channel rendering (WhatsApp, Instagram, Telegram).
+ * 🚀 FIXED: Removed redundant API Configurations and Channel Settings per CEO directive.
  * * ALL RIGHTS RESERVED. CLAWLINK INC.
  * ==============================================================================================
  */
@@ -105,8 +106,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       { name: "Chat Labels", icon: Tag, path: "/dashboard/whatsapp/labels" },
       { name: "Data Analytics", icon: BarChart3, path: "/dashboard/analytics" },
       { name: "AI Copilot", icon: BrainCircuit, path: "/dashboard/whatsapp/copilot" },
-      { name: "Team Access", icon: UsersRound, path: "/dashboard/team" },
-      { name: "Channel Settings", icon: Settings, path: "/dashboard/settings" },
+      { name: "Team Access", icon: UsersRound, path: "/dashboard/team" }
     ],
     instagram: [
       { name: "Live CRM Inbox", icon: MessageCircle, path: "/dashboard/crm" },
@@ -118,8 +118,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       { name: "Growth Funnels", icon: Sparkles, path: "/dashboard/instagram/growth" },
       { name: "Data Analytics", icon: BarChart3, path: "/dashboard/analytics" },
       { name: "AI Copilot", icon: BrainCircuit, path: "/dashboard/instagram/copilot" },
-      { name: "Team Access", icon: UsersRound, path: "/dashboard/team" },
-      { name: "Channel Settings", icon: Settings, path: "/dashboard/settings" },
+      { name: "Team Access", icon: UsersRound, path: "/dashboard/team" }
     ],
     telegram: [
       { name: "Live CRM Inbox", icon: MessageCircle, path: "/dashboard/crm" },
@@ -132,8 +131,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       { name: "Subscribers", icon: Users, path: "/dashboard/telegram/users" },
       { name: "Data Analytics", icon: BarChart3, path: "/dashboard/analytics" },
       { name: "AI Copilot", icon: BrainCircuit, path: "/dashboard/telegram/copilot" },
-      { name: "Team Access", icon: UsersRound, path: "/dashboard/team" },
-      { name: "Channel Settings", icon: Settings, path: "/dashboard/settings" },
+      { name: "Team Access", icon: UsersRound, path: "/dashboard/team" }
     ]
   };
 
@@ -227,9 +225,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               </button>
               <button onClick={() => router.push("/dashboard/analytics")} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] font-bold transition-all ${pathname === "/dashboard/analytics" ? "bg-white/10 text-white" : "text-gray-400 hover:bg-white/5 hover:text-gray-200"}`}>
                 <BarChart3 className="w-4 h-4"/> Universal Analytics
-              </button>
-              <button onClick={() => router.push("/dashboard/settings")} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] font-bold transition-all ${pathname === "/dashboard/settings" ? "bg-white/10 text-white" : "text-gray-400 hover:bg-white/5 hover:text-gray-200"}`}>
-                <Settings className="w-4 h-4"/> API Configurations
               </button>
             </div>
           </div>
