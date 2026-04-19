@@ -16,25 +16,27 @@ export async function GET(req: Request) {
 
         if (!email) return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
 
+        const safeEmail = email.toLowerCase(); // 🔥 FIX: Case-sensitivity resolved
+
         // Get Bot Status & Token
         const { data: config } = await supabase
             .from("user_configs")
             .select("telegram_token, telegram_bot_active")
-            .eq("email", email)
+            .eq("email", safeEmail)
             .single();
 
         // Get Saved Commands
         const { data: commands } = await supabase
             .from("bot_commands")
             .select("*")
-            .eq("email", email)
+            .eq("email", safeEmail)
             .eq("platform", "telegram")
             .order("created_at", { ascending: false });
 
         return NextResponse.json({ 
             success: true, 
             bot: {
-                username: config?.telegram_token ? "ClawLink_Node" : "",
+                username: config?.telegram_token ? "Active Bot" : "", // Changed placeholder
                 isActive: config?.telegram_bot_active || false,
                 hasToken: !!config?.telegram_token
             },
@@ -53,7 +55,7 @@ export async function POST(req: Request) {
         const body = await req.json();
         if (body.action === 'add_command') {
             const { data, error } = await supabase.from("bot_commands").insert({
-                email: body.email,
+                email: body.email.toLowerCase(),
                 platform: "telegram",
                 command: body.commandData.command,
                 description: body.commandData.description,
@@ -77,7 +79,7 @@ export async function PUT(req: Request) {
         const { error } = await supabase
             .from("user_configs")
             .update({ telegram_bot_active: isActive })
-            .eq("email", email);
+            .eq("email", email.toLowerCase());
 
         if (error) throw error;
         return NextResponse.json({ success: true });
@@ -94,7 +96,7 @@ export async function DELETE(req: Request) {
             .from("bot_commands")
             .delete()
             .eq("id", commandId)
-            .eq("email", email); // Extra security check
+            .eq("email", email.toLowerCase());
 
         if (error) throw error;
         return NextResponse.json({ success: true });
