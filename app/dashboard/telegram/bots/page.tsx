@@ -7,7 +7,7 @@
  * @file app/dashboard/telegram/bots/page.tsx
  * @description Central control panel for bot settings, webhook status, and command handling.
  * 🚀 SECURED: Real-time DB sync for commands and live status check via Telegram API.
- * 🚀 FIXED: Removed dummy states. Direct DB integration.
+ * 🚀 FIXED: Full CRUD operation connected with /api/telegram/bot-config route.
  * * ALL RIGHTS RESERVED. CLAWLINK INC.
  * ==============================================================================================
  */
@@ -100,7 +100,6 @@ export default function TelegramBots() {
         });
     } catch(err) {
         console.error("Status toggle failed");
-        // Revert UI on fail
         setBotInfo(prev => ({ ...prev, isActive: !prev.isActive }));
     }
   };
@@ -111,7 +110,7 @@ export default function TelegramBots() {
           alert("Command and Description are required.");
           return;
       }
-      // Ensure command starts with slash
+      
       const formattedCommand = newCommand.command.startsWith('/') ? newCommand.command : `/${newCommand.command}`;
       
       setIsSavingCommand(true);
