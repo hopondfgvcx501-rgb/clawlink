@@ -9,6 +9,7 @@
  * FIXED: Maintained conversational memory (Ghajini preventer) and RAG Vector DB queries.
  * FIXED: Explicit mapping of premium UI model names to their underlying provider API IDs.
  * ADDED: Strict Supabase DB Insert Error Catchers to send silent failures to TG Admin Bot.
+ * ADDED: KEYWORD AUTOMATION INTERCEPTOR (Bypasses AI if keyword matches).
  * * ALL RIGHTS RESERVED. CLAWLINK INC.
  * ==============================================================================================
  */
@@ -289,6 +290,60 @@ export async function POST(req: Request) {
         const lastMessageTime = rateLimitMap.get(chatId) || 0;
         if (now - lastMessageTime < COOLDOWN_MS) return NextResponse.json({ success: true });
         rateLimitMap.set(chatId, now);
+
+        // 🔥 AUTOMATION INTERCEPTOR (Checks Keyword Rules BEFORE calling expensive AI)
+        const { data: rules } = await supabaseAdmin
+            .from("automation_rules")
+            .select("*")
+            .eq("email", ownerEmail)
+            .eq("platform", "telegram");
+
+        let matchedRuleContent = null;
+        if (rules && rules.length > 0) {
+            const userTextLower = userText.toLowerCase();
+            for (const rule of rules) {
+                // Split comma-separated keywords and trim spaces
+                const keywords = rule.keyword.split(',').map((k: string) => k.trim().toLowerCase());
+                
+                for (const kw of keywords) {
+                    if (!kw) continue;
+                    if (rule.match_type === "exact" && userTextLower === kw) {
+                        matchedRuleContent = rule.content;
+                        break;
+                    } else if (rule.match_type === "contains" && userTextLower.includes(kw)) {
+                        matchedRuleContent = rule.content;
+                        break;
+                    }
+                }
+                if (matchedRuleContent) break; // Stop checking rules if we found a match
+            }
+        }
+
+        if (matchedRuleContent) {
+            console.log(`[AUTOMATION_TRIGGERED] Keyword matched! Bypassing AI.`);
+            
+            // 1. Save User Message
+            const { error: userDbError } = await supabaseAdmin.from("chat_history").insert({ 
+                email: ownerEmail, platform: "telegram", platform_chat_id: chatId, customer_name: customerName, sender_type: "user", message: crmLogMessage 
+            });
+            if (userDbError) throw new Error(`Supabase Reject (User Msg): ${userDbError.message}`);
+
+            // 2. Save Automation Reply
+            const { error: botDbError } = await supabaseAdmin.from("chat_history").insert({ 
+                email: ownerEmail, platform: "telegram", platform_chat_id: chatId, customer_name: customerName, sender_type: "bot", message: matchedRuleContent 
+            });
+            if (botDbError) throw new Error(`Supabase Reject (Bot Msg): ${botDbError.message}`);
+
+            // 3. Send exact rule text to Telegram
+            await fetch(`https://api.telegram.org/bot${telegramToken}/sendMessage`, {
+                method: "POST", headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ chat_id: chatId, text: matchedRuleContent })
+            });
+
+            // SUCCESS EXIT (Prevents Omni AI from running)
+            return NextResponse.json({ success: true }); 
+        }
+        // 🔥 END AUTOMATION INTERCEPTOR
 
         // 🚀 THE RAG ENGINE (Custom Knowledge Base Execution)
         let customKnowledge = "";
