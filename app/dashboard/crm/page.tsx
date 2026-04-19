@@ -7,9 +7,7 @@
  * @file app/dashboard/crm/page.tsx
  * @description Centralized inbox to monitor bot conversations and take manual human control.
  * 🚀 SECURED: Real-time database fetching for chats.
- * 🚀 FIXED: Strict isolated channel view with dynamic switcher. No mashed-up UI.
- * 🚀 FIXED: Uses custom SpinnerCounter for loading states.
- * 🚀 FIXED: Resolved syntax parsing error on line 129 preventing production builds.
+ * 🚀 FIXED: Removed all dummy data. Now fetches 100% REAL Supabase Chat History.
  * * ALL RIGHTS RESERVED. CLAWLINK INC.
  * ==============================================================================================
  */
@@ -17,14 +15,19 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { motion, AnimatePresence } from "framer-motion";
 import { 
-  MessageSquare, Search, Phone, 
-  MoreVertical, Send, Paperclip, Smile,
-  Bot, User, Activity, PauseCircle, PlayCircle, Clock, Shield
+  MessageSquare, Search, MoreVertical, Send, Paperclip, 
+  Bot, Shield, PauseCircle, PlayCircle 
 } from "lucide-react";
 import TopHeader from "@/components/TopHeader";
 import SpinnerCounter from "@/components/SpinnerCounter";
+
+interface ChatMessage {
+  id: string;
+  sender: 'bot' | 'user' | 'admin';
+  text: string;
+  time: string;
+}
 
 interface ChatSession {
   id: string;
@@ -34,13 +37,7 @@ interface ChatSession {
   time: string;
   unread: number;
   aiPaused: boolean;
-}
-
-interface ChatMessage {
-  id: string;
-  sender: 'bot' | 'user' | 'admin';
-  text: string;
-  time: string;
+  messages?: ChatMessage[]; // 🔥 Added to hold real history
 }
 
 export default function LiveCRMInbox() {
@@ -62,12 +59,10 @@ export default function LiveCRMInbox() {
     if (status === "unauthenticated") router.replace("/");
   }, [status, router]);
 
-  // Scroll to bottom of chat
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // 🚀 SECURE REAL-TIME FETCH: Channels & Chats
   useEffect(() => {
     const initInbox = async () => {
       if (status === "authenticated" && session?.user?.email) {
@@ -80,7 +75,6 @@ export default function LiveCRMInbox() {
             setUserData(userDataJson.data);
             const defaultChan = userDataJson.data.selected_channel || "telegram";
             setActiveChannel(defaultChan);
-            
             await fetchChatsForChannel(session.user.email, defaultChan);
           }
         } catch (error) {
@@ -102,7 +96,7 @@ export default function LiveCRMInbox() {
       if (data.success && data.chats) {
         setChats(data.chats);
       } else {
-        setChats([]); // Fallback to empty if no data
+        setChats([]); 
       }
     } catch (err) {
       console.error(`Failed to load ${channel} chats`);
@@ -121,18 +115,17 @@ export default function LiveCRMInbox() {
     setActiveChatId(chatId);
     setIsAiPaused(aiPausedStatus);
     
-    // In production, fetch specific messages for this chatId. 
-    // Simulating secure 
-    // response structure here:  <-- THIS LINE HAS BEEN CORRECTED (Commented out)
-    setMessages([
-        { id: '1', sender: 'user', text: 'Hi, I need help with my order.', time: '10:00 AM' },
-        { id: '2', sender: 'bot', text: 'Hello! I can help with that. Please provide your Order ID.', time: '10:00 AM' },
-    ]);
+    // 🔥 REAL DATA INJECTION (No more dummy text)
+    const selectedChat = chats.find(c => c.id === chatId);
+    if (selectedChat && selectedChat.messages) {
+        setMessages(selectedChat.messages);
+    } else {
+        setMessages([]);
+    }
   };
 
   const toggleAIPause = async () => {
     if (!activeChatId || !session?.user?.email) return;
-    
     const newStatus = !isAiPaused;
     setIsAiPaused(newStatus);
     setChats(chats.map(c => c.id === activeChatId ? { ...c, aiPaused: newStatus } : c));
@@ -161,7 +154,6 @@ export default function LiveCRMInbox() {
     setMessages([...messages, newMessage]);
     setReplyText("");
 
-    // Automatically pause AI if admin intervenes manually
     if (!isAiPaused) {
         toggleAIPause();
     }
@@ -181,7 +173,6 @@ export default function LiveCRMInbox() {
     return <SpinnerCounter text="SYNCING SECURE INBOX..." />;
   }
 
-  // Dynamic Theme based on Channel
   const getTheme = () => {
     if (activeChannel === "whatsapp") return { primary: "#25D366", bg: "bg-[#25D366]/10", border: "border-[#25D366]/20", text: "text-[#25D366]", hover: "hover:bg-[#25D366]/20" };
     if (activeChannel === "instagram") return { primary: "#ec4899", bg: "bg-pink-500/10", border: "border-pink-500/20", text: "text-pink-500", hover: "hover:bg-pink-500/20" };
@@ -189,7 +180,6 @@ export default function LiveCRMInbox() {
   };
   const theme = getTheme();
   const btnHover = "transition-all duration-[120ms] ease-out active:scale-[0.95]";
-
   const activeChatDetails = chats.find(c => c.id === activeChatId);
 
   return (
@@ -200,38 +190,33 @@ export default function LiveCRMInbox() {
         
         {/* 🗂️ LEFT SIDEBAR: CHAT LIST */}
         <aside className="w-full md:w-[350px] bg-[#0A0A0D] border-r border-white/5 flex flex-col z-20 shrink-0">
-          
-          {/* Channel Switcher */}
           <div className="p-5 border-b border-white/5 bg-[#111114]">
             <div className="flex bg-black/40 p-1 rounded-xl border border-white/10 mb-4">
                {['whatsapp', 'instagram', 'telegram'].map((chan) => {
-                  const isConfigured = 
-                    (chan === 'whatsapp' && userData?.whatsapp_phone_id) ||
-                    (chan === 'telegram' && userData?.telegram_token) ||
-                    (chan === 'instagram' && userData?.instagram_account_id);
+                 const isConfigured = 
+                   (chan === 'whatsapp' && userData?.whatsapp_phone_id) ||
+                   (chan === 'telegram' && userData?.telegram_token) ||
+                   (chan === 'instagram' && userData?.instagram_account_id);
                 
-                  if (!isConfigured && chan !== activeChannel) return null;
+                 if (!isConfigured && chan !== activeChannel) return null;
 
-                  return (
-                    <button 
-                      key={chan} onClick={() => handleChannelSwitch(chan)}
-                      className={`flex-1 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${
-                        activeChannel === chan 
-                        ? `${theme.bg} ${theme.text} border ${theme.border}` 
-                        : 'text-gray-500 hover:text-white'
-                      }`}
-                    >
-                      {chan}
-                    </button>
-                  );
+                 return (
+                   <button 
+                     key={chan} onClick={() => handleChannelSwitch(chan)}
+                     className={`flex-1 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${
+                       activeChannel === chan ? `${theme.bg} ${theme.text} border ${theme.border}` : 'text-gray-500 hover:text-white'
+                     }`}
+                   >
+                     {chan}
+                   </button>
+                 );
                })}
             </div>
             
             <div className="relative">
               <Search className="w-4 h-4 text-gray-500 absolute left-4 top-1/2 -translate-y-1/2" />
               <input 
-                type="text" 
-                placeholder="Search conversations..." 
+                type="text" placeholder="Search conversations..." 
                 className="w-full bg-[#111114] border border-white/10 rounded-xl pl-11 pr-4 py-3 text-sm text-white outline-none focus:border-white/30 transition-colors"
               />
             </div>
@@ -246,8 +231,7 @@ export default function LiveCRMInbox() {
                 </div>
             ) : chats.map((chat) => (
               <div 
-                key={chat.id} 
-                onClick={() => loadChatHistory(chat.id, chat.aiPaused)}
+                key={chat.id} onClick={() => loadChatHistory(chat.id, chat.aiPaused)}
                 className={`p-5 border-b border-white/5 cursor-pointer transition-colors ${activeChatId === chat.id ? 'bg-white/5' : 'hover:bg-white/5'}`}
               >
                 <div className="flex justify-between items-start mb-1">
@@ -331,7 +315,7 @@ export default function LiveCRMInbox() {
                           ? 'bg-orange-500/10 border border-orange-500/20 rounded-tr-sm text-orange-100'
                           : `${theme.bg} ${theme.border} border rounded-tr-sm text-white`
                       }`}>
-                        <p className="text-[13px] leading-relaxed">{msg.text}</p>
+                        <p className="text-[13px] leading-relaxed whitespace-pre-wrap">{msg.text}</p>
                       </div>
                     </div>
                   </div>
