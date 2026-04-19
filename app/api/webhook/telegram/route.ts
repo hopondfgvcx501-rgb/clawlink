@@ -8,6 +8,7 @@
  * FIXED: Restored REAL API fetch calls for Gemini, Claude, and OpenAI.
  * FIXED: Maintained conversational memory (Ghajini preventer) and RAG Vector DB queries.
  * FIXED: Explicit mapping of premium UI model names to their underlying provider API IDs.
+ * ADDED: Strict Supabase DB Insert Error Catchers to send silent failures to TG Admin Bot.
  * * ALL RIGHTS RESERVED. CLAWLINK INC.
  * ==============================================================================================
  */
@@ -322,9 +323,14 @@ export async function POST(req: Request) {
 
         const fullSystemContext = `${ENTERPRISE_GUARDRAIL}\n\nSystem Instructions: ${systemPrompt}\n\nCompany Knowledge:\n${customKnowledge ? customKnowledge : "None."}`;
         
-        await supabaseAdmin.from("chat_history").insert({ 
+        // 🔥 FIX 1: USER MESSAGE DB INSERT (With Error Tracking)
+        const { error: userDbError } = await supabaseAdmin.from("chat_history").insert({ 
             email: ownerEmail, platform: "telegram", platform_chat_id: chatId, customer_name: customerName, sender_type: "user", message: crmLogMessage 
         });
+        if (userDbError) {
+            console.error("[DB_INSERT_FATAL] User Message:", userDbError);
+            throw new Error(`Supabase Reject (User Msg): ${userDbError.message}`);
+        }
 
         let aiResponse = "System is undergoing scheduled maintenance. Please try again later.";
         let wasSuccessful = false;
@@ -409,9 +415,14 @@ export async function POST(req: Request) {
             await supabaseAdmin.from("user_configs").update(updatePayload).eq("id", configId);
         }
         
-        await supabaseAdmin.from("chat_history").insert({ 
+        // 🔥 FIX 2: BOT MESSAGE DB INSERT (With Error Tracking)
+        const { error: botDbError } = await supabaseAdmin.from("chat_history").insert({ 
             email: ownerEmail, platform: "telegram", platform_chat_id: chatId, customer_name: customerName, sender_type: "bot", message: aiResponse 
         });
+        if (botDbError) {
+            console.error("[DB_INSERT_FATAL] Bot Message:", botDbError);
+            throw new Error(`Supabase Reject (Bot Msg): ${botDbError.message}`);
+        }
 
         await fetch(`https://api.telegram.org/bot${telegramToken}/sendMessage`, {
             method: "POST", headers: { "Content-Type": "application/json" },
