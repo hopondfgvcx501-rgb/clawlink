@@ -5,13 +5,11 @@ export default function proxy(request: NextRequest) {
     const origin = request.headers.get('origin') || request.headers.get('referer') || '';
     const pathname = request.nextUrl.pathname;
     
-    // 🔥 Webhook aur Token verification bypass
+    // Allow ALL webhooks, public widgets, and auth routes automatically
     const isWebhook = pathname.startsWith('/api/webhook/');
     const isWidget = pathname.startsWith('/api/widget');
     const isAuth = pathname.startsWith('/api/auth');
-    const isVerifyToken = pathname.startsWith('/api/verify-token'); 
-    
-    const isPublicRoute = isWebhook || isWidget || isAuth || isVerifyToken;
+    const isPublicRoute = isWebhook || isWidget || isAuth;
 
     // Block only completely unauthorized core API calls
     if (pathname.startsWith('/api/') && !isPublicRoute) {
@@ -20,8 +18,7 @@ export default function proxy(request: NextRequest) {
             'https://www.clawlink.com',
             'https://clawlinkai.com', 
             'https://www.clawlinkai.com',
-            'http://localhost:3000',
-            'https://clawlink-six.vercel.app' // <-- 🔥 Tumhara Vercel Test Domain yahan add kar diya!
+            'http://localhost:3000'
         ];
 
         // If origin is empty, it might be an internal server call
