@@ -7,7 +7,7 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-// 1. FETCH CAMPAIGN HISTORY (Omni-Channel)
+// 1. FETCH CAMPAIGN HISTORY
 export async function GET(req: Request) {
     try {
         const { searchParams } = new URL(req.url);
@@ -32,7 +32,7 @@ export async function GET(req: Request) {
             name: camp.campaign_name,
             status: camp.status,
             sent: camp.sent_count,
-            opens: "N/A", // Platforms don't officially support open rates without read-receipt webhooks
+            opens: "N/A",
             date: new Date(camp.created_at).toLocaleDateString()
         }));
 
@@ -43,7 +43,7 @@ export async function GET(req: Request) {
     }
 }
 
-// 2. DISPATCH BROADCAST (Universal Engine: Text + Media + All Channels)
+// 2. DISPATCH BROADCAST (Signed URL Engine)
 export async function POST(req: Request) {
     try {
         let { email, channel, audience, message, name } = await req.json();
@@ -55,7 +55,7 @@ export async function POST(req: Request) {
         const safeEmail = email.toLowerCase();
         const safeChannel = channel.toLowerCase();
 
-        // A. Get Bot Tokens for all platforms
+        // A. Get Bot Tokens
         const { data: config } = await supabase
             .from("user_configs")
             .select("telegram_token, whatsapp_token, instagram_token")
@@ -66,7 +66,7 @@ export async function POST(req: Request) {
             return NextResponse.json({ success: false, error: "Account config not found." }, { status: 400 });
         }
 
-        // B. MEDIA PARSER ENGINE
+        // B. SECURE MEDIA PARSER ENGINE (Using Signed URLs)
         let mediaUrl = null;
         let mediaType = null;
         const mediaMatch = message.match(/\{\{media:(.+?)\}\}/);
@@ -82,11 +82,17 @@ export async function POST(req: Request) {
                 .single();
 
             if (mediaData) {
-                const { data: publicUrlData } = supabase.storage
+                // 🔥 CRITICAL FIX: Use createSignedUrl instead of getPublicUrl. 
+                // This generates a secure temporary link that works even if the bucket is fully Private!
+                const { data: signedUrlData, error: signError } = await supabase.storage
                     .from("telegram_media") 
-                    .getPublicUrl(mediaData.storage_path);
+                    .createSignedUrl(mediaData.storage_path, 60 * 60); // Valid for 1 hour
                 
-                mediaUrl = publicUrlData.publicUrl;
+                if (signError || !signedUrlData) {
+                    return NextResponse.json({ success: false, error: "Failed to generate secure VIP link for media." }, { status: 400 });
+                }
+
+                mediaUrl = signedUrlData.signedUrl;
                 mediaType = mediaData.file_type; 
             } else {
                 return NextResponse.json({ success: false, error: "Attached Media not found in Vault." }, { status: 400 });
@@ -118,7 +124,7 @@ export async function POST(req: Request) {
         }
 
         let sentCount = 0;
-        let lastTgError = ""; // 🚀 NEW: Tracker for Telegram rejections
+        let lastTgError = ""; 
 
         // D. UNIVERSAL DISPATCH LOOP
         for (const [chatId, customerName] of usersArray) {
@@ -129,10 +135,9 @@ export async function POST(req: Request) {
                     if (!config.telegram_token) throw new Error("Missing Telegram Token");
                     
                     let apiUrl = `https://api.telegram.org/bot${config.telegram_token}/sendMessage`;
-                    let payload: any = { chat_id: chatId, text: personalizedText || " " }; // Fallback to space if empty text
+                    let payload: any = { chat_id: chatId, text: personalizedText || " " }; 
 
                     if (mediaUrl) {
-                        // Clean up text for caption, ensure it's not undefined
                         const finalCaption = personalizedText || "";
                         
                         if (mediaType === "image") {
@@ -153,7 +158,6 @@ export async function POST(req: Request) {
                         body: JSON.stringify(payload)
                     });
                     
-                    // 🚀 NEW: Proper error logging if Telegram rejects
                     if (res.ok) {
                         sentCount++;
                     } else {
@@ -169,7 +173,7 @@ export async function POST(req: Request) {
             }
         }
 
-        // 🚀 NEW: Block fake success messages
+        // Block fake success messages
         if (sentCount === 0 && usersArray.length > 0) {
              return NextResponse.json({ 
                  success: false, 
