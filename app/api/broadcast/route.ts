@@ -33,7 +33,8 @@ export async function GET(req: Request) {
             status: camp.status,
             sent: camp.sent_count,
             opens: "N/A",
-            date: new Date(camp.created_at).toLocaleDateString()
+            // 🚀 INJECTED: Show Scheduled date if it exists, else creation date
+            date: camp.send_at ? new Date(camp.send_at).toLocaleString() : new Date(camp.created_at).toLocaleDateString()
         }));
 
         return NextResponse.json({ success: true, campaigns: formattedCampaigns });
@@ -43,10 +44,11 @@ export async function GET(req: Request) {
     }
 }
 
-// 2. DISPATCH BROADCAST (Signed URL Engine)
+// 2. DISPATCH BROADCAST (Signed URL Engine + Scheduler)
 export async function POST(req: Request) {
     try {
-        let { email, channel, audience, message, name } = await req.json();
+        // 🚀 INJECTED: Added send_at variable
+        let { email, channel, audience, message, name, send_at } = await req.json();
 
         if (!email || !message || !channel) {
             return NextResponse.json({ success: false, error: "Missing parameters" }, { status: 400 });
@@ -54,6 +56,23 @@ export async function POST(req: Request) {
 
         const safeEmail = email.toLowerCase();
         const safeChannel = channel.toLowerCase();
+
+        // 🚀 INJECTED: SCHEDULED DISPATCH INTERCEPTOR
+        // Agar time diya hai, toh turant API call mat karo, bas DB mein Scheduled save kar do.
+        if (send_at) {
+            const { error: scheduleError } = await supabase.from("broadcast_history").insert({
+                email: safeEmail,
+                platform: safeChannel,
+                campaign_name: name || `${safeChannel.toUpperCase()} Scheduled`,
+                status: "Scheduled",
+                sent_count: 0,
+                send_at: send_at
+            });
+
+            if (scheduleError) throw scheduleError;
+            return NextResponse.json({ success: true, status: "Scheduled" });
+        }
+        // 🔥 END OF SCHEDULE INJECTION
 
         // A. Get Bot Tokens
         const { data: config } = await supabase

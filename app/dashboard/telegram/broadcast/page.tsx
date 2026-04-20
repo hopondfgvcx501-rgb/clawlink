@@ -9,6 +9,7 @@
  * 🚀 FIXED: Activated Media & Attachment buttons to open an in-page Media Vault Picker.
  * 🚀 FIXED: Resolved button freeze state by resetting UI before the native alert box triggers.
  * 🚀 SECURED: Real-time PostgreSQL database sync for campaigns.
+ * 🚀 INJECTED: Schedule DateTime picker modal and API integration.
  * * ALL RIGHTS RESERVED. CLAWLINK INC.
  * ==============================================================================================
  */
@@ -52,6 +53,10 @@ export default function TelegramBroadcast() {
   const [showMediaPicker, setShowMediaPicker] = useState(false);
   const [vaultFiles, setVaultFiles] = useState<any[]>([]);
   const [isLoadingVault, setIsLoadingVault] = useState(false);
+
+  // 🚀 INJECTED: SCHEDULE MODAL STATE
+  const [showScheduleModal, setShowScheduleModal] = useState(false);
+  const [scheduleDate, setScheduleDate] = useState('');
 
   useEffect(() => {
     if (status === "unauthenticated") router.replace("/");
@@ -107,8 +112,8 @@ export default function TelegramBroadcast() {
     setMessage(prev => prev + variable);
   };
 
-  // 🔥 THE INSTA-RESET DISPATCH FIX
-  const handleSendBroadcast = async () => {
+  // 🔥 INJECTED: UPGRADED DISPATCH FIX (Handles both Now and Scheduled)
+  const executeBroadcast = async (scheduledFor: string | null = null) => {
     if (!message.trim()) {
       alert("Message cannot be empty!");
       return;
@@ -116,18 +121,25 @@ export default function TelegramBroadcast() {
     if (!session?.user?.email) return;
     
     setIsSending(true);
+    setShowScheduleModal(false); // Close modal automatically
     
     try {
-      const res = await fetch("/api/broadcast", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+      const payload: any = {
           email: session.user.email,
           channel: "telegram",
           audience: audience,
           message: message,
-          name: "Telegram Mass Broadcast"
-        })
+          name: scheduledFor ? "Scheduled Telegram Broadcast" : "Telegram Mass Broadcast"
+      };
+
+      if (scheduledFor) {
+          payload.send_at = scheduledFor;
+      }
+
+      const res = await fetch("/api/broadcast", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
       });
 
       if (!res.ok) {
@@ -152,7 +164,7 @@ export default function TelegramBroadcast() {
         
         // Micro-delay to allow React to paint the non-loading button state
         setTimeout(() => {
-           alert("🚀 Telegram Broadcast successfully dispatched!");
+           alert(scheduledFor ? "📅 Campaign Scheduled successfully!" : "🚀 Telegram Broadcast successfully dispatched!");
         }, 50);
       } else {
         setTimeout(() => {
@@ -263,14 +275,19 @@ export default function TelegramBroadcast() {
               {/* Actions */}
               <div className="flex items-center gap-4 pt-4 border-t border-white/5">
                 <button 
-                  onClick={handleSendBroadcast}
+                  onClick={() => executeBroadcast(null)}
                   disabled={isSending}
                   className={`flex-1 bg-[#2AABEE] hover:bg-[#2298D6] text-white py-4 rounded-xl text-[13px] font-black uppercase tracking-widest flex items-center justify-center gap-2 shadow-[0_10px_20px_rgba(42,171,238,0.2)] disabled:opacity-50 ${btnHover}`}
                 >
                   {isSending ? <Activity className="w-5 h-5 animate-spin"/> : <Send className="w-5 h-5"/>}
                   {isSending ? "Dispatching..." : "Send Now"}
                 </button>
-                <button className={`flex-1 bg-[#1A1A1E] hover:bg-[#222228] text-white border border-white/10 py-4 rounded-xl text-[13px] font-black uppercase tracking-widest flex items-center justify-center gap-2 shadow-lg ${btnHover}`}>
+                {/* 🚀 INJECTED: Connected Schedule Button */}
+                <button 
+                  onClick={() => setShowScheduleModal(true)}
+                  disabled={isSending}
+                  className={`flex-1 bg-[#1A1A1E] hover:bg-[#222228] text-white border border-white/10 py-4 rounded-xl text-[13px] font-black uppercase tracking-widest flex items-center justify-center gap-2 shadow-lg ${btnHover}`}
+                >
                   <CalendarClock className="w-5 h-5 text-gray-400"/> Schedule
                 </button>
               </div>
@@ -300,7 +317,9 @@ export default function TelegramBroadcast() {
                     <div className="flex justify-between items-start mb-2">
                       <h4 className="text-[13px] font-bold text-white truncate max-w-[150px]">{camp.name}</h4>
                       <span className={`text-[9px] font-black uppercase tracking-widest px-2 py-1 rounded-md border flex items-center gap-1 ${
-                        camp.status === 'Completed' ? 'bg-green-500/10 text-green-400 border-green-500/20' : 'bg-orange-500/10 text-orange-400 border-orange-500/20'
+                        camp.status === 'Completed' ? 'bg-green-500/10 text-green-400 border-green-500/20' 
+                        : camp.status === 'Scheduled' ? 'bg-blue-500/10 text-blue-400 border-blue-500/20'
+                        : 'bg-orange-500/10 text-orange-400 border-orange-500/20'
                       }`}>
                         {camp.status === 'Completed' ? <CheckCircle2 className="w-3 h-3"/> : <Clock className="w-3 h-3"/>} {camp.status}
                       </span>
@@ -384,6 +403,46 @@ export default function TelegramBroadcast() {
                              ))}
                          </div>
                      )}
+                  </div>
+               </motion.div>
+            </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* 🚀 INJECTED: SCHEDULE MODAL */}
+      <AnimatePresence>
+        {showScheduleModal && (
+            <motion.div 
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} 
+              className="absolute inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-sm p-6"
+            >
+               <motion.div 
+                 initial={{ scale: 0.95, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.95, y: 20 }} 
+                 className="bg-[#0A0A0D] border border-[#2AABEE]/30 rounded-2xl w-full max-w-md shadow-[0_0_50px_rgba(42,171,238,0.1)] overflow-hidden"
+               >
+                  <div className="flex items-center justify-between p-5 border-b border-white/5 bg-[#111114]">
+                     <h3 className="text-[14px] font-black text-white flex items-center gap-2">
+                        <CalendarClock className="w-5 h-5 text-[#2AABEE]"/> Schedule Broadcast
+                     </h3>
+                     <button onClick={() => setShowScheduleModal(false)} className="text-gray-400 hover:text-red-400">
+                        <X className="w-4 h-4"/>
+                     </button>
+                  </div>
+                  <div className="p-6 space-y-4">
+                     <p className="text-[12px] text-gray-400">Select the exact date and time to dispatch this campaign.</p>
+                     <input 
+                        type="datetime-local" 
+                        value={scheduleDate}
+                        onChange={(e) => setScheduleDate(e.target.value)}
+                        className="w-full bg-[#111114] border border-white/10 text-white p-4 rounded-xl outline-none focus:border-[#2AABEE] transition-colors"
+                     />
+                     <button 
+                        onClick={() => executeBroadcast(scheduleDate)}
+                        disabled={!scheduleDate || isSending}
+                        className="w-full bg-[#2AABEE] text-white py-4 rounded-xl text-[13px] font-black uppercase tracking-widest disabled:opacity-50 mt-4 shadow-[0_0_20px_rgba(42,171,238,0.2)]"
+                     >
+                        {isSending ? "Processing..." : "Confirm Schedule"}
+                     </button>
                   </div>
                </motion.div>
             </motion.div>
