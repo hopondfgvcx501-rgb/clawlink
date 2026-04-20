@@ -7,6 +7,7 @@
  * @file app/dashboard/telegram/broadcast/page.tsx
  * @description Advanced bulk messaging system. Replaces email marketing.
  * 🚀 FIXED: Activated Media & Attachment buttons to open an in-page Media Vault Picker.
+ * 🚀 FIXED: Resolved button freeze state by resetting UI before the native alert box triggers.
  * 🚀 SECURED: Real-time PostgreSQL database sync for campaigns.
  * * ALL RIGHTS RESERVED. CLAWLINK INC.
  * ==============================================================================================
@@ -106,6 +107,7 @@ export default function TelegramBroadcast() {
     setMessage(prev => prev + variable);
   };
 
+  // 🔥 THE INSTA-RESET DISPATCH FIX
   const handleSendBroadcast = async () => {
     if (!message.trim()) {
       alert("Message cannot be empty!");
@@ -141,18 +143,29 @@ export default function TelegramBroadcast() {
 
       const data = await res.json();
       
+      // ⚡ Reset state BEFORE alert freezes the browser
+      setIsSending(false);
+      
       if (data.success) {
-        alert("🚀 Telegram Broadcast successfully dispatched!");
         setMessage('');
         fetchCampaigns(); // Refresh history
+        
+        // Micro-delay to allow React to paint the non-loading button state
+        setTimeout(() => {
+           alert("🚀 Telegram Broadcast successfully dispatched!");
+        }, 50);
       } else {
-        alert(`Failed to queue campaign: ${data.error}`);
+        setTimeout(() => {
+           alert(`Failed to queue campaign: ${data.error}`);
+        }, 50);
       }
     } catch (error: any) {
       console.error("Broadcast Dispatch Error:", error);
-      alert(`Backend Error: ${error.message || "Failed to reach server."}`);
-    } finally {
       setIsSending(false);
+      
+      setTimeout(() => {
+         alert(`Backend Error: ${error.message || "Failed to reach server."}`);
+      }, 50);
     }
   };
 
