@@ -6,10 +6,9 @@
  * ==============================================================================================
  * @file app/dashboard/telegram/broadcast/page.tsx
  * @description Advanced bulk messaging system. Replaces email marketing.
- * 🚀 FIXED: Activated Media & Attachment buttons to open an in-page Media Vault Picker.
- * 🚀 FIXED: Resolved button freeze state by resetting UI before the native alert box triggers.
+ * 🚀 FIXED: Modals changed from absolute to fixed z-[100] to prevent background clipping.
+ * 🚀 FIXED: Added type="button" to prevent accidental default behavior.
  * 🚀 SECURED: Real-time PostgreSQL database sync for campaigns.
- * 🚀 INJECTED: Schedule DateTime picker modal and API integration.
  * * ALL RIGHTS RESERVED. CLAWLINK INC.
  * ==============================================================================================
  */
@@ -54,7 +53,7 @@ export default function TelegramBroadcast() {
   const [vaultFiles, setVaultFiles] = useState<any[]>([]);
   const [isLoadingVault, setIsLoadingVault] = useState(false);
 
-  // 🚀 INJECTED: SCHEDULE MODAL STATE
+  // 🚀 SCHEDULE MODAL STATE
   const [showScheduleModal, setShowScheduleModal] = useState(false);
   const [scheduleDate, setScheduleDate] = useState('');
 
@@ -86,7 +85,8 @@ export default function TelegramBroadcast() {
   }, [session, status]);
 
   // 🚀 OPEN MEDIA VAULT MODAL
-  const openMediaVault = async () => {
+  const openMediaVault = async (e: React.MouseEvent) => {
+      e.preventDefault();
       setShowMediaPicker(true);
       setIsLoadingVault(true);
       if (session?.user?.email) {
@@ -112,7 +112,7 @@ export default function TelegramBroadcast() {
     setMessage(prev => prev + variable);
   };
 
-  // 🔥 INJECTED: UPGRADED DISPATCH FIX (Handles both Now and Scheduled)
+  // 🔥 UPGRADED DISPATCH FIX (Handles both Now and Scheduled)
   const executeBroadcast = async (scheduledFor: string | null = null) => {
     if (!message.trim()) {
       alert("Message cannot be empty!");
@@ -229,6 +229,7 @@ export default function TelegramBroadcast() {
                   ].map((seg) => (
                     <button 
                       key={seg.id}
+                      type="button"
                       onClick={() => setAudience(seg.id)}
                       className={`px-4 py-2.5 rounded-xl text-[12px] font-bold flex items-center gap-2 border transition-all ${btnHover} ${
                         audience === seg.id 
@@ -246,7 +247,7 @@ export default function TelegramBroadcast() {
               <div className="mb-6">
                 <div className="flex items-center justify-between mb-3">
                   <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-gray-500">2. Compose Message</label>
-                  <button className="text-[10px] font-bold uppercase tracking-widest text-orange-400 flex items-center gap-1 hover:text-orange-300 transition-colors">
+                  <button type="button" className="text-[10px] font-bold uppercase tracking-widest text-orange-400 flex items-center gap-1 hover:text-orange-300 transition-colors">
                     <Sparkles className="w-3 h-3"/> Ask AI to Write
                   </button>
                 </div>
@@ -262,10 +263,10 @@ export default function TelegramBroadcast() {
                   <div className="bg-[#1A1A1E] border-t border-white/5 px-4 py-3 flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       {/* 🔥 CONNECTED BUTTONS TO OPEN VAULT */}
-                      <button onClick={openMediaVault} className="p-2 hover:bg-white/10 rounded-lg text-[#2AABEE] bg-[#2AABEE]/10 transition-colors tooltip-trigger" title="Attach Media"><ImageIcon className="w-4 h-4"/></button>
-                      <button onClick={openMediaVault} className="p-2 hover:bg-white/10 rounded-lg text-gray-400 transition-colors tooltip-trigger" title="Attach File"><Paperclip className="w-4 h-4"/></button>
+                      <button type="button" onClick={openMediaVault} className="p-2 hover:bg-white/10 rounded-lg text-[#2AABEE] bg-[#2AABEE]/10 transition-colors tooltip-trigger" title="Attach Media"><ImageIcon className="w-4 h-4"/></button>
+                      <button type="button" onClick={openMediaVault} className="p-2 hover:bg-white/10 rounded-lg text-gray-400 transition-colors tooltip-trigger" title="Attach File"><Paperclip className="w-4 h-4"/></button>
                       <div className="w-px h-5 bg-white/10 mx-2"></div>
-                      <button onClick={() => insertVariable('{{first_name}}')} className="text-[10px] font-mono bg-white/5 hover:bg-white/10 border border-white/10 px-2 py-1 rounded text-gray-300 transition-colors">+ first_name</button>
+                      <button type="button" onClick={() => insertVariable('{{first_name}}')} className="text-[10px] font-mono bg-white/5 hover:bg-white/10 border border-white/10 px-2 py-1 rounded text-gray-300 transition-colors">+ first_name</button>
                     </div>
                     <span className="text-[10px] font-mono text-gray-500">{message.length} chars</span>
                   </div>
@@ -275,6 +276,7 @@ export default function TelegramBroadcast() {
               {/* Actions */}
               <div className="flex items-center gap-4 pt-4 border-t border-white/5">
                 <button 
+                  type="button"
                   onClick={() => executeBroadcast(null)}
                   disabled={isSending}
                   className={`flex-1 bg-[#2AABEE] hover:bg-[#2298D6] text-white py-4 rounded-xl text-[13px] font-black uppercase tracking-widest flex items-center justify-center gap-2 shadow-[0_10px_20px_rgba(42,171,238,0.2)] disabled:opacity-50 ${btnHover}`}
@@ -282,9 +284,11 @@ export default function TelegramBroadcast() {
                   {isSending ? <Activity className="w-5 h-5 animate-spin"/> : <Send className="w-5 h-5"/>}
                   {isSending ? "Dispatching..." : "Send Now"}
                 </button>
-                {/* 🚀 INJECTED: Connected Schedule Button */}
+                
+                {/* 🚀 CRITICAL FIX: explicit onClick, button type and preventing defaults */}
                 <button 
-                  onClick={() => setShowScheduleModal(true)}
+                  type="button"
+                  onClick={(e) => { e.preventDefault(); setShowScheduleModal(true); }}
                   disabled={isSending}
                   className={`flex-1 bg-[#1A1A1E] hover:bg-[#222228] text-white border border-white/10 py-4 rounded-xl text-[13px] font-black uppercase tracking-widest flex items-center justify-center gap-2 shadow-lg ${btnHover}`}
                 >
@@ -341,13 +345,6 @@ export default function TelegramBroadcast() {
                 ))}
               </div>
 
-              <div className="pt-4 border-t border-white/5 mt-4">
-                <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-3 flex items-start gap-3">
-                  <AlertCircle className="w-4 h-4 text-blue-400 shrink-0 mt-0.5"/>
-                  <p className="text-[10px] text-blue-200 leading-relaxed font-medium">Telegram allows unlimited broadcasting with no 24h rule restrictions. Maintain message quality to avoid user blocks.</p>
-                </div>
-              </div>
-
             </motion.div>
           </div>
 
@@ -359,7 +356,7 @@ export default function TelegramBroadcast() {
         {showMediaPicker && (
             <motion.div 
               initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              className="absolute inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-6"
+              className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-6"
             >
                <motion.div 
                  initial={{ scale: 0.95, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.95, y: 20 }}
@@ -370,7 +367,7 @@ export default function TelegramBroadcast() {
                      <h3 className="text-[14px] font-black text-white flex items-center gap-2">
                         <ImageIcon className="w-5 h-5 text-[#2AABEE]"/> Select Media from Vault
                      </h3>
-                     <button onClick={() => setShowMediaPicker(false)} className="p-2 bg-white/5 hover:bg-red-500/20 text-gray-400 hover:text-red-400 rounded-lg transition-colors">
+                     <button type="button" onClick={() => setShowMediaPicker(false)} className="p-2 bg-white/5 hover:bg-red-500/20 text-gray-400 hover:text-red-400 rounded-lg transition-colors">
                         <X className="w-4 h-4"/>
                      </button>
                   </div>
@@ -409,12 +406,12 @@ export default function TelegramBroadcast() {
         )}
       </AnimatePresence>
 
-      {/* 🚀 INJECTED: SCHEDULE MODAL */}
+      {/* 🚀 INJECTED: SCHEDULE MODAL (FIXED POSITIONING) */}
       <AnimatePresence>
         {showScheduleModal && (
             <motion.div 
               initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} 
-              className="absolute inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-sm p-6"
+              className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-6"
             >
                <motion.div 
                  initial={{ scale: 0.95, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.95, y: 20 }} 
@@ -424,7 +421,7 @@ export default function TelegramBroadcast() {
                      <h3 className="text-[14px] font-black text-white flex items-center gap-2">
                         <CalendarClock className="w-5 h-5 text-[#2AABEE]"/> Schedule Broadcast
                      </h3>
-                     <button onClick={() => setShowScheduleModal(false)} className="text-gray-400 hover:text-red-400">
+                     <button type="button" onClick={() => setShowScheduleModal(false)} className="text-gray-400 hover:text-red-400">
                         <X className="w-4 h-4"/>
                      </button>
                   </div>
@@ -437,6 +434,7 @@ export default function TelegramBroadcast() {
                         className="w-full bg-[#111114] border border-white/10 text-white p-4 rounded-xl outline-none focus:border-[#2AABEE] transition-colors"
                      />
                      <button 
+                        type="button"
                         onClick={() => executeBroadcast(scheduleDate)}
                         disabled={!scheduleDate || isSending}
                         className="w-full bg-[#2AABEE] text-white py-4 rounded-xl text-[13px] font-black uppercase tracking-widest disabled:opacity-50 mt-4 shadow-[0_0_20px_rgba(42,171,238,0.2)]"
