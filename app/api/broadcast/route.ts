@@ -55,7 +55,7 @@ export async function POST(req: Request) {
         const safeEmail = email.toLowerCase();
         const safeChannel = channel.toLowerCase();
 
-        // A. Get Bot Tokens for all platforms to future-proof
+        // A. Get Bot Tokens for all platforms
         const { data: config } = await supabase
             .from("user_configs")
             .select("telegram_token, whatsapp_token, instagram_token")
@@ -66,7 +66,7 @@ export async function POST(req: Request) {
             return NextResponse.json({ success: false, error: "Account config not found." }, { status: 400 });
         }
 
-        // B. MEDIA PARSER ENGINE (Extracts {{media:id}} and gets URL)
+        // B. MEDIA PARSER ENGINE
         let mediaUrl = null;
         let mediaType = null;
         const mediaMatch = message.match(/\{\{media:(.+?)\}\}/);
@@ -74,7 +74,6 @@ export async function POST(req: Request) {
         if (mediaMatch) {
             const fileId = mediaMatch[1];
             
-            // Fetch file details from vault
             const { data: mediaData } = await supabase
                 .from("media_library")
                 .select("storage_path, file_type")
@@ -83,20 +82,20 @@ export async function POST(req: Request) {
                 .single();
 
             if (mediaData) {
-                // Get absolute public URL from bucket
                 const { data: publicUrlData } = supabase.storage
-                    .from("telegram_media") // Shared bucket for all channel assets
+                    .from("telegram_media") 
                     .getPublicUrl(mediaData.storage_path);
                 
                 mediaUrl = publicUrlData.publicUrl;
-                mediaType = mediaData.file_type; // 'image', 'video', 'document'
+                mediaType = mediaData.file_type; 
+            } else {
+                return NextResponse.json({ success: false, error: "Attached Media not found in Vault." }, { status: 400 });
             }
             
-            // Remove the variable from the text message so it doesn't look ugly to the user
             message = message.replace(mediaMatch[0], "").trim();
         }
 
-        // C. Get Target Audience (Filtered by specific channel)
+        // C. Get Target Audience 
         const { data: chatHistory, error: dbError } = await supabase
             .from("chat_history")
             .select("platform_chat_id, customer_name")
@@ -105,7 +104,6 @@ export async function POST(req: Request) {
 
         if (dbError) throw dbError;
 
-        // Deduplicate users (We only want to send 1 message per user)
         const uniqueUsers = new Map();
         chatHistory?.forEach(row => {
             if (!uniqueUsers.has(row.platform_chat_id)) {
@@ -120,30 +118,32 @@ export async function POST(req: Request) {
         }
 
         let sentCount = 0;
+        let lastTgError = ""; // 🚀 NEW: Tracker for Telegram rejections
 
         // D. UNIVERSAL DISPATCH LOOP
         for (const [chatId, customerName] of usersArray) {
             const personalizedText = message.replace(/\{\{first_name\}\}/g, customerName || "there");
             
             try {
-                // 📱 --- TELEGRAM DISPATCH ---
                 if (safeChannel === "telegram") {
                     if (!config.telegram_token) throw new Error("Missing Telegram Token");
                     
                     let apiUrl = `https://api.telegram.org/bot${config.telegram_token}/sendMessage`;
-                    let payload: any = { chat_id: chatId, text: personalizedText || " " };
+                    let payload: any = { chat_id: chatId, text: personalizedText || " " }; // Fallback to space if empty text
 
-                    // If Media exists, change the API route and payload dynamically
                     if (mediaUrl) {
+                        // Clean up text for caption, ensure it's not undefined
+                        const finalCaption = personalizedText || "";
+                        
                         if (mediaType === "image") {
                             apiUrl = `https://api.telegram.org/bot${config.telegram_token}/sendPhoto`;
-                            payload = { chat_id: chatId, photo: mediaUrl, caption: personalizedText };
+                            payload = { chat_id: chatId, photo: mediaUrl, caption: finalCaption };
                         } else if (mediaType === "video") {
                             apiUrl = `https://api.telegram.org/bot${config.telegram_token}/sendVideo`;
-                            payload = { chat_id: chatId, video: mediaUrl, caption: personalizedText };
+                            payload = { chat_id: chatId, video: mediaUrl, caption: finalCaption };
                         } else {
                             apiUrl = `https://api.telegram.org/bot${config.telegram_token}/sendDocument`;
-                            payload = { chat_id: chatId, document: mediaUrl, caption: personalizedText };
+                            payload = { chat_id: chatId, document: mediaUrl, caption: finalCaption };
                         }
                     }
 
@@ -152,29 +152,29 @@ export async function POST(req: Request) {
                         headers: { "Content-Type": "application/json" },
                         body: JSON.stringify(payload)
                     });
-                    if (res.ok) sentCount++;
+                    
+                    // 🚀 NEW: Proper error logging if Telegram rejects
+                    if (res.ok) {
+                        sentCount++;
+                    } else {
+                        lastTgError = await res.text();
+                        console.error(`[TELEGRAM_REJECTED_API] ${chatId}:`, lastTgError);
+                    }
                 } 
                 
-                // 🟢 --- WHATSAPP DISPATCH (Prepared for Next Phase) ---
-                else if (safeChannel === "whatsapp") {
-                    if (!config.whatsapp_token) throw new Error("Missing WhatsApp Token");
-                    // WhatsApp Cloud API logic will plug in here exactly like Telegram
-                    // sentCount++;
-                }
-
-                // 🟣 --- INSTAGRAM DISPATCH (Prepared for Next Phase) ---
-                else if (safeChannel === "instagram") {
-                    if (!config.instagram_token) throw new Error("Missing Instagram Token");
-                    // Instagram Graph API logic will plug in here
-                    // sentCount++;
-                }
-
-                // Delay to respect platform rate limits (Crucial for bulk sending)
                 await new Promise(resolve => setTimeout(resolve, 50)); 
 
-            } catch (e) {
-                console.error(`Failed to send to ${chatId} on ${safeChannel}`);
+            } catch (e: any) {
+                console.error(`Failed to send to ${chatId}:`, e.message);
             }
+        }
+
+        // 🚀 NEW: Block fake success messages
+        if (sentCount === 0 && usersArray.length > 0) {
+             return NextResponse.json({ 
+                 success: false, 
+                 error: `Telegram blocked the messages. Reason: ${lastTgError || "Unknown API Error"}` 
+             });
         }
 
         // E. Save Universal Campaign History
