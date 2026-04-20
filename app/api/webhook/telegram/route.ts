@@ -10,6 +10,7 @@
  * FIXED: Explicit mapping of premium UI model names to their underlying provider API IDs.
  * ADDED: Strict Supabase DB Insert Error Catchers to send silent failures to TG Admin Bot.
  * ADDED: KEYWORD AUTOMATION INTERCEPTOR (Bypasses AI if keyword matches).
+ * ADDED: FLOW PARSER ENGINE (Executes Visual Map actions dynamically).
  * * ALL RIGHTS RESERVED. CLAWLINK INC.
  * ==============================================================================================
  */
@@ -279,8 +280,6 @@ export async function POST(req: Request) {
             userText = sanitizeInput(transcription);
             crmLogMessage = `[Voice Input]: "${userText}"`;
         } else {
-            if (body.message.text === "/start") return NextResponse.json({ success: true });
-            
             let rawUserText = sanitizeInput(body.message.text);
             userText = rawUserText.length > 1000 ? rawUserText.substring(0, 1000) + "..." : rawUserText;
             crmLogMessage = userText;
@@ -344,6 +343,57 @@ export async function POST(req: Request) {
             return NextResponse.json({ success: true }); 
         }
         // 🔥 END AUTOMATION INTERCEPTOR
+
+        // 🔥 THE FLOW PARSER ENGINE (NEWLY ADDED - Executed if no automation rule matched)
+        if (config.telegram_flow_data && config.telegram_flow_data.nodes) {
+            const nodes = config.telegram_flow_data.nodes;
+            const edges = config.telegram_flow_data.edges || [];
+            
+            let activeTriggerNode = null;
+            const userTextLower = userText.toLowerCase();
+
+            for (const node of nodes) {
+                if (node.type === "triggerNode") {
+                    const triggerText = (node.data.label || "").toLowerCase();
+                    if (triggerText.includes(userTextLower) || userTextLower.includes(triggerText.replace('user sends ', '').trim())) {
+                        activeTriggerNode = node;
+                        break;
+                    }
+                }
+            }
+
+            if (activeTriggerNode) {
+                const outgoingEdge = edges.find((e: any) => e.source === activeTriggerNode.id);
+                
+                if (outgoingEdge) {
+                    const actionNode = nodes.find((n: any) => n.id === outgoingEdge.target);
+                    
+                    if (actionNode && actionNode.type === "actionNode") {
+                        // Success Proof Text to ensure connection works
+                        let responseText = `[Flow Executed] Action: ${actionNode.data.label}. You triggered the path from: ${activeTriggerNode.data.label}`;
+                        
+                        const { error: userDbError } = await supabaseAdmin.from("chat_history").insert({ 
+                            email: ownerEmail, platform: "telegram", platform_chat_id: chatId, customer_name: customerName, sender_type: "user", message: crmLogMessage 
+                        });
+                        if (userDbError) throw new Error(`Supabase Reject (User Msg): ${userDbError.message}`);
+
+                        const { error: botDbError } = await supabaseAdmin.from("chat_history").insert({ 
+                            email: ownerEmail, platform: "telegram", platform_chat_id: chatId, customer_name: customerName, sender_type: "bot", message: responseText 
+                        });
+                        if (botDbError) throw new Error(`Supabase Reject (Bot Msg): ${botDbError.message}`);
+                        
+                        await fetch(`https://api.telegram.org/bot${telegramToken}/sendMessage`, { 
+                            method: "POST", headers: { "Content-Type": "application/json" }, 
+                            body: JSON.stringify({ chat_id: chatId, text: responseText }) 
+                        });
+                        
+                        console.log("[FLOW_PARSER] Visual Flow Executed Successfully.");
+                        return NextResponse.json({ success: true });
+                    }
+                }
+            }
+        }
+        // 🔥 END FLOW PARSER ENGINE
 
         // 🚀 THE RAG ENGINE (Custom Knowledge Base Execution)
         let customKnowledge = "";
