@@ -21,28 +21,26 @@ export async function GET(req: Request) {
         // 🚀 Fetch Real Users from Chat History
         const { data: chatHistory, error } = await supabase
             .from("chat_history")
-            .select("platform_chat_id, customer_name, created_at, sender_type")
+            .select("platform_chat_id, customer_name, created_at")
             .eq("email", safeEmail)
             .eq("platform", "telegram")
             .order("created_at", { ascending: false });
 
         if (error) throw error;
 
-        // 🧠 Deduplication Engine: Sirf unique users nikalo unke last message ke time ke sath
+        // 🧠 Deduplication Engine: Get unique users with their latest interaction time
         const subscribersMap = new Map();
         
         chatHistory?.forEach(row => {
-            // Hum sirf unhi ko CRM me dikhayenge jinka Chat ID hai
             if (row.platform_chat_id && !subscribersMap.has(row.platform_chat_id)) {
                 
-                // Date formatting for CRM
                 const interactionDate = new Date(row.created_at);
                 const formattedDate = interactionDate.toLocaleDateString('en-GB', { 
                     day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' 
                 });
 
                 subscribersMap.set(row.platform_chat_id, {
-                    id: row.platform_chat_id, // Unique Key
+                    id: row.platform_chat_id,
                     name: row.customer_name || "Telegram User",
                     chatId: row.platform_chat_id,
                     status: "Active",
