@@ -18,28 +18,36 @@ export async function GET(req: Request) {
 
         const safeEmail = email.toLowerCase();
 
-        // Fetch all chat history for Telegram, ordered by newest first
+        // 🚀 Fetch Real Users from Chat History
         const { data: chatHistory, error } = await supabase
             .from("chat_history")
-            .select("platform_chat_id, customer_name, created_at")
+            .select("platform_chat_id, customer_name, created_at, sender_type")
             .eq("email", safeEmail)
             .eq("platform", "telegram")
             .order("created_at", { ascending: false });
 
         if (error) throw error;
 
-        // 🧠 Deduplicate users to get their latest interaction
+        // 🧠 Deduplication Engine: Sirf unique users nikalo unke last message ke time ke sath
         const subscribersMap = new Map();
         
         chatHistory?.forEach(row => {
-            if (!subscribersMap.has(row.platform_chat_id)) {
+            // Hum sirf unhi ko CRM me dikhayenge jinka Chat ID hai
+            if (row.platform_chat_id && !subscribersMap.has(row.platform_chat_id)) {
+                
+                // Date formatting for CRM
+                const interactionDate = new Date(row.created_at);
+                const formattedDate = interactionDate.toLocaleDateString('en-GB', { 
+                    day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' 
+                });
+
                 subscribersMap.set(row.platform_chat_id, {
-                    id: row.platform_chat_id, // using chat ID as unique key
+                    id: row.platform_chat_id, // Unique Key
                     name: row.customer_name || "Telegram User",
                     chatId: row.platform_chat_id,
                     status: "Active",
-                    tags: ["Subscriber"],
-                    lastInteraction: new Date(row.created_at).toLocaleString()
+                    tags: ["Subscriber", "Telegram"],
+                    lastInteraction: formattedDate
                 });
             }
         });
