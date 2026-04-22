@@ -70,6 +70,7 @@ async function generateEmbedding(text: string) {
 async function callGemini(model: string, systemPrompt: string, history: any[], userText: string) {
     if (!process.env.GEMINI_API_KEY) throw new Error("API_KEY missing");
     
+    // 🧠 BULLETPROOF GEMINI MEMORY COMPACTOR (Prevents 400 Crashes)
     let contents: any[] = [];
     let lastRole = "";
     for (const msg of history) {
@@ -117,6 +118,7 @@ async function callOpenAI(model: string, systemPrompt: string, history: any[], u
 async function callClaude(model: string, systemPrompt: string, history: any[], userText: string) {
     if (!process.env.ANTHROPIC_API_KEY) throw new Error("API_KEY missing");
     
+    // 🧠 BULLETPROOF CLAUDE MEMORY COMPACTOR
     let mergedMessages: any[] = [];
     let lastRole = "";
     for (const msg of history) {
@@ -130,6 +132,7 @@ async function callClaude(model: string, systemPrompt: string, history: any[], u
     if (lastRole === "user") mergedMessages[mergedMessages.length - 1].content += "\n" + userText;
     else mergedMessages.push({ role: "user", content: userText });
 
+    // Anthropic strictly requires first message to be 'user'
     if (mergedMessages.length > 0 && mergedMessages[0].role !== "user") mergedMessages.shift();
 
     const res = await fetch("https://api.anthropic.com/v1/messages", {
@@ -164,35 +167,46 @@ export async function POST(req: Request) {
         const value = body.entry[0].changes[0].value;
         const message = value.messages[0];
         
+        // 🛡️ Sanitize Chat ID & Customer Name
         const customerName = sanitizeInput(value.contacts?.[0]?.profile?.name || "Customer");
 
         if (message.type !== "text") return NextResponse.json({ success: true });
 
         chatId = sanitizeInput(message.from); 
         
+        // 🛡️ Sanitize User Text
         let rawUserText = sanitizeInput(message.text.body);
+        
+        // ✂️ COST CONTROL: Cut message if it's suspiciously long
         const userText = rawUserText.length > 800 ? rawUserText.substring(0, 800) + "..." : rawUserText;
         
         phoneNumberId = sanitizeInput(value.metadata.phone_number_id); 
-
-        // 🔍 X-RAY LOG: Tracking Incoming Request
-        console.log(`\n[X-RAY] 📩 Msg received from ${chatId} to WA Phone ID: ${phoneNumberId}`);
 
         const now = Date.now();
         const lastMessageTime = rateLimitMap.get(chatId) || 0;
         if (now - lastMessageTime < COOLDOWN_MS) return NextResponse.json({ success: true });
         rateLimitMap.set(chatId, now);
 
+        // 🔥 CRITICAL FIX: Replaced .single() with .limit(1).maybeSingle() to prevent duplicate row crashes
         const { data: config, error: configErr } = await supabase
             .from("user_configs")
             .select("*")
             .eq("whatsapp_phone_id", phoneNumberId)
-            .single();
+            .limit(1)
+            .maybeSingle();
 
-        if (configErr || !config || !config.whatsapp_token) {
-            // 🔴 X-RAY ALERT: Database Mismatch
-            console.error(`[X-RAY_ERROR] Supabase Lookup Failed! No active config found for WA Phone ID: ${phoneNumberId}`);
+        // 🔍 DEEP X-RAY: Detect exact failure reason
+        if (configErr) {
+            console.error(`[X-RAY_DB_CRASH] Supabase Error: ${configErr.message} | Details: ${configErr.details}`);
             return NextResponse.json({ success: true });
+        }
+        if (!config) {
+            console.error(`[X-RAY_MISSING] No row found in Supabase for WA Phone ID: ${phoneNumberId}`);
+            return NextResponse.json({ success: true });
+        }
+        if (!config.whatsapp_token) {
+             console.error(`[X-RAY_TOKEN] Row found, but whatsapp_token is empty/NULL for ID: ${phoneNumberId}`);
+             return NextResponse.json({ success: true });
         }
 
         whatsappToken = config.whatsapp_token;
@@ -201,6 +215,7 @@ export async function POST(req: Request) {
 
         const systemPrompt = config.system_prompt_whatsapp || config.system_prompt || "You are a helpful AI assistant on WhatsApp.";
         
+        // 🚀 SMART PROVIDER DETECTION (Omni vs Normal)
         let rawProvider = (config.ai_provider || config.selected_model || "openai").toLowerCase();
         let provider = "openai"; 
         
@@ -208,6 +223,9 @@ export async function POST(req: Request) {
         else if (rawProvider.includes("claude") || rawProvider.includes("anthropic") || rawProvider.includes("opus")) provider = "anthropic";
         else if (rawProvider.includes("gemini") || rawProvider.includes("google")) provider = "google";
 
+        // ==========================================
+        // 🛑 THE GATEKEEPER (Plan, Expiry & Limits Check) 
+        // ==========================================
         const currentPlan = (config.plan_tier || config.plan || "free").toLowerCase();
         
         if (currentPlan === "free" || currentPlan === "starter" || config.plan_status !== "Active") {
@@ -216,6 +234,7 @@ export async function POST(req: Request) {
                 method: "POST", headers: { "Content-Type": "application/json", "Authorization": `Bearer ${whatsappToken}` },
                 body: JSON.stringify({ messaging_product: "whatsapp", to: chatId, text: { body: sleepMsg } })
             });
+            console.log(`[GATEKEEPER] Blocked unpaid WA message for phone ID: ${phoneNumberId}`);
             return NextResponse.json({ success: true });
         }
 
@@ -228,6 +247,7 @@ export async function POST(req: Request) {
 
         if (isExpired || (!isUnlimited && tokensUsed >= tokensAllocated)) {
             const maintenanceMsg = "System Note: The AI assistant for this account is currently offline due to account limits. Please contact the administrator.";
+                
             await fetch(`https://graph.facebook.com/v18.0/${phoneNumberId}/messages`, {
                 method: "POST", headers: { "Content-Type": "application/json", "Authorization": `Bearer ${whatsappToken}` },
                 body: JSON.stringify({ messaging_product: "whatsapp", to: chatId, text: { body: maintenanceMsg } })
@@ -248,6 +268,7 @@ export async function POST(req: Request) {
             }
         } catch (e) {}
 
+        // 🧠 MEMORY ENGINE
         const { data: pastChats } = await supabase
             .from("chat_history")
             .select("sender_type, message")
@@ -270,6 +291,9 @@ export async function POST(req: Request) {
             email: userEmail, platform: "whatsapp", platform_chat_id: chatId, customer_name: customerName, sender_type: "user", message: userText 
         });
 
+        // =========================================================================
+        // 8. 🧠 CLAWLINK 2026 DIRECT EXECUTION & SMART OMNI ROUTER
+        // =========================================================================
         let aiResponse = "System is undergoing scheduled maintenance. Please try again later.";
         let wasSuccessful = false;
 
@@ -291,7 +315,9 @@ export async function POST(req: Request) {
         let targetProvider = provider;
         let targetModel = "";
 
+        // 🚀 THE DECISION MATRIX (Omni vs Normal Models)
         if (provider === "omni") {
+            // Omni Logic: Best performance across ALL providers based on query complexity
             if (usageRatio >= 80) {
                 targetProvider = "google"; targetModel = GEMINI_CHEAP; 
             } else if (usageRatio >= 60) {
@@ -302,6 +328,7 @@ export async function POST(req: Request) {
                 else { targetProvider = "anthropic"; targetModel = CLAUDE_PREMIUM; } 
             }
         } else {
+            // Normal Logic: Strict adherence to the user's selected provider
             if (usageRatio >= 85) {
                 if (provider === "openai") targetModel = GPT_CHEAP;
                 else if (provider === "anthropic") targetModel = CLAUDE_CHEAP;
@@ -313,6 +340,7 @@ export async function POST(req: Request) {
             }
         }
 
+        // ⚡ DIRECT EXECUTION ENGINE (No external fetch loops!)
         try {
             if (targetProvider === "anthropic") aiResponse = await callClaude(targetModel, fullSystemContext, historyArray, userText);
             else if (targetProvider === "openai") aiResponse = await callOpenAI(targetModel, fullSystemContext, historyArray, userText);
@@ -321,6 +349,7 @@ export async function POST(req: Request) {
         } catch (err1) {
             console.error(`[EXECUTION_FAILURE] Primary model ${targetModel} rejected request.`);
             
+            // ⚡ FALLBACK LOGIC
             if (provider === "omni") {
                 console.log("[OMNI_FALLBACK] Routing to secondary engine...");
                 try {
@@ -346,6 +375,9 @@ export async function POST(req: Request) {
             }
         }
 
+        // ==========================================
+        // 9. CHARGE TOKENS & SAVE AI RESPONSE
+        // ==========================================
         if (wasSuccessful) {
             const calculatedTokens = Math.ceil((userText.length + aiResponse.length) / 3);
             const updatePayload: any = { messages_used_this_month: (config.messages_used_this_month || 0) + 1 };
@@ -359,18 +391,10 @@ export async function POST(req: Request) {
             email: userEmail, platform: "whatsapp", platform_chat_id: chatId, customer_name: customerName, sender_type: "bot", message: aiResponse 
         });
 
-        // 🚀 FINAL X-RAY LOG: Tracking Meta Dispatch Status
-        const waRes = await fetch(`https://graph.facebook.com/v18.0/${phoneNumberId}/messages`, {
+        await fetch(`https://graph.facebook.com/v18.0/${phoneNumberId}/messages`, {
             method: "POST", headers: { "Content-Type": "application/json", "Authorization": `Bearer ${whatsappToken}` },
             body: JSON.stringify({ messaging_product: "whatsapp", to: chatId, text: { body: aiResponse } })
         });
-
-        if (!waRes.ok) {
-            const waError = await waRes.text();
-            console.error(`\n🔴 [META_API_ERROR] WhatsApp rejected the message. Reason: ${waError}\n`);
-        } else {
-            console.log(`🟢 [SUCCESS] AI Reply successfully delivered to ${chatId}`);
-        }
 
         return NextResponse.json({ success: true });
 
