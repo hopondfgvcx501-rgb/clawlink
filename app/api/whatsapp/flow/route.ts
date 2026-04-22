@@ -14,21 +14,18 @@ export async function GET(req: Request) {
 
         if (!email) return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
 
-        // 🚀 Fetch saved Flow Data from User Configs
         const { data: config, error } = await supabase
             .from("user_configs")
             .select("whatsapp_flow_data")
             .eq("email", email.toLowerCase())
             .single();
 
-        if (error && error.code !== 'PGRST116') throw error; // Ignore single() no-row errors
+        if (error && error.code !== 'PGRST116') throw error; 
 
         const flowData = config?.whatsapp_flow_data || { nodes: [], edges: [] };
-
         return NextResponse.json({ success: true, data: flowData });
 
     } catch (error: any) {
-        console.error("[WA_FLOW_GET_ERROR]", error.message);
         return NextResponse.json({ success: false, error: "Server Error" }, { status: 500 });
     }
 }
@@ -41,7 +38,6 @@ export async function POST(req: Request) {
 
         const flowData = { nodes: nodes || [], edges: edges || [] };
 
-        // 🚀 Save Flow Data inside User Configs (Real DB)
         const { error } = await supabase
             .from("user_configs")
             .update({ whatsapp_flow_data: flowData })
@@ -52,7 +48,6 @@ export async function POST(req: Request) {
         return NextResponse.json({ success: true });
 
     } catch (error: any) {
-        console.error("[WA_FLOW_POST_ERROR]", error.message);
         return NextResponse.json({ success: false, error: error.message }, { status: 500 });
     }
 }
