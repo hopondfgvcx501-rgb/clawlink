@@ -214,7 +214,7 @@ export default function WhatsAppFlowBuilder() {
     }, [reactFlowInstance, setNodes]
   );
 
-  // 🚀 SECURE DB SAVE
+  // 🚀 SECURE DB SAVE (Fixed Stream Crash)
   const handleSaveFlow = async () => {
       if (!session?.user?.email) return;
       setIsSaving(true);
@@ -233,23 +233,21 @@ export default function WhatsAppFlowBuilder() {
           body: JSON.stringify(payload)
         });
         
-        if (!res.ok) {
-           let errorDetail = `HTTP Error ${res.status}`;
-           try {
-              const errData = await res.json();
-              errorDetail = errData.error || errorDetail;
-           } catch(e) {
-              errorDetail = await res.text();
-           }
-           throw new Error(errorDetail);
+        // 🛡️ Bulletproof Error Handling (Stream is only read ONCE)
+        const responseText = await res.text();
+        let data;
+        try {
+            data = JSON.parse(responseText);
+        } catch(e) {
+            throw new Error(`Server returned non-JSON response: ${responseText.substring(0, 50)}...`);
         }
 
-        const data = await res.json();
-        if(data.success) {
-          alert("🟢 Graph Compiled Successfully! WhatsApp Cloud webhook updated.");
-        } else {
-          alert(`Failed to save flow: ${data.error}`);
+        if (!res.ok || !data.success) {
+            throw new Error(data.error || `HTTP Error ${res.status}`);
         }
+
+        alert("🟢 Graph Compiled Successfully! Flow is now active.");
+        
       } catch(err: any) {
         console.error("Save error:", err);
         alert(`Backend Error: ${err.message || "Failed to reach server."}`);
@@ -257,7 +255,6 @@ export default function WhatsAppFlowBuilder() {
         setIsSaving(false);
       }
   };
-
   const handleClearCanvas = () => {
     if(confirm("Are you sure you want to clear the canvas?")) {
       setNodes([{ id: 'trigger-1', type: 'triggerNode', position: { x: 100, y: 250 }, data: { label: 'START' } }]);
