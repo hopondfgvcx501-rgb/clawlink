@@ -8,7 +8,7 @@
  * @description Core control panel for WhatsApp Business API automations.
  * 🚀 SECURED: 100% Real DB Fetch & Save (No dummy states).
  * 🚀 FIXED: Integrated premium SpinnerCounter.
- * 🚀 FIXED: Added strict backend error surfacing for rule synchronization.
+ * 🚀 FIXED: Pointed to isolated /api/whatsapp/automation route.
  * * ALL RIGHTS RESERVED. CLAWLINK INC.
  * ==============================================================================================
  */
@@ -57,12 +57,13 @@ export default function WhatsAppAutomation() {
     if (status === "unauthenticated") router.replace("/");
   }, [status, router]);
 
-  // 🚀 FETCH REAL RULES FROM BACKEND
+  // 🚀 FETCH REAL RULES FROM WA BACKEND
   useEffect(() => {
     const fetchRules = async () => {
       if (status === "authenticated" && session?.user?.email) {
         try {
-          const res = await fetch(`/api/automation?email=${encodeURIComponent(session.user.email)}&channel=whatsapp&t=${Date.now()}`, {
+          // 🔥 CHANGED TO: /api/whatsapp/automation
+          const res = await fetch(`/api/whatsapp/automation?email=${encodeURIComponent(session.user.email)}&t=${Date.now()}`, {
             headers: { 'Cache-Control': 'no-store' }
           });
           const data = await res.json();
@@ -99,18 +100,18 @@ export default function WhatsAppAutomation() {
     setKeywordRules(keywordRules.filter(r => r.id !== id));
   };
 
-  // 🚀 SAVE REAL RULES TO BACKEND WITH STRICT ERROR HANDLING
+  // 🚀 SAVE REAL RULES TO WA BACKEND
   const handleSave = async () => {
     if (!session?.user?.email) return;
     setIsSaving(true);
     
     try {
-      const res = await fetch("/api/automation", {
+      // 🔥 CHANGED TO: /api/whatsapp/automation
+      const res = await fetch("/api/whatsapp/automation", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
               email: session.user.email,
-              channel: "whatsapp",
               rules: keywordRules,
               globalSettings: globalSettings
           })
@@ -131,8 +132,8 @@ export default function WhatsAppAutomation() {
       
       if (data.success) {
           alert("🟢 WhatsApp Automation Rules Synced Live!");
-          // Re-fetch to get real DB IDs instead of temp IDs
-          const refreshRes = await fetch(`/api/automation?email=${encodeURIComponent(session.user.email)}&channel=whatsapp&t=${Date.now()}`);
+          // 🔥 CHANGED TO: /api/whatsapp/automation
+          const refreshRes = await fetch(`/api/whatsapp/automation?email=${encodeURIComponent(session.user.email)}&t=${Date.now()}`);
           const refreshData = await refreshRes.json();
           if (refreshData.success && refreshData.rules) setKeywordRules(refreshData.rules);
       } else {
