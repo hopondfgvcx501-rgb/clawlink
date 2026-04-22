@@ -71,20 +71,19 @@ export async function GET(req: Request) {
 }
 
 // =========================================================================
-// 2. POST: SYNC & SAVE REAL RULES (Prevents undefined crashes)
+// 2. POST: SYNC & SAVE REAL RULES (Prevents DB Constraint Crashes)
 // =========================================================================
 export async function POST(req: Request) {
     try {
         const body = await req.json();
         
-        // 🚀 BULLETPROOF DESTRUCTURING: Defaults to empty {} to never crash!
         const { email, channel, rules = [], globalSettings = {}, settings = {} } = body;
 
         if (!email || !channel) return NextResponse.json({ success: false, error: "Missing parameters" }, { status: 400 });
 
         const safeEmail = email.toLowerCase();
 
-        // 🧠 UI MISMATCH HANDLER: Checks both old Telegram UI and new WA UI variables
+        // 🧠 UI MISMATCH HANDLER
         const welcomeActive = globalSettings.welcomeMsg ?? settings.welcomeMessage ?? false;
         const aiFallbackActive = globalSettings.aiFallback ?? settings.defaultFallback ?? true;
 
@@ -106,8 +105,9 @@ export async function POST(req: Request) {
         const aMsg = globalSettings.awayMsg ? 'true' : 'false';
         const bHrs = globalSettings.businessHours ? 'true' : 'false';
 
-        rowsToInsert.push({ email: safeEmail, platform: channel, match_type: 'global', keyword: 'awayMsg', content: aMsg });
-        rowsToInsert.push({ email: safeEmail, platform: channel, match_type: 'global', keyword: 'businessHours', content: bHrs });
+        // 🔥 CRITICAL FIX: Added 'action_type' to satisfy the NOT NULL database constraint!
+        rowsToInsert.push({ email: safeEmail, platform: channel, match_type: 'global', action_type: 'system', keyword: 'awayMsg', content: aMsg });
+        rowsToInsert.push({ email: safeEmail, platform: channel, match_type: 'global', action_type: 'system', keyword: 'businessHours', content: bHrs });
 
         // D. Save Keyword Rules to Real DB
         if (Array.isArray(rules)) {
@@ -118,7 +118,7 @@ export async function POST(req: Request) {
                         platform: channel,
                         keyword: r.keyword,
                         match_type: r.matchType || 'contains',
-                        action_type: r.actionType || 'text',
+                        action_type: r.actionType || 'text', // Ensuring this is never null
                         content: r.content
                     });
                 }
