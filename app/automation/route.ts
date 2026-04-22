@@ -34,7 +34,7 @@ export async function GET(req: Request) {
         let rules: any[] = [];
         let globalSettings = { welcomeMsg: false, awayMsg: false, businessHours: false };
 
-        // 🧠 Smart Parser: Alag-alag karo ki kaunsa Global rule hai aur kaunsa Keyword rule
+        // 🧠 Smart Parser
         data?.forEach(row => {
             if (row.match_type === 'global') {
                 if (row.keyword === 'welcomeMsg') globalSettings.welcomeMsg = row.content === 'true';
@@ -66,7 +66,7 @@ export async function POST(req: Request) {
     try {
         const body = await req.json();
         
-        // 🚀 FIX: Catch exact variables from frontend!
+        // 🚀 FIX: Catch exact variables from frontend! No more welcomeMessage errors!
         const { email, channel, rules, globalSettings } = body;
 
         if (!email || !channel) {
@@ -88,12 +88,14 @@ export async function POST(req: Request) {
         // 📦 STEP 2: Naye rules prepare karo (Bulk Insert format)
         const rowsToInsert: any[] = [];
 
-        // A. Save Global Settings
-        if (globalSettings) {
-            rowsToInsert.push({ email: safeEmail, platform: safeChannel, match_type: 'global', keyword: 'welcomeMsg', content: String(globalSettings.welcomeMsg) });
-            rowsToInsert.push({ email: safeEmail, platform: safeChannel, match_type: 'global', keyword: 'awayMsg', content: String(globalSettings.awayMsg) });
-            rowsToInsert.push({ email: safeEmail, platform: safeChannel, match_type: 'global', keyword: 'businessHours', content: String(globalSettings.businessHours) });
-        }
+        // A. Save Global Settings (Using safe fallbacks if undefined)
+        const welcomeState = globalSettings?.welcomeMsg ? 'true' : 'false';
+        const awayState = globalSettings?.awayMsg ? 'true' : 'false';
+        const hoursState = globalSettings?.businessHours ? 'true' : 'false';
+
+        rowsToInsert.push({ email: safeEmail, platform: safeChannel, match_type: 'global', keyword: 'welcomeMsg', content: welcomeState });
+        rowsToInsert.push({ email: safeEmail, platform: safeChannel, match_type: 'global', keyword: 'awayMsg', content: awayState });
+        rowsToInsert.push({ email: safeEmail, platform: safeChannel, match_type: 'global', keyword: 'businessHours', content: hoursState });
 
         // B. Save Keyword Rules
         if (rules && Array.isArray(rules)) {
