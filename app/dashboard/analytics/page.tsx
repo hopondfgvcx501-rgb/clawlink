@@ -7,9 +7,7 @@
  * @file app/dashboard/analytics/page.tsx
  * @description Detailed metrics, AI Copilot success rate, and traffic analysis.
  * 🚀 SECURED: Real-time DB fetch with strict cache-busting.
- * 🚀 FIXED: Added missing 'Users' import which caused the client-side fatal crash.
- * 🚀 FIXED: Aligned data keys (chartData, totalLeads) to fetch from real API response.
- * 🚀 FIXED: Implemented strict fallback for Recharts to prevent blank screen errors.
+ * 🚀 FIXED: Smart API Routing! WhatsApp uses isolated /api/whatsapp/analytics endpoint.
  * * ALL RIGHTS RESERVED. CLAWLINK INC.
  * ==============================================================================================
  */
@@ -21,7 +19,7 @@ import { motion } from "framer-motion";
 import { 
   BarChart3, TrendingUp, MessageSquare, Zap, 
   BrainCircuit, Clock, Calendar, Activity, 
-  Smartphone, Radio, Filter, Users // 🚀 FIXED: Imported missing 'Users' icon
+  Smartphone, Radio, Filter, Users 
 } from "lucide-react";
 import { 
   AreaChart, Area, XAxis, YAxis, Tooltip, 
@@ -70,10 +68,16 @@ export default function AnalyticsDashboard() {
     fetchCoreData();
   }, [session, status]);
 
+  // 🚀 SMART API ROUTER (The Magic Fix)
   const fetchChannelAnalytics = async (email: string, channel: string) => {
     setIsLoading(true);
     try {
-      const res = await fetch(`/api/analytics?email=${encodeURIComponent(email)}&channel=${channel}&t=${Date.now()}`, { cache: 'no-store' });
+      // Logic: If WhatsApp is selected, use the isolated WA API. Otherwise, use the Master API.
+      const endpoint = channel === 'whatsapp' 
+        ? `/api/whatsapp/analytics?email=${encodeURIComponent(email)}&t=${Date.now()}`
+        : `/api/analytics?email=${encodeURIComponent(email)}&channel=${channel}&t=${Date.now()}`;
+
+      const res = await fetch(endpoint, { cache: 'no-store' });
       const data = await res.json();
       if (data.success) {
         setAnalyticsData(data.data);
@@ -105,7 +109,6 @@ export default function AnalyticsDashboard() {
   const theme = getTheme();
   const btnHover = "transition-all duration-[120ms] ease-out active:scale-[0.95]";
 
-  // 🚀 Calculate real total messages dynamically from platform stats if explicitly present, else fallback to 0
   const totalMsgs = analyticsData?.platformStats?.[activeChannel] || analyticsData?.totalMessages || 0;
 
   return (
@@ -129,7 +132,6 @@ export default function AnalyticsDashboard() {
             
             <div className="flex items-center gap-3 bg-[#111114] p-1.5 rounded-xl border border-white/10">
               {['whatsapp', 'instagram', 'telegram'].map((chan) => {
-                // Only show channels they have actually configured
                 const isConfigured = 
                     (chan === 'whatsapp' && userData?.whatsapp_phone_id) ||
                     (chan === 'telegram' && userData?.telegram_token) ||
