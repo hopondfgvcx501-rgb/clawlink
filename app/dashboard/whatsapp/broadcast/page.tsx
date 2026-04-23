@@ -7,7 +7,7 @@
  * @file app/dashboard/whatsapp/broadcast/page.tsx
  * @description WhatsApp specific bulk messaging requiring Meta-approved templates.
  * 🚀 SECURED: Full DB sync. Integrated strict backend error handling.
- * 🚀 FIXED: Replaced legacy loader with premium SpinnerCounter.
+ * 🚀 ISOLATED: Pointed directly to /api/whatsapp/broadcast to prevent mix-ups.
  * * ALL RIGHTS RESERVED. CLAWLINK INC.
  * ==============================================================================================
  */
@@ -22,7 +22,7 @@ import {
   AlertCircle, LayoutTemplate, Link as LinkIcon
 } from "lucide-react";
 import TopHeader from "@/components/TopHeader";
-import SpinnerCounter from "@/components/SpinnerCounter"; // 🚀 Premium Loader Imported
+import SpinnerCounter from "@/components/SpinnerCounter"; 
 
 interface Campaign {
   id: string | number;
@@ -48,12 +48,12 @@ export default function WhatsAppBroadcast() {
       if (status === "unauthenticated") router.push("/");
   }, [status, router]);
 
-  // 🚀 FETCH REAL CAMPAIGN HISTORY FROM BACKEND
+  // 🚀 FETCH REAL CAMPAIGN HISTORY FROM ISOLATED BACKEND
   useEffect(() => {
     const fetchCampaigns = async () => {
       if (status === "authenticated" && session?.user?.email) {
         try {
-          const res = await fetch(`/api/broadcast?email=${encodeURIComponent(session.user.email)}&channel=whatsapp&t=${Date.now()}`, {
+          const res = await fetch(`/api/whatsapp/broadcast?email=${encodeURIComponent(session.user.email)}&t=${Date.now()}`, {
             headers: { 'Cache-Control': 'no-store' }
           });
           const data = await res.json();
@@ -76,44 +76,40 @@ export default function WhatsAppBroadcast() {
     setIsSending(true);
     
     try {
-      const res = await fetch("/api/broadcast", {
+      const res = await fetch("/api/whatsapp/broadcast", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
               email: session.user.email,
-              channel: "whatsapp",
               audience: audience,
               template: template,
-              name: "WhatsApp Template Broadcast"
+              name: `Promo: ${template}`
           })
       });
 
       // Strict error surfacing
-      if (!res.ok) {
-         let errorDetail = `HTTP Error ${res.status}`;
-         try {
-            const errData = await res.json();
-            errorDetail = errData.error || errorDetail;
-         } catch(e) {
-            errorDetail = await res.text();
-         }
-         throw new Error(errorDetail);
+      const responseText = await res.text();
+      let data;
+      try {
+          data = JSON.parse(responseText);
+      } catch(e) {
+          throw new Error(`Server error: ${responseText.substring(0, 50)}...`);
       }
 
-      const data = await res.json();
-      
-      if (data.success) {
-          alert("🟢 WhatsApp Broadcast successfully queued via Meta API!");
-          // Re-fetch to get the newly created campaign history
-          const refreshRes = await fetch(`/api/broadcast?email=${encodeURIComponent(session.user.email)}&channel=whatsapp`);
-          const refreshData = await refreshRes.json();
-          if (refreshData.success && refreshData.campaigns) setCampaigns(refreshData.campaigns);
-      } else {
-          alert(`Failed to queue campaign: ${data.error}`);
+      if (!res.ok || !data.success) {
+         throw new Error(data.error || `HTTP Error ${res.status}`);
       }
+      
+      alert("🟢 WhatsApp Broadcast successfully queued in Database!");
+      
+      // Re-fetch to get the newly created campaign history
+      const refreshRes = await fetch(`/api/whatsapp/broadcast?email=${encodeURIComponent(session.user.email)}&t=${Date.now()}`);
+      const refreshData = await refreshRes.json();
+      if (refreshData.success && refreshData.campaigns) setCampaigns(refreshData.campaigns);
+      
     } catch (error: any) {
         console.error("Broadcast Dispatch Error:", error);
-        alert(`Backend Error: ${error.message || "Network error while dispatching campaign."}`);
+        alert(`❌ Backend Error: ${error.message || "Network error while dispatching campaign."}`);
     } finally {
         setIsSending(false);
     }
@@ -121,7 +117,6 @@ export default function WhatsAppBroadcast() {
 
   const btnHover = "transition-all duration-[120ms] ease-out active:scale-[0.95] transform-gpu will-change-transform";
 
-  // 🚀 Premium Loader
   if (isLoading || status === "loading") {
     return <SpinnerCounter text="LOADING CAMPAIGN HISTORY..." />;
   }
@@ -189,7 +184,7 @@ export default function WhatsAppBroadcast() {
                 <button onClick={handleSendBroadcast} disabled={isSending}
                   className={`flex-1 bg-[#25D366] hover:bg-[#20bd5a] text-black py-4 rounded-xl text-[13px] font-black uppercase tracking-widest flex items-center justify-center gap-2 shadow-[0_10px_20px_rgba(37,211,102,0.2)] disabled:opacity-50 ${btnHover}`}
                 >
-                  {isSending ? <Activity className="w-5 h-5 animate-spin"/> : <Send className="w-5 h-5"/>} {isSending ? "Dispatching to Meta API..." : "Send Campaign"}
+                  {isSending ? <Activity className="w-5 h-5 animate-spin"/> : <Send className="w-5 h-5"/>} {isSending ? "Dispatching to Database..." : "Send Campaign"}
                 </button>
                 <button className={`flex-1 bg-[#1A1A1E] hover:bg-[#222228] text-white border border-white/10 py-4 rounded-xl text-[13px] font-black uppercase tracking-widest flex items-center justify-center gap-2 shadow-lg ${btnHover}`}>
                   <CalendarClock className="w-5 h-5 text-gray-400"/> Schedule
