@@ -6,9 +6,8 @@
  * ==============================================================================================
  * @file app/dashboard/team/page.tsx
  * @description Secure interface for assigning roles and inviting team members.
+ * 🚀 FIXED: Variable name mismatch (ownerEmail -> owner_email) resolved to stop 400 errors!
  * 🚀 SECURED: Replaced hardcoded mock data with real-time PostgreSQL database fetch.
- * 🚀 FIXED: Implemented actual POST request for sending invitations.
- * 🚀 FIXED: Added strict loading states using the premium SpinnerCounter.
  * * ALL RIGHTS RESERVED. CLAWLINK INC.
  * ==============================================================================================
  */
@@ -22,11 +21,11 @@ import {
   Trash2, Mail, CheckCircle2, Activity, AlertCircle, ArrowLeft
 } from "lucide-react";
 import TopHeader from "@/components/TopHeader";
-import SpinnerCounter from "@/components/SpinnerCounter"; // 🚀 Premium Loader Imported
+import SpinnerCounter from "@/components/SpinnerCounter"; 
 
 interface TeamMember {
   id: string;
-  email: string;
+  member_email: string;
   role: 'OWNER' | 'ADMIN' | 'EDITOR' | 'VIEWER';
   status: 'Active' | 'Pending';
   invitedAt: string;
@@ -48,7 +47,7 @@ export default function TeamAccess() {
     if (status === "unauthenticated") router.replace("/");
   }, [status, router]);
 
-  // 🚀 SECURE REAL-TIME FETCH: Load Actual Team Members
+  // 🚀 SECURE REAL-TIME FETCH
   const fetchTeamMembers = async () => {
     if (status === "authenticated" && session?.user?.email) {
       try {
@@ -63,17 +62,15 @@ export default function TeamAccess() {
         if (data.success && data.members) {
           setMembers(data.members);
         } else {
-          // Fallback: If no DB setup yet, ensure the owner is always visible
           setMembers([
-            { id: 'owner-id', email: session.user.email, role: 'OWNER', status: 'Active', invitedAt: new Date().toISOString() }
+            { id: 'owner-id', member_email: session.user.email, role: 'OWNER', status: 'Active', invitedAt: new Date().toISOString() }
           ]);
         }
       } catch (error) {
-        console.error("[TEAM_SYNC_ERROR] Failed to load workspace members safely", error);
-        // Fallback for UI testing if API fails
+        console.error("[TEAM_SYNC_ERROR]", error);
         if(session?.user?.email) {
             setMembers([
-                { id: 'owner-id', email: session.user.email, role: 'OWNER', status: 'Active', invitedAt: new Date().toISOString() }
+                { id: 'owner-id', member_email: session.user.email, role: 'OWNER', status: 'Active', invitedAt: new Date().toISOString() }
             ]);
         }
       } finally {
@@ -86,7 +83,7 @@ export default function TeamAccess() {
     fetchTeamMembers();
   }, [session, status]);
 
-  // 🚀 REAL DATABASE INSERT: Send Invitation
+  // 🚀 REAL DATABASE INSERT (FIXED VARIABLES)
   const handleSendInvite = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!inviteEmail.trim() || !session?.user?.email) return;
@@ -98,13 +95,12 @@ export default function TeamAccess() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          ownerEmail: session.user.email,
-          inviteEmail: inviteEmail.trim().toLowerCase(),
+          owner_email: session.user.email, // 🔥 FIXED MATCH
+          member_email: inviteEmail.trim().toLowerCase(), // 🔥 FIXED MATCH
           role: inviteRole
         })
       });
 
-      // Handle backend errors strictly
       if (!res.ok) {
          let errorDetail = `HTTP Error ${res.status}`;
          try {
@@ -119,12 +115,12 @@ export default function TeamAccess() {
       const data = await res.json();
       
       if (data.success) {
-        alert(`Invitation successfully sent to ${inviteEmail}!`);
+        alert(`🟢 Invitation successfully sent to ${inviteEmail}!`);
         setInviteEmail("");
         setInviteRole("VIEWER");
-        await fetchTeamMembers(); // Refresh the list
+        await fetchTeamMembers(); 
       } else {
-        alert(`Failed to invite member: ${data.error}`);
+        alert(`❌ Failed to invite member: ${data.error}`);
       }
     } catch (error: any) {
       console.error("Invite Dispatch Error:", error);
@@ -134,6 +130,7 @@ export default function TeamAccess() {
     }
   };
 
+  // 🚀 REAL DATABASE DELETE (FIXED VARIABLES)
   const handleRemoveMember = async (memberId: string, memberEmail: string) => {
     if(!confirm(`Are you sure you want to revoke access for ${memberEmail}?`)) return;
 
@@ -141,7 +138,10 @@ export default function TeamAccess() {
       const res = await fetch('/api/team', {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ownerEmail: session?.user?.email, memberId })
+        body: JSON.stringify({ 
+          owner_email: session?.user?.email, // 🔥 FIXED MATCH
+          id: memberId // 🔥 FIXED MATCH
+        })
       });
       const data = await res.json();
       
@@ -167,7 +167,6 @@ export default function TeamAccess() {
 
   const btnHover = "transition-all duration-[120ms] ease-out active:scale-[0.95] transform-gpu will-change-transform";
 
-  // 🚀 Secure Premium Anti-Flicker Loading State
   if (isLoading || status === "loading") {
     return <SpinnerCounter text="SYNCING WORKSPACE MEMBERS..." />;
   }
@@ -271,7 +270,7 @@ export default function TeamAccess() {
                     <tbody className="divide-y divide-white/5 font-medium">
                       {members.map((member) => (
                         <tr key={member.id} className="hover:bg-white/5 transition-colors group">
-                          <td className="p-5 pl-6 font-bold text-white">{member.email}</td>
+                          <td className="p-5 pl-6 font-bold text-white">{member.member_email}</td>
                           <td className="p-5">
                             <span className={`px-3 py-1 rounded-md text-[9px] font-black uppercase tracking-widest border ${getRoleBadgeColor(member.role)}`}>
                               {member.role}
@@ -288,7 +287,7 @@ export default function TeamAccess() {
                           </td>
                           <td className="p-5 pr-6 text-right">
                             {member.role !== 'OWNER' && (
-                              <button onClick={() => handleRemoveMember(member.id, member.email)} className={`text-gray-500 hover:text-red-400 p-2 rounded-lg hover:bg-red-500/10 transition-colors ml-auto ${btnHover}`} title="Revoke Access">
+                              <button onClick={() => handleRemoveMember(member.id, member.member_email)} className={`text-gray-500 hover:text-red-400 p-2 rounded-lg hover:bg-red-500/10 transition-colors ml-auto ${btnHover}`} title="Revoke Access">
                                 <Trash2 className="w-4 h-4"/>
                               </button>
                             )}
