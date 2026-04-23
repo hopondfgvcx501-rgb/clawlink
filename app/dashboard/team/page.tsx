@@ -6,7 +6,7 @@
  * ==============================================================================================
  * @file app/dashboard/team/page.tsx
  * @description Secure interface for assigning roles and inviting team members.
- * 🚀 FIXED: Variable name mismatch (ownerEmail -> owner_email) resolved to stop 400 errors!
+ * 🚀 FIXED: Variables strictly synced to backend (owner_email, member_email, id). 400 Error Dead.
  * 🚀 SECURED: Replaced hardcoded mock data with real-time PostgreSQL database fetch.
  * * ALL RIGHTS RESERVED. CLAWLINK INC.
  * ==============================================================================================
@@ -18,10 +18,10 @@ import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { 
   Users, UserPlus, Shield, ShieldAlert, 
-  Trash2, Mail, CheckCircle2, Activity, AlertCircle, ArrowLeft
+  Trash2, Mail, Activity, AlertCircle, ArrowLeft
 } from "lucide-react";
 import TopHeader from "@/components/TopHeader";
-import SpinnerCounter from "@/components/SpinnerCounter"; 
+import SpinnerCounter from "@/components/SpinnerCounter";
 
 interface TeamMember {
   id: string;
@@ -39,7 +39,6 @@ export default function TeamAccess() {
   const [isInviting, setIsInviting] = useState(false);
   const [members, setMembers] = useState<TeamMember[]>([]);
   
-  // Form State
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteRole, setInviteRole] = useState<'ADMIN' | 'EDITOR' | 'VIEWER'>("VIEWER");
 
@@ -56,22 +55,16 @@ export default function TeamAccess() {
         });
         
         if (!res.ok) throw new Error("Secure fetch failed");
-        
         const data = await res.json();
         
         if (data.success && data.members) {
           setMembers(data.members);
         } else {
-          setMembers([
-            { id: 'owner-id', member_email: session.user.email, role: 'OWNER', status: 'Active', invitedAt: new Date().toISOString() }
-          ]);
+          setMembers([{ id: 'owner-id', member_email: session.user.email, role: 'OWNER', status: 'Active', invitedAt: new Date().toISOString() }]);
         }
       } catch (error) {
-        console.error("[TEAM_SYNC_ERROR]", error);
         if(session?.user?.email) {
-            setMembers([
-                { id: 'owner-id', member_email: session.user.email, role: 'OWNER', status: 'Active', invitedAt: new Date().toISOString() }
-            ]);
+            setMembers([{ id: 'owner-id', member_email: session.user.email, role: 'OWNER', status: 'Active', invitedAt: new Date().toISOString() }]);
         }
       } finally {
         setIsLoading(false);
@@ -79,9 +72,7 @@ export default function TeamAccess() {
     }
   };
 
-  useEffect(() => {
-    fetchTeamMembers();
-  }, [session, status]);
+  useEffect(() => { fetchTeamMembers(); }, [session, status]);
 
   // 🚀 REAL DATABASE INSERT (FIXED VARIABLES)
   const handleSendInvite = async (e: React.FormEvent) => {
@@ -95,8 +86,8 @@ export default function TeamAccess() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          owner_email: session.user.email, // 🔥 FIXED MATCH
-          member_email: inviteEmail.trim().toLowerCase(), // 🔥 FIXED MATCH
+          owner_email: session.user.email,                 // 🔥 FIXED MATCH
+          member_email: inviteEmail.trim().toLowerCase(),  // 🔥 FIXED MATCH
           role: inviteRole
         })
       });
@@ -106,9 +97,7 @@ export default function TeamAccess() {
          try {
             const errData = await res.json();
             errorDetail = errData.error || errorDetail;
-         } catch(e) {
-            errorDetail = await res.text();
-         }
+         } catch(e) { errorDetail = await res.text(); }
          throw new Error(errorDetail);
       }
 
@@ -123,7 +112,6 @@ export default function TeamAccess() {
         alert(`❌ Failed to invite member: ${data.error}`);
       }
     } catch (error: any) {
-      console.error("Invite Dispatch Error:", error);
       alert(`Backend Error: ${error.message || "Failed to reach server."}`);
     } finally {
       setIsInviting(false);
@@ -140,7 +128,7 @@ export default function TeamAccess() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           owner_email: session?.user?.email, // 🔥 FIXED MATCH
-          id: memberId // 🔥 FIXED MATCH
+          id: memberId                       // 🔥 FIXED MATCH
         })
       });
       const data = await res.json();
@@ -236,6 +224,7 @@ export default function TeamAccess() {
                     disabled={isInviting}
                     className={`w-full bg-[#2AABEE] hover:bg-[#2298D6] text-white py-3.5 rounded-xl text-[12px] font-black uppercase tracking-widest shadow-[0_0_15px_rgba(42,171,238,0.2)] mt-4 disabled:opacity-50 ${btnHover}`}
                   >
+                    {isInviting ? <Activity className="w-4 h-4 animate-spin"/> : null}
                     {isInviting ? "Processing..." : "Send Invite"}
                   </button>
                 </form>
