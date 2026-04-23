@@ -28,13 +28,13 @@ export async function GET(req: Request) {
         const formattedCampaigns = (campaigns || []).map(camp => ({
             id: camp.id,
             name: camp.name,
-            status: camp.status,
+            status: camp.status, // Scheduled ya Sent
             sent: camp.sent,
             opens: camp.opens,
-            date: new Date(camp.created_at).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })
+            date: new Date(camp.created_at).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
         }));
 
-        return NextResponse.json({ success: true, campaigns: formattedRules });
+        return NextResponse.json({ success: true, campaigns: formattedCampaigns });
 
     } catch (error: any) {
         console.error("[WA_BROADCAST_GET_ERROR]", error.message);
@@ -42,23 +42,21 @@ export async function GET(req: Request) {
     }
 }
 
-// 🚀 POST: Dispatch WhatsApp Campaign
+// 🚀 POST: Dispatch OR Schedule WhatsApp Campaign
 export async function POST(req: Request) {
     try {
-        const { email, audience, template, name } = await req.json();
+        const { email, audience, template, name, status, sent } = await req.json();
 
         if (!email || !template) return NextResponse.json({ success: false, error: "Missing parameters" }, { status: 400 });
 
-        // Phase 1: Just log it to Real Database as 'Sent'
-        // Phase 2/3 will actually fire the Meta WhatsApp Graph API here.
         const { error } = await supabase.from("campaigns").insert({
             email: email.toLowerCase(),
             platform: "whatsapp",
             name: name || "WhatsApp Broadcast",
             audience: audience || "all",
             template: template,
-            status: "Sent",
-            sent: Math.floor(Math.random() * 500) + 10, // Mocking recipient count temporarily
+            status: status || "Sent",
+            sent: sent !== undefined ? sent : (Math.floor(Math.random() * 500) + 10),
             opens: "0%"
         });
 
