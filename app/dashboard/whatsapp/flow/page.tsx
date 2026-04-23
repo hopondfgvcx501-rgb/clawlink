@@ -6,9 +6,9 @@
  * ==============================================================================================
  * @file app/dashboard/whatsapp/flow/page.tsx
  * @description Enterprise-grade Visual Drag & Drop Builder for WhatsApp Interactive Messages.
+ * 🚀 FIXED: Dynamic node states (+ Add List Item/Buttons) now 100% functional.
+ * 🚀 FIXED: Inputs inside nodes now securely bind to DB payload on change.
  * 🚀 SECURED: Compiles visual graph to JSON payload for real database saving.
- * 🚀 FIXED: Wired up Simulate and Clear buttons.
- * 🚀 FIXED: Bulletproof error handling to prevent body stream crashes.
  * * ALL RIGHTS RESERVED. CLAWLINK INC.
  * ==============================================================================================
  */
@@ -25,14 +25,15 @@ import ReactFlow, {
   Handle,
   Position,
   Connection,
-  Edge
+  Edge,
+  useReactFlow
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { 
   Zap, Save, Activity, List, MousePointer, 
-  MessageSquare, Trash2, Settings2, Play
+  MessageSquare, Trash2, Settings2, Play, Plus, X
 } from "lucide-react";
 import TopHeader from "@/components/TopHeader";
 import SpinnerCounter from "@/components/SpinnerCounter"; 
@@ -41,78 +42,150 @@ import SpinnerCounter from "@/components/SpinnerCounter";
 // 🟢 CUSTOM ENTERPRISE NODE COMPONENTS
 // ==========================================
 
-const TriggerNode = ({ data, isConnectable }: any) => (
-  <div className="bg-[#111114] border border-[#25D366]/50 shadow-[0_0_20px_rgba(37,211,102,0.15)] rounded-xl w-[280px] overflow-hidden group">
-    <div className="bg-[#25D366]/10 px-4 py-3 flex items-center justify-between border-b border-[#25D366]/20">
-      <div className="flex items-center gap-2">
-        <Zap className="w-4 h-4 text-[#25D366]" />
-        <span className="text-[11px] font-black uppercase tracking-widest text-[#25D366]">Entry Trigger</span>
-      </div>
-      <Settings2 className="w-4 h-4 text-gray-500 hover:text-white cursor-pointer transition-colors" />
-    </div>
-    <div className="p-5">
-      <input 
-        type="text" 
-        defaultValue={data.label} 
-        placeholder="Enter trigger keyword..."
-        className="w-full bg-black/40 border border-white/10 rounded-lg p-2 text-sm text-white font-bold outline-none focus:border-[#25D366]/50 transition-colors"
-      />
-      <p className="text-[10px] text-gray-500 mt-2 font-mono">Flow initiates when this matches.</p>
-    </div>
-    <Handle type="source" position={Position.Right} isConnectable={isConnectable} className="w-4 h-4 bg-[#25D366] border-4 border-[#111114] right-[-8px]" />
-  </div>
-);
+const TriggerNode = ({ id, data, isConnectable }: any) => {
+  const { setNodes } = useReactFlow();
+  
+  const handleChange = (e: any) => {
+    setNodes((nds) => nds.map((n) => n.id === id ? { ...n, data: { ...n.data, label: e.target.value } } : n));
+  };
 
-const InteractiveNode = ({ data, isConnectable }: any) => (
-  <div className="bg-[#111114] border border-blue-500/30 shadow-[0_5px_25px_rgba(0,0,0,0.4)] rounded-xl w-[280px] overflow-hidden group hover:border-blue-500/60 transition-colors">
-    <Handle type="target" position={Position.Left} isConnectable={isConnectable} className="w-4 h-4 bg-blue-500 border-4 border-[#111114] left-[-8px]" />
-    
-    <div className="bg-blue-500/10 px-4 py-3 flex justify-between items-center border-b border-blue-500/20">
-      <div className="flex items-center gap-2">
-        {data.type === 'button' ? <MousePointer className="w-4 h-4 text-blue-400" /> : <List className="w-4 h-4 text-blue-400" />}
-        <span className="text-[11px] font-black uppercase tracking-widest text-blue-400">
-          {data.type === 'button' ? "Action Buttons" : "Menu List"}
-        </span>
+  return (
+    <div className="bg-[#111114] border border-[#25D366]/50 shadow-[0_0_20px_rgba(37,211,102,0.15)] rounded-xl w-[280px] overflow-hidden group">
+      <div className="bg-[#25D366]/10 px-4 py-3 flex items-center justify-between border-b border-[#25D366]/20">
+        <div className="flex items-center gap-2">
+          <Zap className="w-4 h-4 text-[#25D366]" />
+          <span className="text-[11px] font-black uppercase tracking-widest text-[#25D366]">Entry Trigger</span>
+        </div>
+        <Settings2 className="w-4 h-4 text-gray-500 hover:text-white cursor-pointer transition-colors" />
       </div>
-      <Settings2 className="w-4 h-4 text-gray-500 hover:text-white cursor-pointer transition-colors" />
-    </div>
-    
-    <div className="p-5 space-y-3">
-      <textarea 
-        rows={2}
-        defaultValue={data.content || ""}
-        placeholder="Type your message here..."
-        className="w-full bg-black/40 border border-white/10 rounded-lg p-2 text-sm text-white outline-none focus:border-blue-500/50 transition-colors resize-none custom-scrollbar"
-      />
-      <div className="bg-white/5 border border-white/10 rounded-lg p-2 flex items-center justify-center border-dashed cursor-pointer hover:bg-white/10 transition-colors">
-         <span className="text-[11px] font-bold text-gray-400">+ Add {data.type === 'button' ? "Button" : "List Item"}</span>
+      <div className="p-5">
+        <input 
+          type="text" 
+          value={data.label || ""} 
+          onChange={handleChange}
+          placeholder="Enter trigger keyword..."
+          className="nodrag w-full bg-black/40 border border-white/10 rounded-lg p-2 text-sm text-white font-bold outline-none focus:border-[#25D366]/50 transition-colors"
+        />
+        <p className="text-[10px] text-gray-500 mt-2 font-mono">Flow initiates when this matches.</p>
       </div>
+      <Handle type="source" position={Position.Right} isConnectable={isConnectable} className="w-4 h-4 bg-[#25D366] border-4 border-[#111114] right-[-8px]" />
     </div>
+  );
+};
 
-    <Handle type="source" position={Position.Right} isConnectable={isConnectable} className="w-4 h-4 bg-gray-400 border-4 border-[#111114] right-[-8px]" />
-  </div>
-);
+const InteractiveNode = ({ id, data, isConnectable }: any) => {
+  const { setNodes } = useReactFlow();
+  const isButton = data.type === 'button';
+  const items = data.items || [];
 
-const TextNode = ({ data, isConnectable }: any) => (
-  <div className="bg-[#111114] border border-white/10 shadow-lg rounded-xl w-[280px] overflow-hidden group hover:border-white/30 transition-colors">
-    <Handle type="target" position={Position.Left} isConnectable={isConnectable} className="w-4 h-4 bg-gray-400 border-4 border-[#111114] left-[-8px]" />
-    <div className="bg-white/5 px-4 py-3 flex justify-between items-center border-b border-white/10">
-      <div className="flex items-center gap-2">
-        <MessageSquare className="w-4 h-4 text-gray-300" />
-        <span className="text-[11px] font-black uppercase tracking-widest text-gray-300">Standard Text</span>
+  const handleContentChange = (e: any) => {
+    setNodes((nds) => nds.map((n) => n.id === id ? { ...n, data: { ...n.data, content: e.target.value } } : n));
+  };
+
+  const handleAddItem = () => {
+    const max = isButton ? 3 : 10;
+    if (items.length >= max) return alert(`Maximum ${max} items allowed for this element!`);
+    setNodes((nds) => nds.map((n) => n.id === id ? { ...n, data: { ...n.data, items: [...items, { id: Date.now().toString(), text: '' }] } } : n));
+  };
+
+  const updateItem = (itemId: string, text: string) => {
+    setNodes((nds) => nds.map((n) => {
+      if (n.id === id) {
+        const newItems = (n.data.items || []).map((i: any) => i.id === itemId ? { ...i, text } : i);
+        return { ...n, data: { ...n.data, items: newItems } };
+      }
+      return n;
+    }));
+  };
+
+  const deleteItem = (itemId: string) => {
+    setNodes((nds) => nds.map((n) => {
+      if (n.id === id) {
+        const newItems = (n.data.items || []).filter((i: any) => i.id !== itemId);
+        return { ...n, data: { ...n.data, items: newItems } };
+      }
+      return n;
+    }));
+  };
+
+  return (
+    <div className="bg-[#111114] border border-blue-500/30 shadow-[0_5px_25px_rgba(0,0,0,0.4)] rounded-xl w-[280px] overflow-hidden group hover:border-blue-500/60 transition-colors">
+      <Handle type="target" position={Position.Left} isConnectable={isConnectable} className="w-4 h-4 bg-blue-500 border-4 border-[#111114] left-[-8px]" />
+      
+      <div className="bg-blue-500/10 px-4 py-3 flex justify-between items-center border-b border-blue-500/20">
+        <div className="flex items-center gap-2">
+          {isButton ? <MousePointer className="w-4 h-4 text-blue-400" /> : <List className="w-4 h-4 text-blue-400" />}
+          <span className="text-[11px] font-black uppercase tracking-widest text-blue-400">
+            {isButton ? "Action Buttons" : "Menu List"}
+          </span>
+        </div>
+        <Settings2 className="w-4 h-4 text-gray-500 hover:text-white cursor-pointer transition-colors" />
       </div>
+      
+      <div className="p-4 space-y-3">
+        <textarea 
+          rows={2}
+          value={data.content || ""}
+          onChange={handleContentChange}
+          placeholder="Type your message here..."
+          className="nodrag w-full bg-black/40 border border-white/10 rounded-lg p-2 text-sm text-white outline-none focus:border-blue-500/50 transition-colors resize-none custom-scrollbar"
+        />
+        
+        {/* Dynamic Items List */}
+        <div className="space-y-2">
+          {items.map((item: any) => (
+            <div key={item.id} className="flex items-center gap-2">
+              <input 
+                type="text" 
+                value={item.text} 
+                onChange={(e) => updateItem(item.id, e.target.value)}
+                placeholder={isButton ? "Button Text..." : "List Option..."} 
+                className="nodrag flex-1 bg-[#0A0A0D] border border-white/10 rounded p-1.5 text-[12px] text-white outline-none focus:border-blue-500/50"
+              />
+              <button onClick={() => deleteItem(item.id)} className="p-1 hover:bg-red-500/20 text-gray-500 hover:text-red-400 rounded"><X className="w-3.5 h-3.5"/></button>
+            </div>
+          ))}
+        </div>
+
+        <div onClick={handleAddItem} className="bg-white/5 border border-white/10 rounded-lg p-2 flex items-center justify-center border-dashed cursor-pointer hover:bg-white/10 transition-colors">
+           <span className="text-[11px] font-bold text-gray-400 flex items-center gap-1"><Plus className="w-3 h-3"/> Add {isButton ? "Button" : "List Item"}</span>
+        </div>
+      </div>
+
+      <Handle type="source" position={Position.Right} isConnectable={isConnectable} className="w-4 h-4 bg-gray-400 border-4 border-[#111114] right-[-8px]" />
     </div>
-    <div className="p-5">
-      <textarea 
-        rows={3}
-        defaultValue={data.content || ""}
-        placeholder="Text message..."
-        className="w-full bg-black/40 border border-white/10 rounded-lg p-2 text-sm text-white outline-none focus:border-white/30 transition-colors resize-none custom-scrollbar"
-      />
+  );
+};
+
+const TextNode = ({ id, data, isConnectable }: any) => {
+  const { setNodes } = useReactFlow();
+  
+  const handleChange = (e: any) => {
+    setNodes((nds) => nds.map((n) => n.id === id ? { ...n, data: { ...n.data, content: e.target.value } } : n));
+  };
+
+  return (
+    <div className="bg-[#111114] border border-white/10 shadow-lg rounded-xl w-[280px] overflow-hidden group hover:border-white/30 transition-colors">
+      <Handle type="target" position={Position.Left} isConnectable={isConnectable} className="w-4 h-4 bg-gray-400 border-4 border-[#111114] left-[-8px]" />
+      <div className="bg-white/5 px-4 py-3 flex justify-between items-center border-b border-white/10">
+        <div className="flex items-center gap-2">
+          <MessageSquare className="w-4 h-4 text-gray-300" />
+          <span className="text-[11px] font-black uppercase tracking-widest text-gray-300">Standard Text</span>
+        </div>
+      </div>
+      <div className="p-5">
+        <textarea 
+          rows={3}
+          value={data.content || ""}
+          onChange={handleChange}
+          placeholder="Text message..."
+          className="nodrag w-full bg-black/40 border border-white/10 rounded-lg p-2 text-sm text-white outline-none focus:border-white/30 transition-colors resize-none custom-scrollbar"
+        />
+      </div>
+      <Handle type="source" position={Position.Right} isConnectable={isConnectable} className="w-4 h-4 bg-gray-400 border-4 border-[#111114] right-[-8px]" />
     </div>
-    <Handle type="source" position={Position.Right} isConnectable={isConnectable} className="w-4 h-4 bg-gray-400 border-4 border-[#111114] right-[-8px]" />
-  </div>
-);
+  );
+};
 
 const nodeTypes = { 
   triggerNode: TriggerNode, 
@@ -132,7 +205,6 @@ export default function WhatsAppFlowBuilder() {
   const router = useRouter();
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
   
-  // Initial Canvas State
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const [reactFlowInstance, setReactFlowInstance] = useState<any>(null);
@@ -207,14 +279,14 @@ export default function WhatsAppFlowBuilder() {
         id: getId(),
         type,
         position,
-        data: { type: nodeActionType, content: '' },
+        data: { type: nodeActionType, content: '', items: [] },
       };
 
       setNodes((nds) => nds.concat(newNode));
     }, [reactFlowInstance, setNodes]
   );
 
-  // 🚀 SECURE DB SAVE (Fixed Stream Crash)
+  // 🚀 SECURE DB SAVE
   const handleSaveFlow = async () => {
       if (!session?.user?.email || !reactFlowInstance) return;
       setIsSaving(true);
@@ -232,7 +304,6 @@ export default function WhatsAppFlowBuilder() {
           body: JSON.stringify(payload)
         });
         
-        // 🛡️ Read text exactly ONCE to prevent stream read crash
         const responseText = await res.text();
         
         if (!res.ok) {
@@ -259,7 +330,6 @@ export default function WhatsAppFlowBuilder() {
       }
   };
 
-  // 🚀 FIXED: Clear button logic
   const handleClearCanvas = () => {
     if(confirm("Are you sure you want to clear the canvas?")) {
       setNodes([{ id: 'trigger-1', type: 'triggerNode', position: { x: 100, y: 250 }, data: { label: 'START' } }]);
@@ -267,7 +337,6 @@ export default function WhatsAppFlowBuilder() {
     }
   };
 
-  // 🚀 FIXED: Simulate button logic
   const handleSimulate = () => {
       alert("▶️ Flow Simulation Engine initializing... (This will run your graph logic in a preview modal in Phase 3)");
   };
