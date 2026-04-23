@@ -26,6 +26,7 @@ async function callOpenAI(models: string[], systemPrompt: string, history: any[]
     { role: "user", content: prompt }
   ];
 
+  // 🔥 LOOP: Agar pehla model fail hua, toh usi provider ka sasta model try karega!
   for (const model of models) {
     try {
       console.log(`🟡 [OMNI-NEXUS] Trying OpenAI Model: ${model}`);
@@ -146,15 +147,16 @@ export async function POST(req: Request) {
 
     if (!prompt) return NextResponse.json({ error: "Prompt payload is missing" }, { status: 400 });
 
-    // 2026 LATEST MODELS CONSTANTS
-    const geminiModelsCheap = ["gemini-3.1-flash-lite"];
-    const geminiModelsPremium = ["gemini-3.1-pro", "gemini-3.1-flash"];
+    // 🔥 2026 LATEST MODELS CONSTANTS (Synced with your exact screenshots to save costs!)
+    // Arranged from Expensive -> Cheap for Premium, and Cheap -> Cheapest for Budget
+    const geminiModelsCheap = ["gemini-2.5-flash-lite", "gemini-2.0-flash"]; // $0.10
+    const geminiModelsPremium = ["gemini-3-pro", "gemini-3-flash", "gemini-2.5-pro"]; // $2.00 -> $0.50 -> $1.25 fallback
     
-    const openAIModelsCheap = ["gpt-4.1-nano"];
-    const openAIModelsPremium = ["gpt-5.4", "gpt-5.2"];
+    const openAIModelsCheap = ["gpt-4.1-nano", "gpt-4o-mini", "gpt-5-nano"]; // $0.10 -> $0.15 -> $0.20
+    const openAIModelsPremium = ["gpt-5.4", "gpt-5.4-mini", "gpt-5"]; // $2.50 -> $0.75 fallback
     
-    const claudeModelsCheap = ["claude-3-haiku"];
-    const claudeModelsPremium = ["claude-opus-4.6", "claude-sonnet-4.6"];
+    const claudeModelsCheap = ["claude-haiku-4.5"]; // $1.00
+    const claudeModelsPremium = ["claude-opus-4.6", "claude-sonnet-4.6"]; // $5.00 -> $3.00 fallback
 
     const isComplexQuery = userWords > 150;
 
