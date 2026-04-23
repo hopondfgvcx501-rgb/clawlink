@@ -5,10 +5,10 @@
  * CLAWLINK ENTERPRISE: WHATSAPP CRM & CONTACTS
  * ==============================================================================================
  * @file app/dashboard/whatsapp/contacts/page.tsx
+ * 🚀 FIXED: Added missing 'Save' icon import that caused the client-side crash on Modal open.
  * 🚀 SECURED: Pointed to isolated API /api/whatsapp/crm.
  * 🚀 UNLOCKED: Real CSV Export compiled directly from DB.
  * 🚀 UNLOCKED: Dynamic 'Add Contact' Modal saving directly to DB.
- * 🚀 UNLOCKED: Interactive Dropdown Filters.
  * * ALL RIGHTS RESERVED. CLAWLINK INC.
  * ==============================================================================================
  */
@@ -20,8 +20,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { 
   Users, Search, Download, UserPlus, 
   MessageCircle, MoreVertical, Filter, Activity,
-  Phone, Calendar, Tag as TagIcon, X, Check, ChevronDown
-} from "lucide-react";
+  Phone, Calendar, Tag as TagIcon, X, Check, ChevronDown, Save 
+} from "lucide-react"; // 🔥 YAHAN 'Save' MISSING THA! FIX KAR DIYA.
 import TopHeader from "@/components/TopHeader";
 import SpinnerCounter from "@/components/SpinnerCounter";
 
@@ -58,7 +58,6 @@ export default function WhatsAppContacts() {
   const fetchContacts = async () => {
     if (status === "authenticated" && session?.user?.email) {
       try {
-        // 🚀 Pointed to new isolated API
         const res = await fetch(`/api/whatsapp/crm?email=${encodeURIComponent(session.user.email)}&t=${Date.now()}`, {
            headers: { 'Cache-Control': 'no-store' }
         });
@@ -78,14 +77,12 @@ export default function WhatsAppContacts() {
     fetchContacts();
   }, [session, status]);
 
-  // 🚀 ZINDA: Real filtering engine
   const filteredContacts = contacts.filter(c => {
     const matchesSearch = c.name.toLowerCase().includes(searchQuery.toLowerCase()) || c.phone.includes(searchQuery);
     const matchesStatus = filterStatus === "All" || c.status === filterStatus;
     return matchesSearch && matchesStatus;
   });
 
-  // 🚀 ZINDA: Real CSV Compiler
   const handleExportCSV = () => {
     if (filteredContacts.length === 0) return alert("⚠️ No data available to export!");
     alert("🟢 Compiling CSV data. Download will start shortly.");
@@ -120,7 +117,6 @@ export default function WhatsAppContacts() {
     }, 500);
   };
 
-  // 🚀 ZINDA: Add Contact to Real DB
   const handleAddContact = async () => {
     if (!newContact.phone) return alert("⚠️ Phone number is required!");
     setIsSaving(true);
@@ -143,7 +139,7 @@ export default function WhatsAppContacts() {
             alert("🟢 Contact successfully added to Database!");
             setIsAddModalOpen(false);
             setNewContact({ name: "", phone: "", status: "Lead" });
-            fetchContacts(); // Reload list
+            fetchContacts(); 
         } else {
             alert(`Failed to add: ${data.error}`);
         }
@@ -200,7 +196,6 @@ export default function WhatsAppContacts() {
                 />
               </div>
 
-              {/* 🚀 ZINDA DROPDOWN FILTER */}
               <div className="relative z-10">
                 <button 
                   onClick={() => setIsFilterOpen(!isFilterOpen)}
