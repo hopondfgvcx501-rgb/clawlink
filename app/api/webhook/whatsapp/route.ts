@@ -132,7 +132,6 @@ async function callClaude(model: string, systemPrompt: string, history: any[], u
     if (lastRole === "user") mergedMessages[mergedMessages.length - 1].content += "\n" + userText;
     else mergedMessages.push({ role: "user", content: userText });
 
-    // Anthropic strictly requires first message to be 'user'
     if (mergedMessages.length > 0 && mergedMessages[0].role !== "user") mergedMessages.shift();
 
     const res = await fetch("https://api.anthropic.com/v1/messages", {
@@ -187,7 +186,7 @@ export async function POST(req: Request) {
         if (now - lastMessageTime < COOLDOWN_MS) return NextResponse.json({ success: true });
         rateLimitMap.set(chatId, now);
 
-        // 🔥 CRITICAL FIX: Replaced .single() with .limit(1).maybeSingle() to prevent duplicate row crashes
+        // 🔥 CRITICAL FIX: Prevent duplicate row crashes
         const { data: config, error: configErr } = await supabase
             .from("user_configs")
             .select("*")
@@ -195,7 +194,6 @@ export async function POST(req: Request) {
             .limit(1)
             .maybeSingle();
 
-        // 🔍 DEEP X-RAY: Detect exact failure reason
         if (configErr) {
             console.error(`[X-RAY_DB_CRASH] Supabase Error: ${configErr.message} | Details: ${configErr.details}`);
             return NextResponse.json({ success: true });
@@ -213,6 +211,36 @@ export async function POST(req: Request) {
         const configId = config.id; 
         const userEmail = config.email;
 
+        // ==========================================
+        // 🛑 THE ADMIN HANDOVER CHECK (PAUSE AI)
+        // ==========================================
+        // Save the incoming message from the user first
+        await supabase.from("chat_history").insert({ 
+            email: userEmail, platform: "whatsapp", platform_chat_id: chatId, customer_name: customerName, sender_type: "user", message: userText 
+        });
+
+        // 🚀 We check if there are ANY recent messages from 'admin' for this user
+        // If an admin sent a message in the last 15 minutes, we pause AI auto-replies.
+        const fifteenMinutesAgo = new Date();
+        fifteenMinutesAgo.setMinutes(fifteenMinutesAgo.getMinutes() - 15);
+
+        const { data: adminIntervention } = await supabase
+            .from("chat_history")
+            .select("id")
+            .eq("email", userEmail)
+            .eq("platform_chat_id", chatId)
+            .eq("sender_type", "admin")
+            .gte("created_at", fifteenMinutesAgo.toISOString())
+            .limit(1);
+
+        if (adminIntervention && adminIntervention.length > 0) {
+            console.log(`[AI_PAUSED] Manual intervention detected for chat ${chatId}. Bot will not reply.`);
+            // Return 200 to Meta so they know we got the message, but we do NOT fire the AI.
+            return NextResponse.json({ success: true });
+        }
+
+
+        // System Prompt
         const systemPrompt = config.system_prompt_whatsapp || config.system_prompt || "You are a helpful AI assistant on WhatsApp.";
         
         // 🚀 SMART PROVIDER DETECTION (Omni vs Normal)
@@ -287,10 +315,6 @@ export async function POST(req: Request) {
 
         const fullSystemContext = `${ENTERPRISE_GUARDRAIL}\n\nSystem Instructions: ${systemPrompt}\n\nCompany Knowledge Base:\n${customKnowledge ? customKnowledge : "None."}`;
         
-        await supabase.from("chat_history").insert({ 
-            email: userEmail, platform: "whatsapp", platform_chat_id: chatId, customer_name: customerName, sender_type: "user", message: userText 
-        });
-
         // =========================================================================
         // 8. 🧠 CLAWLINK 2026 DIRECT EXECUTION & SMART OMNI ROUTER
         // =========================================================================
@@ -317,7 +341,6 @@ export async function POST(req: Request) {
 
         // 🚀 THE DECISION MATRIX (Omni vs Normal Models)
         if (provider === "omni") {
-            // Omni Logic: Best performance across ALL providers based on query complexity
             if (usageRatio >= 80) {
                 targetProvider = "google"; targetModel = GEMINI_CHEAP; 
             } else if (usageRatio >= 60) {
@@ -328,7 +351,6 @@ export async function POST(req: Request) {
                 else { targetProvider = "anthropic"; targetModel = CLAUDE_PREMIUM; } 
             }
         } else {
-            // Normal Logic: Strict adherence to the user's selected provider
             if (usageRatio >= 85) {
                 if (provider === "openai") targetModel = GPT_CHEAP;
                 else if (provider === "anthropic") targetModel = CLAUDE_CHEAP;
