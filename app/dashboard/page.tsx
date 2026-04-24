@@ -9,6 +9,7 @@
  * @description The central hub for users to monitor their AI Agents.
  * FIXED: Removed redundant z-index and motion wrapper to let the custom SpinnerCounter handle its own layout.
  * FIXED: Added safe fallback for Recharts to prevent client-side application crashes when data is empty.
+ * FIXED: Explicit DB token checking for instagram to ensure live status rendering.
  * * ALL RIGHTS RESERVED. CLAWLINK INC.
  * ==============================================================================================
  */
@@ -499,9 +500,10 @@ export default function Dashboard() {
 
   const exactSelectedChannel = (userData?.selected_channel || "telegram").toLowerCase();
   
+  // 🚀 FIXED: PROPER TOKEN VERIFICATION CHECK (Uses deploy-step tokens)
   const hasTgToken = !!userData?.telegram_token && userData?.telegram_token !== "";
-  const hasWaId = !!userData?.whatsapp_phone_id && userData?.whatsapp_phone_id !== "";
-  const hasIgId = !!userData?.instagram_account_id && userData?.instagram_account_id !== "";
+  const hasWaId = (!!userData?.whatsapp_phone_id && userData?.whatsapp_phone_id !== "") || (!!userData?.whatsapp_token && userData?.whatsapp_token !== "");
+  const hasIgId = (!!userData?.instagram_account_id && userData?.instagram_account_id !== "") || (!!userData?.instagram_token && userData?.instagram_token !== "");
 
   const getPrimaryLiveChannel = () => {
       if (exactSelectedChannel === "telegram") {
@@ -962,10 +964,8 @@ export default function Dashboard() {
               </div>
             )}
           </motion.div>
-
         </div>
 
-        {/* BILLING & INVOICES */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 1.1, ease: "easeOut" }} className="bg-[#111113] border border-white/5 rounded-[1.5rem] overflow-hidden shadow-2xl">
           <div className="p-6 md:p-8 border-b border-white/5 flex items-center justify-between bg-[#0A0A0C]">
             <div className="flex items-center gap-3">
