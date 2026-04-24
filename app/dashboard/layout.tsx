@@ -11,6 +11,7 @@
  * 🚀 SECURED: Strict null checks and anti-flicker UI for session loading.
  * 🚀 FIXED: Enforced strict full-name channel rendering (WhatsApp, Instagram, Telegram).
  * 🚀 FIXED: Replaced legacy <Activity /> icon with the new premium <SpinnerCounter />.
+ * 🚀 CLEANED: Removed ALL references to the deleted /dashboard/settings page. 
  * * ALL RIGHTS RESERVED. CLAWLINK INC.
  * ==============================================================================================
  */
@@ -20,7 +21,7 @@ import { useState, useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
-  LayoutDashboard, Inbox, BarChart3, Settings, LogOut, 
+  LayoutDashboard, Inbox, BarChart3, LogOut, 
   MessageCircle, Bot, Workflow, Megaphone, Users, Tag, 
   Sparkles, MessageSquareQuote, UsersRound, Folder, 
   ChevronDown, AlertCircle, Menu, X, Cpu, BrainCircuit
@@ -71,6 +72,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           const data = await res.json();
           
           if (data.success && data.data) {
+            // 🔥 CRITICAL FIX: We explicitly check for tokens from the DB here.
+            // Since the user connects via popup *before* payment, the tokens should exist.
             setActiveChannels({
               telegram: !!data.data.telegram_token,    
               whatsapp: !!data.data.whatsapp_phone_id || !!data.data.whatsapp_token,    
@@ -283,11 +286,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <div className="bg-[#111114] border border-dashed border-white/10 rounded-xl p-4 text-center mx-2 mt-2">
                 <AlertCircle className="w-5 h-5 text-orange-500/50 mx-auto mb-2" />
                 <p className="text-[11px] text-gray-400 leading-relaxed mb-3">No bots deployed yet.</p>
+                {/* 🚀 Changed to not refer to settings, but tell them to deploy */}
                 <button 
-                  onClick={() => router.push('/dashboard/settings')} 
+                  onClick={() => alert("Please head to the homepage and deploy a bot.")} 
                   className="bg-orange-500/10 hover:bg-orange-500/20 text-orange-400 border border-orange-500/20 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-colors w-full"
                 >
-                  Configure Keys
+                  Pending Deploy
                 </button>
               </div>
             )}
@@ -296,7 +300,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
         {/* User Profile Footer */}
         <div className="p-4 border-t border-white/5 shrink-0 bg-[#0A0A0D]">
-          <div className="flex items-center justify-between p-2 rounded-xl hover:bg-white/5 cursor-pointer transition-colors" onClick={() => router.push('/dashboard/settings')}>
+          <div className="flex items-center justify-between p-2 rounded-xl hover:bg-white/5 cursor-default transition-colors">
             <div className="flex items-center gap-3 overflow-hidden">
               <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-orange-500 to-pink-500 flex items-center justify-center text-white font-bold text-xs shrink-0">
                 {session?.user?.name?.charAt(0) || "C"}
