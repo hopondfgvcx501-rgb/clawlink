@@ -7,9 +7,7 @@
  * @file app/dashboard/page.tsx
  * @version 12.1.3 (Ultra-Smooth Loader Clean Up)
  * @description The central hub for users to monitor their AI Agents.
- * FIXED: Removed redundant z-index and motion wrapper to let the custom SpinnerCounter handle its own layout.
- * FIXED: Added safe fallback for Recharts to prevent client-side application crashes when data is empty.
- * FIXED: Explicit DB token checking for instagram to ensure live status rendering.
+ * FIXED: Unified and strict DB token checking for all three channels to ensure consistent Live status.
  * * ALL RIGHTS RESERVED. CLAWLINK INC.
  * ==============================================================================================
  */
@@ -500,10 +498,10 @@ export default function Dashboard() {
 
   const exactSelectedChannel = (userData?.selected_channel || "telegram").toLowerCase();
   
-  // 🚀 FIXED: PROPER TOKEN VERIFICATION CHECK (Uses deploy-step tokens)
+  // 🔥 UNIFIED LOGIC: Check tokens strictly to dictate if a channel is completely deployed
   const hasTgToken = !!userData?.telegram_token && userData?.telegram_token !== "";
-  const hasWaId = (!!userData?.whatsapp_phone_id && userData?.whatsapp_phone_id !== "") || (!!userData?.whatsapp_token && userData?.whatsapp_token !== "");
-  const hasIgId = (!!userData?.instagram_account_id && userData?.instagram_account_id !== "") || (!!userData?.instagram_token && userData?.instagram_token !== "");
+  const hasWaId = !!userData?.whatsapp_phone_id || !!userData?.whatsapp_token;
+  const hasIgId = !!userData?.instagram_account_id || !!userData?.instagram_token;
 
   const getPrimaryLiveChannel = () => {
       if (exactSelectedChannel === "telegram") {
@@ -793,7 +791,7 @@ export default function Dashboard() {
                 {exactSelectedChannel && (
                   <p className={`text-[10px] font-mono mt-2 flex items-center gap-1.5 ${primaryChannel.isLive ? 'text-green-500' : 'text-yellow-500'}`}>
                     <span className={`w-1.5 h-1.5 rounded-full ${primaryChannel.dot}`}></span>
-                    {primaryChannel.isLive ? "Your bot is Live 🟢" : (primaryChannel.isSetup ? "Sleeping (Needs Upgrade)" : "Pending Setup")}
+                    {primaryChannel.isLive ? "Your bot is Live 🟢" : (primaryChannel.isSetup ? "Sleeping (Needs Upgrade)" : "Pending Deploy")}
                   </p>
                 )}
               </div>
@@ -801,7 +799,7 @@ export default function Dashboard() {
                 <Radio className="w-5 h-5"/>
               </div>
             </div>
-            <button onClick={handleOpenLiveBot} className={`relative z-10 w-full py-3 rounded-xl text-[11px] font-bold uppercase tracking-widest transition-all bg-white/5 text-gray-300 border border-white/10 hover:bg-white/10 flex items-center justify-center gap-2 ${btn}`}>
+            <button onClick={handleOpenLiveBot} disabled={!primaryChannel.isSetup} className={`relative z-10 w-full py-3 rounded-xl text-[11px] font-bold uppercase tracking-widest transition-all bg-white/5 text-gray-300 border border-white/10 hover:bg-white/10 flex items-center justify-center gap-2 ${btn} disabled:opacity-50`}>
                 Open Live Bot <ExternalLink className="w-3 h-3"/>
             </button>
           </motion.div>
