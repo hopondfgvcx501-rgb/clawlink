@@ -43,6 +43,7 @@ export async function GET(req: NextRequest) {
         bot.ai_model ||
         bot.telegram_token || 
         bot.whatsapp_phone_id || 
+        bot.instagram_account_id || // 🚀 FIXED: Added Instagram check
         bot.plan === "max" || bot.plan === "pro" || bot.plan === "monthly" || bot.plan === "yearly" || bot.plan === "adv_max" || bot.plan === "ultra" || bot.plan === "plus"
     );
 
@@ -62,6 +63,7 @@ export async function GET(req: NextRequest) {
     let totalUsed = 0;
     let activeTelegram = false;
     let activeWhatsapp = false;
+    let activeInstagram = false; // 🚀 FIXED: Added Instagram state
 
     // Aggregate token throughput and assess active transmission channels
     for (const bot of validBots) {
@@ -70,6 +72,7 @@ export async function GET(req: NextRequest) {
 
         if (bot.telegram_token) { activeTelegram = true; }
         if (bot.whatsapp_phone_id || bot.whatsapp_token) { activeWhatsapp = true; }
+        if (bot.instagram_account_id || bot.instagram_token) { activeInstagram = true; } // 🚀 FIXED
     }
 
     // STRICT PLAN IDENTITY ALLOCATION
@@ -104,6 +107,7 @@ export async function GET(req: NextRequest) {
     if (!currentChannel) {
         if (primaryBot.telegram_token) currentChannel = "telegram";
         else if (primaryBot.whatsapp_phone_id) currentChannel = "whatsapp";
+        else if (primaryBot.instagram_account_id) currentChannel = "instagram"; // 🚀 FIXED
         else currentChannel = "widget";
     }
 
@@ -121,14 +125,18 @@ export async function GET(req: NextRequest) {
       systemPrompt: primaryBot.system_prompt || "",
       system_prompt_telegram: primaryBot.system_prompt_telegram || "",
       system_prompt_whatsapp: primaryBot.system_prompt_whatsapp || "",
+      system_prompt_instagram: primaryBot.system_prompt_instagram || "", // 🚀 FIXED
       system_prompt_widget: primaryBot.system_prompt_widget || "",
       telegramActive: activeTelegram,
       whatsappActive: activeWhatsapp,
+      instagramActive: activeInstagram, // 🚀 FIXED
       telegram_token: primaryBot.telegram_token || null,
       whatsapp_token: primaryBot.whatsapp_token || null,
       whatsapp_phone_id: primaryBot.whatsapp_phone_id || null,
       whatsapp_number: primaryBot.whatsapp_number || "",
-      liveBotLink: currentChannel === "telegram" && primaryBot.telegram_token ? "https://t.me/BotFather" : (currentChannel === "whatsapp" ? "https://business.facebook.com/wa/manage/" : null),
+      instagram_token: primaryBot.instagram_token || null, // 🚀 FIXED
+      instagram_account_id: primaryBot.instagram_account_id || null, // 🚀 FIXED
+      liveBotLink: currentChannel === "telegram" && primaryBot.telegram_token ? "https://t.me/BotFather" : (currentChannel === "whatsapp" ? "https://business.facebook.com/wa/manage/" : (currentChannel === "instagram" ? "https://business.facebook.com/latest/inbox/instagram" : null)),
       bots: validBots
     };
 
@@ -151,7 +159,8 @@ export async function POST(req: NextRequest) {
         }
 
         const body = await req.json();
-        const { selectedModel, selectedChannel, plan, telegram_token, whatsapp_phone_id } = body;
+        // 🚀 FIXED: Extract instagram fields
+        const { selectedModel, selectedChannel, plan, telegram_token, whatsapp_phone_id, instagram_token, instagram_account_id } = body;
 
         // Force secure cryptographic email string
         const email = token.email.toLowerCase();
@@ -172,6 +181,8 @@ export async function POST(req: NextRequest) {
             query = query.eq("telegram_token", telegram_token);
         } else if (whatsapp_phone_id) {
             query = query.eq("whatsapp_phone_id", whatsapp_phone_id);
+        } else if (instagram_account_id) { // 🚀 FIXED
+            query = query.eq("instagram_account_id", instagram_account_id);
         } else {
             query = query.eq("selected_channel", selectedChannel || "widget").order("created_at", { ascending: false });
         }
@@ -183,7 +194,9 @@ export async function POST(req: NextRequest) {
             await supabase.from("user_configs").update({
                 selected_model: selectedModel || undefined,
                 ai_provider: selectedModel ? aiProvider : undefined,
-                plan: plan || undefined
+                plan: plan || undefined,
+                instagram_token: instagram_token || undefined, // 🚀 FIXED
+                instagram_account_id: instagram_account_id || undefined // 🚀 FIXED
             }).eq("id", existingUser.id);
         } else {
             await supabase.from("user_configs").insert({
@@ -193,6 +206,8 @@ export async function POST(req: NextRequest) {
                 ai_provider: aiProvider,
                 telegram_token: telegram_token || undefined,
                 whatsapp_phone_id: whatsapp_phone_id || undefined,
+                instagram_token: instagram_token || undefined, // 🚀 FIXED
+                instagram_account_id: instagram_account_id || undefined, // 🚀 FIXED
                 plan: plan || "Starter",
                 tokens_allocated: 10000, 
                 tokens_used: 0
@@ -218,7 +233,8 @@ export async function PUT(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { systemPrompt, selectedModel, selectedChannel, channel, telegram_token, whatsapp_phone_id } = body;
+    // 🚀 FIXED: Added instagram_account_id
+    const { systemPrompt, selectedModel, selectedChannel, channel, telegram_token, whatsapp_phone_id, instagram_account_id } = body;
 
     // Force secure cryptographic email string
     const email = token.email.toLowerCase();
@@ -230,6 +246,7 @@ export async function PUT(req: NextRequest) {
     if (systemPrompt !== undefined) {
       if (channel === 'telegram') { updateData.system_prompt_telegram = systemPrompt; targetColumn = "telegram_token"; }
       else if (channel === 'whatsapp') { updateData.system_prompt_whatsapp = systemPrompt; targetColumn = "whatsapp_phone_id"; }
+      else if (channel === 'instagram') { updateData.system_prompt_instagram = systemPrompt; targetColumn = "instagram_account_id"; } // 🚀 FIXED
       else if (channel === 'widget') { updateData.system_prompt_widget = systemPrompt; targetColumn = "widget"; }
       else { updateData.system_prompt = systemPrompt; }
     }
@@ -252,8 +269,10 @@ export async function PUT(req: NextRequest) {
     // EXACT OVERRIDE RULE: Only manipulate the requested bot profile to prevent cross-contamination
     if (telegram_token) query = query.eq("telegram_token", telegram_token);
     else if (whatsapp_phone_id) query = query.eq("whatsapp_phone_id", whatsapp_phone_id);
+    else if (instagram_account_id) query = query.eq("instagram_account_id", instagram_account_id); // 🚀 FIXED
     else if (targetColumn === "telegram_token") query = query.not("telegram_token", "is", null);
     else if (targetColumn === "whatsapp_phone_id") query = query.not("whatsapp_phone_id", "is", null);
+    else if (targetColumn === "instagram_account_id") query = query.not("instagram_account_id", "is", null); // 🚀 FIXED
     else if (targetColumn === "widget") query = query.eq("selected_channel", "widget");
 
     const { error } = await query;
