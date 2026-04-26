@@ -8,6 +8,7 @@
  * @description Centralized inbox to monitor bot conversations and take manual human control.
  * 🚀 FIXED: Wired up Media Attachment (Paperclip) to local file picker.
  * 🚀 FIXED: Activated 3-Dot Menu with an animated action dropdown.
+ * 🚀 SECURED: Upgraded fetching logic to point to isolated, microservice-style APIs per channel.
  * * ALL RIGHTS RESERVED. CLAWLINK INC.
  * ==============================================================================================
  */
@@ -15,7 +16,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { 
   MessageSquare, Search, MoreVertical, Send, Paperclip, 
   Bot, Shield, PauseCircle, PlayCircle, Download, Ban 
@@ -47,7 +48,7 @@ export default function LiveCRMInbox() {
   
   // Refs
   const chatEndRef = useRef<HTMLDivElement>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null); // 🔥 For Media Upload
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [isLoading, setIsLoading] = useState(true);
   const [userData, setUserData] = useState<any>(null);
@@ -60,7 +61,7 @@ export default function LiveCRMInbox() {
   const [isAiPaused, setIsAiPaused] = useState(false);
   
   // UI States
-  const [isMenuOpen, setIsMenuOpen] = useState(false); // 🔥 For 3-Dot Menu
+  const [isMenuOpen, setIsMenuOpen] = useState(false); 
 
   useEffect(() => {
     if (status === "unauthenticated") router.replace("/");
@@ -93,12 +94,14 @@ export default function LiveCRMInbox() {
     initInbox();
   }, [session, status]);
 
+  // 🚀 ISOLATED MICROSERVICE ROUTING FIX
   const fetchChatsForChannel = async (email: string, channel: string) => {
     setIsLoading(true);
     setActiveChatId(null);
     setMessages([]);
     try {
-      const res = await fetch(`/api/crm/chats?email=${encodeURIComponent(email)}&channel=${channel}&t=${Date.now()}`, { cache: 'no-store' });
+      // Calls /api/crm/instagram/route.ts, /api/crm/telegram/route.ts etc.
+      const res = await fetch(`/api/crm/${channel}?email=${encodeURIComponent(email)}&t=${Date.now()}`, { cache: 'no-store' });
       const data = await res.json();
       if (data.success && data.chats) {
         setChats(data.chats);
@@ -121,7 +124,7 @@ export default function LiveCRMInbox() {
   const loadChatHistory = async (chatId: string, aiPausedStatus: boolean) => {
     setActiveChatId(chatId);
     setIsAiPaused(aiPausedStatus);
-    setIsMenuOpen(false); // Close menu on chat switch
+    setIsMenuOpen(false);
     
     const selectedChat = chats.find(c => c.id === chatId);
     if (selectedChat && selectedChat.messages) {
@@ -138,10 +141,11 @@ export default function LiveCRMInbox() {
     setChats(chats.map(c => c.id === activeChatId ? { ...c, aiPaused: newStatus } : c));
 
     try {
-      await fetch('/api/crm/chats', {
+      // Direct update to the isolated channel API
+      await fetch(`/api/crm/${activeChannel}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: session.user.email, chatId: activeChatId, channel: activeChannel, aiPaused: newStatus })
+        body: JSON.stringify({ email: session.user.email, chatId: activeChatId, aiPaused: newStatus })
       });
     } catch (e) {
       console.error("Failed to toggle AI state");
@@ -166,22 +170,21 @@ export default function LiveCRMInbox() {
     }
 
     try {
-        await fetch('/api/crm/messages', {
+        await fetch(`/api/crm/${activeChannel}/messages`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email: session?.user?.email, chatId: activeChatId, channel: activeChannel, message: newMessage.text })
+            body: JSON.stringify({ email: session?.user?.email, chatId: activeChatId, message: newMessage.text })
         });
     } catch(e) {
         console.error("Dispatch failed");
     }
   };
 
-  // 🔥 Handle File Selection (UI Feedback)
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if(e.target.files && e.target.files.length > 0) {
       const file = e.target.files[0];
       alert(`📎 Media Selected: ${file.name}\n\n(Note: Supabase Storage Integration for Media Uploads will be active in Phase 3!)`);
-      e.target.value = ''; // Reset input
+      e.target.value = '';
     }
   };
 
@@ -233,7 +236,7 @@ export default function LiveCRMInbox() {
             <div className="relative">
               <Search className="w-4 h-4 text-gray-500 absolute left-4 top-1/2 -translate-y-1/2" />
               <input 
-                type="text" placeholder="Search conversations..." 
+                type="text" placeholder={`Search ${activeChannel} conversations...`} 
                 className="w-full bg-[#111114] border border-white/10 rounded-xl pl-11 pr-4 py-3 text-sm text-white outline-none focus:border-white/30 transition-colors"
               />
             </div>
@@ -285,7 +288,7 @@ export default function LiveCRMInbox() {
               {/* Chat Header */}
               <div className="h-[72px] px-6 border-b border-white/5 bg-[#0A0A0D] flex items-center justify-between shrink-0 relative">
                 <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-gray-700 to-gray-600 border border-white/10 flex items-center justify-center text-white font-bold">
+                  <div className={`w-10 h-10 rounded-full ${theme.bg} ${theme.border} border flex items-center justify-center ${theme.text} font-bold`}>
                     {activeChatDetails?.name.charAt(0)}
                   </div>
                   <div>
@@ -303,7 +306,6 @@ export default function LiveCRMInbox() {
                     {isAiPaused ? "Resume AI" : "Pause AI (Handover)"}
                   </button>
 
-                  {/* 🔥 FIXED: 3-Dot Menu */}
                   <div className="relative">
                     <button 
                       onClick={() => setIsMenuOpen(!isMenuOpen)} 
@@ -312,21 +314,23 @@ export default function LiveCRMInbox() {
                       <MoreVertical className="w-5 h-5"/>
                     </button>
                     
-                    {/* Animated Dropdown */}
-                    {isMenuOpen && (
-                      <motion.div 
-                        initial={{ opacity: 0, y: 10, scale: 0.95 }} 
-                        animate={{ opacity: 1, y: 0, scale: 1 }} 
-                        className="absolute right-0 top-full mt-2 w-48 bg-[#111114] border border-white/10 rounded-xl shadow-[0_10px_40px_rgba(0,0,0,0.5)] py-2 z-50 overflow-hidden"
-                      >
-                        <button onClick={() => { alert('📥 Chat Export feature coming in Phase 3!'); setIsMenuOpen(false); }} className="w-full text-left px-4 py-2.5 text-[12px] text-gray-300 hover:bg-white/5 hover:text-white transition-colors flex items-center gap-3">
-                          <Download className="w-3.5 h-3.5"/> Export Chat
-                        </button>
-                        <button onClick={() => { alert('🚫 User blocked successfully!'); setIsMenuOpen(false); }} className="w-full text-left px-4 py-2.5 text-[12px] text-red-400 hover:bg-red-500/10 transition-colors flex items-center gap-3">
-                          <Ban className="w-3.5 h-3.5"/> Block User
-                        </button>
-                      </motion.div>
-                    )}
+                    <AnimatePresence>
+                        {isMenuOpen && (
+                        <motion.div 
+                            initial={{ opacity: 0, y: 10, scale: 0.95 }} 
+                            animate={{ opacity: 1, y: 0, scale: 1 }} 
+                            exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                            className="absolute right-0 top-full mt-2 w-48 bg-[#111114] border border-white/10 rounded-xl shadow-[0_10px_40px_rgba(0,0,0,0.5)] py-2 z-50 overflow-hidden"
+                        >
+                            <button onClick={() => { alert('📥 Chat Export feature coming in Phase 3!'); setIsMenuOpen(false); }} className="w-full text-left px-4 py-2.5 text-[12px] text-gray-300 hover:bg-white/5 hover:text-white transition-colors flex items-center gap-3">
+                            <Download className="w-3.5 h-3.5"/> Export Chat
+                            </button>
+                            <button onClick={() => { alert('🚫 User blocked successfully!'); setIsMenuOpen(false); }} className="w-full text-left px-4 py-2.5 text-[12px] text-red-400 hover:bg-red-500/10 transition-colors flex items-center gap-3">
+                            <Ban className="w-3.5 h-3.5"/> Block User
+                            </button>
+                        </motion.div>
+                        )}
+                    </AnimatePresence>
                   </div>
                 </div>
               </div>
@@ -342,13 +346,13 @@ export default function LiveCRMInbox() {
                 {messages.map((msg) => (
                   <div key={msg.id} className={`flex ${msg.sender === 'user' ? 'justify-start' : 'justify-end'}`}>
                     <div className={`max-w-[70%] ${msg.sender === 'user' ? 'order-1' : 'order-2'}`}>
-                      <div className="flex items-center gap-2 mb-1 px-1">
+                      <div className={`flex items-center gap-2 mb-1 px-1 ${msg.sender !== 'user' && 'justify-end'}`}>
                         {msg.sender === 'bot' && <Bot className={`w-3 h-3 ${theme.text}`}/>}
                         {msg.sender === 'admin' && <Shield className="w-3 h-3 text-orange-500"/>}
                         <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">
                           {msg.sender === 'user' ? activeChatDetails?.name : msg.sender === 'bot' ? 'AI Agent' : 'Admin'}
                         </span>
-                        <span className="text-[9px] text-gray-600 font-mono ml-2">{msg.time}</span>
+                        <span className="text-[9px] text-gray-600 font-mono">{msg.time}</span>
                       </div>
                       <div className={`p-4 rounded-2xl ${
                         msg.sender === 'user' 
@@ -374,7 +378,6 @@ export default function LiveCRMInbox() {
                 )}
                 <div className="flex items-end gap-3 bg-[#111114] border border-white/10 rounded-2xl p-2 focus-within:border-white/30 transition-colors">
                   
-                  {/* 🔥 FIXED: Hidden File Input & Paperclip Button */}
                   <input 
                     type="file" 
                     ref={fileInputRef} 
