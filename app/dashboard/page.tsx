@@ -5,9 +5,9 @@
  * CLAWLINK ENTERPRISE COMMAND CENTER (DASHBOARD)
  * ==============================================================================================
  * @file app/dashboard/page.tsx
- * @version 12.1.3 (Ultra-Smooth Loader Clean Up)
  * @description The central hub for users to monitor their AI Agents.
- * FIXED: Unified and strict DB token checking for all three channels to ensure consistent Live status.
+ * 🚀 FIXED: Removed the redundant Webhook copy section from RAG Knowledge Base to keep UI clean.
+ * 🚀 SECURED: Dashboard Gatekeeper prevents channel reveal until payment is active.
  * * ALL RIGHTS RESERVED. CLAWLINK INC.
  * ==============================================================================================
  */
@@ -504,6 +504,21 @@ export default function Dashboard() {
   const hasIgId = !!userData?.instagram_account_id || !!userData?.instagram_token;
 
   const getPrimaryLiveChannel = () => {
+      // 🔥 SECURED: Dashboard Payment Gatekeeper (Matches Sidebar Logic)
+      if (!hasActivePlan) {
+          return { 
+              name: "System Locked", 
+              bgLight: "bg-gray-500/5", 
+              bgHover: "group-hover:bg-gray-500/10", 
+              dot: "bg-orange-500", 
+              text: "text-gray-500", 
+              border: "border-gray-500/20", 
+              iconBg: "bg-gray-500/10",
+              isSetup: false,
+              isLive: false
+          };
+      }
+
       if (exactSelectedChannel === "telegram") {
           return { 
               name: "Telegram", 
@@ -788,10 +803,15 @@ export default function Dashboard() {
                 <div className={`text-xl font-black mt-2 leading-tight ${primaryChannel.text === 'text-gray-500' ? 'text-gray-400 italic' : 'text-white'}`}>
                   {primaryChannel.name}
                 </div>
-                {exactSelectedChannel && (
+                {!hasActivePlan ? (
+                  <p className="text-[10px] font-mono mt-2 flex items-center gap-1.5 text-gray-500">
+                    <span className="w-1.5 h-1.5 rounded-full bg-gray-600"></span>
+                    Awaiting Payment
+                  </p>
+                ) : exactSelectedChannel && (
                   <p className={`text-[10px] font-mono mt-2 flex items-center gap-1.5 ${primaryChannel.isLive ? 'text-green-500' : 'text-yellow-500'}`}>
                     <span className={`w-1.5 h-1.5 rounded-full ${primaryChannel.dot}`}></span>
-                    {primaryChannel.isLive ? "Your bot is Live 🟢" : (primaryChannel.isSetup ? "Sleeping (Needs Upgrade)" : "Pending Deploy")}
+                    {primaryChannel.isLive ? "Your bot is Live 🟢" : (primaryChannel.isSetup ? "Sleeping (Needs Upgrade)" : "Pending Setup")}
                   </p>
                 )}
               </div>
@@ -919,28 +939,6 @@ export default function Dashboard() {
             <h3 className="text-lg font-black text-green-400 mb-2 tracking-wide flex items-center gap-2 relative z-10">🧠 Custom Knowledge Base (RAG)</h3>
             <p className="text-sm text-gray-400 mb-6 relative z-10">Train your AI with your specific business data. Paste product details, FAQs, or policies below to convert them into vectors.</p>
             
-            {exactSelectedChannel && (exactSelectedChannel === "whatsapp" || exactSelectedChannel === "instagram") && (
-              <div className="mb-6 p-4 rounded-xl relative z-10 webhook-box" data-channel={exactSelectedChannel}>
-                <p className={`text-[11px] font-bold mb-3 flex items-center gap-2 ${exactSelectedChannel === 'whatsapp' ? 'text-[#25D366]' : 'text-pink-500'}`}>
-                  🔗 Step 1: Copy these to Meta Webhook
-                </p>
-                <div className="mb-3">
-                  <label className="block text-[9px] font-bold uppercase tracking-widest text-gray-500 mb-1.5">Webhook URL</label>
-                  <div className="flex items-center gap-2">
-                    <input title="Webhook URL" readOnly value={`https://www.clawlinkai.com/api/webhook/${exactSelectedChannel}`} className="w-full bg-black/50 text-gray-300 p-2.5 rounded-lg text-[11px] border border-white/10 outline-none font-mono" />
-                    <button type="button" onClick={() => copyToClipboard(`https://www.clawlinkai.com/api/webhook/${exactSelectedChannel}`)} className="bg-white/10 hover:bg-white/20 text-white px-4 py-2.5 rounded-lg text-[11px] font-bold transition-all">Copy</button>
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-[9px] font-bold uppercase tracking-widest text-gray-500 mb-1.5">Verify Token</label>
-                  <div className="flex items-center gap-2">
-                    <input title="Verify token" readOnly value="clawlinkmeta2026" className="w-full bg-black/50 text-gray-300 p-2.5 rounded-lg text-[11px] border border-white/10 outline-none font-mono" />
-                    <button type="button" onClick={() => copyToClipboard("clawlinkmeta2026")} className="bg-white/10 hover:bg-white/20 text-white px-4 py-2.5 rounded-lg text-[11px] font-bold transition-all">Copy</button>
-                  </div>
-                </div>
-              </div>
-            )}
-
             <textarea rows={4} value={knowledgeText} onChange={(e) => setKnowledgeText(e.target.value)} placeholder="Paste your business information here..." className="w-full bg-[#07070A] border border-green-500/30 rounded-xl p-4 text-sm text-green-100 focus:border-green-400 focus:shadow-[0_0_15px_rgba(34,197,94,0.2)] focus:outline-none transition-all resize-none mb-4 font-mono placeholder:text-green-900/50 relative z-10 custom-scrollbar" />
             <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6 relative z-10">
               <p className="text-[10px] text-gray-500 font-mono flex items-center gap-1"><Database className="w-3 h-3"/> Encrypted in Vector DB</p>
