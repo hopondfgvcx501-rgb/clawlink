@@ -12,7 +12,7 @@
  * 🚀 FIXED: Enforced strict full-name channel rendering (WhatsApp, Instagram, Telegram).
  * 🚀 FIXED: Replaced legacy <Activity /> icon with the new premium <SpinnerCounter />.
  * 🚀 FIXED: Added strict instagram_token check for proper sidebar rendering.
- * 🚀 SECURED: Enforced Payment Gatekeeper - Sidebar channels ONLY show if plan is PAID (not Starter/Free).
+ * 🚀 SECURED: Strict frontend Payment Gatekeeper based on plan tier.
  * 🚀 FIXED: Replaced broken Instagram CSS div with proper SVG to match other channels.
  * * ALL RIGHTS RESERVED. CLAWLINK INC.
  * ==============================================================================================
@@ -75,24 +75,26 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           
           if (data.success && data.data) {
             
-            // 🚀 PAYMENT GATEKEEPER: Check if plan is active (not Free/Starter)
-            const currentPlan = (data.data.plan || "free").toLowerCase();
-            const isFreePlan = currentPlan === "free" || currentPlan === "starter" || currentPlan === "unassigned";
-            
-            let isStatusActive = false;
-            if (data.data.bots && data.data.bots.length > 0) {
-                const rawDb = data.data.bots[0];
-                isStatusActive = (rawDb.plan_status || "").toLowerCase() === "active" || (rawDb.bot_status || "").toLowerCase() === "active";
-            }
-            
-            const hasActivePlan = !isFreePlan || isStatusActive;
+            // 🚀 STRICT PAYMENT GATEKEEPER
+            const currentPlan = (data.data.plan || "starter").toLowerCase();
+            // If the user hasn't paid, they are on 'starter', 'free', or 'unassigned'.
+            const isUnpaid = currentPlan === "starter" || currentPlan === "free" || currentPlan === "unassigned";
 
-            // 🔥 SECURED: Tokens are verified AND Plan must be active!
-            setActiveChannels({
-              telegram: (!!data.data.telegram_token) && hasActivePlan,    
-              whatsapp: (!!data.data.whatsapp_phone_id || !!data.data.whatsapp_token) && hasActivePlan,    
-              instagram: (!!data.data.instagram_account_id || !!data.data.instagram_token) && hasActivePlan   
-            });
+            // If Unpaid -> Force everything to false, ignoring tokens completely.
+            if (isUnpaid) {
+               setActiveChannels({
+                 telegram: false,    
+                 whatsapp: false,    
+                 instagram: false   
+               });
+            } else {
+               // If Paid -> Respect the tokens present in the DB
+               setActiveChannels({
+                 telegram: !!data.data.telegram_token,    
+                 whatsapp: !!data.data.whatsapp_phone_id || !!data.data.whatsapp_token,    
+                 instagram: !!data.data.instagram_account_id || !!data.data.instagram_token   
+               });
+            }
             
             if (data.data.selected_channel) {
               setExpandedChannel(data.data.selected_channel);
@@ -297,7 +299,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <div className="bg-[#111114] border border-dashed border-white/10 rounded-xl p-4 text-center mx-2 mt-2">
                 <AlertCircle className="w-5 h-5 text-orange-500/50 mx-auto mb-2" />
                 <p className="text-[11px] text-gray-400 leading-relaxed mb-3">No bots deployed yet.</p>
-                {/* 🚀 Changed to not refer to settings, but tell them to deploy */}
                 <button 
                   onClick={() => alert("Please head to the homepage and deploy a bot.")} 
                   className="bg-orange-500/10 hover:bg-orange-500/20 text-orange-400 border border-orange-500/20 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-colors w-full"
@@ -311,7 +312,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
         {/* User Profile Footer */}
         <div className="p-4 border-t border-white/5 shrink-0 bg-[#0A0A0D]">
-          {/* Removed cursor-pointer and onClick mapping to settings page */}
           <div className="flex items-center justify-between p-2 rounded-xl hover:bg-white/5 transition-colors">
             <div className="flex items-center gap-3 overflow-hidden">
               <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-orange-500 to-pink-500 flex items-center justify-center text-white font-bold text-xs shrink-0">
