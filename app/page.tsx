@@ -281,7 +281,8 @@ export default function Home() {
             try {
                 const res = await fetch(`/api/user?email=${session.user.email}`);
                 const data = await res.json();
-                if (data.success && data.data && (data.data.telegram_token || data.data.whatsapp_phone_id)) {
+                // 🚀 FIXED: Added Instagram check here! Ab koi bhi DB me ho, Dashboard dikhega!
+                if (data.success && data.data && (data.data.telegram_token || data.data.whatsapp_phone_id || data.data.instagram_account_id || data.data.instagram_token)) {
                     setHasDeployedBefore(true);
                 }
             } catch (e) {
