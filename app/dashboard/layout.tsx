@@ -12,6 +12,8 @@
  * 🚀 FIXED: Enforced strict full-name channel rendering (WhatsApp, Instagram, Telegram).
  * 🚀 FIXED: Replaced legacy <Activity /> icon with the new premium <SpinnerCounter />.
  * 🚀 FIXED: Added strict instagram_token check for proper sidebar rendering.
+ * 🚀 SECURED: Enforced Payment Gatekeeper - Sidebar channels ONLY show if plan is PAID (not Starter/Free).
+ * 🚀 FIXED: Replaced broken Instagram CSS div with proper SVG to match other channels.
  * * ALL RIGHTS RESERVED. CLAWLINK INC.
  * ==============================================================================================
  */
@@ -72,11 +74,24 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           const data = await res.json();
           
           if (data.success && data.data) {
-            // 🔥 FIXED: Instagram token check added here!
+            
+            // 🚀 PAYMENT GATEKEEPER: Check if plan is active (not Free/Starter)
+            const currentPlan = (data.data.plan || "free").toLowerCase();
+            const isFreePlan = currentPlan === "free" || currentPlan === "starter" || currentPlan === "unassigned";
+            
+            let isStatusActive = false;
+            if (data.data.bots && data.data.bots.length > 0) {
+                const rawDb = data.data.bots[0];
+                isStatusActive = (rawDb.plan_status || "").toLowerCase() === "active" || (rawDb.bot_status || "").toLowerCase() === "active";
+            }
+            
+            const hasActivePlan = !isFreePlan || isStatusActive;
+
+            // 🔥 SECURED: Tokens are verified AND Plan must be active!
             setActiveChannels({
-              telegram: !!data.data.telegram_token,    
-              whatsapp: !!data.data.whatsapp_phone_id || !!data.data.whatsapp_token,    
-              instagram: !!data.data.instagram_account_id || !!data.data.instagram_token   
+              telegram: (!!data.data.telegram_token) && hasActivePlan,    
+              whatsapp: (!!data.data.whatsapp_phone_id || !!data.data.whatsapp_token) && hasActivePlan,    
+              instagram: (!!data.data.instagram_account_id || !!data.data.instagram_token) && hasActivePlan   
             });
             
             if (data.data.selected_channel) {
@@ -161,11 +176,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor"><path d="M12 24c6.627 0 12-5.373 12-12S18.627 0 12 0 0 5.373 0 12s5.373 12 12 12z" fill="currentColor"/><path d="M5.425 11.871L16.48 7.61c.526-.196 1.006.124.819.86l-1.892 8.92c-.167.755-.615.939-1.242.593L10.73 15.45l-1.657 1.588c-.183.183-.338.338-.692.338l.245-3.528 6.425-5.8c.28-.249-.06-.388-.435-.138L6.68 12.89l-3.417-1.066c-.744-.233-.759-.745.155-1.103z" fill="#fff"/></svg>
     );
     if (channel === "instagram") return (
-      <div className={`w-[${size}px] h-[${size}px] rounded-[4px] bg-gradient-to-tr from-[#f09433] via-[#e6683c] to-[#bc1888] flex items-center justify-center transform-gpu shrink-0`}>
-        <div className="w-[60%] h-[60%] border-[1.5px] border-white rounded-[3px] flex items-center justify-center">
-          <div className="w-[30%] h-[30%] bg-white rounded-full"/>
-        </div>
-      </div>
+      // 🚀 FIXED: Solid SVG replacing broken div logic
+      <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg>
     );
     return null;
   };
