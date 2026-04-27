@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
 export const dynamic = "force-dynamic";
+export const revalidate = 0; // Ensures fresh data, no caching
 
 // Supabase Connection (Bypassing RLS for Admin API)
 const supabase = createClient(
@@ -18,44 +19,45 @@ export async function GET(req: Request) {
       return NextResponse.json({ success: false, error: "Email is required" }, { status: 400 });
     }
 
-    // 1. Fetch raw chat history from DB
+    // 1. Fetch raw chat history from DB (Ascending so we can grab the latest easily)
     const { data: chats, error } = await supabase
       .from("chat_history")
       .select("*")
       .eq("email", email)
       .eq("platform", "telegram")
-      .order("created_at", { ascending: false });
+      .order("created_at", { ascending: true });
 
     if (error) throw error;
 
-    // 🧠 THE FIX: Group messages by Unique Users for the CRM Sidebar
-    const contactsMap = new Map();
+    // 2. Group messages exactly how the Frontend expects them
+    const groupedChats: Record<string, any[]> = {};
+    chats?.forEach(msg => {
+        if (!groupedChats[msg.platform_chat_id]) {
+            groupedChats[msg.platform_chat_id] = [];
+        }
+        groupedChats[msg.platform_chat_id].push(msg);
+    });
 
-    if (chats && chats.length > 0) {
-        chats.forEach(chat => {
-            // Agar ye user pehle map mein nahi hai, toh add karo (latest message ke sath)
-            if (!contactsMap.has(chat.platform_chat_id)) {
-                contactsMap.set(chat.platform_chat_id, {
-                    // Providing multiple key formats to guarantee UI compatibility
-                    id: chat.platform_chat_id,
-                    chat_id: chat.platform_chat_id,
-                    platform_chat_id: chat.platform_chat_id,
-                    name: chat.customer_name || "Customer",
-                    customer_name: chat.customer_name || "Customer",
-                    message: chat.message || "[Media/System]",
-                    last_message: chat.message || "[Media/System]",
-                    created_at: chat.created_at,
-                    updated_at: chat.created_at,
-                    unread_count: 0
-                });
-            }
-        });
-    }
+    // 3. Map into the 'leads' format expected by your UI
+    const leads = Object.values(groupedChats).map(msgs => {
+        const firstMsg = msgs[0];
+        const lastMsg = msgs[msgs.length - 1]; // The most recent message
 
-    // Convert the map back to a clean array for the frontend
-    const formattedContacts = Array.from(contactsMap.values());
+        return {
+            id: firstMsg.platform_chat_id,
+            platform_chat_id: firstMsg.platform_chat_id,
+            name: firstMsg.customer_name || "Customer",
+            customer_name: firstMsg.customer_name || "Customer",
+            platform: firstMsg.platform || "telegram",
+            message: lastMsg.message || "[Media/System]",
+            last_message_time: lastMsg.created_at,
+            created_at: lastMsg.created_at,
+            unread_count: 0
+        };
+    }).sort((a, b) => new Date(b.last_message_time).getTime() - new Date(a.last_message_time).getTime());
 
-    return NextResponse.json({ success: true, data: formattedContacts });
+    // 🔥 THE FIX: Sending it exactly as 'leads' and 'groupedChats'
+    return NextResponse.json({ success: true, leads: leads, groupedChats: groupedChats });
 
   } catch (error: any) {
     console.error("🚨 [CRM API ERROR]:", error.message);
