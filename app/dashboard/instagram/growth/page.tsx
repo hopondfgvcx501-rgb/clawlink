@@ -9,7 +9,7 @@
  * Live Comments, and custom ig.me referral links.
  * 🚀 SECURED: Connects to real DB to fetch active tools state with strict cache-busting.
  * 🚀 FIXED: Upgraded to premium SpinnerCounter loader.
- * 🚀 FIXED: Implemented strict backend error parsing for state updates.
+ * 🚀 FIXED: Connected "Configure Flow" buttons directly to the visual Flow Builder.
  * * ALL RIGHTS RESERVED. CLAWLINK INC.
  * ==============================================================================================
  */
@@ -23,7 +23,7 @@ import {
   Settings2, Activity, Copy, ArrowRight
 } from "lucide-react";
 import TopHeader from "@/components/TopHeader";
-import SpinnerCounter from "@/components/SpinnerCounter"; // 🚀 Premium Loader Imported
+import SpinnerCounter from "@/components/SpinnerCounter";
 
 interface GrowthTool {
   id: string;
@@ -56,7 +56,6 @@ export default function InstagramGrowthTools() {
           if (data.success && data.tools) {
              setTools(data.tools);
           } else {
-             // Fallback default if no tools exist in DB for this user yet
              setTools([
                { id: 'story', title: 'Story Mention Reply', desc: 'Instantly send a DM when someone tags you in their Instagram Story.', active: true, iconType: 'camera' },
                { id: 'live', title: 'Instagram Live Comments', desc: 'Trigger auto-DMs when viewers comment a specific keyword during your Live.', active: false, iconType: 'video' },
@@ -74,7 +73,6 @@ export default function InstagramGrowthTools() {
 
   // 🚀 SECURE DB SYNC WITH STRICT ERROR HANDLING
   const toggleTool = async (id: string) => {
-    // Optimistic UI Update
     const updatedTools = tools.map(t => t.id === id ? { ...t, active: !t.active } : t);
     setTools(updatedTools);
     
@@ -99,13 +97,11 @@ export default function InstagramGrowthTools() {
       const data = await res.json();
       if (!data.success) {
          alert(`Failed to sync tool state: ${data.error}`);
-         // Revert Optimistic Update
          setTools(tools);
       }
     } catch(err: any) {
       console.error("Tool Sync Error:", err);
       alert(`Backend Error: ${err.message || "Failed to reach server."}`);
-      // Revert Optimistic Update
       setTools(tools);
     }
   };
@@ -122,7 +118,6 @@ export default function InstagramGrowthTools() {
     return <Video className="w-5 h-5 text-pink-400"/>;
   };
 
-  // 🚀 Premium Loader
   if (isLoading || status === "loading") {
     return <SpinnerCounter text="SYNCING GROWTH ENGINE..." />;
   }
@@ -139,7 +134,7 @@ export default function InstagramGrowthTools() {
               <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-[#f09433] via-[#e6683c] to-[#bc1888] flex items-center justify-center shadow-[0_0_15px_rgba(236,72,153,0.3)]">
                 <TrendingUp className="w-5 h-5 text-white"/>
               </div>
-              Growth Tools
+              Growth Funnels
             </h2>
             <p className="text-[13px] text-gray-400 mt-2">Create multiple entry points to turn your Instagram followers into automated leads.</p>
           </div>
@@ -171,7 +166,13 @@ export default function InstagramGrowthTools() {
                   <button onClick={() => toggleTool(tool.id)} className={`flex-1 py-3 rounded-xl text-[12px] font-black uppercase tracking-widest transition-all border ${tool.active ? 'bg-white/5 border-white/10 text-gray-300 hover:bg-white/10' : 'bg-gradient-to-r from-pink-500 to-purple-500 border-transparent text-white shadow-lg hover:opacity-90'} ${btnHover}`}>
                     {tool.active ? 'Turn Off' : 'Activate Tool'}
                   </button>
-                  <button className={`p-3 rounded-xl bg-[#111114] border border-white/10 hover:bg-white/5 text-gray-400 transition-colors ${btnHover}`} title="Configure Flow">
+                  
+                  {/* 🔥 FIXED: Now properly routes to Flow Builder */}
+                  <button 
+                    onClick={() => router.push('/dashboard/instagram/flow')}
+                    className={`p-3 rounded-xl bg-[#111114] border border-white/10 hover:bg-white/5 text-gray-400 hover:text-pink-400 transition-colors ${btnHover}`} 
+                    title="Configure Flow"
+                  >
                     <Settings2 className="w-5 h-5"/>
                   </button>
                 </div>
@@ -202,7 +203,13 @@ export default function InstagramGrowthTools() {
                   <button onClick={copyRefLink} className={`flex-1 md:flex-none bg-[#2AABEE] hover:bg-[#2298D6] text-white px-6 py-3 rounded-xl text-[12px] font-black uppercase tracking-widest flex items-center justify-center gap-2 shadow-[0_0_15px_rgba(42,171,238,0.3)] ${btnHover}`}>
                     <Copy className="w-4 h-4"/> Copy Link
                   </button>
-                  <button className={`p-3 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 text-gray-300 transition-colors ${btnHover}`} title="Edit Associated Flow">
+                  
+                  {/* 🔥 FIXED: Now properly routes to Flow Builder */}
+                  <button 
+                    onClick={() => router.push('/dashboard/instagram/flow')}
+                    className={`p-3 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 text-gray-300 hover:text-pink-400 transition-colors ${btnHover}`} 
+                    title="Edit Associated Flow"
+                  >
                     <ArrowRight className="w-5 h-5"/>
                   </button>
                 </div>
