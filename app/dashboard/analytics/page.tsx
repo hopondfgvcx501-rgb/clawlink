@@ -8,6 +8,7 @@
  * @description Detailed metrics, AI Copilot success rate, and traffic analysis.
  * 🚀 SECURED: Real-time DB fetch with strict cache-busting.
  * 🚀 FIXED: Smart API Routing! WhatsApp uses isolated /api/whatsapp/analytics endpoint.
+ * 🚀 FIXED: Added fully interactive Timeframe Dropdown (7 Days, 30 Days, All Time) to Master Page.
  * * ALL RIGHTS RESERVED. CLAWLINK INC.
  * ==============================================================================================
  */
@@ -15,11 +16,10 @@
 import React, { useState, useEffect } from 'react';
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { 
   BarChart3, TrendingUp, MessageSquare, Zap, 
-  BrainCircuit, Clock, Calendar, Activity, 
-  Smartphone, Radio, Filter, Users 
+  BrainCircuit, Calendar, Users, ChevronDown 
 } from "lucide-react";
 import { 
   AreaChart, Area, XAxis, YAxis, Tooltip, 
@@ -37,6 +37,10 @@ export default function AnalyticsDashboard() {
   const [activeChannel, setActiveChannel] = useState<string>("telegram");
   const [analyticsData, setAnalyticsData] = useState<any>(null);
 
+  // 🔥 NEW: ACTIVE TIMEFRAME FILTERS
+  const [timeRange, setTimeRange] = useState('7');
+  const [isCalendarOpen, setIsCalendarOpen] = useState(false);
+
   useEffect(() => {
     if (status === "unauthenticated") router.replace("/");
   }, [status, router]);
@@ -46,7 +50,6 @@ export default function AnalyticsDashboard() {
     const fetchCoreData = async () => {
       if (status === "authenticated" && session?.user?.email) {
         try {
-          // 1. Fetch User Config for active channels
           const userRes = await fetch(`/api/user?email=${encodeURIComponent(session.user.email)}&t=${Date.now()}`, { cache: 'no-store' });
           if (!userRes.ok) throw new Error("Failed to fetch user");
           const userDataJson = await userRes.json();
@@ -56,8 +59,7 @@ export default function AnalyticsDashboard() {
             const defaultChan = userDataJson.data.selected_channel || "telegram";
             setActiveChannel(defaultChan);
             
-            // 2. Fetch specific analytics for that channel
-            await fetchChannelAnalytics(session.user.email, defaultChan);
+            await fetchChannelAnalytics(session.user.email, defaultChan, timeRange);
           }
         } catch (error) {
           console.error("Analytics Initialization Error", error);
@@ -66,16 +68,26 @@ export default function AnalyticsDashboard() {
       }
     };
     fetchCoreData();
-  }, [session, status]);
+  }, [session, status]); // Init load
 
-  // 🚀 SMART API ROUTER (The Magic Fix)
-  const fetchChannelAnalytics = async (email: string, channel: string) => {
+  // Re-fetch analytics when ONLY the time range changes
+  useEffect(() => {
+     if (session?.user?.email && activeChannel) {
+        fetchChannelAnalytics(session.user.email, activeChannel, timeRange);
+     }
+  }, [timeRange]);
+
+  // 🚀 SMART API ROUTER WITH TIMEFRAME
+  const fetchChannelAnalytics = async (email: string, channel: string, range: string) => {
     setIsLoading(true);
     try {
-      // Logic: If WhatsApp is selected, use the isolated WA API. Otherwise, use the Master API.
-      const endpoint = channel === 'whatsapp' 
-        ? `/api/whatsapp/analytics?email=${encodeURIComponent(email)}&t=${Date.now()}`
-        : `/api/analytics?email=${encodeURIComponent(email)}&channel=${channel}&t=${Date.now()}`;
+      let endpoint = `/api/analytics?email=${encodeURIComponent(email)}&channel=${channel}&range=${range}&t=${Date.now()}`; 
+      
+      if (channel === 'whatsapp') {
+          endpoint = `/api/whatsapp/analytics?email=${encodeURIComponent(email)}&range=${range}&t=${Date.now()}`;
+      } else if (channel === 'instagram') {
+          endpoint = `/api/instagram/analytics?email=${encodeURIComponent(email)}&range=${range}&t=${Date.now()}`; 
+      }
 
       const res = await fetch(endpoint, { cache: 'no-store' });
       const data = await res.json();
@@ -92,7 +104,7 @@ export default function AnalyticsDashboard() {
   const handleChannelSwitch = (channel: string) => {
     if (!session?.user?.email) return;
     setActiveChannel(channel);
-    fetchChannelAnalytics(session.user.email, channel);
+    fetchChannelAnalytics(session.user.email, channel, timeRange);
   };
 
   if (isLoading || status === "loading") {
@@ -195,17 +207,52 @@ export default function AnalyticsDashboard() {
             </motion.div>
           </div>
 
-          {/* Main Chart */}
+          {/* Main Chart with Interactive Dropdown */}
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }} className="bg-[#0A0A0D] border border-white/5 p-6 md:p-8 rounded-[24px] shadow-2xl relative">
-            <div className="flex items-center justify-between mb-8">
-              <h3 className="text-sm font-bold uppercase tracking-widest text-gray-500">Message Volume (7 Days)</h3>
-              <div className="flex items-center gap-2 bg-[#111114] border border-white/10 px-3 py-1.5 rounded-lg">
-                <Calendar className="w-3.5 h-3.5 text-gray-400"/>
-                <span className="text-[10px] font-mono text-gray-300">Last 7 Days</span>
+            <div className="flex items-center justify-between mb-8 z-20 relative">
+              <h3 className="text-sm font-bold uppercase tracking-widest text-gray-500">Message Volume</h3>
+              
+              {/* 🔥 FULLY INTERACTIVE DROPDOWN */}
+              <div className="relative">
+                <button 
+                  onClick={() => setIsCalendarOpen(!isCalendarOpen)}
+                  className="flex items-center gap-2 bg-[#111114] hover:bg-white/5 border border-white/10 px-4 py-2 rounded-xl transition-colors outline-none"
+                >
+                  <Calendar className={`w-4 h-4 ${theme.text}`}/>
+                  <span className="text-[11px] font-bold text-white uppercase tracking-widest">
+                    {timeRange === '7' ? 'Last 7 Days' : timeRange === '30' ? 'Last 30 Days' : 'All Time'}
+                  </span>
+                  <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform ${isCalendarOpen ? 'rotate-180' : ''}`} />
+                </button>
+
+                <AnimatePresence>
+                  {isCalendarOpen && (
+                    <motion.div 
+                      initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                      className="absolute right-0 top-full mt-2 w-40 bg-[#111114] border border-white/10 rounded-xl shadow-[0_10px_40px_rgba(0,0,0,0.8)] py-2 z-50 overflow-hidden"
+                    >
+                      {[
+                        { val: '7', label: 'Last 7 Days' },
+                        { val: '30', label: 'Last 30 Days' },
+                        { val: 'all', label: 'All Time' }
+                      ].map((opt) => (
+                        <button 
+                          key={opt.val}
+                          onClick={() => { setTimeRange(opt.val); setIsCalendarOpen(false); }}
+                          className={`w-full text-left px-4 py-2.5 text-[11px] font-bold uppercase tracking-widest transition-colors ${timeRange === opt.val ? `${theme.bg} ${theme.text}` : 'text-gray-400 hover:bg-white/5 hover:text-white'}`}
+                        >
+                          {opt.label}
+                        </button>
+                      ))}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
             </div>
             
-            <div className="h-[350px] w-full relative">
+            <div className="h-[350px] w-full relative z-10">
               {(!analyticsData?.chartData || analyticsData.chartData.length === 0) ? (
                 <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#07070A]/50 rounded-xl border border-white/5 z-10">
                   <BarChart3 className="w-8 h-8 text-gray-600 mb-3" />
