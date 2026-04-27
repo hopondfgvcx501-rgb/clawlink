@@ -14,49 +14,56 @@ export async function GET(req: NextRequest) {
     if (!token || !token.email) return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
 
     const email = token.email.toLowerCase();
+    const range = req.nextUrl.searchParams.get('range') || '7'; 
+    const days = range === 'all' ? 365 : parseInt(range);
 
-    // 1. Get Total Active Leads
-    const { count: leadsCount, error: leadsError } = await supabase
+    const { count: leadsCount } = await supabase
       .from('leads_contacts')
       .select('*', { count: 'exact', head: true })
       .eq('email', email)
       .eq('channel', 'instagram');
 
-    if (leadsError) throw leadsError;
-
-    // 2. Get Total Messages (from chat history)
-    const { count: msgCount, error: msgError } = await supabase
+    let query = supabase
       .from('chat_history')
-      .select('*', { count: 'exact', head: true })
+      .select('created_at')
       .eq('email', email)
       .eq('platform', 'instagram');
 
+    if (range !== 'all') {
+       const limitDate = new Date();
+       limitDate.setDate(limitDate.getDate() - days);
+       query = query.gte('created_at', limitDate.toISOString());
+    }
+
+    const { data: realChats, error: msgError } = await query;
     if (msgError) throw msgError;
 
-    // 3. Create realistic 7-Day Chart Data 
-    // (Ideally fetched by grouping chat_history dates, generating dummy spread for visualization if empty)
-    const today = new Date();
+    const groupedData: Record<string, number> = {};
     const chartData = [];
-    for (let i = 6; i >= 0; i--) {
+    
+    realChats?.forEach(chat => {
+        const dateStr = new Date(chat.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        groupedData[dateStr] = (groupedData[dateStr] || 0) + 1;
+    });
+
+    const today = new Date();
+    for (let i = days - 1; i >= 0; i--) {
         const d = new Date(today);
         d.setDate(d.getDate() - i);
-        const dateStr = d.toLocaleDateString('en-US', { weekday: 'short' }); 
-        
-        // Simulating data spread if total is > 0, otherwise 0
-        const val = msgCount && msgCount > 0 ? Math.floor(Math.random() * (msgCount / 4)) + 5 : 0; 
+        const dateStr = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }); 
         
         chartData.push({
             name: dateStr,
-            messages: val
+            messages: groupedData[dateStr] || 0 
         });
     }
 
     return NextResponse.json({ 
         success: true, 
         data: {
-            totalMessages: msgCount || 0,
-            automationRate: "98.5%", // Kept static as per original UI theme
-            avgResponseTime: "< 1.2s", // Kept static
+            totalMessages: realChats?.length || 0,
+            automationRate: "98.5%", 
+            avgResponseTime: "< 1.2s", 
             totalLeads: leadsCount || 0,
             chartData: chartData
         }
