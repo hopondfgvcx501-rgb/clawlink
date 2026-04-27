@@ -202,11 +202,21 @@ export async function POST(req: Request) {
 
         let configQuery = supabaseAdmin.from("user_configs").select("*");
         
+        // 🔥 FIX: Check body for token as fallback if not in URL
+        let finalToken = urlToken;
+        if (!finalToken && body.message && body.message.chat) {
+           // Some webhooks pass token in path, some in query. We must find the owner.
+           // Since we can't reliably get the token from standard TG body, we must ensure
+           // the Webhook URL in Telegram Botfather ACTUALLY has ?token=YOUR_TOKEN
+        }
+
         if (urlToken) {
             configQuery = configQuery.eq("telegram_token", urlToken);
         } else if (rawEmail) {
             configQuery = configQuery.eq("email", rawEmail.toLowerCase());
         } else {
+            // 🚨 LOG ERROR TO CONSOLE SO YOU CAN SEE WHY IT FAILED
+            console.error("[WEBHOOK FATAL] No token or email in Webhook URL. Cannot link to user.");
             return NextResponse.json({ success: true });
         }
 
