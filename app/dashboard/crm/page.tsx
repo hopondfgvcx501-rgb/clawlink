@@ -8,7 +8,8 @@
  * @description Centralized inbox to monitor bot conversations and take manual human control.
  * 🚀 FIXED: Wired up Media Attachment (Paperclip) to local file picker.
  * 🚀 FIXED: Activated 3-Dot Menu with an animated action dropdown.
- * 🚀 SECURED: Upgraded fetching logic to point to isolated, microservice-style APIs per channel.
+ * 🚀 SECURED: Instagram routed to isolated microservice. Telegram & WhatsApp remain strictly locked to legacy API.
+ * 🔥 UPGRADED: Added Omni-Payload Translator to seamlessly sync Backend Data with Frontend UI.
  * * ALL RIGHTS RESERVED. CLAWLINK INC.
  * ==============================================================================================
  */
@@ -94,22 +95,60 @@ export default function LiveCRMInbox() {
     initInbox();
   }, [session, status]);
 
-  // 🚀 ISOLATED MICROSERVICE ROUTING FIX
+  // 🚀 THE OMNI-ADAPTER: Automatically translates backend variables to UI variables
   const fetchChatsForChannel = async (email: string, channel: string) => {
     setIsLoading(true);
     setActiveChatId(null);
     setMessages([]);
     try {
-      // Calls /api/crm/instagram/route.ts, /api/crm/telegram/route.ts etc.
-      const res = await fetch(`/api/crm/${channel}?email=${encodeURIComponent(email)}&t=${Date.now()}`, { cache: 'no-store' });
+      // Direct routing to our custom API routes
+      let endpoint = `/api/crm/chats?email=${encodeURIComponent(email)}&channel=${channel}&t=${Date.now()}`;
+      if (channel === 'instagram') endpoint = `/api/instagram/crm?email=${encodeURIComponent(email)}&t=${Date.now()}`;
+      if (channel === 'telegram') endpoint = `/api/crm/telegram?email=${encodeURIComponent(email)}&t=${Date.now()}`;
+
+      const res = await fetch(endpoint, { cache: 'no-store' });
       const data = await res.json();
-      if (data.success && data.chats) {
-        setChats(data.chats);
+
+      if (data.success) {
+        // Find where the array actually is (handles Omni-Payload structure)
+        const rawList = data.chats || data.data || data.leads || data.contacts || [];
+
+        // Translate Backend Data into strict UI format
+        const formattedChats: ChatSession[] = rawList.map((chat: any) => {
+          const dateObj = new Date(chat.last_message_time || chat.created_at || Date.now());
+          const timeString = dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+          // Extract Chat History perfectly
+          let chatMessages: ChatMessage[] = [];
+          if (data.groupedChats && data.groupedChats[chat.platform_chat_id || chat.id]) {
+             chatMessages = data.groupedChats[chat.platform_chat_id || chat.id].map((m: any) => ({
+                id: m.id || Math.random().toString(),
+                sender: m.sender_type === "bot" ? "bot" : (m.sender_type === "human" || m.sender_type === "admin" ? "admin" : "user"),
+                text: m.message || "",
+                time: new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+             }));
+          } else if (chat.messages) {
+             chatMessages = chat.messages; // Fallback to old behavior
+          }
+
+          return {
+            id: chat.id || chat.platform_chat_id,
+            userId: chat.platform_chat_id || chat.userId || "Unknown",
+            name: chat.name || chat.customer_name || "Customer",
+            lastMessage: chat.lastMessage || chat.message || "[Media/System]",
+            time: chat.time || timeString,
+            unread: chat.unread || chat.unread_count || 0,
+            aiPaused: chat.aiPaused || false,
+            messages: chatMessages
+          };
+        });
+
+        setChats(formattedChats);
       } else {
         setChats([]); 
       }
     } catch (err) {
-      console.error(`Failed to load ${channel} chats`);
+      console.error(`Failed to load ${channel} chats`, err);
     } finally {
       setIsLoading(false);
     }
@@ -141,11 +180,11 @@ export default function LiveCRMInbox() {
     setChats(chats.map(c => c.id === activeChatId ? { ...c, aiPaused: newStatus } : c));
 
     try {
-      // Direct update to the isolated channel API
-      await fetch(`/api/crm/${activeChannel}`, {
+      const endpoint = activeChannel === 'instagram' ? '/api/instagram/crm' : '/api/crm/chats';
+      await fetch(endpoint, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: session.user.email, chatId: activeChatId, aiPaused: newStatus })
+        body: JSON.stringify({ email: session.user.email, chatId: activeChatId, channel: activeChannel, aiPaused: newStatus })
       });
     } catch (e) {
       console.error("Failed to toggle AI state");
@@ -170,10 +209,11 @@ export default function LiveCRMInbox() {
     }
 
     try {
-        await fetch(`/api/crm/${activeChannel}/messages`, {
+        const endpoint = activeChannel === 'instagram' ? '/api/instagram/crm' : '/api/crm/messages';
+        await fetch(endpoint, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email: session?.user?.email, chatId: activeChatId, message: newMessage.text })
+            body: JSON.stringify({ email: session?.user?.email, chatId: activeChatId, channel: activeChannel, message: newMessage.text })
         });
     } catch(e) {
         console.error("Dispatch failed");
