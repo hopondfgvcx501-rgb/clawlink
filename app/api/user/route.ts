@@ -159,8 +159,8 @@ export async function POST(req: NextRequest) {
         }
 
         const body = await req.json();
-        // 🚀 FIXED: Extract instagram fields
-        const { selectedModel, selectedChannel, plan, telegram_token, whatsapp_phone_id, instagram_token, instagram_account_id } = body;
+        // 🔥 FIXED: Extracted whatsapp_token from body here!
+        const { selectedModel, selectedChannel, plan, telegram_token, whatsapp_phone_id, whatsapp_token, instagram_token, instagram_account_id } = body;
 
         // Force secure cryptographic email string
         const email = token.email.toLowerCase();
@@ -195,6 +195,7 @@ export async function POST(req: NextRequest) {
                 selected_model: selectedModel || undefined,
                 ai_provider: selectedModel ? aiProvider : undefined,
                 plan: plan || undefined,
+                whatsapp_token: whatsapp_token || undefined, // 🔥 FIXED: Added to update payload
                 instagram_token: instagram_token || undefined, // 🚀 FIXED
                 instagram_account_id: instagram_account_id || undefined // 🚀 FIXED
             }).eq("id", existingUser.id);
@@ -206,6 +207,7 @@ export async function POST(req: NextRequest) {
                 ai_provider: aiProvider,
                 telegram_token: telegram_token || undefined,
                 whatsapp_phone_id: whatsapp_phone_id || undefined,
+                whatsapp_token: whatsapp_token || undefined, // 🔥 FIXED: Added to insert payload
                 instagram_token: instagram_token || undefined, // 🚀 FIXED
                 instagram_account_id: instagram_account_id || undefined, // 🚀 FIXED
                 plan: plan || "Starter",
