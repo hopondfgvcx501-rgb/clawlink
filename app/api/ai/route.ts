@@ -3,14 +3,14 @@ import { createClient } from "@supabase/supabase-js";
 
 export const dynamic = "force-dynamic";
 
-// Supabase Connection Initialization
+// Supabase Connection
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 export async function POST(req: Request) {
   try {
-    // SECURITY LOCK: Validate internal master secret
+    // SECURITY LOCK: Prevent unauthorized external access
     const authHeader = req.headers.get("authorization");
     if (authHeader !== `Bearer ${process.env.CLAWLINK_MASTER_SECRET}`) {
       console.error("🚨 [SECURITY BREACH] Unauthorized access attempt to AI Route!");
@@ -85,7 +85,7 @@ export async function POST(req: Request) {
     let finalReply = "Sorry, I am experiencing temporary cognitive lag. Please try again.";
     let wasSuccessful = false;
 
-    // FIX: Updated Anthropic Claude API IDs to stable pointers to prevent 400 Bad Request crashes
+    // FIX: Updated Provider API IDs mapped to 2026 UI versions
     const GEMINI_CHEAP = "gemini-1.5-flash"; 
     const GEMINI_MID = "gemini-1.5-flash";
     const GEMINI_PREMIUM = "gemini-1.5-pro";
@@ -96,7 +96,6 @@ export async function POST(req: Request) {
     const GPT_PREMIUM = "gpt-4o";
     const GPT_FALLBACKS = [GPT_PREMIUM, GPT_MID, GPT_CHEAP];
     
-    // Stable Anthropic identifiers mapped to your 2026 UI
     const CLAUDE_CHEAP = "claude-3-haiku-20240307"; 
     const CLAUDE_MID = "claude-3-5-sonnet-latest";
     const CLAUDE_PREMIUM = "claude-3-opus-20240229";
@@ -198,15 +197,23 @@ export async function POST(req: Request) {
                 const geminiApiKey = process.env.GEMINI_API_KEY; 
                 if (!geminiApiKey) return false;
                 
-                const contents = historyArray.map(msg => ({
-                    role: msg.role === "assistant" ? "model" : "user",
-                    parts: [{ text: msg.content }]
-                }));
-                contents.push({ role: "user", parts: [{ text: message }] });
+                // CRITICAL FIX: Merge consecutive roles for strict APIs
+                let geminiContents: any[] = [];
+                let lastRole = "";
+                const rawMessages = [...historyArray, { role: "user", content: message }];
+                for (const m of rawMessages) {
+                    const role = m.role === "assistant" ? "model" : "user";
+                    if (role === lastRole) {
+                        geminiContents[geminiContents.length - 1].parts[0].text += "\n" + m.content;
+                    } else {
+                        geminiContents.push({ role: role, parts: [{ text: m.content }] });
+                        lastRole = role;
+                    }
+                }
 
                 const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${geminiApiKey}`, {
                     method: "POST", headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ system_instruction: { parts: { text: systemPrompt } }, contents: contents })
+                    body: JSON.stringify({ system_instruction: { parts: { text: systemPrompt } }, contents: geminiContents })
                 });
                 if (res.ok) {
                     const data = await res.json();
@@ -219,10 +226,27 @@ export async function POST(req: Request) {
                 const claudeApiKey = process.env.ANTHROPIC_API_KEY;
                 if (!claudeApiKey) return false;
                 
+                // CRITICAL FIX: Anthropic strictly forbids consecutive user messages. Merging them to prevent 400 Bad Request crash loops.
+                let claudeMessages: any[] = [];
+                let lastRole = "";
+                const rawMessages = [...historyArray, { role: "user", content: message }];
+                for (const m of rawMessages) {
+                    const role = m.role === "assistant" ? "assistant" : "user";
+                    if (role === lastRole) {
+                        claudeMessages[claudeMessages.length - 1].content += "\n" + m.content;
+                    } else {
+                        claudeMessages.push({ role: role, content: m.content });
+                        lastRole = role;
+                    }
+                }
+                if (claudeMessages.length > 0 && claudeMessages[0].role !== "user") {
+                    claudeMessages.shift(); // Anthropic must start with user role
+                }
+                
                 const res = await fetch("https://api.anthropic.com/v1/messages", {
                     method: "POST",
                     headers: { "x-api-key": claudeApiKey, "anthropic-version": "2023-06-01", "content-type": "application/json" },
-                    body: JSON.stringify({ model: modelName, max_tokens: 1024, system: systemPrompt, messages: [...historyArray, { role: "user", content: message }] })
+                    body: JSON.stringify({ model: modelName, max_tokens: 1024, system: systemPrompt, messages: claudeMessages })
                 });
                 if (res.ok) {
                     const data = await res.json();
@@ -257,7 +281,7 @@ export async function POST(req: Request) {
   } catch (error: any) {
     console.error("Master AI Engine Error:", error);
     
-    // CRITICAL ERROR LOGGING: Dispatch fatal errors directly to Admin Telegram Bot
+    // CRITICAL: Route fatal application errors directly to Telegram Admin Bot
     try {
         const token = process.env.TELEGRAM_BOT_TOKEN; 
         const adminChatId = process.env.TELEGRAM_ADMIN_CHAT_ID; 
