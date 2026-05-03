@@ -1,17 +1,16 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-// 🔥 FIX: Removed the missing rate-limiter import to prevent Vercel Build Crash
 
 export const dynamic = "force-dynamic";
 
-// Supabase Connection
+// Supabase Connection Initialization
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 export async function POST(req: Request) {
   try {
-    // 🛑 SECURITY LOCK
+    // SECURITY LOCK: Validate internal master secret
     const authHeader = req.headers.get("authorization");
     if (authHeader !== `Bearer ${process.env.CLAWLINK_MASTER_SECRET}`) {
       console.error("🚨 [SECURITY BREACH] Unauthorized access attempt to AI Route!");
@@ -24,7 +23,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: false, reply: "System Error: Missing email or message." }, { status: 400 });
     }
 
-    // 🔥 FIX: Temporarily bypassed missing Redis rate-limiter logic for Vercel Build
+    // FIX: Temporarily bypassed missing Redis rate-limiter logic for successful Vercel Build
     const forceCheapModel = false; 
 
     // 1. Fetch User's Knowledge Base
@@ -58,7 +57,7 @@ export async function POST(req: Request) {
     const usageRatio = isUnlimited ? 0 : (tokensUsed / tokensAllocated) * 100;
     const words = message.split(/\s+/).length;
 
-    // 🧠 3. FETCH LONG-TERM MEMORY
+    // 3. FETCH LONG-TERM CONVERSATIONAL MEMORY
     const { data: pastChats } = await supabase
       .from("chat_history")
       .select("sender_type, message")
@@ -86,7 +85,7 @@ export async function POST(req: Request) {
     let finalReply = "Sorry, I am experiencing temporary cognitive lag. Please try again.";
     let wasSuccessful = false;
 
-    // 🔥 FIX: MAPPED 2026 UI NAMES TO REAL TECHNICAL API IDs FOR WA/IG
+    // FIX: Updated Anthropic Claude API IDs to stable pointers to prevent 400 Bad Request crashes
     const GEMINI_CHEAP = "gemini-1.5-flash"; 
     const GEMINI_MID = "gemini-1.5-flash";
     const GEMINI_PREMIUM = "gemini-1.5-pro";
@@ -97,13 +96,14 @@ export async function POST(req: Request) {
     const GPT_PREMIUM = "gpt-4o";
     const GPT_FALLBACKS = [GPT_PREMIUM, GPT_MID, GPT_CHEAP];
     
+    // Stable Anthropic identifiers mapped to your 2026 UI
     const CLAUDE_CHEAP = "claude-3-haiku-20240307"; 
-    const CLAUDE_MID = "claude-3-5-sonnet-20241022";
+    const CLAUDE_MID = "claude-3-5-sonnet-latest";
     const CLAUDE_PREMIUM = "claude-3-opus-20240229";
     const CLAUDE_FALLBACKS = [CLAUDE_PREMIUM, CLAUDE_MID, CLAUDE_CHEAP];
 
     // ==========================================
-    // 🧠 THE ROUTER ALGORITHM
+    // THE ROUTER ALGORITHM
     // ==========================================
     if (selectedModel === "omni") {
         console.log(`[ROUTER] Omni Engine Active. Complexity: ${words} words, Usage: ${usageRatio.toFixed(2)}%`);
@@ -177,7 +177,7 @@ export async function POST(req: Request) {
       await supabase.from("user_configs").update({ available_tokens: config.available_tokens - 1 }).eq("email", email);
     }
 
-    // 7. Save to DB
+    // 7. Save to Database
     await supabase.from("bot_conversations").insert({
       email: email, platform: platform || "unknown", chat_id: userPhoneOrChatId || "anonymous", user_message: message, bot_reply: finalReply
     });
@@ -190,7 +190,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ success: true, reply: finalReply });
 
     // ==========================================
-    // ⚡ EXECUTION HELPERS
+    // EXECUTION HELPERS
     // ==========================================
     async function attemptFetch(modelName: string, provider: string): Promise<boolean> {
         try {
@@ -257,7 +257,7 @@ export async function POST(req: Request) {
   } catch (error: any) {
     console.error("Master AI Engine Error:", error);
     
-    // 🔥 FIX: NEVER HIDE ERRORS - SEND TO TG ADMIN BOT IMMEDIATELY!
+    // CRITICAL ERROR LOGGING: Dispatch fatal errors directly to Admin Telegram Bot
     try {
         const token = process.env.TELEGRAM_BOT_TOKEN; 
         const adminChatId = process.env.TELEGRAM_ADMIN_CHAT_ID; 
