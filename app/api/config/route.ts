@@ -5,7 +5,7 @@
  * @file app/api/config/route.ts
  * @description Securely provisions the user's database record using real payload data.
  * SECURITY UPGRADE: Added NextAuth JWT Session verification to prevent Payload Spoofing.
- * 🚀 FIXED: Completely UNMERGED Instagram, Telegram, and WhatsApp logic. Zero variable sharing.
+ * 🚀 FIXED: Removed conditional blocks to FORCEFULLY OVERWRITE old tokens in the Database.
  * * ALL RIGHTS RESERVED. CLAWLINK INC.
  * ==============================================================================================
  */
@@ -52,7 +52,7 @@ export async function POST(req: Request) {
     const selectedModel = sanitizeInput(body.selectedModel);
     const selectedChannel = sanitizeInput(body.selectedChannel);
     
-    // 🚀 UNMERGED VARIABLES: Sabka apna alag independent variable (Fallbacks added for UI safety)
+    // 🚀 UNMERGED VARIABLES: Sabka apna alag independent variable
     const telegramToken = sanitizeInput(body.telegramToken);
     
     const whatsappPhoneId = sanitizeInput(body.whatsappPhoneId || body.waPhoneId);
@@ -90,21 +90,21 @@ export async function POST(req: Request) {
         selected_channel: selectedChannel || "telegram"
     };
 
-    // 🚀 STRICTLY ISOLATED CHANNEL LOGIC (No Variable Mixing)
+    // 🔥 FIX: STRICTLY ISOLATED CHANNEL LOGIC (Forced Overwrite, NO IF CONDITIONS)
     if (selectedChannel === "telegram") {
-        if (telegramToken) payload.telegram_token = telegramToken;
+        payload.telegram_token = telegramToken;
     } 
     else if (selectedChannel === "whatsapp") {
-        if (whatsappPhoneId) payload.whatsapp_phone_id = whatsappPhoneId;
-        if (whatsappToken) payload.whatsapp_token = whatsappToken; 
-        if (whatsappPhoneNumber) payload.whatsapp_number = whatsappPhoneNumber;
+        payload.whatsapp_phone_id = whatsappPhoneId;
+        payload.whatsapp_token = whatsappToken; 
+        payload.whatsapp_number = whatsappPhoneNumber;
     } 
     else if (selectedChannel === "instagram") {
-        if (instagramAccountId) payload.instagram_account_id = instagramAccountId; 
-        if (instagramToken) payload.instagram_token = instagramToken; 
+        payload.instagram_account_id = instagramAccountId; 
+        payload.instagram_token = instagramToken; 
     }
 
-    // 🛡️ SECURITY LAYER 3: SAFE DATABASE OPERATION
+    // 🛡️ SECURITY LAYER 3: BULLETPROOF UPDATE/INSERT
     const { data: existingUser, error: lookupError } = await supabaseAdmin
         .from("user_configs")
         .select("id")
@@ -114,6 +114,7 @@ export async function POST(req: Request) {
     if (lookupError) throw new Error("Database Lookup Failed: " + lookupError.message);
 
     if (existingUser) {
+        // 🔥 OVERWRITE GUARANTEED
         const { error: updateError } = await supabaseAdmin
             .from("user_configs")
             .update(payload)
