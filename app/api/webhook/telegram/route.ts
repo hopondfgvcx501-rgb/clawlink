@@ -40,7 +40,7 @@ const supabaseAdmin = createClient(supabaseUrl, supabaseKey, {
 
 function sanitizeInput(input: string | null | undefined): string {
     if (!input) return "";
-    return input
+    return String(input)
         .replace(/<[^>]*>?/gm, "")
         .replace(/--/g, "")
         .replace(/;/g, "")
@@ -76,7 +76,7 @@ async function generateEmbedding(text: string) {
     }
 }
 
-// 🚀 REAL API EXECUTIONS RESTORED
+// REAL API EXECUTIONS RESTORED
 async function callGemini(modelId: string, systemPrompt: string, history: any[], userText: string) {
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) throw new Error("API_KEY missing");
@@ -202,12 +202,9 @@ export async function POST(req: Request) {
 
         let configQuery = supabaseAdmin.from("user_configs").select("*");
         
-        // 🔥 FIX: Check body for token as fallback if not in URL
         let finalToken = urlToken;
         if (!finalToken && body.message && body.message.chat) {
-           // Some webhooks pass token in path, some in query. We must find the owner.
-           // Since we can't reliably get the token from standard TG body, we must ensure
-           // the Webhook URL in Telegram Botfather ACTUALLY has ?token=YOUR_TOKEN
+           // Fallback logic check
         }
 
         if (urlToken) {
@@ -215,22 +212,27 @@ export async function POST(req: Request) {
         } else if (rawEmail) {
             configQuery = configQuery.eq("email", rawEmail.toLowerCase());
         } else {
-            // 🚨 LOG ERROR TO CONSOLE SO YOU CAN SEE WHY IT FAILED
             console.error("[WEBHOOK FATAL] No token or email in Webhook URL. Cannot link to user.");
             return NextResponse.json({ success: true });
         }
 
-        const { data: config, error: configError } = await configQuery.order("created_at", { ascending: false }).limit(1).single();
-        
+        // CRITICAL FIX: Prevent database crash by removing .single() 
+        const { data: configData, error: configError } = await configQuery.order("created_at", { ascending: false }).limit(1);
+        const config = configData?.[0];
+
         if (configError || !config || !config.telegram_token) {
-            // CRITICAL: Log database rejection directly to the Telegram Admin for immediate debugging.
-            const debugMsg = `⚠️ [DATABASE REJECTED]\nReason: ${configError?.message || "Token not found in user_configs"}\nReceived Token: ${urlToken}`;
+            console.error("[DATABASE REJECTED]", configError?.message);
             
-            await fetch(`https://api.telegram.org/bot${urlToken}/sendMessage`, {
-                method: "POST", 
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ chat_id: chatId, text: debugMsg })
-            });
+            try {
+                const adminToken = process.env.TELEGRAM_BOT_TOKEN; 
+                const adminChatId = process.env.TELEGRAM_ADMIN_CHAT_ID; 
+                if (adminToken && adminChatId) {
+                    await fetch(`https://api.telegram.org/bot${adminToken}/sendMessage`, {
+                        method: "POST", headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ chat_id: adminChatId, text: `⚠️ [DB ERROR] Telegram Webhook:\n${configError?.message || "Token not found"}\nReceived: ${urlToken}` })
+                    });
+                }
+            } catch(e) {}
             
             return NextResponse.json({ success: true });
         }
@@ -250,7 +252,7 @@ export async function POST(req: Request) {
 
         const currentPlan = (config.plan_tier || config.plan || "free").toLowerCase();
         
-        // 🚀 PLG GATEKEEPER: Instantly blocks free users with an upsell message
+        // PLG GATEKEEPER: Instantly blocks free users with an upsell message
         if (currentPlan === "free" || currentPlan === "starter" || config.plan_status !== "Active") {
             const sleepMsg = "🤖 *ClawLink AI:* This agent is currently sleeping. Please activate a plan in the ClawLink Dashboard to enable 24/7 autonomous intelligence.";
             await fetch(`https://api.telegram.org/bot${telegramToken}/sendMessage`, {
@@ -308,7 +310,7 @@ export async function POST(req: Request) {
         if (now - lastMessageTime < COOLDOWN_MS) return NextResponse.json({ success: true });
         rateLimitMap.set(chatId, now);
 
-        // 🔥 AUTOMATION INTERCEPTOR (Checks Keyword Rules BEFORE calling expensive AI)
+        // AUTOMATION INTERCEPTOR
         const { data: rules } = await supabaseAdmin
             .from("automation_rules")
             .select("*")
@@ -319,7 +321,6 @@ export async function POST(req: Request) {
         if (rules && rules.length > 0) {
             const userTextLower = userText.toLowerCase();
             for (const rule of rules) {
-                // Split comma-separated keywords and trim spaces
                 const keywords = rule.keyword.split(',').map((k: string) => k.trim().toLowerCase());
                 
                 for (const kw of keywords) {
@@ -332,37 +333,32 @@ export async function POST(req: Request) {
                         break;
                     }
                 }
-                if (matchedRuleContent) break; // Stop checking rules if we found a match
+                if (matchedRuleContent) break; 
             }
         }
 
         if (matchedRuleContent) {
             console.log(`[AUTOMATION_TRIGGERED] Keyword matched! Bypassing AI.`);
             
-            // 1. Save User Message
             const { error: userDbError } = await supabaseAdmin.from("chat_history").insert({ 
                 email: ownerEmail, platform: "telegram", platform_chat_id: chatId, customer_name: customerName, sender_type: "user", message: crmLogMessage 
             });
             if (userDbError) throw new Error(`Supabase Reject (User Msg): ${userDbError.message}`);
 
-            // 2. Save Automation Reply
             const { error: botDbError } = await supabaseAdmin.from("chat_history").insert({ 
                 email: ownerEmail, platform: "telegram", platform_chat_id: chatId, customer_name: customerName, sender_type: "bot", message: matchedRuleContent 
             });
             if (botDbError) throw new Error(`Supabase Reject (Bot Msg): ${botDbError.message}`);
 
-            // 3. Send exact rule text to Telegram
             await fetch(`https://api.telegram.org/bot${telegramToken}/sendMessage`, {
                 method: "POST", headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ chat_id: chatId, text: matchedRuleContent })
             });
 
-            // SUCCESS EXIT (Prevents Omni AI from running)
             return NextResponse.json({ success: true }); 
         }
-        // 🔥 END AUTOMATION INTERCEPTOR
 
-        // 🔥 THE FLOW PARSER ENGINE (NEWLY ADDED - Executed if no automation rule matched)
+        // FLOW PARSER ENGINE
         if (config.telegram_flow_data && config.telegram_flow_data.nodes) {
             const nodes = config.telegram_flow_data.nodes;
             const edges = config.telegram_flow_data.edges || [];
@@ -387,7 +383,6 @@ export async function POST(req: Request) {
                     const actionNode = nodes.find((n: any) => n.id === outgoingEdge.target);
                     
                     if (actionNode && actionNode.type === "actionNode") {
-                        // Success Proof Text to ensure connection works
                         let responseText = `[Flow Executed] Action: ${actionNode.data.label}. You triggered the path from: ${activeTriggerNode.data.label}`;
                         
                         const { error: userDbError } = await supabaseAdmin.from("chat_history").insert({ 
@@ -411,9 +406,8 @@ export async function POST(req: Request) {
                 }
             }
         }
-        // 🔥 END FLOW PARSER ENGINE
 
-        // 🚀 THE RAG ENGINE (Custom Knowledge Base Execution)
+        // RAG ENGINE
         let customKnowledge = "";
         try {
             const queryVector = await generateEmbedding(userText);
@@ -427,7 +421,7 @@ export async function POST(req: Request) {
             }
         } catch (e) {}
 
-        // 🚀 THE CONVERSATIONAL MEMORY (Ghajini Preventer)
+        // CONVERSATIONAL MEMORY
         const { data: pastChats } = await supabaseAdmin
             .from("chat_history")
             .select("sender_type, message")
@@ -446,7 +440,7 @@ export async function POST(req: Request) {
 
         const fullSystemContext = `${ENTERPRISE_GUARDRAIL}\n\nSystem Instructions: ${systemPrompt}\n\nCompany Knowledge:\n${customKnowledge ? customKnowledge : "None."}`;
         
-        // 🔥 FIX 1: USER MESSAGE DB INSERT (With Error Tracking)
+        // USER MESSAGE DB INSERT
         const { error: userDbError } = await supabaseAdmin.from("chat_history").insert({ 
             email: ownerEmail, platform: "telegram", platform_chat_id: chatId, customer_name: customerName, sender_type: "user", message: crmLogMessage 
         });
@@ -461,8 +455,6 @@ export async function POST(req: Request) {
         const words = userText.split(/\s+/).length;
         const usageRatio = isUnlimited ? 0 : (tokensUsed / tokensAllocated) * 100;
         
-        // 🚀 2026 OMNI MODEL MAPPING
-        // Mapping UI display names to their actual underlying API model IDs
         const GEMINI_CHEAP = "gemini-1.5-flash"; 
         const GEMINI_MID = "gemini-1.5-flash";       
         const GEMINI_PREMIUM = "gemini-1.5-pro";    
@@ -476,9 +468,8 @@ export async function POST(req: Request) {
         const CLAUDE_PREMIUM = "claude-3-opus-20240229";
 
         let targetProvider = provider;
-        
-        // Match the UI selection to the correct API ID for execution
         let targetApiId = GPT_PREMIUM; 
+        
         if (provider === "anthropic") targetApiId = CLAUDE_PREMIUM;
         if (provider === "google") targetApiId = GEMINI_PREMIUM;
 
@@ -538,7 +529,7 @@ export async function POST(req: Request) {
             await supabaseAdmin.from("user_configs").update(updatePayload).eq("id", configId);
         }
         
-        // 🔥 FIX 2: BOT MESSAGE DB INSERT (With Error Tracking)
+        // BOT MESSAGE DB INSERT
         const { error: botDbError } = await supabaseAdmin.from("chat_history").insert({ 
             email: ownerEmail, platform: "telegram", platform_chat_id: chatId, customer_name: customerName, sender_type: "bot", message: aiResponse 
         });
