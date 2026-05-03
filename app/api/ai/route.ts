@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { checkTrafficSpeed } from "../../lib/rate-limiter";
 
 export const dynamic = "force-dynamic";
 
@@ -23,6 +24,17 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: false, reply: "System Error: Missing email or message." }, { status: 400 });
     }
 
+    // 🚀 NEW: CHECK TRAFFIC SPEED BEFORE ANY DB CALL
+    const trafficStatus = await checkTrafficSpeed(email);
+    
+    if (trafficStatus === "BLOCK") {
+       console.warn(`🚨 [DDoS BLOCKED] User ${email} exceeded absolute limits.`);
+       return NextResponse.json({ success: false, reply: "System is experiencing heavy load. Please slow down." }, { status: 429 });
+    }
+
+    const forceCheapModel = trafficStatus === "DOWNGRADE";
+    if (forceCheapModel) console.log(`📉 [COST SAVER] Downgrading ${email} to budget models due to high speed.`);
+
     // 1. Fetch User's Knowledge Base
     const { data: kb } = await supabase
       .from("knowledge_base")
@@ -40,7 +52,6 @@ export async function POST(req: Request) {
       .eq("email", email)
       .single();
 
-    // 🚀 FIXED: Dynamic string matching to DB values
     const rawSelectedModel = (config?.ai_model || "gpt-5.4 Pro").toLowerCase();
     
     let selectedModel = "openai";
@@ -72,7 +83,6 @@ export async function POST(req: Request) {
       }));
     }
 
-    // 4. Construct System Prompt
     const systemPrompt = `You are a professional, helpful, and concise AI customer support agent for ${companyName}.
     CORE BUSINESS KNOWLEDGE (Strictly follow this):
     ${businessInfo}
@@ -84,29 +94,28 @@ export async function POST(req: Request) {
     let finalReply = "Sorry, I am experiencing temporary cognitive lag. Please try again.";
     let wasSuccessful = false;
 
-    // 🚀 5. 2026 LATEST MODELS CONSTANTS
-    const GEMINI_CHEAP = "gemini-3.1-flash-lite";
-    const GEMINI_MID = "gemini-3.1-flash";
-    const GEMINI_PREMIUM = "gemini-3.1-pro";
+    // 🔥 FIX: MAPPED 2026 UI NAMES TO REAL TECHNICAL API IDs FOR WA/IG
+    const GEMINI_CHEAP = "gemini-1.5-flash"; 
+    const GEMINI_MID = "gemini-1.5-flash";
+    const GEMINI_PREMIUM = "gemini-1.5-pro";
     const GEMINI_FALLBACKS = [GEMINI_PREMIUM, GEMINI_MID, GEMINI_CHEAP];
     
-    const GPT_CHEAP = "gpt-4.1-nano";
-    const GPT_MID = "gpt-5.2";
-    const GPT_PREMIUM = "gpt-5.4";
+    const GPT_CHEAP = "gpt-3.5-turbo"; 
+    const GPT_MID = "gpt-4o-mini";
+    const GPT_PREMIUM = "gpt-4o";
     const GPT_FALLBACKS = [GPT_PREMIUM, GPT_MID, GPT_CHEAP];
     
-    const CLAUDE_CHEAP = "claude-3-haiku";
-    const CLAUDE_MID = "claude-sonnet-4.6";
-    const CLAUDE_PREMIUM = "claude-opus-4.6";
+    const CLAUDE_CHEAP = "claude-3-haiku-20240307"; 
+    const CLAUDE_MID = "claude-3-5-sonnet-20241022";
+    const CLAUDE_PREMIUM = "claude-3-opus-20240229";
     const CLAUDE_FALLBACKS = [CLAUDE_PREMIUM, CLAUDE_MID, CLAUDE_CHEAP];
 
     // ==========================================
     // 🧠 THE ROUTER ALGORITHM
     // ==========================================
     if (selectedModel === "omni") {
-        // 🔄 OMNI CROSS-PROVIDER ROUTING
         console.log(`[ROUTER] Omni Engine Active. Complexity: ${words} words, Usage: ${usageRatio.toFixed(2)}%`);
-        if (usageRatio >= 80) {
+        if (forceCheapModel || usageRatio >= 80) { 
             wasSuccessful = await attemptFetch(GEMINI_CHEAP, "gemini");
             if (!wasSuccessful) wasSuccessful = await attemptFetch(GPT_CHEAP, "openai");
             if (!wasSuccessful) wasSuccessful = await attemptFetch(CLAUDE_CHEAP, "anthropic");
@@ -118,16 +127,12 @@ export async function POST(req: Request) {
             else if (words < 150) wasSuccessful = await attemptFetch(GPT_MID, "openai");
             else wasSuccessful = await attemptFetch(CLAUDE_PREMIUM, "anthropic");
         }
-        
-        // Final Failsafe
         if (!wasSuccessful) wasSuccessful = await attemptFetch(GPT_CHEAP, "openai");
 
     } else if (selectedModel === "anthropic") {
-        // 🔹 INTRA-PROVIDER: CLAUDE ONLY
         console.log(`[ROUTER] Claude Only Active.`);
         let targetModel = CLAUDE_MID;
-        if (usageRatio >= 85) targetModel = CLAUDE_CHEAP;
-        else if (words < 40) targetModel = CLAUDE_CHEAP;
+        if (forceCheapModel || usageRatio >= 85 || words < 40) targetModel = CLAUDE_CHEAP; 
         else if (words > 150) targetModel = CLAUDE_PREMIUM;
 
         wasSuccessful = await attemptFetch(targetModel, "anthropic");
@@ -140,11 +145,9 @@ export async function POST(req: Request) {
             }
         }
     } else if (selectedModel === "gemini") {
-        // 🔹 INTRA-PROVIDER: GEMINI ONLY
         console.log(`[ROUTER] Gemini Only Active.`);
         let targetModel = GEMINI_MID;
-        if (usageRatio >= 85) targetModel = GEMINI_CHEAP;
-        else if (words < 40) targetModel = GEMINI_CHEAP;
+        if (forceCheapModel || usageRatio >= 85 || words < 40) targetModel = GEMINI_CHEAP; 
         else if (words > 150) targetModel = GEMINI_PREMIUM;
 
         wasSuccessful = await attemptFetch(targetModel, "gemini");
@@ -157,11 +160,9 @@ export async function POST(req: Request) {
             }
         }
     } else {
-        // 🔹 INTRA-PROVIDER: OPENAI ONLY (Default)
         console.log(`[ROUTER] OpenAI Only Active.`);
         let targetModel = GPT_MID;
-        if (usageRatio >= 85) targetModel = GPT_CHEAP;
-        else if (words < 40) targetModel = GPT_CHEAP;
+        if (forceCheapModel || usageRatio >= 85 || words < 40) targetModel = GPT_CHEAP; 
         else if (words > 150) targetModel = GPT_PREMIUM;
 
         wasSuccessful = await attemptFetch(targetModel, "openai");
@@ -176,7 +177,7 @@ export async function POST(req: Request) {
     }
 
     if (!wasSuccessful) {
-        throw new Error("All provider fallbacks exhausted.");
+        throw new Error("All provider fallbacks exhausted or API keys are invalid.");
     }
 
     // 6. Deduct Token if not Unlimited
@@ -263,6 +264,21 @@ export async function POST(req: Request) {
 
   } catch (error: any) {
     console.error("Master AI Engine Error:", error);
-    return NextResponse.json({ success: false, reply: "Internal Cognitive Failure. Please check API Keys in .env" }, { status: 500 });
+    
+    // 🔥 FIX: NEVER HIDE ERRORS - SEND TO TG ADMIN BOT IMMEDIATELY!
+    try {
+        const token = process.env.TELEGRAM_BOT_TOKEN; 
+        const adminChatId = process.env.TELEGRAM_ADMIN_CHAT_ID; 
+        if (adminChatId && token) {
+            await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+                method: "POST", headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ chat_id: adminChatId, text: `⚠️ [API/AI CRASH] WhatsApp/IG Route: ${error.message || "Unknown Runtime Exception"}` })
+            });
+        }
+    } catch (e) {
+        console.error("Failed to alert Admin on Telegram", e);
+    }
+
+    return NextResponse.json({ success: false, reply: "Internal Cognitive Failure. System engineers have been notified." }, { status: 500 });
   }
 }

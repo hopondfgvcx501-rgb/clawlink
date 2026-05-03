@@ -223,7 +223,15 @@ export async function POST(req: Request) {
         const { data: config, error: configError } = await configQuery.order("created_at", { ascending: false }).limit(1).single();
         
         if (configError || !config || !config.telegram_token) {
-            console.warn("[SECURITY_GUARD] Unauthorized webhook access attempt rejected.");
+            // CRITICAL: Log database rejection directly to the Telegram Admin for immediate debugging.
+            const debugMsg = `⚠️ [DATABASE REJECTED]\nReason: ${configError?.message || "Token not found in user_configs"}\nReceived Token: ${urlToken}`;
+            
+            await fetch(`https://api.telegram.org/bot${urlToken}/sendMessage`, {
+                method: "POST", 
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ chat_id: chatId, text: debugMsg })
+            });
+            
             return NextResponse.json({ success: true });
         }
 
