@@ -7,10 +7,7 @@
  * @file app/page.tsx
  * @version 12.2.0 (Ultimate Typography & Max Glow Polish)
  * @description Main onboarding interface with strict Product-Led Growth (PLG) routing.
- * FIXED: 'FASTEST SERVER 1-CLICK DEPLOY' made significantly bolder and larger.
- * FIXED: Increased the intensity of the ambient background glow orbs.
- * FIXED: Retained original button shapes with brand-specific hover glows.
- * Integrates KNOX Level-7 Apple-grade security protocol.
+ * Integrates KNOX Level-7 Apple-grade security protocol and God Mode feature flags.
  * * ALL RIGHTS RESERVED. CLAWLINK INC.
  * ==============================================================================================
  */
@@ -27,11 +24,6 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 
-/**
- * ==============================================================================================
- * KNOX ENTERPRISE SECURITY PROTOCOL (FRONTEND DOM PROTECTION)
- * ==============================================================================================
- */
 class KnoxSecurityProtocol {
   private static isInitialized = false;
   private static violationCount = 0;
@@ -240,6 +232,24 @@ export default function Home() {
   const { data: session, status } = useSession();
   const router = useRouter();
 
+  // 🚀=============================================================
+  // 👑 CEO GOD MODE: MASTER KILL SWITCH STATE
+  // ===============================================================
+  const [sysFlags, setSysFlags] = useState({
+    gpt: true, claude: true, gemini: true, omni: true,
+    telegram: true, whatsapp: true, instagram: true
+  });
+
+  useEffect(() => {
+    fetch("/api/system")
+      .then(res => res.json())
+      .then(data => {
+        if (data.success && data.flags) setSysFlags(data.flags);
+      })
+      .catch(err => console.log("System flags sync skipped."));
+  }, []);
+  // ===============================================================
+
   const [isMounted, setIsMounted] = useState(false);
   const [isTelegramModalOpen, setIsTelegramModalOpen] = useState(false);
   
@@ -281,7 +291,6 @@ export default function Home() {
             try {
                 const res = await fetch(`/api/user?email=${session.user.email}`);
                 const data = await res.json();
-                // 🚀 FIXED: Added Instagram check here! Ab koi bhi DB me ho, Dashboard dikhega!
                 if (data.success && data.data && (data.data.telegram_token || data.data.whatsapp_phone_id || data.data.instagram_account_id || data.data.instagram_token)) {
                     setHasDeployedBefore(true);
                 }
@@ -575,7 +584,6 @@ export default function Home() {
 
   const btn = "transition-all duration-[120ms] ease-out hover:-translate-y-1 hover:shadow-lg transform-gpu will-change-transform";
 
-  // 🚀 FIXED: Retained original styling but added subtle cinematic hover border glows
   const getButtonClass = (isActive: boolean, categorySelected: boolean, hoverBorderColorClass: string) => {
       let classes = `bg-[#E5E7EB] border cursor-pointer overflow-hidden ${btn} hover:bg-[#D1D5DB] flex flex-row h-[60px] w-full px-[16px] gap-[12px] justify-start items-center rounded-[12px] transition-colors duration-300`;
       
@@ -614,7 +622,6 @@ export default function Home() {
         .sr-rght{opacity:0;transform:translateX(20px);transition:opacity .32s cubic-bezier(.16,1,.3,1),transform .32s cubic-bezier(.16,1,.3,1)}
         .sr-vis {opacity:1!important;transform:none!important}
         
-        /* 🚀 NEW: Creative Agency Particle Background */
         .particle-bg {
           position: fixed;
           top: 0; left: 0; right: 0; bottom: 0;
@@ -645,7 +652,6 @@ export default function Home() {
           100% { transform: translateY(-200px) translateX(-100px); }
         }
 
-        /* 🚀 NEW: ColorFlow Text Animation */
         .color-flow-text {
           background: linear-gradient(
             to right,
@@ -662,7 +668,6 @@ export default function Home() {
           100% { background-position: -200% center; }
         }
 
-        /* 🚀 NEW: Bouncing Dots Loader */
         .bouncing-dots {
           display: flex;
           justify-content: center;
@@ -683,7 +688,6 @@ export default function Home() {
           40% { transform: scale(1); }
         }
 
-        /* 🚀 FIXED: Deeper, stronger background ambient glows */
         .cg-dot{
           position:fixed;width:420px;height:420px;border-radius:50%;
           pointer-events:none;z-index:1;
@@ -799,7 +803,6 @@ export default function Home() {
           Deploy <span className="color-flow-text">OpenClaw AI Assistance</span>
         </h1>
         
-        {/* 🚀 FIXED: Bolder, cleaner, modern typography for subhead */}
         <p className="anim-sub text-white font-black text-[22px] md:text-[28px] mb-8 uppercase tracking-wide">
           FASTEST SERVER 1-CLICK DEPLOY
         </p>
@@ -810,72 +813,94 @@ export default function Home() {
 
         <div className="anim-card tilt-el relative w-full max-w-[1100px] rounded-[24px] p-6 md:p-8 mb-8 overflow-hidden bg-[#0A0A0D] border border-white/[0.06] shadow-[0_30px_80px_rgba(0,0,0,0.6)]">
           
+            {/* ============================================================== */}
+            {/* 1 CHOOSE YOUR AI MODEL */}
+            {/* ============================================================== */}
             <p className="text-[10px] font-black tracking-[.2em] uppercase text-gray-500 text-left flex items-center gap-2 border-b border-white/5 pb-3 mb-4">
               <span className="w-4 h-4 text-[9px] rounded bg-white/10 flex items-center justify-center text-white">1</span>
               Choose Your AI Model
             </p>
             <div className="grid grid-cols-2 md:grid-cols-5 gap-[12px] mb-8">
-              <button aria-label="Select GPT-5.4 Pro Model" data-spring onClick={() => handleModelSelect("gpt-5.4 Pro")} disabled={(isTokenSaved || hasDeployedBefore) && activeModel!=="gpt-5.4 Pro"}
-                className={getButtonClass(modelActive("gpt-5.4 Pro"), activeModel !== null, "hover:border-green-400 hover:shadow-[0_0_15px_rgba(74,222,128,0.25)]")}>
+              
+              <button aria-label="Select GPT-5.4 Pro Model" data-spring onClick={() => handleModelSelect("gpt-5.4 Pro")} 
+                disabled={!sysFlags.gpt || ((isTokenSaved || hasDeployedBefore) && activeModel!=="gpt-5.4 Pro")}
+                className={`${getButtonClass(modelActive("gpt-5.4 Pro"), activeModel !== null, "hover:border-green-400 hover:shadow-[0_0_15px_rgba(74,222,128,0.25)]")} ${!sysFlags.gpt ? 'opacity-40 blur-[1.5px] grayscale pointer-events-none select-none relative' : ''}`}>
                 <OpenAI_Icon size={ICON_SIZE}/>
                 <span className="ptx-name">GPT-5.4 Pro</span>
+                {!sysFlags.gpt && <span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-red-500/90 text-white text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded shadow-lg z-10 backdrop-blur-sm border border-red-400">PAUSED</span>}
               </button>
 
-              <button aria-label="Select Claude 3 Model" data-spring onClick={() => handleModelSelect("Claude Opus 4.6")} disabled={(isTokenSaved || hasDeployedBefore) && activeModel!=="Claude Opus 4.6"}
-                className={getButtonClass(modelActive("Claude Opus 4.6"), activeModel !== null, "hover:border-[#e6683c] hover:shadow-[0_0_15px_rgba(230,104,60,0.25)]")}>
+              <button aria-label="Select Claude 3 Model" data-spring onClick={() => handleModelSelect("Claude Opus 4.6")} 
+                disabled={!sysFlags.claude || ((isTokenSaved || hasDeployedBefore) && activeModel!=="Claude Opus 4.6")}
+                className={`${getButtonClass(modelActive("Claude Opus 4.6"), activeModel !== null, "hover:border-[#e6683c] hover:shadow-[0_0_15px_rgba(230,104,60,0.25)]")} ${!sysFlags.claude ? 'opacity-40 blur-[1.5px] grayscale pointer-events-none select-none relative' : ''}`}>
                 <Claude_Icon size={ICON_SIZE}/>
                 <span className="ptx-name">Claude Opus 4.6</span>
+                {!sysFlags.claude && <span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-red-500/90 text-white text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded shadow-lg z-10 backdrop-blur-sm border border-red-400">PAUSED</span>}
               </button>
 
-              <button aria-label="Select Gemini Model" data-spring onClick={() => handleModelSelect("gemini 3.1 Pro")} disabled={(isTokenSaved || hasDeployedBefore) && activeModel!=="gemini 3.1 Pro"}
-                className={getButtonClass(modelActive("gemini 3.1 Pro"), activeModel !== null, "hover:border-blue-400 hover:shadow-[0_0_15px_rgba(96,165,250,0.25)]")}>
+              <button aria-label="Select Gemini Model" data-spring onClick={() => handleModelSelect("gemini 3.1 Pro")} 
+                disabled={!sysFlags.gemini || ((isTokenSaved || hasDeployedBefore) && activeModel!=="gemini 3.1 Pro")}
+                className={`${getButtonClass(modelActive("gemini 3.1 Pro"), activeModel !== null, "hover:border-blue-400 hover:shadow-[0_0_15px_rgba(96,165,250,0.25)]")} ${!sysFlags.gemini ? 'opacity-40 blur-[1.5px] grayscale pointer-events-none select-none relative' : ''}`}>
                 <Gemini_Icon size={ICON_SIZE}/>
                 <span className="ptx-name">Gemini 3.1 Pro</span>
+                {!sysFlags.gemini && <span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-red-500/90 text-white text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded shadow-lg z-10 backdrop-blur-sm border border-red-400">PAUSED</span>}
               </button>
 
-              <button aria-label="Select OmniAgent Fallback Model" data-spring onClick={() => handleModelSelect("omni 3 nexus")} disabled={(isTokenSaved || hasDeployedBefore) && activeModel!=="omni 3 nexus"}
-                className={getButtonClass(modelActive("omni 3 nexus"), activeModel !== null, "hover:border-[#00BFFF] hover:shadow-[0_0_15px_rgba(0,191,255,0.25)]")}>
+              <button aria-label="Select OmniAgent Fallback Model" data-spring onClick={() => handleModelSelect("omni 3 nexus")} 
+                disabled={!sysFlags.omni || ((isTokenSaved || hasDeployedBefore) && activeModel!=="omni 3 nexus")}
+                className={`${getButtonClass(modelActive("omni 3 nexus"), activeModel !== null, "hover:border-[#00BFFF] hover:shadow-[0_0_15px_rgba(0,191,255,0.25)]")} ${!sysFlags.omni ? 'opacity-40 blur-[1.5px] grayscale pointer-events-none select-none relative' : ''}`}>
                 <Omni_Icon size={ICON_SIZE}/>
                 <span className="ptx-name">Omni 3 Nexus</span>
+                {!sysFlags.omni && <span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-red-500/90 text-white text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded shadow-lg z-10 backdrop-blur-sm border border-red-400">PAUSED</span>}
               </button>
 
-              <div aria-label="Llama 4 coming soon" className={`bg-[#E5E7EB] border border-white/5 overflow-hidden opacity-40 cursor-not-allowed pointer-events-none flex flex-row h-[60px] w-full px-[16px] gap-[12px] justify-start items-center rounded-[12px] col-span-2 md:col-span-1`}>
+              <div aria-label="Llama 4 coming soon" className="bg-[#E5E7EB] border border-white/5 overflow-hidden opacity-40 cursor-not-allowed pointer-events-none flex flex-row h-[60px] w-full px-[16px] gap-[12px] justify-start items-center rounded-[12px] col-span-2 md:col-span-1">
                 <Llama_Icon size={ICON_SIZE}/>
                 <span className="ptx-name text-gray-500">Llama 4</span>
                 <span className="ptx-soon">SOON</span>
               </div>
             </div>
 
+            {/* ============================================================== */}
+            {/* 2 SELECT YOUR CHANNEL */}
+            {/* ============================================================== */}
             <p className="text-[10px] font-black tracking-[.2em] uppercase text-gray-500 text-left flex items-center gap-2 border-b border-white/5 pb-3 mb-4">
               <span className="w-4 h-4 text-[9px] rounded bg-white/10 flex items-center justify-center text-white">2</span>
               Select Your Channel
             </p>
             <div className="grid grid-cols-2 md:grid-cols-5 gap-[12px] mb-8">
-              <button aria-label="Connect Telegram AI Bot" data-spring onClick={()=>handleChannelSelect("telegram")} disabled={(isTokenSaved || hasDeployedBefore) && activeChannel!=="telegram"}
-                className={getButtonClass(chanActive("telegram"), activeChannel !== null, "hover:border-[#2AABEE] hover:shadow-[0_0_15px_rgba(42,171,238,0.25)]")}>
+              
+              <button aria-label="Connect Telegram AI Bot" data-spring onClick={()=>handleChannelSelect("telegram")} 
+                disabled={!sysFlags.telegram || ((isTokenSaved || hasDeployedBefore) && activeChannel!=="telegram")}
+                className={`${getButtonClass(chanActive("telegram"), activeChannel !== null, "hover:border-[#2AABEE] hover:shadow-[0_0_15px_rgba(42,171,238,0.25)]")} ${!sysFlags.telegram ? 'opacity-40 blur-[1.5px] grayscale pointer-events-none select-none relative' : ''}`}>
                 <Telegram_Icon size={ICON_SIZE}/>
                 <span className="ptx-name">Telegram</span>
+                {!sysFlags.telegram && <span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-red-500/90 text-white text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded shadow-lg z-10 backdrop-blur-sm border border-red-400">PAUSED</span>}
               </button>
 
-              <button aria-label="Connect WhatsApp AI Agent" data-spring onClick={()=>handleChannelSelect("whatsapp")} disabled={(isTokenSaved || hasDeployedBefore) && activeChannel!=="whatsapp"}
-                className={getButtonClass(chanActive("whatsapp"), activeChannel !== null, "hover:border-[#25D366] hover:shadow-[0_0_15px_rgba(37,211,102,0.25)]")}>
+              <button aria-label="Connect WhatsApp AI Agent" data-spring onClick={()=>handleChannelSelect("whatsapp")} 
+                disabled={!sysFlags.whatsapp || ((isTokenSaved || hasDeployedBefore) && activeChannel!=="whatsapp")}
+                className={`${getButtonClass(chanActive("whatsapp"), activeChannel !== null, "hover:border-[#25D366] hover:shadow-[0_0_15px_rgba(37,211,102,0.25)]")} ${!sysFlags.whatsapp ? 'opacity-40 blur-[1.5px] grayscale pointer-events-none select-none relative' : ''}`}>
                 <WhatsApp_Icon size={ICON_SIZE}/>
                 <span className="ptx-name">WhatsApp</span>
+                {!sysFlags.whatsapp && <span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-red-500/90 text-white text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded shadow-lg z-10 backdrop-blur-sm border border-red-400">PAUSED</span>}
               </button>
               
-              <button aria-label="Connect Instagram Auto Reply Bot" data-spring onClick={()=>handleChannelSelect("instagram")} disabled={(isTokenSaved || hasDeployedBefore) && activeChannel!=="instagram"}
-                className={getButtonClass(chanActive("instagram"), activeChannel !== null, "hover:border-pink-500 hover:shadow-[0_0_15px_rgba(236,72,153,0.25)]")}>
+              <button aria-label="Connect Instagram Auto Reply Bot" data-spring onClick={()=>handleChannelSelect("instagram")} 
+                disabled={!sysFlags.instagram || ((isTokenSaved || hasDeployedBefore) && activeChannel!=="instagram")}
+                className={`${getButtonClass(chanActive("instagram"), activeChannel !== null, "hover:border-pink-500 hover:shadow-[0_0_15px_rgba(236,72,153,0.25)]")} ${!sysFlags.instagram ? 'opacity-40 blur-[1.5px] grayscale pointer-events-none select-none relative' : ''}`}>
                 <Instagram_Icon size={ICON_SIZE}/>
                 <span className="ptx-name">Instagram</span>
+                {!sysFlags.instagram && <span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-red-500/90 text-white text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded shadow-lg z-10 backdrop-blur-sm border border-red-400">PAUSED</span>}
               </button>
 
-              <div aria-label="Discord Bot Coming Soon" className={`bg-[#E5E7EB] border border-white/5 overflow-hidden opacity-40 cursor-not-allowed pointer-events-none flex flex-row h-[60px] w-full px-[16px] gap-[12px] justify-start items-center rounded-[12px]`}>
+              <div aria-label="Discord Bot Coming Soon" className="bg-[#E5E7EB] border border-white/5 overflow-hidden opacity-40 cursor-not-allowed pointer-events-none flex flex-row h-[60px] w-full px-[16px] gap-[12px] justify-start items-center rounded-[12px]">
                 <Discord_Icon size={ICON_SIZE}/>
                 <span className="ptx-name text-gray-500">Discord</span>
                 <span className="ptx-soon">SOON</span>
               </div>
 
-              <div aria-label="Slack Bot Coming Soon" className={`bg-[#E5E7EB] border border-white/5 overflow-hidden opacity-40 cursor-not-allowed pointer-events-none flex flex-row h-[60px] w-full px-[16px] gap-[12px] justify-start items-center rounded-[12px] col-span-2 md:col-span-1`}>
+              <div aria-label="Slack Bot Coming Soon" className="bg-[#E5E7EB] border border-white/5 overflow-hidden opacity-40 cursor-not-allowed pointer-events-none flex flex-row h-[60px] w-full px-[16px] gap-[12px] justify-start items-center rounded-[12px] col-span-2 md:col-span-1">
                 <div className="w-[20px] h-[20px] rounded-full flex items-center justify-center shrink-0 bg-[#4a154b]">
                   <svg viewBox="0 0 24 24" width="12" height="12" fill="white"><path d="M5.04 15.44a2.52 2.52 0 01-5.04 0 2.52 2.52 0 012.52-2.52h2.52v2.52zm1.26 0a2.52 2.52 0 015.04 0v6.3a2.52 2.52 0 01-5.04 0v-6.3zM8.56 5.04a2.52 2.52 0 010-5.04 2.52 2.52 0 012.52 2.52v2.52H8.56zm0 1.26a2.52 2.52 0 010 5.04H2.26a2.52 2.52 0 010-5.04h6.3z"/></svg>
                 </div>
