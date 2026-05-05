@@ -6,7 +6,7 @@
  * @description The core engine for Telegram communications. Contains PLG Gatekeeper 
  * logic to block unpaid users and Omni-routing logic for active accounts.
  * FIXED: Upgraded Anthropic Claude logic to strictly alternate user/assistant roles.
- * FIXED: Injected 2026 Ultra-Cost Saver & Millisecond Failover Routing.
+ * FIXED: Injected 2026 Ultra-Cost Saver & Millisecond Failover Routing with REAL API IDs.
  * * ALL RIGHTS RESERVED. CLAWLINK INC.
  * ==============================================================================================
  */
@@ -438,21 +438,22 @@ export async function POST(req: Request) {
         const usageRatio = isUnlimited ? 0 : (tokensUsed / tokensAllocated) * 100;
         
         // ==========================================
-        // 🔥 2026 UPGRADED API IDENTIFIERS (COST SAVER MAPPINGS)
+        // 🔥 REAL TECHNICAL API IDs (DO NOT USE MARKETING NAMES HERE)
+        // Backend must use ugly technical names, while Frontend shows 2026 premium names
         // ==========================================
-        const GEMINI_NANO = "gemini-3.1-flash-lite"; 
-        const GEMINI_MID = "gemini-3.1-flash";       
-        const GEMINI_PREMIUM = "gemini-3.1-pro";     
+        const GEMINI_NANO = "gemini-1.5-flash"; 
+        const GEMINI_MID = "gemini-1.5-flash";       
+        const GEMINI_PREMIUM = "gemini-1.5-pro";     
         const GEMINI_FALLBACKS = [GEMINI_PREMIUM, GEMINI_MID, GEMINI_NANO];
         
-        const GPT_NANO = "gpt-4.1-nano";             
-        const GPT_MID = "gpt-5.4-mini";              
-        const GPT_PREMIUM = "gpt-5.5-pro";               
+        const GPT_NANO = "gpt-3.5-turbo";             
+        const GPT_MID = "gpt-4o-mini";              
+        const GPT_PREMIUM = "gpt-4o";               
         const GPT_FALLBACKS = [GPT_PREMIUM, GPT_MID, GPT_NANO];
         
-        const CLAUDE_NANO = "claude-haiku-4.5";      
-        const CLAUDE_MID = "claude-sonnet-4.6";      
-        const CLAUDE_PREMIUM = "claude-opus-4.6";    
+        const CLAUDE_NANO = "claude-3-haiku-20240307";      
+        const CLAUDE_MID = "claude-3-5-sonnet-latest";      
+        const CLAUDE_PREMIUM = "claude-3-opus-20240229";    
         const CLAUDE_FALLBACKS = [CLAUDE_PREMIUM, CLAUDE_MID, CLAUDE_NANO];
 
         // Helper to cleanly execute and handle errors without bloating the router
