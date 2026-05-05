@@ -5,6 +5,7 @@
  * @file middleware.ts
  * @description Executes at the Edge (before hitting the server) to prevent DDoS attacks, 
  * spam, and API credit exhaustion using Upstash Redis Sliding Window Rate Limiting.
+ * FIXED: Resolved TypeScript 'request.ip' strict typing error. Sourcing IP strictly from Vercel Edge Headers.
  * * ALL RIGHTS RESERVED. CLAWLINK INC.
  * ==============================================================================================
  */
@@ -38,8 +39,8 @@ export async function middleware(request: NextRequest) {
         }
 
         try {
-            // Extract IP address or fallback to a default identifier
-            const ip = request.ip || request.headers.get('x-forwarded-for') || 'anonymous_attacker';
+            // 🔥 CRITICAL FIX: Extract IP securely via Vercel Edge Headers to bypass TS strict mode errors
+            const ip = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'anonymous_attacker';
             
             const { success, pending, limit, reset, remaining } = await ratelimit.limit(ip);
             
