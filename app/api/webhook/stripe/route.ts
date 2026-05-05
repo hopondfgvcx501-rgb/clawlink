@@ -87,7 +87,7 @@ export async function POST(req: NextRequest) {
 
             if (rawModel.includes("claude") || rawModel.includes("opus") || rawModel.includes("anthropic")) {
                 aiProvider = "anthropic";
-                exactModelVersion = "Claude Opus 4.6";
+                exactModelVersion = "Claude Opus 4.7";
             } else if (rawModel.includes("gemini") || rawModel.includes("google")) {
                 aiProvider = "google";
                 exactModelVersion = "gemini 3.1 Pro";

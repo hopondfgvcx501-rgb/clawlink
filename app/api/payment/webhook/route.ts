@@ -75,7 +75,7 @@ export async function POST(req: NextRequest) {
         let exactModelVersion = notes.selected_model || "gpt-5.4 Pro";
 
         if (rawModel.includes("claude") || rawModel.includes("opus") || rawModel.includes("anthropic")) {
-            aiProvider = "anthropic"; exactModelVersion = "Claude Opus 4.6";
+            aiProvider = "anthropic"; exactModelVersion = "Claude Opus 4.7";
         } else if (rawModel.includes("gemini") || rawModel.includes("google")) {
             aiProvider = "google"; exactModelVersion = "gemini 3.1 Pro";
         } else if (rawModel.includes("omni") || rawModel.includes("nexus")) {

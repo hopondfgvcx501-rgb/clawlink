@@ -56,8 +56,8 @@ const PRICING_DATA: Record<string, any> = {
       { id: "adv_max", name: "Adv Max", usd: 899, inr: 74999, msgs: "Unlimited Tier", desc: "Global system dominance & uncapped scaling.", accent: "#F97316", color: "text-orange-400", badge: "Yearly ⭐", isYearly: true }
     ]
   },
-  "Claude Opus 4.6": {
-    name: "Claude Opus 4.6",
+  "Claude Opus 4.7": {
+    name: "Claude Opus 4.7",
     plans: [
       { id: "plus", name: "Plus", usd: 10, inr: 5, msgs: "Optimized Speed", desc: "Instant customer conversions & rapid response.", accent: "rgba(255,255,255,.35)", color: "text-gray-400" },
       { id: "pro", name: "Pro", usd: 24, inr: 1999, msgs: "Enterprise Scale", desc: "Complex query mastermind & priority routing.", accent: "#3B82F6", color: "text-blue-400", badge: "Popular" },
@@ -193,7 +193,7 @@ export default function Dashboard() {
   if (rawDbModel.includes("omni") || rawDbModel.includes("nexus") || rawDbModel.includes("multi")) {
       pricingKey = "omni 3 nexus";
   } else if (rawDbModel.includes("claude") || rawDbModel.includes("opus") || rawDbModel.includes("anthropic")) {
-      pricingKey = "Claude Opus 4.6";
+      pricingKey = "Claude Opus 4.7";
   } else if (rawDbModel.includes("gemini") || rawDbModel.includes("google")) {
       pricingKey = "gemini 3.1 Pro";
   }

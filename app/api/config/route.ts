@@ -74,7 +74,7 @@ export async function POST(req: Request) {
     if (safeModel.includes("omni") || safeModel.includes("nexus")) {
         providerToSave = "omni"; exactModelVersion = "Omni 3 Nexus";
     } else if (safeModel.includes("claude") || safeModel.includes("opus")) {
-        providerToSave = "anthropic"; exactModelVersion = "Claude Opus 4.6";
+        providerToSave = "anthropic"; exactModelVersion = "Claude Opus 4.7";
     } else if (safeModel.includes("gemini") || safeModel.includes("google")) {
         providerToSave = "google"; exactModelVersion = "Gemini 3.1 Pro";
     }

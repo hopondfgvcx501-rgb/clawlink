@@ -9,7 +9,7 @@
  * Highlights AI auto-moderation actions (anti-spam, hate speech hiding).
  * 🚀 SECURED: Strict cache-busting and session verification for live comment sync.
  * 🚀 FIXED: Integrated premium SpinnerCounter and exact backend error surfacing for deletes.
- * 🚀 FIXED: Enforced strict "Instagram" casing and terminology.
+ * 🚀 FIXED: Connected directly to the isolated microservice /api/instagram/comments.
  * * ALL RIGHTS RESERVED. CLAWLINK INC.
  * ==============================================================================================
  */
@@ -48,10 +48,11 @@ export default function InstagramComments() {
     if (status === "unauthenticated") router.replace("/");
   }, [status, router]);
 
-  // 🚀 SECURE REAL-TIME FETCH LOGIC
+  // 🚀 SECURE REAL-TIME FETCH LOGIC (Connected to Real DB API)
   const fetchComments = async () => {
     if (status === "authenticated" && session?.user?.email) {
       try {
+        // Pointing strictly to our new Instagram microservice
         const res = await fetch(`/api/instagram/comments?email=${encodeURIComponent(session.user.email)}&t=${Date.now()}`, {
           headers: { 'Cache-Control': 'no-store' }
         });
@@ -111,6 +112,7 @@ export default function InstagramComments() {
     }
   };
 
+  // 🔥 Smart UI Filtering based on Real DB payload
   const filteredComments = comments.filter(c => {
     const matchesFilter = filter === 'all' || c.status.includes(filter);
     const matchesSearch = c.user.toLowerCase().includes(searchQuery.toLowerCase()) || 

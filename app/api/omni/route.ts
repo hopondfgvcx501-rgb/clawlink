@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { checkTrafficSpeed } from "../../lib/rate-limiter";
 
 export const dynamic = "force-dynamic";
 
@@ -143,9 +144,17 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json();
-    const { prompt, systemPrompt, history = [], apiKey = null, forceCheap = false, userWords = 0 } = body;
+    // Added email fallback so redis can track even if frontend missed passing it
+    const { prompt, systemPrompt, history = [], apiKey = null, forceCheap = false, userWords = 0, email = "omni_user" } = body;
 
     if (!prompt) return NextResponse.json({ error: "Prompt payload is missing" }, { status: 400 });
+
+    // 🚀 NEW: CHECK TRAFFIC SPEED
+    const trafficStatus = await checkTrafficSpeed(email);
+    if (trafficStatus === "BLOCK") {
+       return NextResponse.json({ error: "Too Many Requests" }, { status: 429 });
+    }
+    const isCostSaverMode = (trafficStatus === "DOWNGRADE") || forceCheap;
 
     // 🔥 2026 LATEST MODELS CONSTANTS (Synced with your exact screenshots to save costs!)
     // Arranged from Expensive -> Cheap for Premium, and Cheap -> Cheapest for Budget
@@ -161,7 +170,8 @@ export async function POST(req: Request) {
     const isComplexQuery = userWords > 150;
 
     // 🧠 SMART COST-SAVING ROUTE
-    if (forceCheap || (!isComplexQuery && !forceCheap)) {
+    if (isCostSaverMode || (!isComplexQuery && !forceCheap)) {
+      console.log(`[OMNI] Routing to BUDGET Tier (Speed/Cost priority)`);
       const geminiResult = await callGemini(geminiModelsCheap, systemPrompt, history, prompt, apiKey);
       if (geminiResult.success) return NextResponse.json(geminiResult);
 
@@ -173,6 +183,7 @@ export async function POST(req: Request) {
     } 
     // 💎 PREMIUM ROUTE
     else {
+      console.log(`[OMNI] Routing to PREMIUM Tier`);
       const openAIResult = await callOpenAI(openAIModelsPremium, systemPrompt, history, prompt, apiKey);
       if (openAIResult.success) return NextResponse.json(openAIResult);
 

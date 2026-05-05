@@ -14,7 +14,7 @@
  * 🚀 FIXED: Added strict instagram_token check for proper sidebar rendering.
  * 🚀 SECURED: Strict frontend Payment Gatekeeper based on plan tier.
  * 🚀 FIXED: Replaced broken Instagram CSS div with proper SVG to match other channels.
- * 🚀 FIXED: Completely removed confusing pending deploy button from empty state.
+ * 🚀 FIXED: Enhanced empty state with clear Upgrade prompt.
  * * ALL RIGHTS RESERVED. CLAWLINK INC.
  * ==============================================================================================
  */
@@ -297,9 +297,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 ))}
               </div>
             ) : (
-              <div className="bg-[#111114] border border-dashed border-white/10 rounded-xl p-4 text-center mx-2 mt-2">
-                <AlertCircle className="w-5 h-5 text-orange-500/50 mx-auto mb-2" />
-                <p className="text-[11px] text-gray-400 leading-relaxed">No bots deployed yet.</p>
+              <div className="bg-[#111114] border border-dashed border-white/10 rounded-xl p-5 text-center mx-2 mt-2 shadow-[0_0_15px_rgba(0,0,0,0.5)]">
+                <AlertCircle className="w-6 h-6 text-orange-500/70 mx-auto mb-3" />
+                <p className="text-[11px] text-gray-400 leading-relaxed">
+                  <strong className="text-white">Workspace Locked.</strong><br/> 
+                  <span className="text-orange-400 font-bold">Upgrade your plan</span> to unlock full channel controls and activate your Live Bot.
+                </p>
               </div>
             )}
           </div>
@@ -307,7 +310,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
         {/* User Profile Footer */}
         <div className="p-4 border-t border-white/5 shrink-0 bg-[#0A0A0D]">
-          {/* Removed cursor-pointer and onClick mapping to settings page */}
           <div className="flex items-center justify-between p-2 rounded-xl hover:bg-white/5 transition-colors">
             <div className="flex items-center gap-3 overflow-hidden">
               <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-orange-500 to-pink-500 flex items-center justify-center text-white font-bold text-xs shrink-0">

@@ -117,7 +117,7 @@ export async function POST(req: NextRequest) {
 
         if (rawModel.includes("claude") || rawModel.includes("anthropic") || rawModel.includes("opus")) {
             aiProvider = "anthropic";
-            exactModelVersion = "Claude Opus 4.6";
+            exactModelVersion = "Claude Opus 4.7";
         }
         else if (rawModel.includes("gemini") || rawModel.includes("google")) {
             aiProvider = "google";

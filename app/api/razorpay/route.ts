@@ -5,7 +5,7 @@ import Razorpay from "razorpay";
 const SECURE_PRICING: Record<string, any> = {
   "gemini 3.1 Pro": { plus: 5, pro: 999, ultra: 1999, adv_max: 49999 },
   "gpt-5.4 Pro": { plus: 5, pro: 1499, ultra: 2999, adv_max: 74999 },
-  "Claude Opus 4.6": { plus: 5, pro: 1999, ultra: 3999, adv_max: 99999 },
+  "Claude Opus 4.7": { plus: 5, pro: 1999, ultra: 3999, adv_max: 99999 },
   "omni 3 nexus": { monthly: 20916, yearly: 149999 }
 };
 
@@ -41,7 +41,7 @@ export async function POST(req: Request) {
     
     let safeModel = "gpt-5.4 Pro";
     if (rawModel.includes("omni") || rawModel.includes("nexus")) safeModel = "omni 3 nexus";
-    else if (rawModel.includes("claude") || rawModel.includes("opus")) safeModel = "Claude Opus 4.6";
+    else if (rawModel.includes("claude") || rawModel.includes("opus")) safeModel = "Claude Opus 4.7";
     else if (rawModel.includes("gemini")) safeModel = "gemini 3.1 Pro";
 
     // Lookup actual INR price from backend, completely IGNORE frontend amount

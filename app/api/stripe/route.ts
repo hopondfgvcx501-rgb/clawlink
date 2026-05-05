@@ -22,7 +22,7 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 const SECURE_USD_PRICING: Record<string, any> = {
   "gemini 3.1 Pro": { plus: 6, pro: 12, ultra: 24, adv_max: 599 },
   "gpt-5.4 Pro": { plus: 8, pro: 18, ultra: 36, adv_max: 899 },
-  "Claude Opus 4.6": { plus: 10, pro: 24, ultra: 48, adv_max: 1199 },
+  "Claude Opus 4.7": { plus: 10, pro: 24, ultra: 48, adv_max: 1199 },
   "omni 3 nexus": { monthly: 249, yearly: 1799 } 
 };
 
@@ -39,7 +39,7 @@ export async function POST(req: Request) {
     let safeModel = "gpt-5.4 Pro";
     
     if (rawModel.includes("omni") || rawModel.includes("nexus")) safeModel = "omni 3 nexus";
-    else if (rawModel.includes("claude") || rawModel.includes("opus")) safeModel = "Claude Opus 4.6";
+    else if (rawModel.includes("claude") || rawModel.includes("opus")) safeModel = "Claude Opus 4.7";
     else if (rawModel.includes("gemini") || rawModel.includes("google")) safeModel = "gemini 3.1 Pro";
 
     const safePlan = planTier.toLowerCase();

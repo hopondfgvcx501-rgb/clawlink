@@ -88,7 +88,7 @@ export async function GET(req: NextRequest) {
     // Engine Normalization Protocol (2026 Strings)
     if (rawModel.includes("claude") || rawModel.includes("anthropic") || rawModel.includes("opus")) {
         bestProvider = "anthropic";
-        bestModel = "Claude Opus 4.6";
+        bestModel = "Claude Opus 4.7";
     }
     else if (rawModel.includes("gemini") || rawModel.includes("google")) {
         bestProvider = "google";
