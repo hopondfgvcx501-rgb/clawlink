@@ -43,7 +43,7 @@ export async function POST(req: Request) {
       .eq("email", email)
       .single();
 
-    const rawSelectedModel = (config?.ai_model || "GPT-5.5 Pro").toLowerCase();
+    const rawSelectedModel = (config?.ai_model || "gpt-5.5 Pro").toLowerCase();
     
     let selectedModel = "openai";
     if (rawSelectedModel.includes("omni") || rawSelectedModel.includes("nexus")) selectedModel = "omni";
@@ -85,46 +85,65 @@ export async function POST(req: Request) {
     let finalReply = "Sorry, I am experiencing temporary cognitive lag. Please try again.";
     let wasSuccessful = false;
 
-    // FIX: Updated Provider API IDs mapped to 2026 UI versions
-    const GEMINI_CHEAP = "gemini-1.5-flash"; 
-    const GEMINI_MID = "gemini-1.5-flash";
-    const GEMINI_PREMIUM = "gemini-1.5-pro";
-    const GEMINI_FALLBACKS = [GEMINI_PREMIUM, GEMINI_MID, GEMINI_CHEAP];
+    // ==========================================
+    // 🔥 2026 UPGRADED API IDENTIFIERS (COST SAVER MAPPINGS)
+    // Based strictly on CEO's Live Pricing Matrix to prevent billing spikes
+    // ==========================================
     
-    const GPT_CHEAP = "gpt-3.5-turbo"; 
-    const GPT_MID = "gpt-4o-mini";
-    const GPT_PREMIUM = "gpt-4o";
-    const GPT_FALLBACKS = [GPT_PREMIUM, GPT_MID, GPT_CHEAP];
+    const GEMINI_NANO = "gemini-3.1-flash-lite"; 
+    const GEMINI_MID = "gemini-3.1-flash";       
+    const GEMINI_PREMIUM = "gemini-3.1-pro";     
+    const GEMINI_FALLBACKS = [GEMINI_PREMIUM, GEMINI_MID, GEMINI_NANO];
     
-    const CLAUDE_CHEAP = "claude-3-haiku-20240307"; 
-    const CLAUDE_MID = "claude-3-5-sonnet-latest";
-    const CLAUDE_PREMIUM = "claude-3-opus-20240229";
-    const CLAUDE_FALLBACKS = [CLAUDE_PREMIUM, CLAUDE_MID, CLAUDE_CHEAP];
+    const GPT_NANO = "gpt-4.1-nano";             
+    const GPT_MID = "gpt-5.4-mini";              
+    const GPT_PREMIUM = "gpt-5.5-pro"; // Upgraded to flagship 5.5 Pro per your UI sync               
+    const GPT_FALLBACKS = [GPT_PREMIUM, GPT_MID, GPT_NANO];
+    
+    // CEO SECURED: Claude 4.7 is NOT live. Strictly mapped to 4.6.
+    const CLAUDE_NANO = "claude-haiku-4.5";      
+    const CLAUDE_MID = "claude-sonnet-4.6";      
+    const CLAUDE_PREMIUM = "claude-opus-4.6";    
+    const CLAUDE_FALLBACKS = [CLAUDE_PREMIUM, CLAUDE_MID, CLAUDE_NANO];
 
     // ==========================================
-    // THE ROUTER ALGORITHM
+    // 🧠 THE SMART ROUTER ALGORITHM (MILLISECOND FALLBACK & COST SAVER)
     // ==========================================
     if (selectedModel === "omni") {
-        console.log(`[ROUTER] Omni Engine Active. Complexity: ${words} words, Usage: ${usageRatio.toFixed(2)}%`);
-        if (forceCheapModel || usageRatio >= 80) { 
-            wasSuccessful = await attemptFetch(GEMINI_CHEAP, "gemini");
-            if (!wasSuccessful) wasSuccessful = await attemptFetch(GPT_CHEAP, "openai");
-            if (!wasSuccessful) wasSuccessful = await attemptFetch(CLAUDE_CHEAP, "anthropic");
-        } else if (usageRatio >= 60) {
-            wasSuccessful = await attemptFetch(words < 40 ? GPT_CHEAP : GPT_MID, "openai");
+        console.log(`[ROUTER] Omni Engine Active. Complexity: ${words} words. Saving Costs...`);
+        
+        if (words <= 10 || usageRatio >= 90) { 
+            // MICRO TASK: Force Extreme Budget Models (Hello, Price?, Yes)
+            wasSuccessful = await attemptFetch(GPT_NANO, "openai");
+            if (!wasSuccessful) wasSuccessful = await attemptFetch(GEMINI_NANO, "gemini");
+            if (!wasSuccessful) wasSuccessful = await attemptFetch(CLAUDE_NANO, "anthropic");
+        
+        } else if (words > 10 && words <= 60) {
+            // MEDIUM TASK: High speed, balanced cost
+            wasSuccessful = await attemptFetch(CLAUDE_MID, "anthropic");
+            if (!wasSuccessful) wasSuccessful = await attemptFetch(GPT_MID, "openai");
             if (!wasSuccessful) wasSuccessful = await attemptFetch(GEMINI_MID, "gemini");
+        
         } else {
-            if (words < 40) wasSuccessful = await attemptFetch(GEMINI_MID, "gemini");
-            else if (words < 150) wasSuccessful = await attemptFetch(GPT_MID, "openai");
-            else wasSuccessful = await attemptFetch(CLAUDE_PREMIUM, "anthropic");
+            // HEAVY TASK: Complex queries get Flagships
+            if (usageRatio < 75) {
+                wasSuccessful = await attemptFetch(CLAUDE_PREMIUM, "anthropic");
+                if (!wasSuccessful) wasSuccessful = await attemptFetch(GPT_PREMIUM, "openai");
+            } else {
+                wasSuccessful = await attemptFetch(CLAUDE_MID, "anthropic"); // Downgrade to save quota
+            }
+            if (!wasSuccessful) wasSuccessful = await attemptFetch(GEMINI_PREMIUM, "gemini");
         }
-        if (!wasSuccessful) wasSuccessful = await attemptFetch(GPT_CHEAP, "openai");
+        
+        // Ultimate Safety Net
+        if (!wasSuccessful) wasSuccessful = await attemptFetch(GPT_NANO, "openai");
 
     } else if (selectedModel === "anthropic") {
         console.log(`[ROUTER] Claude Only Active.`);
         let targetModel = CLAUDE_MID;
-        if (forceCheapModel || usageRatio >= 85 || words < 40) targetModel = CLAUDE_CHEAP; 
-        else if (words > 150) targetModel = CLAUDE_PREMIUM;
+        
+        if (forceCheapModel || words <= 15 || usageRatio >= 85) targetModel = CLAUDE_NANO; 
+        else if (words > 60) targetModel = CLAUDE_PREMIUM;
 
         wasSuccessful = await attemptFetch(targetModel, "anthropic");
         if (!wasSuccessful) {
@@ -135,11 +154,18 @@ export async function POST(req: Request) {
                 }
             }
         }
+        // Cross-Provider Shield
+        if (!wasSuccessful) {
+            console.log("[ROUTER_SHIELD] Anthropic crashed. Invisible Failover to OpenAI.");
+            wasSuccessful = await attemptFetch(GPT_NANO, "openai");
+        }
+
     } else if (selectedModel === "gemini") {
         console.log(`[ROUTER] Gemini Only Active.`);
         let targetModel = GEMINI_MID;
-        if (forceCheapModel || usageRatio >= 85 || words < 40) targetModel = GEMINI_CHEAP; 
-        else if (words > 150) targetModel = GEMINI_PREMIUM;
+        
+        if (forceCheapModel || words <= 15 || usageRatio >= 85) targetModel = GEMINI_NANO; 
+        else if (words > 60) targetModel = GEMINI_PREMIUM;
 
         wasSuccessful = await attemptFetch(targetModel, "gemini");
         if (!wasSuccessful) {
@@ -150,11 +176,18 @@ export async function POST(req: Request) {
                 }
             }
         }
+        // Cross-Provider Shield
+        if (!wasSuccessful) {
+            console.log("[ROUTER_SHIELD] Gemini crashed. Invisible Failover to OpenAI.");
+            wasSuccessful = await attemptFetch(GPT_NANO, "openai");
+        }
+
     } else {
         console.log(`[ROUTER] OpenAI Only Active.`);
         let targetModel = GPT_MID;
-        if (forceCheapModel || usageRatio >= 85 || words < 40) targetModel = GPT_CHEAP; 
-        else if (words > 150) targetModel = GPT_PREMIUM;
+        
+        if (forceCheapModel || words <= 15 || usageRatio >= 85) targetModel = GPT_NANO; 
+        else if (words > 60) targetModel = GPT_PREMIUM;
 
         wasSuccessful = await attemptFetch(targetModel, "openai");
         if (!wasSuccessful) {
@@ -165,10 +198,15 @@ export async function POST(req: Request) {
                 }
             }
         }
+        // Cross-Provider Shield
+        if (!wasSuccessful) {
+            console.log("[ROUTER_SHIELD] OpenAI crashed. Invisible Failover to Anthropic.");
+            wasSuccessful = await attemptFetch(CLAUDE_NANO, "anthropic");
+        }
     }
 
     if (!wasSuccessful) {
-        throw new Error("All provider fallbacks exhausted or API keys are invalid.");
+        throw new Error("CRITICAL FATAL: All providers and cross-fallbacks exhausted.");
     }
 
     // 6. Deduct Token if not Unlimited
@@ -189,7 +227,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ success: true, reply: finalReply });
 
     // ==========================================
-    // EXECUTION HELPERS
+    // EXECUTION HELPERS (UNTOUCHED)
     // ==========================================
     async function attemptFetch(modelName: string, provider: string): Promise<boolean> {
         try {
