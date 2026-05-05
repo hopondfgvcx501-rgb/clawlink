@@ -271,7 +271,7 @@ export default function SettingsDashboard() {
                     </div>
                     
                     <h3 className="text-[13px] font-bold text-gray-400 uppercase tracking-widest mb-1">Current Plan</h3>
-                    <p className="text-4xl font-black text-white mb-8">GPT-5.4 Pro <span className="text-xl text-gray-500 font-medium">/ $18/mo</span></p>
+                    <p className="text-4xl font-black text-white mb-8">GPT-5.5 Pro <span className="text-xl text-gray-500 font-medium">/ $18/mo</span></p>
                     
                     <div className="mb-2 flex justify-between items-end">
                       <span className="text-[12px] font-bold text-gray-300">API Token Usage</span>

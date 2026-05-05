@@ -80,9 +80,9 @@ export async function GET(req: NextRequest) {
     let isUnlimited = primaryBot.is_unlimited || highestPlan.toLowerCase() === "max" || highestPlan.toLowerCase() === "yearly" || highestPlan.toLowerCase() === "monthly" || highestPlan.toLowerCase() === "adv_max" || highestPlan.toLowerCase() === "ultra" || highestPlan.toLowerCase() === "pro";
     
     // EXACT MODEL FIX: Strictly sanitize and normalize database strings to match exactly with Dashboard UI Arrays
-    const rawModel = String(primaryBot.ai_model || primaryBot.current_model_version || primaryBot.selected_model || "gpt-5.4 Pro").toLowerCase();
+    const rawModel = String(primaryBot.ai_model || primaryBot.current_model_version || primaryBot.selected_model || "GPT-5.5 Pro").toLowerCase();
     
-    let bestModel = "gpt-5.4 Pro";
+    let bestModel = "GPT-5.5 Pro";
     let bestProvider = "openai";
     
     // Engine Normalization Protocol (2026 Strings)
@@ -99,7 +99,7 @@ export async function GET(req: NextRequest) {
         bestModel = "omni 3 nexus";
     } else {
         bestProvider = "openai";
-        bestModel = "gpt-5.4 Pro";
+        bestModel = "GPT-5.5 Pro";
     }
 
     // EXACT CHANNEL FIX: Assign priority channel based on existing token infrastructure

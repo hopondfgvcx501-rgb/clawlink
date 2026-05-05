@@ -47,8 +47,8 @@ const PRICING_DATA: Record<string, any> = {
       { id: "adv_max", name: "Adv Max", usd: 599, inr: 49999, msgs: "Unlimited Tier", desc: "Global system dominance & uncapped scaling.", accent: "#F97316", color: "text-orange-400", badge: "Yearly ⭐", isYearly: true }
     ]
   },
-  "gpt-5.4 Pro": { 
-    name: "GPT-5.4 Pro",
+  "GPT-5.5 Pro": { 
+    name: "GPT-5.5 Pro",
     plans: [
       { id: "plus", name: "Plus", usd: 8, inr: 5, msgs: "Optimized Speed", desc: "Instant customer conversions & rapid response.", accent: "rgba(255,255,255,.35)", color: "text-gray-400" },
       { id: "pro", name: "Pro", usd: 18, inr: 1499, msgs: "Enterprise Scale", desc: "Complex query mastermind & priority routing.", accent: "#3B82F6", color: "text-blue-400", badge: "Popular" },
@@ -189,7 +189,7 @@ export default function Dashboard() {
    */
   const rawDbModel = String(userData?.ai_model || userData?.current_model_version || userData?.selected_model || userData?.ai_provider || "gpt").toLowerCase();
   
-  let pricingKey = "gpt-5.4 Pro";
+  let pricingKey = "GPT-5.5 Pro";
   if (rawDbModel.includes("omni") || rawDbModel.includes("nexus") || rawDbModel.includes("multi")) {
       pricingKey = "omni 3 nexus";
   } else if (rawDbModel.includes("claude") || rawDbModel.includes("opus") || rawDbModel.includes("anthropic")) {
@@ -199,7 +199,7 @@ export default function Dashboard() {
   }
 
   const isOmniActive = pricingKey === "omni 3 nexus";
-  const currentPricing = PRICING_DATA[pricingKey] || PRICING_DATA["gpt-5.4 Pro"];
+  const currentPricing = PRICING_DATA[pricingKey] || PRICING_DATA["GPT-5.5 Pro"];
   
   // 🚀 FETCH TRUE PLAN FROM DB
   const currentPlan = (userData?.plan_tier || userData?.plan || "free").toLowerCase();

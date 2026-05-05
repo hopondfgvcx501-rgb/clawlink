@@ -43,7 +43,7 @@ export async function POST(req: Request) {
       .eq("email", email)
       .single();
 
-    const rawSelectedModel = (config?.ai_model || "gpt-5.4 Pro").toLowerCase();
+    const rawSelectedModel = (config?.ai_model || "GPT-5.5 Pro").toLowerCase();
     
     let selectedModel = "openai";
     if (rawSelectedModel.includes("omni") || rawSelectedModel.includes("nexus")) selectedModel = "omni";

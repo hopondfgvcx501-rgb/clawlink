@@ -89,8 +89,8 @@ const PRICING_DATA: Record<string, any> = {
       { id: "adv_max", name: "Adv Max", usd: 599, inr: 49999, msgs: "Unlimited Tier", desc: "Global system dominance & uncapped scaling.", accent: "#F97316", color: "text-orange-400", badge: "Yearly ⭐", isYearly: true }
     ]
   },
-  "gpt-5.4 Pro": { 
-    name: "GPT-5.4 Pro",
+  "GPT-5.5 Pro": { 
+    name: "GPT-5.5 Pro",
     plans: [
       { id: "plus", name: "Plus", usd: 8, inr: 5, msgs: "Optimized Speed", desc: "Instant customer conversions & rapid response.", accent: "rgba(255,255,255,.35)", color: "text-gray-400" },
       { id: "pro", name: "Pro", usd: 18, inr: 1499, msgs: "Enterprise Scale", desc: "Complex query mastermind & priority routing.", accent: "#3B82F6", color: "text-blue-400", badge: "Popular" },
@@ -463,7 +463,7 @@ export default function Home() {
     try {
       const payload = {
         email: session?.user?.email,
-        selectedModel: activeModel || "gpt-5.4 Pro",
+        selectedModel: activeModel || "GPT-5.5 Pro",
         selectedChannel: activeChannel || "telegram",
         telegramToken: activeChannel === "telegram" ? telegramToken : "",
         waPhoneId: (activeChannel === "whatsapp" || activeChannel === "instagram") ? waPhoneId : "",
@@ -805,11 +805,11 @@ export default function Home() {
             </p>
             <div className="grid grid-cols-2 md:grid-cols-5 gap-[12px] mb-8">
               
-              <button aria-label="Select GPT-5.4 Pro Model" data-spring onClick={() => handleModelSelect("gpt-5.4 Pro")} 
-                disabled={(isTokenSaved || hasDeployedBefore) && activeModel!=="gpt-5.4 Pro"}
-                className={getButtonClass(modelActive("gpt-5.4 Pro"), activeModel !== null, "hover:border-green-400 hover:shadow-[0_0_15px_rgba(74,222,128,0.25)]")}>
+              <button aria-label="Select GPT-5.5 Pro Model" data-spring onClick={() => handleModelSelect("GPT-5.5 Pro")} 
+                disabled={(isTokenSaved || hasDeployedBefore) && activeModel!=="GPT-5.5 Pro"}
+                className={getButtonClass(modelActive("GPT-5.5 Pro"), activeModel !== null, "hover:border-green-400 hover:shadow-[0_0_15px_rgba(74,222,128,0.25)]")}>
                 <OpenAI_Icon size={ICON_SIZE}/>
-                <span className="ptx-name">GPT-5.4 Pro</span>
+                <span className="ptx-name">GPT-5.5 Pro</span>
               </button>
 
               <button aria-label="Select Claude 3 Model" data-spring onClick={() => handleModelSelect("Claude Opus 4.7")} 
@@ -936,7 +936,7 @@ export default function Home() {
                   
                   {!hasDeployedBefore && (
                       <p className="mt-5 text-[13px] text-gray-500 text-center leading-relaxed">
-                        Deploying <strong className="text-gray-300">{activeModel ? PRICING_DATA[activeModel].name : "GPT-5.4 Pro"}</strong> to <strong className="text-gray-300 capitalize">{activeChannel || "Telegram"}</strong>.{" "}
+                        Deploying <strong className="text-gray-300">{activeModel ? PRICING_DATA[activeModel].name : "GPT-5.5 Pro"}</strong> to <strong className="text-gray-300 capitalize">{activeChannel || "Telegram"}</strong>.{" "}
                         <span className="text-[#34A853] font-semibold text-[13px]">Limited enterprise servers available.</span>
                       </p>
                   )}

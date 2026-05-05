@@ -68,8 +68,8 @@ export async function POST(req: Request) {
     const actualBotStatus = sanitizeInput(body.bot_status || "Sleeping");
 
     let providerToSave = "openai";
-    let exactModelVersion = "GPT-5.4 Pro";
-    const safeModel = (selectedModel || "GPT-5.4 Pro").toLowerCase();
+    let exactModelVersion = "GPT-5.5 Pro";
+    const safeModel = (selectedModel || "GPT-5.5 Pro").toLowerCase();
 
     if (safeModel.includes("omni") || safeModel.includes("nexus")) {
         providerToSave = "omni"; exactModelVersion = "Omni 3 Nexus";

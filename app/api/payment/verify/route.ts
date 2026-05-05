@@ -45,7 +45,7 @@ export async function POST(req: Request) {
     // 3. SECURE DATA PREP
     const safeEmail = (email || "").toLowerCase().trim();
     const planTier = (plan || "plus").toLowerCase();
-    const exactModelVersion = (selected_model || "gpt-5.4 Pro").toLowerCase();
+    const exactModelVersion = (selected_model || "GPT-5.5 Pro").toLowerCase();
 
     let aiProvider = "openai";
     if (exactModelVersion.includes("claude")) aiProvider = "anthropic";

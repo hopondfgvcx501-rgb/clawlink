@@ -105,7 +105,7 @@ export async function POST(req: NextRequest) {
       const notes = paymentEntity.notes || {};
       const userEmail = (notes.email || paymentEntity.email || "").toLowerCase(); 
       const planName = (notes.plan_name || "plus").toLowerCase();
-      const rawModel = (notes.selected_model || notes.model || "gpt-5.4 Pro").toLowerCase();
+      const rawModel = (notes.selected_model || notes.model || "GPT-5.5 Pro").toLowerCase();
       
       const selectedChannel = (notes.selected_channel || "widget").toLowerCase();
       const isRenewal = notes.is_renewal === "true" || notes.plan_type === "RENEWAL";
@@ -113,7 +113,7 @@ export async function POST(req: NextRequest) {
       if (userEmail) {
         // 1. Establish Master Mapping for AI Providers and Exact Engine Versions (2026 UPDATE)
         let aiProvider = "openai";
-        let exactModelVersion = "gpt-5.4 Pro"; 
+        let exactModelVersion = "GPT-5.5 Pro"; 
 
         if (rawModel.includes("claude") || rawModel.includes("anthropic") || rawModel.includes("opus")) {
             aiProvider = "anthropic";

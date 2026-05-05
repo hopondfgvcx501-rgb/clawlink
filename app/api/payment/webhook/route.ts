@@ -67,12 +67,12 @@ export async function POST(req: NextRequest) {
       
       const email = (notes.email || paymentEntity.email || "").toLowerCase();
       const planTier = (notes.plan_tier || notes.plan || "plus").toLowerCase();
-      const rawModel = (notes.selected_model || notes.model || "gpt-5.4 Pro").toLowerCase();
+      const rawModel = (notes.selected_model || notes.model || "GPT-5.5 Pro").toLowerCase();
 
       if (email) {
         // 1. Establish Master Mapping for AI Providers (2026 Schema)
         let aiProvider = "openai";
-        let exactModelVersion = notes.selected_model || "gpt-5.4 Pro";
+        let exactModelVersion = notes.selected_model || "GPT-5.5 Pro";
 
         if (rawModel.includes("claude") || rawModel.includes("opus") || rawModel.includes("anthropic")) {
             aiProvider = "anthropic"; exactModelVersion = "Claude Opus 4.7";
