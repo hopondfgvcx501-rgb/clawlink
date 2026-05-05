@@ -324,77 +324,122 @@ export async function POST(req: Request) {
         const words = userText.split(/\s+/).length;
         const usageRatio = isUnlimited ? 0 : (tokensUsed / tokensAllocated) * 100;
 
-        const GEMINI_CHEAP = "gemini-3.1-flash-lite";
-        const GEMINI_MID = "gemini-3.1-flash";
-        const GEMINI_PREMIUM = "gemini-3.1-pro";
+        const GEMINI_NANO = "gemini-3.1-flash-lite"; 
+        const GEMINI_MID = "gemini-3.1-flash";       
+        const GEMINI_PREMIUM = "gemini-3.1-pro";     
+        const GEMINI_FALLBACKS = [GEMINI_PREMIUM, GEMINI_MID, GEMINI_NANO];
         
-        const GPT_CHEAP = "gpt-4.1-nano";
-        const GPT_MID = "gpt-5.2";
-        const GPT_PREMIUM = "gpt-5.4"; 
+        const GPT_NANO = "gpt-4.1-nano";             
+        const GPT_MID = "gpt-5.4-mini";              
+        const GPT_PREMIUM = "gpt-5.5-pro";               
+        const GPT_FALLBACKS = [GPT_PREMIUM, GPT_MID, GPT_NANO];
         
-        const CLAUDE_CHEAP = "claude-3-haiku-20240307";
-        const CLAUDE_MID = "claude-sonnet-4.6";
-        const CLAUDE_PREMIUM = "claude-opus-4.6";
+        const CLAUDE_NANO = "claude-haiku-4.5";      
+        const CLAUDE_MID = "claude-sonnet-4.6";      
+        const CLAUDE_PREMIUM = "claude-opus-4.6";    
+        const CLAUDE_FALLBACKS = [CLAUDE_PREMIUM, CLAUDE_MID, CLAUDE_NANO];
 
-        let targetProvider = provider;
-        let targetModel = "";
-
-        // 🚀 THE DECISION MATRIX (Omni vs Normal Models)
-        if (provider === "omni") {
-            if (usageRatio >= 80) {
-                targetProvider = "google"; targetModel = GEMINI_CHEAP; 
-            } else if (usageRatio >= 60) {
-                targetProvider = "openai"; targetModel = words < 40 ? GPT_CHEAP : GPT_MID;
-            } else {
-                if (words < 40) { targetProvider = "google"; targetModel = GEMINI_MID; }
-                else if (words < 150) { targetProvider = "openai"; targetModel = GPT_MID; }
-                else { targetProvider = "anthropic"; targetModel = CLAUDE_PREMIUM; } 
-            }
-        } else {
-            if (usageRatio >= 85) {
-                if (provider === "openai") targetModel = GPT_CHEAP;
-                else if (provider === "anthropic") targetModel = CLAUDE_CHEAP;
-                else targetModel = GEMINI_CHEAP;
-            } else {
-                if (provider === "openai") targetModel = words < 40 ? GPT_CHEAP : (words > 150 ? GPT_PREMIUM : GPT_MID);
-                else if (provider === "anthropic") targetModel = words < 40 ? CLAUDE_CHEAP : (words > 150 ? CLAUDE_PREMIUM : CLAUDE_MID);
-                else targetModel = words < 40 ? GEMINI_CHEAP : (words > 150 ? GEMINI_PREMIUM : GEMINI_MID);
+        async function attemptFetch(modelName: string, prov: string): Promise<boolean> {
+            try {
+                if (prov === "anthropic") aiResponse = await callClaude(modelName, fullSystemContext, historyArray, userText);
+                else if (prov === "openai") aiResponse = await callOpenAI(modelName, fullSystemContext, historyArray, userText);
+                else aiResponse = await callGemini(modelName, fullSystemContext, historyArray, userText);
+                return true;
+            } catch (e: any) {
+                console.error(`[EXECUTION_FAILURE] Primary model ${modelName} rejected request:`, e.message);
+                return false;
             }
         }
 
-        // ⚡ DIRECT EXECUTION ENGINE (No external fetch loops!)
-        try {
-            if (targetProvider === "anthropic") aiResponse = await callClaude(targetModel, fullSystemContext, historyArray, userText);
-            else if (targetProvider === "openai") aiResponse = await callOpenAI(targetModel, fullSystemContext, historyArray, userText);
-            else aiResponse = await callGemini(targetModel, fullSystemContext, historyArray, userText);
-            wasSuccessful = true;
-        } catch (err1) {
-            console.error(`[EXECUTION_FAILURE] Primary model ${targetModel} rejected request.`);
+        // 🚀 THE DECISION MATRIX (Omni vs Normal Models)
+        if (provider === "omni") {
+            console.log(`[ROUTER] Omni Engine Active. Complexity: ${words} words. Saving Costs...`);
             
-            // ⚡ FALLBACK LOGIC
-            if (provider === "omni") {
-                console.log("[OMNI_FALLBACK] Routing to secondary engine...");
-                try {
-                    aiResponse = await callOpenAI(GPT_CHEAP, fullSystemContext, historyArray, userText);
-                    wasSuccessful = true;
-                } catch (err2) {
-                    console.log("[OMNI_FALLBACK_2] Routing to tertiary engine...");
-                    try {
-                        aiResponse = await callGemini(GEMINI_CHEAP, fullSystemContext, historyArray, userText);
-                        wasSuccessful = true;
-                    } catch (err3) { console.error("[CRITICAL_FAILURE] Omni cross-provider fallback exhausted."); }
-                }
+            if (words <= 10 || usageRatio >= 90) { 
+                wasSuccessful = await attemptFetch(GPT_NANO, "openai");
+                if (!wasSuccessful) wasSuccessful = await attemptFetch(GEMINI_NANO, "gemini");
+                if (!wasSuccessful) wasSuccessful = await attemptFetch(CLAUDE_NANO, "anthropic");
+            } else if (words > 10 && words <= 60) {
+                wasSuccessful = await attemptFetch(CLAUDE_MID, "anthropic");
+                if (!wasSuccessful) wasSuccessful = await attemptFetch(GPT_MID, "openai");
+                if (!wasSuccessful) wasSuccessful = await attemptFetch(GEMINI_MID, "gemini");
             } else {
-                console.log(`[INTRA_PROVIDER_FALLBACK] Downgrading to standard tier for ${provider}.`);
-                try {
-                    if (provider === "anthropic") aiResponse = await callClaude(CLAUDE_CHEAP, fullSystemContext, historyArray, userText);
-                    else if (provider === "openai") aiResponse = await callOpenAI(GPT_CHEAP, fullSystemContext, historyArray, userText);
-                    else aiResponse = await callGemini(GEMINI_CHEAP, fullSystemContext, historyArray, userText);
-                    wasSuccessful = true;
-                } catch (err2) {
-                    console.error(`[CRITICAL_FAILURE] Intra-provider fallback failed for ${provider}.`);
+                if (usageRatio < 75) {
+                    wasSuccessful = await attemptFetch(CLAUDE_PREMIUM, "anthropic");
+                    if (!wasSuccessful) wasSuccessful = await attemptFetch(GPT_PREMIUM, "openai");
+                } else {
+                    wasSuccessful = await attemptFetch(CLAUDE_MID, "anthropic"); 
+                }
+                if (!wasSuccessful) wasSuccessful = await attemptFetch(GEMINI_PREMIUM, "gemini");
+            }
+            if (!wasSuccessful) wasSuccessful = await attemptFetch(GPT_NANO, "openai");
+
+        } else if (provider === "anthropic") {
+            console.log(`[ROUTER] Claude Only Active.`);
+            let targetModel = CLAUDE_MID;
+            
+            if (words <= 15 || usageRatio >= 85) targetModel = CLAUDE_NANO; 
+            else if (words > 60) targetModel = CLAUDE_PREMIUM;
+
+            wasSuccessful = await attemptFetch(targetModel, "anthropic");
+            if (!wasSuccessful) {
+                for (const fallback of CLAUDE_FALLBACKS) {
+                    if (fallback !== targetModel) {
+                        wasSuccessful = await attemptFetch(fallback, "anthropic");
+                        if (wasSuccessful) break;
+                    }
                 }
             }
+            if (!wasSuccessful) {
+                console.log("[ROUTER_SHIELD] Anthropic crashed. Invisible Failover to OpenAI Nano.");
+                wasSuccessful = await attemptFetch(GPT_NANO, "openai");
+            }
+
+        } else if (provider === "google") {
+            console.log(`[ROUTER] Gemini Only Active.`);
+            let targetModel = GEMINI_MID;
+            
+            if (words <= 15 || usageRatio >= 85) targetModel = GEMINI_NANO; 
+            else if (words > 60) targetModel = GEMINI_PREMIUM;
+
+            wasSuccessful = await attemptFetch(targetModel, "gemini");
+            if (!wasSuccessful) {
+                for (const fallback of GEMINI_FALLBACKS) {
+                    if (fallback !== targetModel) {
+                        wasSuccessful = await attemptFetch(fallback, "gemini");
+                        if (wasSuccessful) break;
+                    }
+                }
+            }
+            if (!wasSuccessful) {
+                console.log("[ROUTER_SHIELD] Gemini crashed. Invisible Failover to OpenAI Nano.");
+                wasSuccessful = await attemptFetch(GPT_NANO, "openai");
+            }
+
+        } else {
+            console.log(`[ROUTER] OpenAI Only Active.`);
+            let targetModel = GPT_MID;
+            
+            if (words <= 15 || usageRatio >= 85) targetModel = GPT_NANO; 
+            else if (words > 60) targetModel = GPT_PREMIUM;
+
+            wasSuccessful = await attemptFetch(targetModel, "openai");
+            if (!wasSuccessful) {
+                for (const fallback of GPT_FALLBACKS) {
+                    if (fallback !== targetModel) {
+                        wasSuccessful = await attemptFetch(fallback, "openai");
+                        if (wasSuccessful) break;
+                    }
+                }
+            }
+            if (!wasSuccessful) {
+                console.log("[ROUTER_SHIELD] OpenAI crashed. Invisible Failover to Anthropic Nano.");
+                wasSuccessful = await attemptFetch(CLAUDE_NANO, "anthropic");
+            }
+        }
+
+        if (!wasSuccessful) {
+            throw new Error("CRITICAL FATAL: All providers and cross-fallbacks exhausted.");
         }
 
         // ==========================================
