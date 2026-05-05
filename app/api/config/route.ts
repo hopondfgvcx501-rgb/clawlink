@@ -90,18 +90,18 @@ export async function POST(req: Request) {
         selected_channel: selectedChannel || "telegram"
     };
 
-    // 🔥 FIX: STRICTLY ISOLATED CHANNEL LOGIC (Forced Overwrite, NO IF CONDITIONS)
+    // 🔥 FIX: Restored safety locks. If the frontend does not send a token, the existing DB token remains SECURE (Prevents accidental wipeouts).
     if (selectedChannel === "telegram") {
-        payload.telegram_token = telegramToken;
+        if (telegramToken) payload.telegram_token = telegramToken;
     } 
     else if (selectedChannel === "whatsapp") {
-        payload.whatsapp_phone_id = whatsappPhoneId;
-        payload.whatsapp_token = whatsappToken; 
-        payload.whatsapp_number = whatsappPhoneNumber;
+        if (whatsappPhoneId) payload.whatsapp_phone_id = whatsappPhoneId;
+        if (whatsappToken) payload.whatsapp_token = whatsappToken; 
+        if (whatsappPhoneNumber) payload.whatsapp_number = whatsappPhoneNumber;
     } 
     else if (selectedChannel === "instagram") {
-        payload.instagram_account_id = instagramAccountId; 
-        payload.instagram_token = instagramToken; 
+        if (instagramAccountId) payload.instagram_account_id = instagramAccountId; 
+        if (instagramToken) payload.instagram_token = instagramToken; 
     }
 
     // 🛡️ SECURITY LAYER 3: BULLETPROOF UPDATE/INSERT
