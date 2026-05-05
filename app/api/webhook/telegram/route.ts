@@ -446,18 +446,19 @@ export async function POST(req: Request) {
         const words = userText.split(/\s+/).length;
         const usageRatio = isUnlimited ? 0 : (tokensUsed / tokensAllocated) * 100;
         
-        // UPGRADED API IDENTIFIERS
-        const GEMINI_CHEAP = "gemini-1.5-flash"; 
-        const GEMINI_MID = "gemini-1.5-flash";       
-        const GEMINI_PREMIUM = "gemini-1.5-pro";    
+       // 🚀 2026 OMNI MODEL MAPPING (Synced with CEO's Live Database)
+        const GEMINI_CHEAP = "gemini-3-flash"; 
+        const GEMINI_MID = "gemini-3-flash";       
+        const GEMINI_PREMIUM = "gemini-3.1-pro";    
         
-        const GPT_CHEAP = "gpt-3.5-turbo";
-        const GPT_MID = "gpt-4o-mini";
-        const GPT_PREMIUM = "gpt-4o"; 
+        const GPT_CHEAP = "gpt-4.1-nano";
+        const GPT_MID = "gpt-5.4-mini";
+        const GPT_PREMIUM = "gpt-5.4"; 
         
-        const CLAUDE_CHEAP = "claude-3-haiku-20240307";
-        const CLAUDE_MID = "claude-3-5-sonnet-latest";
-        const CLAUDE_PREMIUM = "claude-3-opus-20240229";
+        // 🔥 CLAUDE 2026 MODELS SYNCED
+        const CLAUDE_CHEAP = "claude-haiku-4.5";
+        const CLAUDE_MID = "claude-sonnet-4.6";
+        const CLAUDE_PREMIUM = "claude-opus-4.6";
 
         let targetProvider = provider;
         let targetApiId = GPT_PREMIUM; 
