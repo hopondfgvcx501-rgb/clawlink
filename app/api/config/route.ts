@@ -5,14 +5,14 @@
  * @file app/api/config/route.ts
  * @description Securely provisions the user's database record using real payload data.
  * SECURITY UPGRADE: Added NextAuth JWT Session verification to prevent Payload Spoofing.
- * 🚀 FIXED: Removed conditional blocks to FORCEFULLY OVERWRITE old tokens in the Database.
+ * FIXED: Replaced .maybeSingle() with .limit(1) to make DB updates completely crash-proof.
  * * ALL RIGHTS RESERVED. CLAWLINK INC.
  * ==============================================================================================
  */
 
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { getToken } from "next-auth/jwt"; // 🛡️ TITANIUM SECURITY LOCK
+import { getToken } from "next-auth/jwt"; // TITANIUM SECURITY LOCK
 
 export const dynamic = "force-dynamic";
 
@@ -37,7 +37,7 @@ function sanitizeInput(input: string | null | undefined): string {
 
 export async function POST(req: Request) {
   try {
-    // 🛑 SECURITY LAYER 1: JWT SESSION VERIFICATION
+    // SECURITY LAYER 1: JWT SESSION VERIFICATION
     const token = await getToken({ req: req as any, secret: process.env.NEXTAUTH_SECRET });
     
     if (!token || !token.email) {
@@ -46,13 +46,13 @@ export async function POST(req: Request) {
 
     const body = await req.json();
     
-    // 🛡️ SECURITY LAYER 2: OVERRIDE BODY EMAIL WITH CRYPTOGRAPHIC TOKEN
+    // SECURITY LAYER 2: OVERRIDE BODY EMAIL WITH CRYPTOGRAPHIC TOKEN
     const email = sanitizeInput(token.email.toLowerCase());
     
     const selectedModel = sanitizeInput(body.selectedModel);
     const selectedChannel = sanitizeInput(body.selectedChannel);
     
-    // 🚀 UNMERGED VARIABLES: Sabka apna alag independent variable
+    // UNMERGED VARIABLES: Independent channel variables
     const telegramToken = sanitizeInput(body.telegramToken);
     
     const whatsappPhoneId = sanitizeInput(body.whatsappPhoneId || body.waPhoneId);
@@ -90,7 +90,7 @@ export async function POST(req: Request) {
         selected_channel: selectedChannel || "telegram"
     };
 
-    // 🔥 FIX: Restored safety locks. If the frontend does not send a token, the existing DB token remains SECURE (Prevents accidental wipeouts).
+    // FIX: Restored safety locks. If the frontend does not send a token, the existing DB token remains SECURE.
     if (selectedChannel === "telegram") {
         if (telegramToken) payload.telegram_token = telegramToken;
     } 
@@ -104,17 +104,20 @@ export async function POST(req: Request) {
         if (instagramToken) payload.instagram_token = instagramToken; 
     }
 
-    // 🛡️ SECURITY LAYER 3: BULLETPROOF UPDATE/INSERT
-    const { data: existingUser, error: lookupError } = await supabaseAdmin
+    // SECURITY LAYER 3: BULLETPROOF UPDATE/INSERT (CRASH-PROOF)
+    const { data: existingUsers, error: lookupError } = await supabaseAdmin
         .from("user_configs")
         .select("id")
         .eq("email", email)
-        .maybeSingle();
+        .order("created_at", { ascending: false }) // Ensures we always target the most recent row
+        .limit(1); // Completely prevents multiple-row DB crashes
 
     if (lookupError) throw new Error("Database Lookup Failed: " + lookupError.message);
 
+    const existingUser = existingUsers?.[0];
+
     if (existingUser) {
-        // 🔥 OVERWRITE GUARANTEED
+        // OVERWRITE GUARANTEED
         const { error: updateError } = await supabaseAdmin
             .from("user_configs")
             .update(payload)
