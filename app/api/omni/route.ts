@@ -149,23 +149,23 @@ export async function POST(req: Request) {
 
     if (!prompt) return NextResponse.json({ error: "Prompt payload is missing" }, { status: 400 });
 
-    // 🚀 NEW: CHECK TRAFFIC SPEED
+    // 🚀 CHECK TRAFFIC SPEED (DDoS / Rate Limiter Integration)
     const trafficStatus = await checkTrafficSpeed(email);
     if (trafficStatus === "BLOCK") {
        return NextResponse.json({ error: "Too Many Requests" }, { status: 429 });
     }
     const isCostSaverMode = (trafficStatus === "DOWNGRADE") || forceCheap;
 
-    // 🔥 2026 LATEST MODELS CONSTANTS (Synced with your exact screenshots to save costs!)
+    // 🔥 REAL TECHNICAL API IDs (Strictly mapped to avoid 404 crashes)
     // Arranged from Expensive -> Cheap for Premium, and Cheap -> Cheapest for Budget
-    const geminiModelsCheap = ["gemini-2.5-flash-lite", "gemini-2.0-flash"]; // $0.10
-    const geminiModelsPremium = ["gemini-3-pro", "gemini-3-flash", "gemini-2.5-pro"]; // $2.00 -> $0.50 -> $1.25 fallback
+    const geminiModelsCheap = ["gemini-1.5-flash"]; 
+    const geminiModelsPremium = ["gemini-1.5-pro", "gemini-1.5-flash"]; 
     
-    const openAIModelsCheap = ["gpt-4.1-nano", "gpt-4o-mini", "gpt-5-nano"]; // $0.10 -> $0.15 -> $0.20
-    const openAIModelsPremium = ["gpt-5.4", "gpt-5.4-mini", "gpt-5"]; // $2.50 -> $0.75 fallback
+    const openAIModelsCheap = ["gpt-3.5-turbo", "gpt-4o-mini"]; 
+    const openAIModelsPremium = ["gpt-4o", "gpt-4o-mini", "gpt-3.5-turbo"]; 
     
-    const claudeModelsCheap = ["claude-haiku-4.5"]; // $1.00
-    const claudeModelsPremium = ["claude-opus-4.6", "claude-sonnet-4.6"]; // $5.00 -> $3.00 fallback
+    const claudeModelsCheap = ["claude-3-haiku-20240307"]; 
+    const claudeModelsPremium = ["claude-3-opus-20240229", "claude-3-5-sonnet-latest"]; 
 
     const isComplexQuery = userWords > 150;
 
@@ -181,7 +181,7 @@ export async function POST(req: Request) {
       const claudeResult = await callAnthropic(claudeModelsCheap, history, systemPrompt, prompt, apiKey);
       if (claudeResult.success) return NextResponse.json(claudeResult);
     } 
-    // 💎 PREMIUM ROUTE
+    // 💎 PREMIUM ROUTE (Deep Fallback)
     else {
       console.log(`[OMNI] Routing to PREMIUM Tier`);
       const openAIResult = await callOpenAI(openAIModelsPremium, systemPrompt, history, prompt, apiKey);
