@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { compileEnterprisePrompt } from "../../../lib/ai/prompt-compiler"; // 🚀 THE MASTER BRAIN
 
 // 🚀 FIX: Removed external import to prevent Vercel build errors
 const sendEmail = async (...args: any[]) => console.log("Email disabled");
@@ -25,14 +26,6 @@ function sanitizeInput(input: string | null | undefined): string {
         .replace(/;/g, "") // Prevent SQL statement chaining
         .trim();
 }
-
-// 🛡️ ENTERPRISE GUARDRAIL: Adaptive Master Persona & RAG Enforcement
-const ENTERPRISE_GUARDRAIL = `
-CRITICAL INSTRUCTION: You are an Advanced AI Support Agent operating on the ClawLink Engine.
-1. FACTUAL INTEGRITY (RAG): For any queries regarding the company's pricing, features, services, or policies, you MUST strictly rely ONLY on the provided "Company Knowledge Base". Never invent, guess, or hallucinate business data.
-2. THE ESCALATION RULE: If the user asks for a company-specific detail that is missing from the Knowledge Base, DO NOT guess. Politely state: "I don't have that specific information right now. Let me connect you with our human support team."
-3. ADAPTIVE PERSONA (GENERAL CHAT): For general questions, greetings, or industry knowledge, you must dynamically adapt your tone, language, and behavior based EXACTLY on the "System Instructions" provided below. If the System Instructions tell you to be friendly, be friendly. If they tell you to be professional, be strictly professional.
-`;
 
 // =========================================================================
 // 1. GET REQUEST: META WEBHOOK VERIFICATION (DO NOT TOUCH)
@@ -239,10 +232,6 @@ export async function POST(req: Request) {
             return NextResponse.json({ success: true });
         }
 
-
-        // System Prompt
-        const systemPrompt = config.system_prompt_whatsapp || config.system_prompt || "You are a helpful AI assistant on WhatsApp.";
-        
         // 🚀 SMART PROVIDER DETECTION (Omni vs Normal)
         let rawProvider = (config.ai_provider || config.selected_model || "openai").toLowerCase();
         let provider = "openai"; 
@@ -313,7 +302,8 @@ export async function POST(req: Request) {
             }));
         }
 
-        const fullSystemContext = `${ENTERPRISE_GUARDRAIL}\n\nSystem Instructions: ${systemPrompt}\n\nCompany Knowledge Base:\n${customKnowledge ? customKnowledge : "None."}`;
+        // 🚀 THE TITANIUM BRAIN INJECTION: Dynamically compiled from DB settings
+        const fullSystemContext = compileEnterprisePrompt(config, customKnowledge);
         
         // =========================================================================
         // 8. 🧠 CLAWLINK 2026 DIRECT EXECUTION & SMART OMNI ROUTER
@@ -324,6 +314,7 @@ export async function POST(req: Request) {
         const words = userText.split(/\s+/).length;
         const usageRatio = isUnlimited ? 0 : (tokensUsed / tokensAllocated) * 100;
 
+        // THE ULTIMATE FIX: Hyphens (-) strictly used for Anthropic models to bypass 404
         const GEMINI_NANO = "gemini-3.1-flash-lite"; 
         const GEMINI_MID = "gemini-3.1-flash";       
         const GEMINI_PREMIUM = "gemini-3.1-pro";     
@@ -334,9 +325,9 @@ export async function POST(req: Request) {
         const GPT_PREMIUM = "gpt-5.5-pro";               
         const GPT_FALLBACKS = [GPT_PREMIUM, GPT_MID, GPT_NANO];
         
-        const CLAUDE_NANO = "claude-haiku-4.5";      
-        const CLAUDE_MID = "claude-sonnet-4.6";      
-        const CLAUDE_PREMIUM = "claude-opus-4.6";    
+        const CLAUDE_NANO = "claude-haiku-4-5";      
+        const CLAUDE_MID = "claude-sonnet-4-6";      
+        const CLAUDE_PREMIUM = "claude-opus-4-7";    
         const CLAUDE_FALLBACKS = [CLAUDE_PREMIUM, CLAUDE_MID, CLAUDE_NANO];
 
         async function attemptFetch(modelName: string, prov: string): Promise<boolean> {
