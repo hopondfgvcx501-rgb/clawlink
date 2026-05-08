@@ -7,12 +7,14 @@
  * logic to block unpaid users and Omni-routing logic for active accounts.
  * FIXED: Upgraded Anthropic Claude logic to strictly alternate user/assistant roles.
  * FIXED: Replaced dots (.) with hyphens (-) in Anthropic 2026 API IDs to prevent 404 errors.
+ * FIXED: Connected to the dynamic enterprise prompt compiler.
  * * ALL RIGHTS RESERVED. CLAWLINK INC.
  * ==============================================================================================
  */
 
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { compileEnterprisePrompt } from "../../../lib/ai/prompt-compiler"; // 🚀 THE MASTER BRAIN
 
 export const dynamic = "force-dynamic";
 
@@ -42,13 +44,6 @@ function sanitizeInput(input: string | null | undefined): string {
         .replace(/;/g, "")
         .trim();
 }
-
-const ENTERPRISE_GUARDRAIL = `
-CRITICAL INSTRUCTION: You are an Advanced AI Support Agent operating on the ClawLink Engine.
-1. FACTUAL INTEGRITY (RAG): For any queries regarding the company's pricing, features, services, or policies, you MUST strictly rely ONLY on the provided "Company Knowledge Base". Never invent, guess, or hallucinate business data.
-2. THE ESCALATION RULE: If the user asks for a company-specific detail that is missing from the Knowledge Base, DO NOT guess. Politely state: "I don't have that specific information right now. Let me connect you with our human support team."
-3. ADAPTIVE PERSONA (GENERAL CHAT): For general questions, greetings, or industry knowledge, you must dynamically adapt your tone, language, and behavior based EXACTLY on the "System Instructions" provided below.
-`;
 
 async function generateEmbedding(text: string) {
     const apiKey = process.env.GEMINI_API_KEY;
@@ -421,7 +416,8 @@ export async function POST(req: Request) {
             }));
         }
 
-        const fullSystemContext = `${ENTERPRISE_GUARDRAIL}\n\nSystem Instructions: ${systemPrompt}\n\nCompany Knowledge:\n${customKnowledge ? customKnowledge : "None."}`;
+        // 🚀 THE TITANIUM BRAIN INJECTION: Dynamically compiled from DB settings
+        const fullSystemContext = compileEnterprisePrompt(config, customKnowledge);
         
         const { error: userDbError } = await supabaseAdmin.from("chat_history").insert({ 
             email: ownerEmail, platform: "telegram", platform_chat_id: chatId, customer_name: customerName, sender_type: "user", message: crmLogMessage 
