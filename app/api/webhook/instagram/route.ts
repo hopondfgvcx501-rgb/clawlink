@@ -4,13 +4,17 @@
  * ==============================================================================================
  * @file app/api/webhook/instagram/route.ts
  * @description Handles Meta Graph API webhooks for Instagram DMs and Comments.
- * Features the "ManyChat-Killer" Auto-DM trigger system and 2026 Omni-Routing engine.
+ * Features the "ManyChat-Killer" Auto-DM trigger system.
+ * FIXED: Upgraded Anthropic Claude logic to strictly alternate user/assistant roles.
+ * FIXED: Replaced dots (.) with hyphens (-) in Anthropic 2026 API IDs to prevent 404 errors.
+ * FIXED: Connected to the dynamic enterprise prompt compiler.
  * * ALL RIGHTS RESERVED. CLAWLINK INC.
  * ==============================================================================================
  */
 
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { compileEnterprisePrompt } from "@/app/lib/ai/prompt-compiler";
 
 // 🚀 Using standard Node serverless to prevent background task termination.
 export const dynamic = "force-dynamic";
@@ -18,7 +22,9 @@ export const dynamic = "force-dynamic";
 // 🚀 INITIALIZE SUPABASE
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
-const supabase = createClient(supabaseUrl, supabaseKey);
+const supabase = createClient(supabaseUrl, supabaseKey, {
+    auth: { persistSession: false, autoRefreshToken: false }
+});
 
 // 🛡️ CORS HEADERS FOR META
 const corsHeaders = {
@@ -36,15 +42,8 @@ function sanitizeInput(input: string | null | undefined): string {
     return input.replace(/<[^>]*>?/gm, "").replace(/--/g, "").replace(/;/g, "").trim();
 }
 
-const ENTERPRISE_GUARDRAIL = `
-CRITICAL INSTRUCTION: You are an Enterprise AI Support Agent operating on Instagram. 
-1. Keep your responses concise, friendly, and formatted for social media (use emojis sparingly but effectively).
-2. FACTUAL RAG: Base answers ONLY on the Company Knowledge provided.
-3. If the user asks something outside the Knowledge Base, do NOT guess. Politely state: "I don't have that specific info right now, let me connect you with a human agent."
-`;
-
 // =========================================================================
-// 🧠 DIRECT AI MODEL CALLERS & RAG
+// 🧠 DIRECT AI MODEL CALLERS (WITH ROLE ENFORCEMENTS)
 // =========================================================================
 
 async function generateEmbedding(text: string) {
@@ -102,25 +101,41 @@ async function callOpenAI(model: string, systemPrompt: string, history: any[], u
     return data.choices[0].message.content;
 }
 
-async function callClaude(model: string, systemPrompt: string, history: any[], userText: string) {
+// CRITICAL UPGRADE: Enforced strict alternating roles to prevent Anthropic 400 crashes
+async function callClaude(modelId: string, systemPrompt: string, history: any[], userText: string) {
     const apiKey = process.env.ANTHROPIC_API_KEY;
     if (!apiKey) throw new Error("API_KEY missing");
-    let mergedMessages: any[] = [];
+    
+    let claudeMessages: any[] = [];
     let lastRole = "";
-    for (const msg of history) {
-        if (msg.role === lastRole) mergedMessages[mergedMessages.length - 1].content += "\n" + msg.content;
-        else { mergedMessages.push({ role: msg.role, content: msg.content }); lastRole = msg.role; }
+    
+    const rawMessages = [...history, { role: "user", content: userText }];
+    
+    for (const m of rawMessages) {
+        const role = m.role === "assistant" ? "assistant" : "user";
+        if (role === lastRole) {
+            claudeMessages[claudeMessages.length - 1].content += "\n" + m.content;
+        } else {
+            claudeMessages.push({ role: role, content: m.content });
+            lastRole = role;
+        }
     }
-    if (lastRole === "user") mergedMessages[mergedMessages.length - 1].content += "\n" + userText;
-    else mergedMessages.push({ role: "user", content: userText });
-    if (mergedMessages.length > 0 && mergedMessages[0].role !== "user") mergedMessages.shift();
+    
+    if (claudeMessages.length > 0 && claudeMessages[0].role !== "user") {
+        claudeMessages.shift(); 
+    }
 
     const res = await fetch("https://api.anthropic.com/v1/messages", {
         method: "POST", headers: { "Content-Type": "application/json", "x-api-key": apiKey, "anthropic-version": "2023-06-01" },
-        body: JSON.stringify({ model: model, max_tokens: 1024, system: systemPrompt, messages: mergedMessages })
+        body: JSON.stringify({ 
+            model: modelId, 
+            max_tokens: 1024, 
+            system: systemPrompt,
+            messages: claudeMessages 
+        })
     });
     const data = await res.json();
-    if (!res.ok) throw new Error("Anthropic API rejected the request.");
+    if (!res.ok) throw new Error(`Provider Error: Anthropic API rejected the request. Details: ${JSON.stringify(data)}`);
     return data.content[0].text;
 }
 
@@ -183,7 +198,7 @@ export async function POST(req: Request) {
         return NextResponse.json({ success: true }, { status: 200 });
     } catch (error) {
         console.error("[IG_WEBHOOK_FATAL] Error in POST handler:", error);
-        return NextResponse.json({ success: true }, { status: 200 }); // Always return 200 to Meta
+        return NextResponse.json({ success: true }, { status: 200 }); 
     }
 }
 
@@ -216,7 +231,7 @@ async function processDynamicAI(senderId: string, accountId: string, text: strin
         
         if (!matchedTrigger) {
             console.log(`[IG_COMMENT_IGNORED] No trigger word found in: "${promptText}"`);
-            return; // Exit execution, don't waste AI tokens
+            return; 
         }
         console.log(`[IG_AUTO_DM_TRIGGERED] Word matched: ${matchedTrigger}`);
     }
@@ -284,8 +299,8 @@ async function processDynamicAI(senderId: string, accountId: string, text: strin
     else if (rawProvider.includes("claude") || rawProvider.includes("anthropic") || rawProvider.includes("opus")) provider = "anthropic";
     else if (rawProvider.includes("gemini") || rawProvider.includes("google")) provider = "google";
 
-    const systemPrompt = config.system_prompt_instagram || config.system_prompt || "You are a professional, helpful, and concise AI agent for Instagram.";
-    const fullSystemContext = `${ENTERPRISE_GUARDRAIL}\n\nSystem Instructions: ${systemPrompt}\n\nCompany Knowledge Base:\n${customKnowledge ? customKnowledge : "No specific company data found."}`;
+    // 🚀 THE TITANIUM BRAIN INJECTION: Dynamically compiled from DB settings
+    const fullSystemContext = compileEnterprisePrompt(config, customKnowledge);
 
     const { data: pastChats } = await supabase
         .from("chat_history")
@@ -310,44 +325,101 @@ async function processDynamicAI(senderId: string, accountId: string, text: strin
     const words = promptText.split(/\s+/).length;
     const usageRatio = isUnlimited ? 0 : (tokensUsed / tokensAllocated) * 100;
     
-    const GEMINI_CHEAP = "gemini-3.1-flash-lite"; const GEMINI_MID = "gemini-3.1-flash"; const GEMINI_PREMIUM = "gemini-3.1-pro";    
-    const GPT_CHEAP = "gpt-4.1-nano"; const GPT_MID = "gpt-5.2"; const GPT_PREMIUM = "gpt-5.4"; 
-    const CLAUDE_CHEAP = "claude-3-haiku-20240307"; const CLAUDE_MID = "claude-sonnet-4.6"; const CLAUDE_PREMIUM = "claude-opus-4.6";
+    // ==========================================
+    // 🔥 2026 UPGRADED API IDENTIFIERS (COST SAVER MAPPINGS)
+    // THE ULTIMATE FIX: Hyphens (-) strictly used for Anthropic models to bypass 404
+    // ==========================================
+    const GEMINI_NANO = "gemini-3.1-flash-lite"; const GEMINI_MID = "gemini-3.1-flash"; const GEMINI_PREMIUM = "gemini-3.1-pro";     
+    const GEMINI_FALLBACKS = [GEMINI_PREMIUM, GEMINI_MID, GEMINI_NANO];
+    
+    const GPT_NANO = "gpt-4.1-nano";             const GPT_MID = "gpt-5.4-mini";              const GPT_PREMIUM = "gpt-5.5-pro";               
+    const GPT_FALLBACKS = [GPT_PREMIUM, GPT_MID, GPT_NANO];
+    
+    const CLAUDE_NANO = "claude-haiku-4-5";      const CLAUDE_MID = "claude-sonnet-4-6";      const CLAUDE_PREMIUM = "claude-opus-4-7";    
+    const CLAUDE_FALLBACKS = [CLAUDE_PREMIUM, CLAUDE_MID, CLAUDE_NANO];
 
-    let targetProvider = provider;
-    let targetModel = "";
-
-    if (provider === "omni") {
-        if (usageRatio >= 80) { targetProvider = "google"; targetModel = GEMINI_CHEAP; } 
-        else if (usageRatio >= 60) { targetProvider = "openai"; targetModel = words < 40 ? GPT_CHEAP : GPT_MID; } 
-        else {
-            if (words < 40) { targetProvider = "google"; targetModel = GEMINI_MID; }
-            else if (words < 150) { targetProvider = "openai"; targetModel = GPT_MID; }
-            else { targetProvider = "anthropic"; targetModel = CLAUDE_PREMIUM; } 
-        }
-    } else {
-        if (usageRatio >= 85) {
-            if (provider === "openai") targetModel = GPT_CHEAP;
-            else if (provider === "anthropic") targetModel = CLAUDE_CHEAP;
-            else targetModel = GEMINI_CHEAP;
-        } else {
-            if (provider === "openai") targetModel = words < 40 ? GPT_CHEAP : (words > 150 ? GPT_PREMIUM : GPT_MID);
-            else if (provider === "anthropic") targetModel = words < 40 ? CLAUDE_CHEAP : (words > 150 ? CLAUDE_PREMIUM : CLAUDE_MID);
-            else targetModel = words < 40 ? GEMINI_CHEAP : (words > 150 ? GEMINI_PREMIUM : GEMINI_MID);
+    async function attemptFetch(modelName: string, prov: string): Promise<boolean> {
+        try {
+            if (prov === "anthropic") aiResponse = await callClaude(modelName, fullSystemContext, historyArray, promptText);
+            else if (prov === "openai") aiResponse = await callOpenAI(modelName, fullSystemContext, historyArray, promptText);
+            else aiResponse = await callGemini(modelName, fullSystemContext, historyArray, promptText);
+            return true;
+        } catch (e: any) {
+            console.error(`[EXECUTION_FAILURE] Primary model ${modelName} rejected request:`, e.message);
+            return false;
         }
     }
 
-    try {
-        if (targetProvider === "anthropic") aiResponse = await callClaude(targetModel, fullSystemContext, historyArray, promptText);
-        else if (targetProvider === "openai") aiResponse = await callOpenAI(targetModel, fullSystemContext, historyArray, promptText);
-        else aiResponse = await callGemini(targetModel, fullSystemContext, historyArray, promptText);
-        wasSuccessful = true;
-    } catch (err1) {
-        console.error(`[EXECUTION_FAILURE] Primary model ${targetModel} rejected request. Defaulting to fallback.`);
-        try {
-            aiResponse = await callGemini(GEMINI_CHEAP, fullSystemContext, historyArray, promptText);
-            wasSuccessful = true;
-        } catch (fallbackErr) { console.error("Total Fallback Exhaustion"); }
+    // ==========================================
+    // 🧠 THE SMART ROUTER ALGORITHM (MILLISECOND FALLBACK & COST SAVER)
+    // ==========================================
+    if (provider === "omni") {
+        if (words <= 10 || usageRatio >= 90) { 
+            wasSuccessful = await attemptFetch(GPT_NANO, "openai");
+            if (!wasSuccessful) wasSuccessful = await attemptFetch(GEMINI_NANO, "gemini");
+            if (!wasSuccessful) wasSuccessful = await attemptFetch(CLAUDE_NANO, "anthropic");
+        } else if (words > 10 && words <= 60) {
+            wasSuccessful = await attemptFetch(CLAUDE_MID, "anthropic");
+            if (!wasSuccessful) wasSuccessful = await attemptFetch(GPT_MID, "openai");
+            if (!wasSuccessful) wasSuccessful = await attemptFetch(GEMINI_MID, "gemini");
+        } else {
+            if (usageRatio < 75) {
+                wasSuccessful = await attemptFetch(CLAUDE_PREMIUM, "anthropic");
+                if (!wasSuccessful) wasSuccessful = await attemptFetch(GPT_PREMIUM, "openai");
+            } else {
+                wasSuccessful = await attemptFetch(CLAUDE_MID, "anthropic"); 
+            }
+            if (!wasSuccessful) wasSuccessful = await attemptFetch(GEMINI_PREMIUM, "gemini");
+        }
+        if (!wasSuccessful) wasSuccessful = await attemptFetch(GPT_NANO, "openai");
+
+    } else if (provider === "anthropic") {
+        let targetModel = CLAUDE_MID;
+        if (words <= 15 || usageRatio >= 85) targetModel = CLAUDE_NANO; 
+        else if (words > 60) targetModel = CLAUDE_PREMIUM;
+
+        wasSuccessful = await attemptFetch(targetModel, "anthropic");
+        if (!wasSuccessful) {
+            for (const fallback of CLAUDE_FALLBACKS) {
+                if (fallback !== targetModel) {
+                    wasSuccessful = await attemptFetch(fallback, "anthropic");
+                    if (wasSuccessful) break;
+                }
+            }
+        }
+        if (!wasSuccessful) wasSuccessful = await attemptFetch(GPT_NANO, "openai");
+
+    } else if (provider === "google") {
+        let targetModel = GEMINI_MID;
+        if (words <= 15 || usageRatio >= 85) targetModel = GEMINI_NANO; 
+        else if (words > 60) targetModel = GEMINI_PREMIUM;
+
+        wasSuccessful = await attemptFetch(targetModel, "gemini");
+        if (!wasSuccessful) {
+            for (const fallback of GEMINI_FALLBACKS) {
+                if (fallback !== targetModel) {
+                    wasSuccessful = await attemptFetch(fallback, "gemini");
+                    if (wasSuccessful) break;
+                }
+            }
+        }
+        if (!wasSuccessful) wasSuccessful = await attemptFetch(GPT_NANO, "openai");
+
+    } else {
+        let targetModel = GPT_MID;
+        if (words <= 15 || usageRatio >= 85) targetModel = GPT_NANO; 
+        else if (words > 60) targetModel = GPT_PREMIUM;
+
+        wasSuccessful = await attemptFetch(targetModel, "openai");
+        if (!wasSuccessful) {
+            for (const fallback of GPT_FALLBACKS) {
+                if (fallback !== targetModel) {
+                    wasSuccessful = await attemptFetch(fallback, "openai");
+                    if (wasSuccessful) break;
+                }
+            }
+        }
+        if (!wasSuccessful) wasSuccessful = await attemptFetch(CLAUDE_NANO, "anthropic");
     }
 
     if (wasSuccessful) {
