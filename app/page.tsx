@@ -8,16 +8,15 @@
  * @version 12.3.0 (Ultimate Typography & Max Glow Polish)
  * @description Main onboarding interface with strict Product-Led Growth (PLG) routing.
  * Integrates KNOX Level-7 Apple-grade security protocol.
- * FIXED: Removed experimental external feature flags to ensure 100% UI stability.
+ * FIXED: Removed all duplicate declarations and optimized React hooks for ultra-fast load times.
  * * ALL RIGHTS RESERVED. CLAWLINK INC.
  * ==============================================================================================
  */
 
 import { signIn, signOut, useSession } from "next-auth/react";
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
-import { loadStripe } from "@stripe/stripe-js";
 import {
   Globe, Database, Mic, Zap, MessageSquare, Activity,
   LogOut, Shield, ExternalLink, CheckCircle2, Copy,
@@ -83,7 +82,7 @@ const PRICING_DATA: Record<string, any> = {
   "gemini 3.1 Pro": {
     name: "Gemini 3.1 Pro",
     plans: [
-      { id: "plus", name: "Plus", usd: 6, inr: 5, msgs: "Optimized Speed", desc: "Instant customer conversions & rapid response.", accent: "rgba(255,255,255,.35)", color: "text-gray-400" },
+      { id: "plus", name: "Plus", usd: 6, inr: 279, msgs: "Optimized Speed", desc: "Instant customer conversions & rapid response.", accent: "rgba(255,255,255,.35)", color: "text-gray-400" },
       { id: "pro", name: "Pro", usd: 12, inr: 999, msgs: "Enterprise Scale", desc: "Complex query mastermind & priority routing.", accent: "#3B82F6", color: "text-blue-400", badge: "Popular" },
       { id: "ultra", name: "Ultra", usd: 24, inr: 1999, msgs: "Peak Execution", desc: "Zero parallel chat limit & max system power.", accent: "#A855F7", color: "text-purple-400" },
       { id: "adv_max", name: "Adv Max", usd: 599, inr: 49999, msgs: "Unlimited Tier", desc: "Global system dominance & uncapped scaling.", accent: "#F97316", color: "text-orange-400", badge: "Yearly ⭐", isYearly: true }
@@ -92,7 +91,7 @@ const PRICING_DATA: Record<string, any> = {
   "GPT-5.5 Pro": { 
     name: "GPT-5.5 Pro",
     plans: [
-      { id: "plus", name: "Plus", usd: 8, inr: 5, msgs: "Optimized Speed", desc: "Instant customer conversions & rapid response.", accent: "rgba(255,255,255,.35)", color: "text-gray-400" },
+      { id: "plus", name: "Plus", usd: 8, inr: 279, msgs: "Optimized Speed", desc: "Instant customer conversions & rapid response.", accent: "rgba(255,255,255,.35)", color: "text-gray-400" },
       { id: "pro", name: "Pro", usd: 18, inr: 1499, msgs: "Enterprise Scale", desc: "Complex query mastermind & priority routing.", accent: "#3B82F6", color: "text-blue-400", badge: "Popular" },
       { id: "ultra", name: "Ultra", usd: 36, inr: 2999, msgs: "Peak Execution", desc: "Zero parallel chat limit & max system power.", accent: "#A855F7", color: "text-purple-400" },
       { id: "adv_max", name: "Adv Max", usd: 899, inr: 74999, msgs: "Unlimited Tier", desc: "Global system dominance & uncapped scaling.", accent: "#F97316", color: "text-orange-400", badge: "Yearly ⭐", isYearly: true }
@@ -101,7 +100,7 @@ const PRICING_DATA: Record<string, any> = {
   "Claude Opus 4.7": {
     name: "Claude Opus 4.7",
     plans: [
-      { id: "plus", name: "Plus", usd: 10, inr: 5, msgs: "Optimized Speed", desc: "Instant customer conversions & rapid response.", accent: "rgba(255,255,255,.35)", color: "text-gray-400" },
+      { id: "plus", name: "Plus", usd: 10, inr: 279, msgs: "Optimized Speed", desc: "Instant customer conversions & rapid response.", accent: "rgba(255,255,255,.35)", color: "text-gray-400" },
       { id: "pro", name: "Pro", usd: 24, inr: 1999, msgs: "Enterprise Scale", desc: "Complex query mastermind & priority routing.", accent: "#3B82F6", color: "text-blue-400", badge: "Popular" },
       { id: "ultra", name: "Ultra", usd: 48, inr: 3999, msgs: "Peak Execution", desc: "Zero parallel chat limit & max system power.", accent: "#A855F7", color: "text-purple-400" },
       { id: "adv_max", name: "Adv Max", usd: 1199, inr: 99999, msgs: "Unlimited Tier", desc: "Global system dominance & uncapped scaling.", accent: "#F97316", color: "text-orange-400", badge: "Yearly ⭐", isYearly: true }
@@ -259,16 +258,33 @@ export default function Home() {
 
   const [hasDeployedBefore, setHasDeployedBefore] = useState(false);
 
+  // Consolidated useEffect to prevent infinite loops and duplicates
   useEffect(() => {
+    setIsMounted(true);
+    KnoxSecurityProtocol.initialize();
+
+    // Check LocalStorage Config
     if (typeof window !== "undefined") {
       const savedModel = localStorage.getItem("clawlink_model");
       const savedChannel = localStorage.getItem("clawlink_channel");
       if (savedModel) setActiveModel(savedModel);
       if (savedChannel && savedChannel !== "widget" && savedChannel !== "broadcast" && savedChannel !== "partner") setActiveChannel(savedChannel);
     }
-  }, []);
 
-  useEffect(() => {
+    // Set Currency
+    try {
+      const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || "";
+      const lang = navigator.language || "";
+      if (tz.includes("Calcutta") || tz.includes("Kolkata") || tz.includes("Asia/Colombo") || lang.includes("-IN") || lang === "hi") { 
+        setCurrency("INR"); 
+        setCurrencySymbol("₹"); 
+      } else {
+        setCurrency("USD");
+        setCurrencySymbol("$");
+      }
+    } catch (e) {}
+
+    // Deployment Status Check
     if (status === "authenticated" && session?.user?.email) {
         const checkDeploymentStatus = async () => {
             try {
@@ -283,6 +299,135 @@ export default function Home() {
         };
         checkDeploymentStatus();
     }
+
+    // Animations & Intersection Observers
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach((e) => { 
+        if (e.isIntersecting) e.target.classList.add('sr-vis'); 
+      });
+    }, { threshold: 0.05, rootMargin: '0px 0px -20px 0px' });
+
+    const observerTimer = setTimeout(() => {
+      document.querySelectorAll('.sr-up, .sr-left, .sr-rght').forEach((el) => io.observe(el));
+
+      const fio = new IntersectionObserver((entries) => {
+        entries.forEach((e) => {
+          if (e.isIntersecting) {
+            const cards = e.target.querySelectorAll('.fi-card');
+            cards.forEach((c: any, i: number) => {
+              c.style.transition = 'opacity .25s ' + (0.02 + i * 0.05) + 's cubic-bezier(.16,1,.3,1), transform .25s ' + (0.02 + i * 0.05) + 's cubic-bezier(.16,1,.3,1)';
+              c.style.opacity = '1';
+              c.style.transform = 'none';
+            });
+            fio.unobserve(e.target);
+          }
+        });
+      }, { threshold: 0.02 });
+
+      document.querySelectorAll('.fi-card').forEach((el: any) => {
+        el.style.opacity = '0';
+        el.style.transform = 'translateY(12px)';
+      });
+
+      document.querySelectorAll('section, div[class*="sec"]').forEach((g) => {
+        if (g.querySelector('.fi-card')) fio.observe(g);
+      });
+    }, 50);
+
+    const handleScroll = () => {
+      const nav = document.getElementById('clnav');
+      if (nav) nav.style.background = window.scrollY > 30 ? 'rgba(7,7,10,0.92)' : 'rgba(7,7,10,0.4)';
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+
+    // Custom Cursor Dot
+    const cg = document.createElement('div');
+    cg.className = 'cg-dot';
+    document.body.appendChild(cg);
+    let mx2 = 0, my2 = 0, cgx = 0, cgy = 0;
+    const onMM = (e: MouseEvent) => { mx2 = e.clientX; my2 = e.clientY; };
+    document.addEventListener('mousemove', onMM, { passive: true });
+    let cgRaf: number;
+    const animCG = () => {
+      cgx += (mx2 - cgx) * 0.09;
+      cgy += (my2 - cgy) * 0.09;
+      cg.style.left = cgx + 'px';
+      cg.style.top  = cgy + 'px';
+      cgRaf = requestAnimationFrame(animCG);
+    };
+    cgRaf = requestAnimationFrame(animCG);
+
+    const onRippleClick = (e: MouseEvent) => {
+      const t = e.currentTarget as HTMLElement;
+      const r = t.getBoundingClientRect();
+      const d = document.createElement('span');
+      d.className = 'rpl-wave';
+      const sz = Math.max(r.width, r.height) * 2.4;
+      d.style.cssText = `width:${sz}px;height:${sz}px;left:${e.clientX - r.left - sz / 2}px;top:${e.clientY - r.top - sz / 2}px;position:absolute`;
+      t.appendChild(d);
+      setTimeout(() => d.remove(), 650);
+    };
+    
+    const attachRipples = () => {
+        document.querySelectorAll('[data-ripple]').forEach(el => {
+            el.addEventListener('click', onRippleClick as EventListener);
+        });
+    };
+    setTimeout(attachRipples, 100);
+
+    const onSpringClick = (e: Event) => {
+      const t = e.currentTarget as HTMLElement;
+      t.classList.remove('spr-play');
+      void t.offsetWidth;
+      t.classList.add('spr-play');
+      setTimeout(() => t.classList.remove('spr-play'), 420);
+    };
+    const attachSprings = () => {
+        document.querySelectorAll('[data-spring]').forEach(el => {
+            el.addEventListener('click', onSpringClick);
+        });
+    };
+    setTimeout(attachSprings, 100);
+
+    const attach3DEffects = () => {
+        document.querySelectorAll('.tilt-el').forEach(el => {
+        const e2 = el as HTMLElement;
+        e2.addEventListener('mousemove', (ev: any) => {
+            const r  = e2.getBoundingClientRect();
+            const x  = (ev.clientX - r.left) / r.width  - 0.5;
+            const y  = (ev.clientY - r.top)  / r.height - 0.5;
+            e2.style.transform = `perspective(900px) rotateY(${x * 7}deg) rotateX(${-y * 7}deg)`;
+        });
+        e2.addEventListener('mouseleave', () => {
+            e2.style.transform = 'perspective(900px) rotateY(0deg) rotateX(0deg)';
+        });
+        });
+
+        document.querySelectorAll('.mag-el').forEach(el => {
+        const span = el.querySelector('.mt');
+        if (!span) return;
+        const e2 = el as HTMLElement;
+        e2.addEventListener('mousemove', (ev: any) => {
+            const r = e2.getBoundingClientRect();
+            const x = (ev.clientX - r.left - r.width  / 2) * 0.28;
+            const y = (ev.clientY - r.top  - r.height / 2) * 0.28;
+            (span as HTMLElement).style.transform = `translate(${x}px,${y}px)`;
+        });
+        e2.addEventListener('mouseleave', () => {
+            (span as HTMLElement).style.transform = 'translate(0,0)';
+        });
+        });
+    };
+    setTimeout(attach3DEffects, 100);
+
+    return () => {
+      clearTimeout(observerTimer);
+      io.disconnect();
+      window.removeEventListener('scroll', handleScroll);
+      document.removeEventListener('mousemove', onMM);
+      cancelAnimationFrame(cgRaf);
+      if (cg.parentNode) cg.parentNode.removeChild(cg);
+    };
   }, [session, status]);
 
   const handleModelSelect = (modelId: string) => {
@@ -318,139 +463,6 @@ export default function Home() {
         handleOpenIntegration(activeChannel);
     }
   };
-
-  useEffect(() => {
-    setIsMounted(true);
-    KnoxSecurityProtocol.initialize();
-
-    try {
-      const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || "";
-      const lang = navigator.language || "";
-      if (tz.includes("Calcutta") || tz.includes("Kolkata") || tz.includes("Asia/Colombo") || lang.includes("-IN") || lang === "hi") { 
-        setCurrency("INR"); 
-        setCurrencySymbol("₹"); 
-      } else {
-        setCurrency("USD");
-        setCurrencySymbol("$");
-      }
-    } catch (e) {}
-
-    const io = new IntersectionObserver((entries) => {
-      entries.forEach((e) => { 
-        if (e.isIntersecting) e.target.classList.add('sr-vis'); 
-      });
-    }, { threshold: 0.05, rootMargin: '0px 0px -20px 0px' });
-
-    setTimeout(() => {
-      document.querySelectorAll('.sr-up, .sr-left, .sr-rght').forEach((el) => io.observe(el));
-
-      const fio = new IntersectionObserver((entries) => {
-        entries.forEach((e) => {
-          if (e.isIntersecting) {
-            const cards = e.target.querySelectorAll('.fi-card');
-            cards.forEach((c: any, i: number) => {
-              c.style.transition = 'opacity .25s ' + (0.02 + i * 0.05) + 's cubic-bezier(.16,1,.3,1), transform .25s ' + (0.02 + i * 0.05) + 's cubic-bezier(.16,1,.3,1)';
-              c.style.opacity = '1';
-              c.style.transform = 'none';
-            });
-            fio.unobserve(e.target);
-          }
-        });
-      }, { threshold: 0.02 });
-
-      document.querySelectorAll('.fi-card').forEach((el: any) => {
-        el.style.opacity = '0';
-        el.style.transform = 'translateY(12px)';
-      });
-
-      document.querySelectorAll('section, div[class*="sec"]').forEach((g) => {
-        if (g.querySelector('.fi-card')) fio.observe(g);
-      });
-    }, 50);
-
-    const handleScroll = () => {
-      const nav = document.getElementById('clnav');
-      if (nav) nav.style.background = window.scrollY > 30 ? 'rgba(7,7,10,0.92)' : 'rgba(7,7,10,0.4)';
-    };
-    window.addEventListener('scroll', handleScroll, { passive: true });
-
-    const cg = document.createElement('div');
-    cg.className = 'cg-dot';
-    document.body.appendChild(cg);
-    let mx2 = 0, my2 = 0, cgx = 0, cgy = 0;
-    const onMM = (e: MouseEvent) => { mx2 = e.clientX; my2 = e.clientY; };
-    document.addEventListener('mousemove', onMM, { passive: true });
-    let cgRaf: number;
-    const animCG = () => {
-      cgx += (mx2 - cgx) * 0.09;
-      cgy += (my2 - cgy) * 0.09;
-      cg.style.left = cgx + 'px';
-      cg.style.top  = cgy + 'px';
-      cgRaf = requestAnimationFrame(animCG);
-    };
-    cgRaf = requestAnimationFrame(animCG);
-
-    const onRippleClick = (e: MouseEvent) => {
-      const t = e.currentTarget as HTMLElement;
-      const r = t.getBoundingClientRect();
-      const d = document.createElement('span');
-      d.className = 'rpl-wave';
-      const sz = Math.max(r.width, r.height) * 2.4;
-      d.style.cssText = `width:${sz}px;height:${sz}px;left:${e.clientX - r.left - sz / 2}px;top:${e.clientY - r.top - sz / 2}px;position:absolute`;
-      t.appendChild(d);
-      setTimeout(() => d.remove(), 650);
-    };
-    document.querySelectorAll('[data-ripple]').forEach(el => {
-      el.addEventListener('click', onRippleClick as EventListener);
-    });
-
-    const onSpringClick = (e: Event) => {
-      const t = e.currentTarget as HTMLElement;
-      t.classList.remove('spr-play');
-      void t.offsetWidth;
-      t.classList.add('spr-play');
-      setTimeout(() => t.classList.remove('spr-play'), 420);
-    };
-    document.querySelectorAll('[data-spring]').forEach(el => {
-      el.addEventListener('click', onSpringClick);
-    });
-
-    document.querySelectorAll('.tilt-el').forEach(el => {
-      const e2 = el as HTMLElement;
-      e2.addEventListener('mousemove', (ev: any) => {
-        const r  = e2.getBoundingClientRect();
-        const x  = (ev.clientX - r.left) / r.width  - 0.5;
-        const y  = (ev.clientY - r.top)  / r.height - 0.5;
-        e2.style.transform = `perspective(900px) rotateY(${x * 7}deg) rotateX(${-y * 7}deg)`;
-      });
-      e2.addEventListener('mouseleave', () => {
-        e2.style.transform = 'perspective(900px) rotateY(0deg) rotateX(0deg)';
-      });
-    });
-
-    document.querySelectorAll('.mag-el').forEach(el => {
-      const span = el.querySelector('.mt');
-      if (!span) return;
-      const e2 = el as HTMLElement;
-      e2.addEventListener('mousemove', (ev: any) => {
-        const r = e2.getBoundingClientRect();
-        const x = (ev.clientX - r.left - r.width  / 2) * 0.28;
-        const y = (ev.clientY - r.top  - r.height / 2) * 0.28;
-        (span as HTMLElement).style.transform = `translate(${x}px,${y}px)`;
-      });
-      e2.addEventListener('mouseleave', () => {
-        (span as HTMLElement).style.transform = 'translate(0,0)';
-      });
-    });
-
-    return () => {
-      io.disconnect();
-      window.removeEventListener('scroll', handleScroll);
-      document.removeEventListener('mousemove', onMM);
-      cancelAnimationFrame(cgRaf);
-      if (cg.parentNode) cg.parentNode.removeChild(cg);
-    };
-  }, []);
 
   const handleOpenIntegration = (ch: string) => {
     if (ch === "discord" || ch === "slack") return;
