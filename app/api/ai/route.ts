@@ -103,7 +103,7 @@ export async function POST(req: Request) {
     // CEO SECURED: Claude 4.7 is NOT live. Strictly mapped to 4.6.
     const CLAUDE_NANO = "claude-haiku-4.5";      
     const CLAUDE_MID = "claude-sonnet-4.6";      
-    const CLAUDE_PREMIUM = "claude-opus-4.6";    
+    const CLAUDE_PREMIUM = "claude-opus-4.7";    
     const CLAUDE_FALLBACKS = [CLAUDE_PREMIUM, CLAUDE_MID, CLAUDE_NANO];
 
     // ==========================================

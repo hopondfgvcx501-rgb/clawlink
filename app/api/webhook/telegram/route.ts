@@ -88,10 +88,11 @@ async function callGemini(modelId: string, systemPrompt: string, history: any[],
 
     const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelId}:generateContent?key=${apiKey}`, {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-            system_instruction: { parts: { text: systemPrompt } },
-            contents: contents 
-        })
+       body: JSON.stringify({ 
+    system_instruction: { parts: { text: systemPrompt } },
+    contents: contents,
+    generationConfig: { maxOutputTokens: 150 } // 🚨 HARD LIMIT APPLIED
+})
     });
     const data = await res.json();
     if (!res.ok) throw new Error("Provider Error: Gemini API rejected the request.");
@@ -110,7 +111,11 @@ async function callOpenAI(modelId: string, systemPrompt: string, history: any[],
 
     const res = await fetch("https://api.openai.com/v1/chat/completions", {
         method: "POST", headers: { "Content-Type": "application/json", "Authorization": `Bearer ${apiKey}` },
-        body: JSON.stringify({ model: modelId, messages: messages })
+        body: JSON.stringify({ 
+    model: modelId, 
+    max_tokens: 150, // 🚨 HARD LIMIT APPLIED
+    messages: messages 
+})
     });
     const data = await res.json();
     if (!res.ok) throw new Error("Provider Error: OpenAI API rejected the request.");
@@ -143,12 +148,12 @@ async function callClaude(modelId: string, systemPrompt: string, history: any[],
 
     const res = await fetch("https://api.anthropic.com/v1/messages", {
         method: "POST", headers: { "Content-Type": "application/json", "x-api-key": apiKey, "anthropic-version": "2023-06-01" },
-        body: JSON.stringify({ 
-            model: modelId, 
-            max_tokens: 1024, 
-            system: systemPrompt,
-            messages: claudeMessages 
-        })
+       body: JSON.stringify({ 
+    model: modelId, 
+    max_tokens: 150, // 🚨 HARD LIMIT APPLIED
+    system: systemPrompt,
+    messages: claudeMessages 
+})
     });
     const data = await res.json();
     if (!res.ok) throw new Error(`Provider Error: Anthropic API rejected the request. Details: ${JSON.stringify(data)}`);
