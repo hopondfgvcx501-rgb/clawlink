@@ -18,9 +18,9 @@ export async function DELETE(req: Request) {
         // Logic 1: CLEAR ALL MEMORY (Pura Database Wipe for this user)
         if (clearAll) {
             const { error } = await supabaseAdmin
-                .from("knowledge_base") // Tera Vector table ka jo bhi naam ho, wo yahan daalna
+                .from("knowledge_base")
                 .delete()
-                .eq("email", email);
+                .eq("user_email", email); // ✅ FIXED: Supabase ke asli column ka naam
 
             if (error) throw new Error(error.message);
             return NextResponse.json({ success: true, message: "All memory cleared!" });
@@ -32,7 +32,7 @@ export async function DELETE(req: Request) {
                 .from("knowledge_base")
                 .delete()
                 .eq("id", blockId)
-                .eq("email", email);
+                .eq("user_email", email); // ✅ FIXED: Supabase ke asli column ka naam
 
             if (error) throw new Error(error.message);
             return NextResponse.json({ success: true, message: "Block deleted!" });
