@@ -8,6 +8,7 @@
  * @description Central control panel for bot settings, webhook status, and command handling.
  * 🚀 SECURED: Real-time DB sync for commands and live status check via Telegram API.
  * 🚀 FIXED: Full CRUD operation connected with /api/telegram/bot-config route.
+ * 🛡️ UI POLISH: Eliminated legacy Z-loader, now strictly using global premium SpinnerCounter.
  * * ALL RIGHTS RESERVED. CLAWLINK INC.
  * ==============================================================================================
  */
@@ -21,6 +22,7 @@ import {
   ShieldCheck, RefreshCcw, Command, Activity, Server
 } from "lucide-react";
 import TopHeader from "@/components/TopHeader";
+import SpinnerCounter from "@/components/SpinnerCounter"; // ✅ Imported Premium Loader
 
 interface BotCommand {
   id: string;
@@ -169,13 +171,9 @@ export default function TelegramBots() {
 
   const btnHover = "transition-all duration-[120ms] ease-out active:scale-[0.95] transform-gpu will-change-transform";
 
+  // ✅ THE KILL: Replaced legacy Z-loader with Premium SpinnerCounter
   if (isLoading || status === "loading") {
-    return (
-      <div className="w-full h-screen bg-[#07070A] flex flex-col items-center justify-center text-[#2AABEE] font-mono">
-        <Activity className="w-10 h-10 animate-spin mb-4" />
-        CONNECTING TO TELEGRAM SERVERS...
-      </div>
-    );
+    return <SpinnerCounter text="CONNECTING TO TELEGRAM SERVERS..." />;
   }
 
   return (
