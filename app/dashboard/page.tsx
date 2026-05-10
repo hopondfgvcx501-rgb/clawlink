@@ -8,6 +8,7 @@
  * @description The central hub for users to monitor their AI Agents.
  * 🚀 FIXED: Removed the redundant Webhook copy section from RAG Knowledge Base to keep UI clean.
  * 🚀 SECURED: Dashboard Gatekeeper prevents channel reveal until payment is active.
+ * 🚀 ADDED: Clear All Memory logic and UI implemented for RAG engine.
  * * ALL RIGHTS RESERVED. CLAWLINK INC.
  * ==============================================================================================
  */
@@ -25,7 +26,7 @@ import {
   Receipt, Download, Smartphone, BrainCircuit, Search, Crown, Copy, Check, Bot, Database, Save, ArrowUpRight, TrendingUp, Shield, Mail
 } from "lucide-react";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
-import SpinnerCounter from "@/components/SpinnerCounter"; // 🚀 UNIVERSAL CUSTOM LOADER IMPORTED
+import SpinnerCounter from "@/components/SpinnerCounter";
 
 // Initialize Supabase Client
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
@@ -422,6 +423,30 @@ export default function Dashboard() {
       alert("Network error. Please try again.");
     } finally {
       setIsInjecting(false);
+    }
+  };
+
+  const handleClearMemory = async () => {
+    if (!session?.user?.email) return;
+    if (!confirm("Are you sure you want to clear ALL custom AI memory? This will reset the Vector DB for your business.")) return;
+
+    try {
+      const res = await fetch("/api/knowledge/delete", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: session.user.email, clearAll: true })
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        alert("Memory Cleared Successfully! 🗑️");
+        setKnowledgeItems([]); // UI se blocks turant gayab kar dega
+      } else {
+        alert("Failed to clear memory: " + data.error);
+      }
+    } catch (err) {
+      console.error("Delete Error:", err);
+      alert("Network error while deleting memory.");
     }
   };
 
@@ -948,7 +973,15 @@ export default function Dashboard() {
             </div>
             {knowledgeItems.length > 0 && (
               <div className="mt-auto border-t border-white/10 pt-6 relative z-10">
-                <h4 className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-3">Active Memory Blocks</h4>
+                <div className="flex justify-between items-center mb-3 pr-2">
+                  <h4 className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Active Memory Blocks</h4>
+                  <button 
+                    onClick={handleClearMemory}
+                    className={`text-[9px] font-black uppercase tracking-widest text-red-500 hover:text-red-400 bg-red-500/10 px-2.5 py-1 rounded border border-red-500/20 shadow-[0_0_10px_rgba(239,68,68,0.15)] ${btn}`}
+                  >
+                    Clear All 🗑️
+                  </button>
+                </div>
                 <div className="space-y-2 max-h-[140px] overflow-y-auto custom-scrollbar pr-2">
                   {knowledgeItems.map((item, idx) => (
                     <div key={item.id} className="bg-[#07070A]/80 border border-white/5 p-3 rounded-lg flex items-start gap-3 hover:border-green-500/30 transition-colors">
