@@ -7,14 +7,13 @@
  * logic to block unpaid users and Omni-routing logic for active accounts.
  * FIXED: Upgraded Anthropic Claude logic to strictly alternate user/assistant roles.
  * FIXED: Replaced dots (.) with hyphens (-) in Anthropic 2026 API IDs to prevent 404 errors.
- * FIXED: Connected to the dynamic enterprise prompt compiler.
+ * FIXED: Direct DB Persona & RAG Injection applied. External compiler bypassed.
  * * ALL RIGHTS RESERVED. CLAWLINK INC.
  * ==============================================================================================
  */
 
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { compileEnterprisePrompt } from "../../../lib/ai/prompt-compiler"; // 🚀 THE MASTER BRAIN
 
 export const dynamic = "force-dynamic";
 
@@ -391,19 +390,26 @@ export async function POST(req: Request) {
             }
         }
 
-        // RAG ENGINE
+        // ==========================================
+        // 🧠 UPGRADED RAG ENGINE & DYNAMIC PERSONA INJECTION
+        // ==========================================
         let customKnowledge = "";
         try {
             const queryVector = await generateEmbedding(userText);
             if (queryVector) {
-                const { data: matchedDocs } = await supabaseAdmin.rpc("match_knowledge", {
+                const { data: matchedDocs, error: rpcError } = await supabaseAdmin.rpc("match_knowledge", {
                     query_embedding: queryVector, match_threshold: 0.65, match_count: 3, p_user_email: ownerEmail
                 });
+                
+                if (rpcError) throw new Error(`pgvector Error: ${rpcError.message}`);
+                
                 if (matchedDocs && matchedDocs.length > 0) {
                     customKnowledge = matchedDocs.map((doc: any) => sanitizeInput(doc.content)).join("\n\n");
                 }
             }
-        } catch (e) {}
+        } catch (ragError: any) {
+            console.error("[RAG_ENGINE_CRASH]", ragError);
+        }
 
         const { data: pastChats } = await supabaseAdmin
             .from("chat_history")
@@ -421,20 +427,29 @@ export async function POST(req: Request) {
             }));
         }
 
-        // 🚀 THE TITANIUM BRAIN INJECTION: Dynamically compiled from DB settings
-        const fullSystemContext = compileEnterprisePrompt(config, customKnowledge);
+        // 🚀 REAL DATA INJECTION (Bypassing external compiler)
+        // Strictly fetches the user's custom configuration from the database
+        const channelPersona = config.system_prompt_telegram || config.system_prompt || "You are a helpful AI assistant.";
+        
+        const fullSystemContext = `
+[SYSTEM INSTRUCTIONS]
+${channelPersona}
+
+[BUSINESS KNOWLEDGE BASE (RAG)]
+Use the following information to answer user queries. Do not make up prices, rules, or policies. If the answer is not in the knowledge base, state that you do not have the information.
+=== KNOWLEDGE START ===
+${customKnowledge || "No specific business knowledge available."}
+=== KNOWLEDGE END ===
+        `;
         
         const { error: userDbError } = await supabaseAdmin.from("chat_history").insert({ 
             email: ownerEmail, platform: "telegram", platform_chat_id: chatId, customer_name: customerName, sender_type: "user", message: crmLogMessage 
         });
-        if (userDbError) {
-            console.error("[DB_INSERT_FATAL] User Message:", userDbError);
-            throw new Error(`Supabase Reject (User Msg): ${userDbError.message}`);
-        }
+        if (userDbError) throw new Error(`Supabase Reject (User Msg): ${userDbError.message}`);
 
         let aiResponse = "System is undergoing scheduled maintenance. Please try again later.";
         let wasSuccessful = false;
-
+        
         const words = userText.split(/\s+/).length;
         const usageRatio = isUnlimited ? 0 : (tokensUsed / tokensAllocated) * 100;
         
