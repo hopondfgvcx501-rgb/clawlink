@@ -79,7 +79,7 @@ export default function VoiceEngineDashboard() {
   };
 
   if (isLoading || status === "loading") {
-    return <div className="min-h-screen bg-[#0A0A0B] flex items-center justify-center text-emerald-500 font-mono"><SpinnerCounter text="INITIALIZING..." />INITIALIZING VOICE ENGINE...</div>;
+    return <div className="min-h-screen bg-[#0A0A0B] flex items-center justify-center text-emerald-500 font-mono"><Activity className="w-10 h-10 animate-spin mb-4" />INITIALIZING VOICE ENGINE...</div>;
   }
 
   return (

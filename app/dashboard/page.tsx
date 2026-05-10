@@ -11,6 +11,7 @@
  * 🚀 ADDED: Clear All Memory logic and UI implemented for RAG engine.
  * ⚡ ULTRA-FAST: Optimized API calls to run in PARALLEL (Promise.allSettled).
  * 🛡️ UI POLISH: Strictly locked to ONLY use <SpinnerCounter />. Removed any generic/Z loaders.
+ * 🛡️ A11Y & CSS FIXED: Removed inline styles triggering warnings & added proper aria-labels to all buttons.
  * * ALL RIGHTS RESERVED. CLAWLINK INC.
  * ==============================================================================================
  */
@@ -724,11 +725,6 @@ export default function Dashboard() {
     window.open(url, "_blank");
   };
 
-  const copyToClipboard = (t: string) => {
-    navigator.clipboard.writeText(t);
-    alert("Copied to clipboard!");
-  };
-
   /**
    * 🚀 SECURE GATEKEEPER - ONLY USES SPINNERCOUNTER 
    * The "Z" loader or any blank skeleton is fully eliminated here.
@@ -751,7 +747,7 @@ export default function Dashboard() {
   const hasIgId = !!userData?.instagram_account_id || !!userData?.instagram_token;
 
   const getPrimaryLiveChannel = () => {
-    // 🔥 SECURED: Dashboard Payment Gatekeeper (Matches Sidebar Logic)
+    // 🔥 SECURED: Dashboard Payment Gatekeeper
     if (!hasActivePlan) {
       return {
         name: "System Locked",
@@ -865,6 +861,7 @@ export default function Dashboard() {
             >
               <button
                 title="Close pricing popup"
+                aria-label="Close pricing popup"
                 onClick={() => setShowPricingPopup(false)}
                 className="absolute top-4 right-4 z-50 p-2 bg-white/5 hover:bg-white/10 rounded-full text-gray-400 hover:text-white transition-colors"
               >
@@ -924,6 +921,8 @@ export default function Dashboard() {
                   <button
                     onClick={triggerRazorpayPayment}
                     disabled={isRenewing || !selectedRenewalPlan}
+                    aria-label="Pay securely via Razorpay"
+                    title="Pay via Razorpay"
                     className={`bg-gradient-to-r from-orange-500 to-amber-500 text-white w-full px-6 sm:px-10 py-3.5 sm:py-4 rounded-xl font-black text-xs sm:text-sm uppercase tracking-widest flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(249,115,22,0.4)] disabled:opacity-50 ${btn}`}
                   >
                     {isRenewing ? "PROCESSING..." : `PAY VIA RAZORPAY — ${currencySymbol}${(getCurrentPrice() || 0).toLocaleString()}`}
@@ -932,6 +931,8 @@ export default function Dashboard() {
                   <button
                     onClick={triggerStripePayment}
                     disabled={isRenewing || !selectedRenewalPlan}
+                    aria-label="Pay securely via Stripe"
+                    title="Pay via Stripe"
                     className={`bg-[#635BFF] text-white w-full px-6 sm:px-10 py-3.5 sm:py-4 rounded-xl font-black text-xs sm:text-sm uppercase tracking-widest flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(99,91,255,0.4)] disabled:opacity-50 ${btn}`}
                   >
                     {isRenewing ? "PROCESSING..." : `PAY VIA STRIPE — ${currencySymbol}${(getCurrentPrice() || 0).toLocaleString()}`}
@@ -976,6 +977,8 @@ export default function Dashboard() {
         <div className="flex items-center gap-4">
           <button
             onClick={handleOpenLiveBot}
+            aria-label="Open Live Bot"
+            title="Open Live Bot Interface"
             className={`hidden sm:flex items-center gap-2 bg-white text-black hover:bg-gray-100 px-5 py-2.5 rounded-full font-black text-[11px] uppercase tracking-widest shadow-[0_0_20px_rgba(255,255,255,0.15)] ${btn}`}
           >
             <Bot className="w-4 h-4" /> OPEN LIVE BOT <ExternalLink className="w-3 h-3 ml-1" />
@@ -984,7 +987,12 @@ export default function Dashboard() {
             <Search className="w-4 h-4 text-gray-500" />
             <input type="text" placeholder="Search logs..." className="bg-transparent border-none outline-none text-sm ml-2 text-white placeholder-gray-600 w-32 font-mono" />
           </div>
-          <button onClick={() => signOut()} className={`flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-gray-500 hover:text-white ${btn}`}>
+          <button 
+            onClick={() => signOut()} 
+            aria-label="Secure Logout"
+            title="Logout"
+            className={`flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-gray-500 hover:text-white ${btn}`}
+          >
             <LogOut className="w-3 h-3" /> Logout
           </button>
         </div>
@@ -1007,7 +1015,12 @@ export default function Dashboard() {
                   For optimal reliability, click <strong className="text-white">&quot;Add to Home Screen&quot;</strong> in your browser to deploy the ClawLink Progressive Web App.
                 </p>
               </div>
-              <button onClick={() => setShowAppBanner(false)} className="text-gray-400 hover:text-white flex-shrink-0 bg-white/5 p-2 rounded-full">
+              <button 
+                onClick={() => setShowAppBanner(false)} 
+                aria-label="Dismiss Banner"
+                title="Dismiss App Install Banner"
+                className="text-gray-400 hover:text-white flex-shrink-0 bg-white/5 p-2 rounded-full"
+              >
                 <X className="w-4 h-4" />
               </button>
             </motion.div>
@@ -1028,6 +1041,8 @@ export default function Dashboard() {
             </div>
             <button
               onClick={handlePrimaryAction}
+              aria-label="Go Live Now and Upgrade"
+              title="Go Live Now"
               className="w-full sm:w-auto whitespace-nowrap bg-gradient-to-r from-orange-500 to-amber-500 text-white px-6 py-3 rounded-xl text-xs font-black uppercase tracking-widest hover:scale-[1.03] transition-transform shadow-[0_0_15px_rgba(249,115,22,0.4)]"
             >
               ⚡ Go Live Now
@@ -1061,6 +1076,8 @@ export default function Dashboard() {
             <button
               onClick={handlePrimaryAction}
               disabled={hasActivePlan}
+              aria-label={primaryButtonText}
+              title={primaryButtonText}
               className={`relative z-10 w-full py-3 rounded-xl text-[11px] font-bold uppercase tracking-widest transition-all ${!hasActivePlan ? "bg-white text-black hover:scale-[1.02] shadow-[0_0_15px_rgba(255,255,255,0.2)]" : "bg-green-500/10 text-green-400 border border-green-500/20 cursor-default"}`}
             >
               {primaryButtonText}
@@ -1134,6 +1151,8 @@ export default function Dashboard() {
             <button
               onClick={handleOpenLiveBot}
               disabled={!primaryChannel.isSetup}
+              aria-label="Open Assigned Live Bot Channel"
+              title="Open Live Bot"
               className={`relative z-10 w-full py-3 rounded-xl text-[11px] font-bold uppercase tracking-widest transition-all bg-white/5 text-gray-300 border border-white/10 hover:bg-white/10 flex items-center justify-center gap-2 ${btn} disabled:opacity-50`}
             >
               Open Live Bot <ExternalLink className="w-3 h-3" />
@@ -1244,8 +1263,7 @@ export default function Dashboard() {
                 </div>
                 <div className="w-full bg-[#1A1A1A] h-2 rounded-full overflow-hidden">
                   <div
-                    className={`h-full rounded-full channel-progress ${exactSelectedChannel === "whatsapp" ? "bg-green-500" : exactSelectedChannel === "instagram" ? "bg-pink-500" : "bg-blue-400"}`}
-                    style={{ "--progress-width": totalMsgs > 0 ? "100%" : "0%" } as React.CSSProperties}
+                    className={`h-full rounded-full transition-all duration-500 ${totalMsgs > 0 ? "w-full" : "w-0"} ${exactSelectedChannel === "whatsapp" ? "bg-green-500" : exactSelectedChannel === "instagram" ? "bg-pink-500" : "bg-blue-400"}`}
                   ></div>
                 </div>
               </div>
@@ -1286,6 +1304,8 @@ export default function Dashboard() {
               <button
                 onClick={handleSavePrompt}
                 disabled={isSavingPrompt}
+                aria-label="Save Selected Persona"
+                title="Save Persona"
                 className={`bg-white text-black px-8 py-3.5 rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-gray-200 shadow-[0_0_20px_rgba(255,255,255,0.1)] disabled:opacity-50 disabled:scale-100 ${btn}`}
               >
                 {isSavingPrompt ? "Saving..." : <><Save className="w-4 h-4" /> Save {selectedChannel} Persona</>}
@@ -1330,6 +1350,8 @@ export default function Dashboard() {
               <button
                 onClick={handleInjectKnowledge}
                 disabled={isInjecting || !knowledgeText.trim()}
+                aria-label="Inject Knowledge to Vector DB"
+                title="Inject Knowledge"
                 className={`bg-green-500 text-black px-6 py-3 rounded-xl text-xs font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-green-400 shadow-[0_0_20px_rgba(34,197,94,0.2)] disabled:opacity-50 disabled:scale-100 ${btn}`}
               >
                 {isInjecting ? "Injecting..." : <><Zap className="w-4 h-4" /> Inject Knowledge</>}
@@ -1341,6 +1363,8 @@ export default function Dashboard() {
                   <h4 className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Active Memory Blocks</h4>
                   <button
                     onClick={handleClearMemory}
+                    aria-label="Clear All Custom Memory"
+                    title="Clear All Memory"
                     className={`text-[9px] font-black uppercase tracking-widest text-red-500 hover:text-red-400 bg-red-500/10 px-2.5 py-1 rounded border border-red-500/20 shadow-[0_0_10px_rgba(239,68,68,0.15)] ${btn}`}
                   >
                     Clear All 🗑️
@@ -1406,6 +1430,8 @@ export default function Dashboard() {
                       <td className="p-5 pr-8 text-right">
                         <button
                           onClick={() => handleDownloadInvoice(invoice)}
+                          aria-label={`Download Invoice for ${invoice.plan_name}`}
+                          title="Download PDF Invoice"
                           className={`text-gray-500 hover:text-white flex items-center justify-end gap-2 ml-auto text-xs font-bold uppercase tracking-widest ${btn}`}
                         >
                           <Download className="w-4 h-4" /> PDF
@@ -1445,9 +1471,6 @@ export default function Dashboard() {
         }
         .pricing-badge {
           background: var(--badge-color);
-        }
-        .channel-progress {
-          width: var(--progress-width, 0%);
         }
         .webhook-box[data-channel="whatsapp"] {
           background: rgba(0,0,0,0.3);
