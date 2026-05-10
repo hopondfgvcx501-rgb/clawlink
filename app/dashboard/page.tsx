@@ -9,6 +9,7 @@
  * 🚀 FIXED: Removed the redundant Webhook copy section from RAG Knowledge Base to keep UI clean.
  * 🚀 SECURED: Dashboard Gatekeeper prevents channel reveal until payment is active.
  * 🚀 ADDED: Clear All Memory logic and UI implemented for RAG engine.
+ * ⚡ ULTRA-FAST: Optimized API calls to run in PARALLEL (Promise.allSettled) eliminating waterfall delays.
  * * ALL RIGHTS RESERVED. CLAWLINK INC.
  * ==============================================================================================
  */
@@ -26,7 +27,7 @@ import {
   Receipt, Download, Smartphone, BrainCircuit, Search, Crown, Copy, Check, Bot, Database, Save, ArrowUpRight, TrendingUp, Shield, Mail
 } from "lucide-react";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
-import SpinnerCounter from "@/components/SpinnerCounter";
+import SpinnerCounter from "@/components/SpinnerCounter"; 
 
 // Initialize Supabase Client
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
@@ -42,7 +43,7 @@ const PRICING_DATA: Record<string, any> = {
   "gemini 3.1 Pro": {
     name: "Gemini 3.1 Pro",
     plans: [
-      { id: "plus", name: "Plus", usd: 6,inr: 279, msgs: "Optimized Speed", desc: "Instant customer conversions & rapid response.", accent: "rgba(255,255,255,.35)", color: "text-gray-400" },
+      { id: "plus", name: "Plus", usd: 6, inr: 279, msgs: "Optimized Speed", desc: "Instant customer conversions & rapid response.", accent: "rgba(255,255,255,.35)", color: "text-gray-400" },
       { id: "pro", name: "Pro", usd: 12, inr: 999, msgs: "Enterprise Scale", desc: "Complex query mastermind & priority routing.", accent: "#3B82F6", color: "text-blue-400", badge: "Popular" },
       { id: "ultra", name: "Ultra", usd: 24, inr: 1999, msgs: "Peak Execution", desc: "Zero parallel chat limit & max system power.", accent: "#A855F7", color: "text-purple-400" },
       { id: "adv_max", name: "Adv Max", usd: 599, inr: 49999, msgs: "Unlimited Tier", desc: "Global system dominance & uncapped scaling.", accent: "#F97316", color: "text-orange-400", badge: "Yearly ⭐", isYearly: true }
@@ -51,7 +52,7 @@ const PRICING_DATA: Record<string, any> = {
   "GPT-5.5 Pro": { 
     name: "GPT-5.5 Pro",
     plans: [
-      { id: "plus", name: "Plus", usd: 8,inr: 279, msgs: "Optimized Speed", desc: "Instant customer conversions & rapid response.", accent: "rgba(255,255,255,.35)", color: "text-gray-400" },
+      { id: "plus", name: "Plus", usd: 8, inr: 279, msgs: "Optimized Speed", desc: "Instant customer conversions & rapid response.", accent: "rgba(255,255,255,.35)", color: "text-gray-400" },
       { id: "pro", name: "Pro", usd: 18, inr: 1499, msgs: "Enterprise Scale", desc: "Complex query mastermind & priority routing.", accent: "#3B82F6", color: "text-blue-400", badge: "Popular" },
       { id: "ultra", name: "Ultra", usd: 36, inr: 2999, msgs: "Peak Execution", desc: "Zero parallel chat limit & max system power.", accent: "#A855F7", color: "text-purple-400" },
       { id: "adv_max", name: "Adv Max", usd: 899, inr: 74999, msgs: "Unlimited Tier", desc: "Global system dominance & uncapped scaling.", accent: "#F97316", color: "text-orange-400", badge: "Yearly ⭐", isYearly: true }
@@ -60,7 +61,7 @@ const PRICING_DATA: Record<string, any> = {
   "Claude Opus 4.7": {
     name: "Claude Opus 4.7",
     plans: [
-      { id: "plus", name: "Plus", usd: 10,inr: 279, msgs: "Optimized Speed", desc: "Instant customer conversions & rapid response.", accent: "rgba(255,255,255,.35)", color: "text-gray-400" },
+      { id: "plus", name: "Plus", usd: 10, inr: 279, msgs: "Optimized Speed", desc: "Instant customer conversions & rapid response.", accent: "rgba(255,255,255,.35)", color: "text-gray-400" },
       { id: "pro", name: "Pro", usd: 24, inr: 1999, msgs: "Enterprise Scale", desc: "Complex query mastermind & priority routing.", accent: "#3B82F6", color: "text-blue-400", badge: "Popular" },
       { id: "ultra", name: "Ultra", usd: 48, inr: 3999, msgs: "Peak Execution", desc: "Zero parallel chat limit & max system power.", accent: "#A855F7", color: "text-purple-400" },
       { id: "adv_max", name: "Adv Max", usd: 1199, inr: 99999, msgs: "Unlimited Tier", desc: "Global system dominance & uncapped scaling.", accent: "#F97316", color: "text-orange-400", badge: "Yearly ⭐", isYearly: true }
@@ -107,6 +108,17 @@ export default function Dashboard() {
   const [currency, setCurrency] = useState<"USD"|"INR">("USD");
   const [currencySymbol, setCurrencySymbol] = useState("$");
 
+  const fetchKnowledge = async () => {
+    if (!session?.user?.email) return;
+    try {
+      const res = await fetch(`/api/knowledge?email=${session.user.email}&t=${Date.now()}`, { cache: 'no-store' });
+      const data = await res.json();
+      if (data.success) setKnowledgeItems(data.data);
+    } catch (e) {
+      console.error("Knowledge extraction failed");
+    }
+  };
+
   useEffect(() => {
     if (status === "unauthenticated") {
       router.push("/");
@@ -129,59 +141,55 @@ export default function Dashboard() {
     } catch {}
 
     const fetchData = async () => {
-      if (session?.user?.email) {
-        try {
-          const res = await fetch(`/api/user?email=${session.user.email}&t=${Date.now()}`, { cache: 'no-store' });
-          const data = await res.json();
-          if (data.success && data.data) {
-            setUserData(data.data);
-            const activeChan = data.data.selected_channel || "telegram";
-            setSelectedChannel(activeChan);
-            setChannelPrompts({
-              telegram: data.data.system_prompt_telegram || "",
-              whatsapp: data.data.system_prompt_whatsapp || "",
-              instagram: data.data.system_prompt_instagram || ""
-            });
-            if (data.data.plan_tier || data.data.plan) {
-                setSelectedRenewalPlan((data.data.plan_tier || data.data.plan).toLowerCase());
-            }
+      if (!session?.user?.email) return;
+      
+      const email = session.user.email;
+      const t = Date.now();
+
+      // ⚡ ULTRA-FAST PARALLEL FETCHING (Eliminates Waterfall Delays) ⚡
+      Promise.allSettled([
+        fetch(`/api/user?email=${email}&t=${t}`, { cache: 'no-store' }).then(res => res.json()),
+        fetch(`/api/billing?email=${email}&t=${t}`, { cache: 'no-store' }).then(res => res.json()),
+        fetch(`/api/analytics?email=${email}&t=${t}`, { cache: 'no-store' }).then(res => res.json()),
+        fetchKnowledge()
+      ]).then((results) => {
+        const [userRes, billRes, statRes] = results;
+
+        // 1. Process User Data
+        if (userRes.status === 'fulfilled' && userRes.value?.success && userRes.value?.data) {
+          const data = userRes.value.data;
+          setUserData(data);
+          const activeChan = data.selected_channel || "telegram";
+          setSelectedChannel(activeChan);
+          setChannelPrompts({
+            telegram: data.system_prompt_telegram || "",
+            whatsapp: data.system_prompt_whatsapp || "",
+            instagram: data.system_prompt_instagram || ""
+          });
+          if (data.plan_tier || data.plan) {
+              setSelectedRenewalPlan((data.plan_tier || data.plan).toLowerCase());
           }
-        } catch (error) { console.error("User fetch error", error); }
+        }
 
-        try {
-          const billRes = await fetch(`/api/billing?email=${session.user.email}&t=${Date.now()}`, { cache: 'no-store' });
-          const billData = await billRes.json();
-          if (billData.success) {
-            setBillingHistory(billData.data);
-          }
-        } catch (error) { console.error("Billing fetch error", error); }
+        // 2. Process Billing Data
+        if (billRes.status === 'fulfilled' && billRes.value?.success) {
+          setBillingHistory(billRes.value.data);
+        }
 
-        try {
-          const statRes = await fetch(`/api/analytics?email=${session.user.email}&t=${Date.now()}`, { cache: 'no-store' });
-          const statData = await statRes.json();
-          if (statData.success) setStats(statData.data);
-        } catch (error) { console.error("Stats fetch error", error); }
+        // 3. Process Analytics Data
+        if (statRes.status === 'fulfilled' && statRes.value?.success) {
+          setStats(statRes.value.data);
+        }
 
-        await fetchKnowledge();
+        // Drop the loading screen INSTANTLY after parallel fetch completes
         setIsLoading(false);
-      }
+      });
     };
 
     if (session?.user?.email) {
         fetchData();
     }
   }, [session, status, router]);
-
-  const fetchKnowledge = async () => {
-    if (!session?.user?.email) return;
-    try {
-      const res = await fetch(`/api/knowledge?email=${session.user.email}&t=${Date.now()}`, { cache: 'no-store' });
-      const data = await res.json();
-      if (data.success) setKnowledgeItems(data.data);
-    } catch (e) {
-      console.error("Knowledge extraction failed");
-    }
-  };
 
   /**
    * ==============================================================================================
