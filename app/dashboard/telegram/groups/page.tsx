@@ -118,7 +118,7 @@ export default function TelegramGroups() {
   if (isLoading || status === "loading") {
     return (
       <div className="w-full h-screen bg-[#07070A] flex flex-col items-center justify-center text-[#2AABEE] font-mono">
-        <Activity className="w-10 h-10 animate-spin mb-4" />
+        <SpinnerCounter text="INITIALIZING..." />
         SYNCING TELEGRAM GROUPS...
       </div>
     );

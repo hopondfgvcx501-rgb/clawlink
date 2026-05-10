@@ -39,7 +39,7 @@ export default function OmnichannelHub() {
   if (status === "loading" || isLoading) {
     return (
       <div className="w-full h-screen bg-[#0A0A0B] flex flex-col items-center justify-center text-indigo-500 font-mono">
-        <Activity className="w-10 h-10 animate-spin mb-4" />
+        <SpinnerCounter text="INITIALIZING..." />
         LOADING HUB...
       </div>
     );
