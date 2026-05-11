@@ -7,6 +7,7 @@
  * @file app/dashboard/telegram/automation/page.tsx
  * @description Core control panel for Telegram Bot automations and Keyword routing.
  * 🚀 SECURED: Real-time PostgreSQL database sync. Removed mock arrays.
+ * 🚀 POLISH: Replaced legacy Activity spinner with SpinnerCounter for loading states.
  * * ALL RIGHTS RESERVED. CLAWLINK INC.
  * ==============================================================================================
  */
@@ -20,6 +21,7 @@ import {
   Save, Activity, MessageCircle, Bot, Sparkles
 } from "lucide-react";
 import TopHeader from "@/components/TopHeader";
+import SpinnerCounter from "@/components/SpinnerCounter"; // Imported new Premium Loader
 
 interface KeywordRule {
   id: string;
@@ -123,13 +125,9 @@ export default function TelegramAutomations() {
 
   const btnHover = "transition-all duration-[120ms] ease-out active:scale-[0.95] transform-gpu will-change-transform";
 
+  // ✅ REPLACED Z-LOADER WITH PREMIUM SPINNERCOUNTER
   if (isLoading || status === "loading") {
-    return (
-      <div className="w-full h-screen bg-[#07070A] flex flex-col items-center justify-center text-[#2AABEE] font-mono">
-        <SpinnerCounter text="INITIALIZING..." />
-        CONNECTING TELEGRAM ENGINE...
-      </div>
-    );
+    return <SpinnerCounter text="CONNECTING TELEGRAM ENGINE..." />;
   }
 
   return (
@@ -208,25 +206,25 @@ export default function TelegramAutomations() {
               <div className="bg-[#111114] border border-white/10 p-5 rounded-2xl mb-6 flex flex-wrap gap-4 items-end shadow-inner">
                   <div className="flex-1 min-w-[200px]">
                       <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2 block">If message</label>
-                      <select title="Select match type" value={newRule.matchType} onChange={(e)=> setNewRule({...newRule, matchType: e.target.value})} className="w-full bg-[#0A0A0D] border border-white/10 rounded-lg p-2.5 text-sm text-white outline-none focus:border-[#2AABEE]/50">
+                      <select aria-label="Select Match Type" title="Match Type" value={newRule.matchType} onChange={(e)=> setNewRule({...newRule, matchType: e.target.value})} className="w-full bg-[#0A0A0D] border border-white/10 rounded-lg p-2.5 text-sm text-white outline-none focus:border-[#2AABEE]/50">
                           <option value="contains">Contains</option>
                           <option value="exact">Is Exactly</option>
                       </select>
                   </div>
                   <div className="flex-[2] min-w-[200px]">
                       <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2 block">Keyword(s) - comma separated</label>
-                      <input type="text" placeholder="e.g. pricing, support" value={newRule.keyword} onChange={(e)=> setNewRule({...newRule, keyword: e.target.value})} className="w-full bg-[#0A0A0D] border border-white/10 rounded-lg p-2.5 text-sm text-white outline-none focus:border-[#2AABEE]/50" />
+                      <input aria-label="Enter Keywords" title="Keywords Input" type="text" placeholder="e.g. pricing, support" value={newRule.keyword} onChange={(e)=> setNewRule({...newRule, keyword: e.target.value})} className="w-full bg-[#0A0A0D] border border-white/10 rounded-lg p-2.5 text-sm text-white outline-none focus:border-[#2AABEE]/50" />
                   </div>
                   <div className="flex-1 min-w-[200px]">
                       <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2 block">Then trigger</label>
-                      <select title="Select action type" value={newRule.actionType} onChange={(e)=> setNewRule({...newRule, actionType: e.target.value})} className="w-full bg-[#0A0A0D] border border-white/10 rounded-lg p-2.5 text-sm text-white outline-none focus:border-[#2AABEE]/50">
+                      <select aria-label="Select Action Type" title="Action Type" value={newRule.actionType} onChange={(e)=> setNewRule({...newRule, actionType: e.target.value})} className="w-full bg-[#0A0A0D] border border-white/10 rounded-lg p-2.5 text-sm text-white outline-none focus:border-[#2AABEE]/50">
                           <option value="text">Text Reply</option>
                           <option value="flow">Trigger Flow</option>
                       </select>
                   </div>
                   <div className="flex-[2] min-w-[200px]">
                       <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2 block">Content / Flow Name</label>
-                      <input type="text" placeholder="Content to send..." value={newRule.content} onChange={(e)=> setNewRule({...newRule, content: e.target.value})} className="w-full bg-[#0A0A0D] border border-white/10 rounded-lg p-2.5 text-sm text-white outline-none focus:border-[#2AABEE]/50" />
+                      <input aria-label="Enter Content or Flow Name" title="Content Input" type="text" placeholder="Content to send..." value={newRule.content} onChange={(e)=> setNewRule({...newRule, content: e.target.value})} className="w-full bg-[#0A0A0D] border border-white/10 rounded-lg p-2.5 text-sm text-white outline-none focus:border-[#2AABEE]/50" />
                   </div>
                   <button title="Add rule" onClick={handleAddRule} className={`bg-white/10 hover:bg-white/20 text-white px-5 py-3 rounded-lg text-sm font-bold transition-all ${btnHover}`}>
                       <Plus className="w-5 h-5" />
@@ -261,7 +259,7 @@ export default function TelegramAutomations() {
                         </div>
                       </div>
                     </div>
-                    <button title="Delete rule" onClick={() => handleDeleteRule(rule.id)} className="ml-4 p-2.5 text-gray-600 hover:text-red-500 hover:bg-red-500/10 rounded-xl transition-colors">
+                    <button aria-label="Delete rule" title="Delete rule" onClick={() => handleDeleteRule(rule.id)} className="ml-4 p-2.5 text-gray-600 hover:text-red-500 hover:bg-red-500/10 rounded-xl transition-colors">
                       <Trash2 className="w-4 h-4"/>
                     </button>
                   </div>
