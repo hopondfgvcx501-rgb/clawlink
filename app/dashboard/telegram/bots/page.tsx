@@ -7,22 +7,23 @@
  * @file app/dashboard/telegram/bots/page.tsx
  * @description Central control panel for bot settings, webhook status, and command handling.
  * 🚀 SECURED: Real-time DB sync for commands and live status check via Telegram API.
- * 🚀 FIXED: Full CRUD operation connected with /api/telegram/bot-config route.
- * 🛡️ UI POLISH: Eliminated legacy Z-loader, now strictly using global premium SpinnerCounter.
+ * 🚀 STRICT: Removed ALL fake/dummy logic. 'Sync Webhook' now hits real backend API.
+ * 🚀 ADDED: Quick Token Input UI if the bot is 'Not Connected'. Never hides backend errors.
+ * 🛡️ UI POLISH: Replaced legacy Z-loader with SpinnerCounter. ESLint a11y fixed.
  * * ALL RIGHTS RESERVED. CLAWLINK INC.
  * ==============================================================================================
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { 
   Bot, Terminal, Plus, Trash2, Power, 
-  ShieldCheck, RefreshCcw, Command, Activity, Server
+  ShieldCheck, RefreshCcw, Command, Activity, Server, Save
 } from "lucide-react";
 import TopHeader from "@/components/TopHeader";
-import SpinnerCounter from "@/components/SpinnerCounter"; // ✅ Imported Premium Loader
+import SpinnerCounter from "@/components/SpinnerCounter";
 
 interface BotCommand {
   id: string;
@@ -38,7 +39,11 @@ export default function TelegramBots() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSyncing, setIsSyncing] = useState(false);
   const [isSavingCommand, setIsSavingCommand] = useState(false);
+  const [isSavingToken, setIsSavingToken] = useState(false);
+  const [tokenInput, setTokenInput] = useState("");
   
+  const isMounted = useRef(false);
+
   // Real DB State
   const [botInfo, setBotInfo] = useState({
     username: "",
@@ -51,7 +56,11 @@ export default function TelegramBots() {
   const [newCommand, setNewCommand] = useState({ command: "", description: "", action: "Trigger Flow: Welcome" });
 
   useEffect(() => {
-    if (status === "unauthenticated") router.replace("/");
+    isMounted.current = true;
+    if (status === "unauthenticated") {
+      router.replace("/");
+    }
+    return () => { isMounted.current = false; };
   }, [status, router]);
 
   // 🚀 SECURE REAL-TIME FETCH LOGIC
@@ -66,7 +75,7 @@ export default function TelegramBots() {
           if (!res.ok) throw new Error("Secure fetch failed");
           
           const data = await res.json();
-          if (data.success) {
+          if (isMounted.current && data.success) {
             setBotInfo({
               username: data.bot.username || "Not Connected",
               isActive: data.bot.isActive,
@@ -77,17 +86,44 @@ export default function TelegramBots() {
         } catch (error) {
           console.error("[TELEGRAM_BOT_ERROR] Failed to load secure bot data", error);
         } finally {
-          setIsLoading(false);
+          if (isMounted.current) setIsLoading(false);
         }
       }
     };
     fetchBotData();
   }, [session, status]);
 
+  // 🚀 QUICK SAVE TOKEN (If Not Connected)
+  const handleSaveTokenLocal = async () => {
+    if (!tokenInput.trim()) {
+        alert("Please paste a valid Telegram Token.");
+        return;
+    }
+    setIsSavingToken(true);
+    try {
+        const res = await fetch('/api/user', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: session?.user?.email, telegram_token: tokenInput, channel: 'telegram' })
+        });
+        const data = await res.json();
+        if (data.success) {
+            alert("✅ Token securely saved to Database!");
+            if (isMounted.current) window.location.reload(); // Reload to fetch real username
+        } else {
+            alert("❌ BACKEND ERROR: " + data.error);
+        }
+    } catch (e) {
+        alert("❌ NETWORK ERROR: Cannot reach ClawLink Servers.");
+    } finally {
+        if (isMounted.current) setIsSavingToken(false);
+    }
+  };
+
   // 🚀 TOGGLE BOT STATUS (LIVE DB UPDATE)
   const handleToggleBot = async () => {
     if(!botInfo.hasToken) {
-        alert("Please connect a Telegram Bot Token in API Settings first.");
+        alert("Please save your Telegram Bot Token below first.");
         return;
     }
     
@@ -95,15 +131,43 @@ export default function TelegramBots() {
     setBotInfo(prev => ({ ...prev, isActive: !prev.isActive }));
     
     try {
-        await fetch('/api/telegram/bot-config', {
+        const res = await fetch('/api/telegram/bot-config', {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email: session?.user?.email, isActive: !botInfo.isActive })
         });
+        const data = await res.json();
+        if (!data.success) {
+            alert("❌ BACKEND ERROR: " + data.error);
+            setBotInfo(prev => ({ ...prev, isActive: !prev.isActive })); // Revert on fail
+        }
     } catch(err) {
-        console.error("Status toggle failed");
+        alert("❌ NETWORK ERROR: Failed to update Bot Status.");
         setBotInfo(prev => ({ ...prev, isActive: !prev.isActive }));
     }
+  };
+
+  // 🚀 REAL SYNC WEBHOOK (NO DUMMY API)
+  const handleSyncWebhook = async () => {
+      if(!botInfo.hasToken) return;
+      setIsSyncing(true);
+      try {
+          const res = await fetch('/api/telegram/bot-config', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ email: session?.user?.email, action: 'sync_webhook' })
+          });
+          const data = await res.json();
+          if (data.success) {
+              alert("🟢 REAL SYNC: Telegram Webhook successfully synchronized to ClawLink Servers!");
+          } else {
+              alert("❌ BACKEND ERROR: " + data.error);
+          }
+      } catch (err) {
+          alert("❌ NETWORK ERROR: Failed to reach backend API.");
+      } finally {
+          if (isMounted.current) setIsSyncing(false);
+      }
   };
 
   // 🚀 ADD NEW COMMAND
@@ -134,44 +198,45 @@ export default function TelegramBots() {
             // Re-fetch to get real DB IDs
             const refreshRes = await fetch(`/api/telegram/bot-config?email=${encodeURIComponent(session?.user?.email as string)}`);
             const refreshData = await refreshRes.json();
-            if(refreshData.success) setCommands(refreshData.commands);
-            
-            setNewCommand({ command: "", description: "", action: "Trigger Flow: Welcome" });
+            if(isMounted.current && refreshData.success) {
+              setCommands(refreshData.commands);
+              setNewCommand({ command: "", description: "", action: "Trigger Flow: Welcome" });
+            }
+        } else {
+            alert("❌ BACKEND ERROR: " + data.error);
         }
       } catch(err) {
-          alert("Failed to save command.");
+          alert("❌ NETWORK ERROR: Failed to save command.");
       } finally {
-          setIsSavingCommand(false);
+          if (isMounted.current) setIsSavingCommand(false);
       }
   };
 
   const handleDeleteCommand = async (id: string) => {
     // Optimistic Delete
+    const previousCommands = [...commands];
     setCommands(commands.filter(c => c.id !== id));
     
     try {
-        await fetch('/api/telegram/bot-config', {
+        const res = await fetch('/api/telegram/bot-config', {
             method: 'DELETE',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email: session?.user?.email, commandId: id })
         });
+        const data = await res.json();
+        if (!data.success) {
+            alert("❌ BACKEND ERROR: " + data.error);
+            setCommands(previousCommands); // Revert
+        }
     } catch(err) {
-        console.error("Delete failed");
+        alert("❌ NETWORK ERROR: Delete failed.");
+        setCommands(previousCommands);
     }
-  };
-
-  const handleSyncWebhook = () => {
-      if(!botInfo.hasToken) return;
-      setIsSyncing(true);
-      setTimeout(() => {
-          setIsSyncing(false);
-          alert("🟢 Telegram Webhook successfully synchronized to ClawLink Servers!");
-      }, 1500);
   };
 
   const btnHover = "transition-all duration-[120ms] ease-out active:scale-[0.95] transform-gpu will-change-transform";
 
-  // ✅ THE KILL: Replaced legacy Z-loader with Premium SpinnerCounter
+  // ✅ REPLACED Z-LOADER WITH PREMIUM SPINNERCOUNTER
   if (isLoading || status === "loading") {
     return <SpinnerCounter text="CONNECTING TO TELEGRAM SERVERS..." />;
   }
@@ -200,20 +265,55 @@ export default function TelegramBots() {
               </div>
 
               <h2 className="text-xl font-black text-white tracking-wide">ClawLink Node</h2>
-              <p className="text-[12px] font-mono text-[#2AABEE] mt-1">@{botInfo.username}</p>
+              
+              {/* 🚀 QUICK TOKEN INPUT IF NOT CONNECTED */}
+              {!botInfo.hasToken ? (
+                  <div className="w-full mt-4 bg-red-500/10 border border-red-500/20 p-4 rounded-xl">
+                      <label htmlFor="telegram-token-quick" className="text-[10px] text-red-400 font-bold uppercase tracking-widest mb-3 block">API Token Required</label>
+                      <input 
+                          id="telegram-token-quick"
+                          type="password" 
+                          aria-label="Telegram Bot Token"
+                          title="Enter Telegram Bot Token"
+                          placeholder="Paste BotFather Token..." 
+                          value={tokenInput}
+                          onChange={(e) => setTokenInput(e.target.value)}
+                          className="w-full bg-[#0A0A0D] border border-white/10 rounded-lg p-2.5 text-xs text-white outline-none focus:border-[#2AABEE]/50 mb-3 font-mono" 
+                      />
+                      <button 
+                          onClick={handleSaveTokenLocal} 
+                          disabled={isSavingToken}
+                          title="Save Token"
+                          aria-label="Save Token to Database"
+                          className={`w-full bg-[#2AABEE] text-white py-2.5 rounded-lg text-[11px] font-black uppercase tracking-widest shadow-[0_0_15px_rgba(42,171,238,0.2)] disabled:opacity-50 ${btnHover}`}
+                      >
+                          {isSavingToken ? "Saving..." : <><Save className="w-3 h-3 inline mr-1"/> Save Token</>}
+                      </button>
+                  </div>
+              ) : (
+                  <p className="text-[12px] font-mono text-[#2AABEE] mt-1">@{botInfo.username}</p>
+              )}
 
               <div className="w-full mt-8 space-y-3">
                 <button 
                   onClick={handleToggleBot}
+                  title={botInfo.isActive ? "Pause Bot Engine" : "Activate Engine"}
+                  aria-label="Toggle Bot Engine Status"
                   className={`w-full py-3.5 rounded-xl text-[12px] font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-all ${
-                    botInfo.isActive ? 'bg-red-500/10 text-red-500 hover:bg-red-500/20' : 'bg-green-500/10 text-green-400 hover:bg-green-500/20'
+                    botInfo.isActive ? 'bg-red-500/10 text-red-500 hover:bg-red-500/20 border border-red-500/20' : 'bg-green-500/10 text-green-400 hover:bg-green-500/20 border border-green-500/20'
                   } ${btnHover}`}
                 >
                   <Power className="w-4 h-4"/> {botInfo.isActive ? 'Pause Bot Engine' : 'Activate Engine'}
                 </button>
-                <button onClick={handleSyncWebhook} disabled={isSyncing || !botInfo.hasToken} className={`w-full bg-[#111114] hover:bg-white/5 border border-white/10 text-white py-3.5 rounded-xl text-[12px] font-black uppercase tracking-widest flex items-center justify-center gap-2 disabled:opacity-50 ${btnHover}`}>
-                  {isSyncing ? <Activity className="w-4 h-4 animate-spin text-gray-400"/> : <RefreshCcw className="w-4 h-4 text-gray-400"/>} 
-                  {isSyncing ? "Syncing..." : "Sync Webhook"}
+                <button 
+                  onClick={handleSyncWebhook} 
+                  disabled={isSyncing || !botInfo.hasToken} 
+                  title="Sync Webhook to Real API"
+                  aria-label="Synchronize Webhook"
+                  className={`w-full bg-[#111114] hover:bg-white/5 border border-white/10 text-white py-3.5 rounded-xl text-[12px] font-black uppercase tracking-widest flex items-center justify-center gap-2 disabled:opacity-50 ${btnHover}`}
+                >
+                  {isSyncing ? <Activity className="w-4 h-4 animate-spin text-[#2AABEE]"/> : <RefreshCcw className="w-4 h-4 text-gray-400"/>} 
+                  {isSyncing ? "Connecting API..." : "Sync Webhook (Real API)"}
                 </button>
               </div>
             </motion.div>
@@ -240,22 +340,53 @@ export default function TelegramBots() {
                 </h4>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
-                    <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2 block">Command</label>
-                    <input type="text" placeholder="/help" value={newCommand.command} onChange={(e)=> setNewCommand({...newCommand, command: e.target.value})} className="w-full bg-[#0A0A0D] border border-white/10 rounded-lg p-2.5 text-sm text-white font-mono outline-none focus:border-[#2AABEE]/50" />
+                    <label htmlFor="new-cmd-name" className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2 block">Command</label>
+                    <input 
+                      id="new-cmd-name"
+                      type="text" 
+                      title="New Command Name"
+                      aria-label="New Command Name"
+                      placeholder="/help" 
+                      value={newCommand.command} 
+                      onChange={(e)=> setNewCommand({...newCommand, command: e.target.value})} 
+                      className="w-full bg-[#0A0A0D] border border-white/10 rounded-lg p-2.5 text-sm text-white font-mono outline-none focus:border-[#2AABEE]/50" 
+                    />
                   </div>
                   <div className="md:col-span-2">
-                    <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2 block">Menu Description</label>
-                    <input type="text" placeholder="Get support information" value={newCommand.description} onChange={(e)=> setNewCommand({...newCommand, description: e.target.value})} className="w-full bg-[#0A0A0D] border border-white/10 rounded-lg p-2.5 text-sm text-white outline-none focus:border-[#2AABEE]/50" />
+                    <label htmlFor="new-cmd-desc" className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2 block">Menu Description</label>
+                    <input 
+                      id="new-cmd-desc"
+                      type="text" 
+                      title="New Command Description"
+                      aria-label="New Command Description"
+                      placeholder="Get support information" 
+                      value={newCommand.description} 
+                      onChange={(e)=> setNewCommand({...newCommand, description: e.target.value})} 
+                      className="w-full bg-[#0A0A0D] border border-white/10 rounded-lg p-2.5 text-sm text-white outline-none focus:border-[#2AABEE]/50" 
+                    />
                   </div>
                   <div className="md:col-span-3">
-                    <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2 block">Action Routing</label>
+                    <label htmlFor="new-cmd-action" className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2 block">Action Routing</label>
                     <div className="flex gap-4">
-                        <select title="Select action routing" value={newCommand.action} onChange={(e)=> setNewCommand({...newCommand, action: e.target.value})} className="flex-1 bg-[#0A0A0D] border border-[#2AABEE]/30 rounded-lg p-2.5 text-sm text-white outline-none focus:border-[#2AABEE]/80">
+                        <select 
+                          id="new-cmd-action"
+                          title="Select action routing" 
+                          aria-label="Select action routing"
+                          value={newCommand.action} 
+                          onChange={(e)=> setNewCommand({...newCommand, action: e.target.value})} 
+                          className="flex-1 bg-[#0A0A0D] border border-[#2AABEE]/30 rounded-lg p-2.5 text-sm text-white outline-none focus:border-[#2AABEE]/80"
+                        >
                             <option value="Trigger Flow: Welcome">Trigger Flow: Welcome</option>
                             <option value="Trigger Flow: Sales">Trigger Flow: Sales</option>
                             <option value="Reply: Text Menu">Reply: Text Menu</option>
                         </select>
-                        <button onClick={handleAddCommand} disabled={isSavingCommand} className={`bg-[#2AABEE]/10 hover:bg-[#2AABEE]/20 text-[#2AABEE] border border-[#2AABEE]/20 px-8 py-2.5 rounded-lg text-xs font-black uppercase tracking-widest transition-all shadow-[0_0_15px_rgba(42,171,238,0.15)] disabled:opacity-50 ${btnHover}`}>
+                        <button 
+                          onClick={handleAddCommand} 
+                          disabled={isSavingCommand} 
+                          title="Add Command"
+                          aria-label="Add Command"
+                          className={`bg-[#2AABEE]/10 hover:bg-[#2AABEE]/20 text-[#2AABEE] border border-[#2AABEE]/20 px-8 py-2.5 rounded-lg text-xs font-black uppercase tracking-widest transition-all shadow-[0_0_15px_rgba(42,171,238,0.15)] disabled:opacity-50 ${btnHover}`}
+                        >
                             {isSavingCommand ? <Activity className="w-4 h-4 animate-spin"/> : "Add"}
                         </button>
                     </div>
@@ -285,7 +416,12 @@ export default function TelegramBots() {
                         <p className="text-[12px] text-gray-500">{cmd.description}</p>
                       </div>
                     </div>
-                    <button title="Delete command" onClick={() => handleDeleteCommand(cmd.id)} className="p-2.5 text-gray-600 hover:text-red-500 hover:bg-red-500/10 rounded-xl transition-colors">
+                    <button 
+                      title="Delete command" 
+                      aria-label="Delete Command"
+                      onClick={() => handleDeleteCommand(cmd.id)} 
+                      className="p-2.5 text-gray-600 hover:text-red-500 hover:bg-red-500/10 rounded-xl transition-colors"
+                    >
                       <Trash2 className="w-4 h-4"/>
                     </button>
                   </div>
