@@ -8,6 +8,50 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
 const supabase = createClient(supabaseUrl, supabaseKey);
 
+// ============================================================================
+// 🚀 HELPER: AUTO-SYNC COMMANDS WITH TELEGRAM UI MENU
+// ============================================================================
+async function syncTelegramMenu(email: string) {
+    try {
+        // 1. Get User's Telegram Token
+        const { data: config } = await supabase.from("user_configs").select("telegram_token").eq("email", email).single();
+        if (!config || !config.telegram_token) return;
+
+        // 2. Fetch all ACTIVE commands for this user
+        const { data: commands } = await supabase.from("bot_commands")
+            .select("command, description")
+            .eq("email", email)
+            .eq("platform", "telegram")
+            .eq("is_active", true);
+
+        // 3. Format commands strictly according to Telegram API rules
+        // Rule: Must be lowercase, no leading slash, 1-32 chars
+        const tgCommands = (commands || []).map(c => ({
+            command: c.command.replace(/^\//, '').toLowerCase().substring(0, 32),
+            description: c.description.substring(0, 256)
+        }));
+
+        // 4. Push to Telegram UI
+        const tgUrl = `https://api.telegram.org/bot${config.telegram_token}/setMyCommands`;
+        const res = await fetch(tgUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ commands: tgCommands })
+        });
+
+        const tgData = await res.json();
+        if (!tgData.ok) {
+            console.error("[TG_SYNC_ERROR] Telegram rejected menu sync:", tgData.description);
+        } else {
+            console.log(`[TG_SYNC_SUCCESS] Synced ${tgCommands.length} commands to Telegram UI.`);
+        }
+    } catch (e) {
+        console.error("[SYNC_EXCEPTION]", e);
+    }
+}
+// ============================================================================
+
+
 // 1. FETCH COMMANDS ONLY (Clean GET method)
 export async function GET(req: Request) {
     try {
@@ -18,7 +62,6 @@ export async function GET(req: Request) {
 
         const safeEmail = email.toLowerCase(); 
 
-        // Fetch Commands directly from table
         const { data: commands, error } = await supabase
             .from("bot_commands")
             .select("*")
@@ -28,13 +71,12 @@ export async function GET(req: Request) {
 
         if (error) throw error;
 
-        // Map DB 'is_active' to frontend 'isActive'
         const formattedCommands = commands?.map(cmd => ({
             id: cmd.id,
             command: cmd.command,
             description: cmd.description,
             action: cmd.action,
-            isActive: cmd.is_active !== false // Default to true if null
+            isActive: cmd.is_active !== false 
         }));
 
         return NextResponse.json({ success: true, commands: formattedCommands || [] });
@@ -64,6 +106,8 @@ export async function POST(req: Request) {
                 is_active: body.commandData.isActive ?? true
             });
             if (error) throw error;
+            
+            await syncTelegramMenu(safeEmail); // 🚀 AUTO-SYNC
             return NextResponse.json({ success: true });
         }
 
@@ -74,6 +118,8 @@ export async function POST(req: Request) {
                 .eq("id", body.commandId)
                 .eq("email", safeEmail);
             if (error) throw error;
+            
+            await syncTelegramMenu(safeEmail); // 🚀 AUTO-SYNC
             return NextResponse.json({ success: true });
         }
 
@@ -84,6 +130,8 @@ export async function POST(req: Request) {
                 .eq("email", safeEmail)
                 .eq("platform", "telegram");
             if (error) throw error;
+            
+            await syncTelegramMenu(safeEmail); // 🚀 AUTO-SYNC
             return NextResponse.json({ success: true });
         }
 
@@ -94,10 +142,11 @@ export async function POST(req: Request) {
                 .eq("id", body.commandId)
                 .eq("email", safeEmail);
             if (error) throw error;
+            
+            await syncTelegramMenu(safeEmail); // 🚀 AUTO-SYNC
             return NextResponse.json({ success: true });
         }
 
-        // If no action matched
         return NextResponse.json({ success: false, error: "Invalid Action Provided" }, { status: 400 });
 
     } catch (error: any) {
