@@ -143,7 +143,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     ],
     telegram: [
       { name: "Live CRM Inbox", icon: MessageCircle, path: "/dashboard/crm" },
-      { name: "Bot Manager", icon: Bot, path: "/dashboard/telegram/bots" },
+      { name: "Command Router", icon: Bot, path: "/dashboard/telegram/bots" },
       { name: "Automation Rules", icon: Cpu, path: "/dashboard/telegram/automation" },
       { name: "Flow Builder", icon: Workflow, path: "/dashboard/telegram/flow" },
       { name: "Broadcast Engine", icon: Megaphone, path: "/dashboard/telegram/broadcast" },
