@@ -7,9 +7,8 @@
  * @file app/dashboard/telegram/bots/page.tsx
  * @description Central control panel for bot settings, webhook status, and command handling.
  * 🚀 SECURED: Real-time DB sync for commands and live status check via Telegram API.
- * 🚀 STRICT: Removed ALL fake/dummy logic. 'Sync Webhook' now hits real backend API.
- * 🚀 ADDED: Quick Token Input UI if the bot is 'Not Connected'. Never hides backend errors.
- * 🛡️ UI POLISH: Replaced legacy Z-loader with SpinnerCounter. ESLint a11y fixed.
+ * 🚀 FIXED: Parallel fetching from Master DB (/api/user) to strictly verify token existence.
+ * 🛡️ UI POLISH: Eliminated legacy Z-loader, now strictly using global premium SpinnerCounter.
  * * ALL RIGHTS RESERVED. CLAWLINK INC.
  * ==============================================================================================
  */
@@ -63,26 +62,58 @@ export default function TelegramBots() {
     return () => { isMounted.current = false; };
   }, [status, router]);
 
-  // 🚀 SECURE REAL-TIME FETCH LOGIC
+  // 🚀 SECURE PARALLEL FETCH (Master DB + Bot Config)
   useEffect(() => {
     const fetchBotData = async () => {
       if (status === "authenticated" && session?.user?.email) {
         try {
-          const res = await fetch(`/api/telegram/bot-config?email=${encodeURIComponent(session.user.email)}&t=${Date.now()}`, {
-            headers: { 'Cache-Control': 'no-store' }
-          });
+          const email = encodeURIComponent(session.user.email);
+          const t = Date.now();
           
-          if (!res.ok) throw new Error("Secure fetch failed");
+          // Fetch from BOTH sources to guarantee token status
+          const [userRes, configRes] = await Promise.allSettled([
+              fetch(`/api/user?email=${email}&t=${t}`, { headers: { 'Cache-Control': 'no-store' } }).then(res => res.json()),
+              fetch(`/api/telegram/bot-config?email=${email}&t=${t}`, { headers: { 'Cache-Control': 'no-store' } }).then(res => res.json())
+          ]);
           
-          const data = await res.json();
-          if (isMounted.current && data.success) {
-            setBotInfo({
-              username: data.bot.username || "Not Connected",
-              isActive: data.bot.isActive,
-              hasToken: data.bot.hasToken
-            });
-            setCommands(data.commands || []);
+          let tokenExists = false;
+          let activeStatus = false;
+          let botUsername = "Not Connected";
+
+          // 1. Check Master DB for Token
+          if (userRes.status === "fulfilled" && userRes.value?.success && userRes.value?.data) {
+              const userData = userRes.value.data;
+              if (userData.telegram_token) {
+                  tokenExists = true;
+              }
+              if (userData.tg_username) {
+                  botUsername = userData.tg_username;
+              }
           }
+
+          // 2. Check Bot Config for Commands & Status
+          if (configRes.status === "fulfilled" && configRes.value?.success) {
+              const configData = configRes.value;
+              activeStatus = configData.bot?.isActive || false;
+              if (configData.bot?.username) {
+                  botUsername = configData.bot.username;
+              }
+              if (configData.bot?.hasToken) {
+                  tokenExists = true;
+              }
+              if (isMounted.current) {
+                  setCommands(configData.commands || []);
+              }
+          }
+
+          if (isMounted.current) {
+            setBotInfo({
+              username: botUsername,
+              isActive: activeStatus,
+              hasToken: tokenExists
+            });
+          }
+
         } catch (error) {
           console.error("[TELEGRAM_BOT_ERROR] Failed to load secure bot data", error);
         } finally {
@@ -93,7 +124,7 @@ export default function TelegramBots() {
     fetchBotData();
   }, [session, status]);
 
-  // 🚀 QUICK SAVE TOKEN (If Not Connected)
+  // 🚀 QUICK SAVE TOKEN (Fallback)
   const handleSaveTokenLocal = async () => {
     if (!tokenInput.trim()) {
         alert("Please paste a valid Telegram Token.");
@@ -108,8 +139,8 @@ export default function TelegramBots() {
         });
         const data = await res.json();
         if (data.success) {
-            alert("✅ Token securely saved to Database!");
-            if (isMounted.current) window.location.reload(); // Reload to fetch real username
+            alert("✅ Token securely saved to Master Database!");
+            if (isMounted.current) window.location.reload(); 
         } else {
             alert("❌ BACKEND ERROR: " + data.error);
         }
@@ -120,14 +151,13 @@ export default function TelegramBots() {
     }
   };
 
-  // 🚀 TOGGLE BOT STATUS (LIVE DB UPDATE)
+  // 🚀 TOGGLE BOT STATUS
   const handleToggleBot = async () => {
     if(!botInfo.hasToken) {
-        alert("Please save your Telegram Bot Token below first.");
+        alert("Please save your Telegram Bot Token first.");
         return;
     }
     
-    // Optimistic UI
     setBotInfo(prev => ({ ...prev, isActive: !prev.isActive }));
     
     try {
@@ -139,7 +169,7 @@ export default function TelegramBots() {
         const data = await res.json();
         if (!data.success) {
             alert("❌ BACKEND ERROR: " + data.error);
-            setBotInfo(prev => ({ ...prev, isActive: !prev.isActive })); // Revert on fail
+            setBotInfo(prev => ({ ...prev, isActive: !prev.isActive })); 
         }
     } catch(err) {
         alert("❌ NETWORK ERROR: Failed to update Bot Status.");
@@ -147,7 +177,7 @@ export default function TelegramBots() {
     }
   };
 
-  // 🚀 REAL SYNC WEBHOOK (NO DUMMY API)
+  // 🚀 REAL SYNC WEBHOOK
   const handleSyncWebhook = async () => {
       if(!botInfo.hasToken) return;
       setIsSyncing(true);
@@ -195,7 +225,6 @@ export default function TelegramBots() {
 
         const data = await res.json();
         if(data.success) {
-            // Re-fetch to get real DB IDs
             const refreshRes = await fetch(`/api/telegram/bot-config?email=${encodeURIComponent(session?.user?.email as string)}`);
             const refreshData = await refreshRes.json();
             if(isMounted.current && refreshData.success) {
@@ -213,7 +242,6 @@ export default function TelegramBots() {
   };
 
   const handleDeleteCommand = async (id: string) => {
-    // Optimistic Delete
     const previousCommands = [...commands];
     setCommands(commands.filter(c => c.id !== id));
     
@@ -226,7 +254,7 @@ export default function TelegramBots() {
         const data = await res.json();
         if (!data.success) {
             alert("❌ BACKEND ERROR: " + data.error);
-            setCommands(previousCommands); // Revert
+            setCommands(previousCommands); 
         }
     } catch(err) {
         alert("❌ NETWORK ERROR: Delete failed.");
@@ -236,7 +264,6 @@ export default function TelegramBots() {
 
   const btnHover = "transition-all duration-[120ms] ease-out active:scale-[0.95] transform-gpu will-change-transform";
 
-  // ✅ REPLACED Z-LOADER WITH PREMIUM SPINNERCOUNTER
   if (isLoading || status === "loading") {
     return <SpinnerCounter text="CONNECTING TO TELEGRAM SERVERS..." />;
   }
@@ -266,7 +293,7 @@ export default function TelegramBots() {
 
               <h2 className="text-xl font-black text-white tracking-wide">ClawLink Node</h2>
               
-              {/* 🚀 QUICK TOKEN INPUT IF NOT CONNECTED */}
+              {/* 🚀 QUICK TOKEN INPUT (Only shows if Master DB fails to find token) */}
               {!botInfo.hasToken ? (
                   <div className="w-full mt-4 bg-red-500/10 border border-red-500/20 p-4 rounded-xl">
                       <label htmlFor="telegram-token-quick" className="text-[10px] text-red-400 font-bold uppercase tracking-widest mb-3 block">API Token Required</label>
