@@ -8,7 +8,7 @@
  * @description Advanced Action Director for Telegram Bot. Routes specific commands to AI flows.
  * 🚀 UPGRADE: Added "Clear All" bulk delete functionality (action: clear_all_commands).
  * 🚀 UPGRADE: Added "Active/Inactive" toggle for seasonal/paused rules (action: toggle_command_rule).
- * 🛡️ UI POLISH: Expanded Command Router to full width for an enterprise feel. Mobile responsive.
+ * 🛡️ UI POLISH: Fixed overflowing "Deploy" button. Replaced grid with responsive Flexbox.
  * * ALL RIGHTS RESERVED. CLAWLINK INC.
  * ==============================================================================================
  */
@@ -28,7 +28,7 @@ interface BotCommand {
   command: string;
   description: string;
   action: string;
-  isActive?: boolean; // 🚀 NEW: For pausing specific rules
+  isActive?: boolean;
 }
 
 export default function TelegramCommandRouter() {
@@ -37,7 +37,7 @@ export default function TelegramCommandRouter() {
   
   const [isLoading, setIsLoading] = useState(true);
   const [isSavingCommand, setIsSavingCommand] = useState(false);
-  const [isClearingAll, setIsClearingAll] = useState(false); // 🚀 NEW STATE
+  const [isClearingAll, setIsClearingAll] = useState(false);
   
   const isMounted = useRef(false);
 
@@ -72,7 +72,6 @@ export default function TelegramCommandRouter() {
                   try {
                       if (userData.bot_commands) {
                           const parsedCommands = typeof userData.bot_commands === 'string' ? JSON.parse(userData.bot_commands) : userData.bot_commands;
-                          // Ensure legacy commands have isActive set to true by default
                           const normalizedCommands = parsedCommands.map((c: any) => ({ ...c, isActive: c.isActive !== false }));
                           setCommands(normalizedCommands);
                       }
@@ -105,7 +104,7 @@ export default function TelegramCommandRouter() {
         const payload = {
             email: session?.user?.email,
             action: 'add_command', 
-            commandData: { ...newCommand, command: formattedCommand, isActive: true } // 🚀 Default to active
+            commandData: { ...newCommand, command: formattedCommand, isActive: true } 
         };
 
         const res = await fetch('/api/telegram/bot-config', {
@@ -155,11 +154,10 @@ export default function TelegramCommandRouter() {
     }
   };
 
-  // 🚀 NEW: TOGGLE ACTIVE/INACTIVE STATUS
+  // 🚀 TOGGLE ACTIVE/INACTIVE STATUS
   const handleToggleCommandStatus = async (id: string, currentStatus: boolean | undefined) => {
     const newStatus = currentStatus === false ? true : false;
     
-    // Optimistic UI update
     setCommands(commands.map(c => c.id === id ? { ...c, isActive: newStatus } : c));
 
     try {
@@ -168,7 +166,7 @@ export default function TelegramCommandRouter() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
                 email: session?.user?.email, 
-                action: 'toggle_command_rule', // ⚠️ BACKEND MUST HANDLE THIS
+                action: 'toggle_command_rule',
                 commandId: id,
                 isActive: newStatus
             })
@@ -176,7 +174,6 @@ export default function TelegramCommandRouter() {
         const data = await res.json();
         if (!data.success) {
             alert("❌ BACKEND ERROR: " + (data.error || "Failed to toggle rule."));
-            // Revert on fail
             setCommands(commands.map(c => c.id === id ? { ...c, isActive: !newStatus } : c));
         }
     } catch(err: any) {
@@ -185,7 +182,7 @@ export default function TelegramCommandRouter() {
     }
   };
 
-  // 🚀 NEW: CLEAR ALL COMMANDS
+  // 🚀 CLEAR ALL COMMANDS
   const handleClearAll = async () => {
     if (commands.length === 0) return;
     
@@ -194,7 +191,7 @@ export default function TelegramCommandRouter() {
 
     const previousCommands = [...commands];
     setIsClearingAll(true);
-    setCommands([]); // Optimistic wipe
+    setCommands([]); 
 
     try {
         const res = await fetch('/api/telegram/bot-config', {
@@ -202,13 +199,13 @@ export default function TelegramCommandRouter() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
                 email: session?.user?.email, 
-                action: 'clear_all_commands' // ⚠️ BACKEND MUST HANDLE THIS
+                action: 'clear_all_commands' 
             })
         });
         const data = await res.json();
         if (!data.success) {
             alert("❌ BACKEND ERROR: " + (data.error || "Failed to clear commands."));
-            setCommands(previousCommands); // Revert
+            setCommands(previousCommands); 
         } else {
             alert("🗑️ All command rules cleared successfully.");
         }
@@ -249,7 +246,7 @@ export default function TelegramCommandRouter() {
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
             className="bg-[#0A0A0D] border border-white/5 rounded-[24px] p-5 sm:p-6 md:p-10 shadow-[0_10px_40px_rgba(0,0,0,0.5)]">
             
-            {/* Add New Command Form */}
+            {/* 🚀 FIXED FOR OVERFLOW: Add New Command Form using Flexbox */}
             <div className="bg-[#111114] border border-[#2AABEE]/20 p-5 sm:p-6 rounded-2xl mb-10 flex flex-col gap-5 relative overflow-hidden">
               <div className="absolute top-0 left-0 w-1 h-full bg-[#2AABEE]"></div>
               
@@ -257,8 +254,10 @@ export default function TelegramCommandRouter() {
                 <Sparkles className="w-4 h-4" aria-hidden="true"/> Create Action Rule
               </h4>
               
-              <div className="grid grid-cols-1 md:grid-cols-12 gap-5">
-                <div className="md:col-span-3">
+              {/* Flex Container for Fields */}
+              <div className="flex flex-col lg:flex-row items-start lg:items-end gap-4 w-full">
+                
+                <div className="w-full lg:w-64 shrink-0">
                   <label htmlFor="new-cmd-name" className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2 block">Command Listener</label>
                   <input 
                     id="new-cmd-name"
@@ -271,8 +270,9 @@ export default function TelegramCommandRouter() {
                     className="w-full bg-[#07070A] border border-white/10 rounded-xl p-3.5 text-sm text-white font-mono outline-none focus:border-[#2AABEE]/50 transition-colors" 
                   />
                 </div>
-                <div className="md:col-span-4">
-                  <label htmlFor="new-cmd-desc" className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2 block">Menu Description (Visible to User)</label>
+                
+                <div className="w-full lg:flex-1">
+                  <label htmlFor="new-cmd-desc" className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2 block">Menu Description</label>
                   <input 
                     id="new-cmd-desc"
                     type="text" 
@@ -284,16 +284,17 @@ export default function TelegramCommandRouter() {
                     className="w-full bg-[#07070A] border border-white/10 rounded-xl p-3.5 text-sm text-white outline-none focus:border-[#2AABEE]/50 transition-colors" 
                   />
                 </div>
-                <div className="md:col-span-5">
+                
+                <div className="w-full lg:w-[45%] shrink-0">
                   <label htmlFor="new-cmd-action" className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2 block">AI Execution Route</label>
-                  <div className="flex flex-col sm:flex-row gap-3">
+                  <div className="flex flex-col sm:flex-row gap-3 w-full">
                       <select 
                         id="new-cmd-action"
                         title="Select action routing" 
                         aria-label="Select action routing"
                         value={newCommand.action} 
                         onChange={(e)=> setNewCommand({...newCommand, action: e.target.value})} 
-                        className="flex-1 bg-[#07070A] border border-[#2AABEE]/30 rounded-xl p-3.5 text-sm text-white outline-none focus:border-[#2AABEE]/80 cursor-pointer"
+                        className="flex-1 min-w-0 bg-[#07070A] border border-[#2AABEE]/30 rounded-xl p-3.5 text-sm text-white outline-none focus:border-[#2AABEE]/80 cursor-pointer"
                       >
                           <option value="Trigger Flow: Welcome">Trigger Flow: Welcome</option>
                           <option value="Trigger Flow: Sales">Trigger Flow: Sales</option>
@@ -301,18 +302,20 @@ export default function TelegramCommandRouter() {
                           <option value="Action: Handover to Human">Action: Handover to Human</option>
                           <option value="Reply: AI Fallback">Reply: Let AI Handle</option>
                       </select>
+                      
                       <button 
                         onClick={handleAddCommand} 
                         disabled={isSavingCommand} 
                         title="Deploy Command"
                         aria-label="Deploy Command"
-                        className={`bg-[#2AABEE] hover:bg-[#2298D6] text-white px-8 py-3.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all shadow-[0_4px_15px_rgba(42,171,238,0.25)] disabled:opacity-50 ${btnHover} flex items-center justify-center gap-2`}
+                        className={`w-full sm:w-auto shrink-0 bg-[#2AABEE] hover:bg-[#2298D6] text-white px-8 py-3.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all shadow-[0_4px_15px_rgba(42,171,238,0.25)] disabled:opacity-50 ${btnHover} flex items-center justify-center gap-2`}
                       >
                           {isSavingCommand ? <Activity className="w-4 h-4 animate-spin" aria-hidden="true"/> : <Plus className="w-4 h-4" aria-hidden="true"/>}
                           Deploy
                       </button>
                   </div>
                 </div>
+
               </div>
             </div>
 
@@ -322,7 +325,6 @@ export default function TelegramCommandRouter() {
                 <Command className="w-4 h-4" aria-hidden="true"/> Active Routing Rules
               </h3>
               
-              {/* 🚀 NEW: Clear All Button */}
               {commands.length > 0 && (
                 <button 
                   onClick={handleClearAll}
@@ -357,7 +359,6 @@ export default function TelegramCommandRouter() {
                           <Zap className="w-3 h-3" aria-hidden="true"/> {cmd.action}
                         </span>
                         
-                        {/* Status Label */}
                         {cmd.isActive === false && (
                           <span className="text-[9px] font-bold uppercase tracking-widest text-red-400 border border-red-500/30 px-2 py-0.5 rounded bg-red-500/10">Paused</span>
                         )}
@@ -369,7 +370,6 @@ export default function TelegramCommandRouter() {
                   {/* Right Side Actions: Toggle + Delete */}
                   <div className="flex items-center justify-end gap-2 w-full sm:w-auto border-t sm:border-t-0 border-white/5 pt-3 sm:pt-0">
                     
-                    {/* 🚀 Active/Inactive Toggle */}
                     <div className="flex items-center gap-2 mr-2">
                         <span className="text-[9px] font-bold uppercase text-gray-500 tracking-widest">
                             {cmd.isActive !== false ? 'Active' : 'Off'}
@@ -382,7 +382,6 @@ export default function TelegramCommandRouter() {
                         </div>
                     </div>
 
-                    {/* Delete button */}
                     <button 
                       type="button"
                       title={`Delete command ${cmd.command}`} 
