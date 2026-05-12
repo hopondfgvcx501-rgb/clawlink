@@ -8,80 +8,69 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-// 🚀 1. FETCH SAVED FLOW FOR USER
+// 🚀 1. GET: Load Saved Flow into Canvas
 export async function GET(req: Request) {
     try {
         const { searchParams } = new URL(req.url);
         const email = searchParams.get("email");
+        const channel = searchParams.get("channel") || "telegram";
 
-        if (!email) {
-            return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
-        }
+        if (!email) return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
 
-        const safeEmail = email.toLowerCase();
+        const safeEmail = email.toLowerCase(); 
 
-        // 📝 We fetch the saved JSON from user_configs table. 
-        // If it doesn't exist, we just return empty so the UI shows the default start node.
-        const { data: config, error } = await supabase
-            .from("user_configs")
-            .select("telegram_flow_data")
+        const { data, error } = await supabase
+            .from("flow_builder_configs")
+            .select("nodes, edges")
             .eq("email", safeEmail)
-            .single();
+            .eq("channel", channel)
+            .single(); // Only one master flow per channel per user for now
 
-        if (error) {
-            console.error("[FLOW_FETCH_ERROR]", error.message);
-            return NextResponse.json({ success: false, error: "Failed to load flow data." }, { status: 500 });
+        // If no flow found, it's fine, return empty so canvas loads defaults
+        if (error && error.code !== 'PGRST116') { 
+            throw error;
         }
 
-        // Check if there is data saved
-        if (config?.telegram_flow_data) {
-             return NextResponse.json({ 
-                success: true, 
-                data: config.telegram_flow_data 
-            });
-        } else {
-             // Return success with empty data to trigger the default fallback node on frontend
-             return NextResponse.json({ 
-                success: true, 
-                data: { nodes: [], edges: [] } 
-            });
-        }
+        return NextResponse.json({ 
+            success: true, 
+            data: data || { nodes: [], edges: [] } 
+        });
 
     } catch (error: any) {
-        console.error("[FLOW_API_FATAL]", error.message);
+        console.error("[FLOW_GET_ERROR]", error.message);
         return NextResponse.json({ success: false, error: "Server Error" }, { status: 500 });
     }
 }
 
-// 🚀 2. SAVE FLOW JSON PAYLOAD TO DB
+// 🚀 2. POST: Save Canvas to Database
 export async function POST(req: Request) {
     try {
-        const payload = await req.json();
+        const body = await req.json();
+        const { email, channel, nodes, edges } = body;
 
-        if (!payload.email || !payload.nodes) {
-            return NextResponse.json({ success: false, error: "Missing required payload data" }, { status: 400 });
-        }
+        if (!email) return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
 
-        const safeEmail = payload.email.toLowerCase();
+        const safeEmail = email.toLowerCase();
 
-        // The flow UI sends an object with `nodes` and `edges` arrays.
-        // We save this entire JSON object into the user_configs table.
-        const flowDataToSave = {
-            nodes: payload.nodes,
-            edges: payload.edges || []
-        };
-
+        // UPSERT: Update if exists, Insert if new
         const { error } = await supabase
-            .from("user_configs")
-            .update({ telegram_flow_data: flowDataToSave })
-            .eq("email", safeEmail);
+            .from("flow_builder_configs")
+            .upsert({
+                email: safeEmail,
+                channel: channel || "telegram",
+                nodes: nodes,   // Saved as JSONB in Supabase
+                edges: edges,   // Saved as JSONB in Supabase
+                updated_at: new Date().toISOString()
+            }, {
+                onConflict: 'email, channel' // Assumes you have a unique constraint on email+channel
+            });
 
         if (error) throw error;
 
-        return NextResponse.json({ success: true });
+        return NextResponse.json({ success: true, message: "Flow saved successfully" });
 
     } catch (error: any) {
         console.error("[FLOW_POST_ERROR]", error.message);
-        return NextResponse.json({ success: false, error: "Failed to save flow to database" }, { status: 500 });
+        return NextResponse.json({ success: false, error: error.message }, { status: 500 });
     }
 }
