@@ -6,9 +6,9 @@
  * ==============================================================================================
  * @file app/dashboard/telegram/bots/page.tsx
  * @description Advanced Action Director for Telegram Bot. Routes specific commands to AI flows.
- * 🚀 UPGRADE: Added "Clear All" bulk delete functionality (action: clear_all_commands).
- * 🚀 UPGRADE: Added "Active/Inactive" toggle for seasonal/paused rules (action: toggle_command_rule).
- * 🛡️ UI POLISH: Fixed overflowing "Deploy" button. Replaced grid with responsive Flexbox.
+ * 🚀 FIXED (CRITICAL): Pointed GET fetch to real /api/telegram/bot-config DB.
+ * 🚀 FIXED: Removed legacy /api/user JSON.parse logic. Data now persists on refresh!
+ * 🛡️ UI POLISH: Responsive Flexbox Layout for Mobile/Desktop parity.
  * * ALL RIGHTS RESERVED. CLAWLINK INC.
  * ==============================================================================================
  */
@@ -55,7 +55,7 @@ export default function TelegramCommandRouter() {
     return () => { isMounted.current = false; };
   }, [status, router]);
 
-  // 🚀 FETCH COMMANDS FROM DB
+  // 🚀 FIXED: FETCH COMMANDS FROM REAL API (bot-config)
   useEffect(() => {
     const fetchCommandsData = async () => {
       if (status === "authenticated" && session?.user?.email) {
@@ -63,21 +63,13 @@ export default function TelegramCommandRouter() {
           const email = encodeURIComponent(session.user.email);
           const t = Date.now();
           
-          const res = await fetch(`/api/user?email=${email}&t=${t}`, { headers: { 'Cache-Control': 'no-store' } });
+          // 🔥 NOW HITTING THE REAL DATABASE ENDPOINT 🔥
+          const res = await fetch(`/api/telegram/bot-config?email=${email}&t=${t}`, { headers: { 'Cache-Control': 'no-store' } });
           const data = await res.json();
           
-          if (data.success && data.data) {
-              const userData = data.data;
+          if (data.success && data.commands) {
               if (isMounted.current) {
-                  try {
-                      if (userData.bot_commands) {
-                          const parsedCommands = typeof userData.bot_commands === 'string' ? JSON.parse(userData.bot_commands) : userData.bot_commands;
-                          const normalizedCommands = parsedCommands.map((c: any) => ({ ...c, isActive: c.isActive !== false }));
-                          setCommands(normalizedCommands);
-                      }
-                  } catch(e) {
-                      console.error("Failed parsing bot commands");
-                  }
+                  setCommands(data.commands); // Directly setting formatted commands from new DB
               }
           }
         } catch (error) {
@@ -115,8 +107,12 @@ export default function TelegramCommandRouter() {
 
         const data = await res.json();
         if(data.success) {
-            const tempId = `temp_cmd_${Date.now()}`;
-            setCommands([...commands, { id: tempId, command: formattedCommand, description: newCommand.description, action: newCommand.action, isActive: true }]);
+            // Re-fetch from DB to get the real Supabase ID instead of a temp one
+            const email = encodeURIComponent(session?.user?.email || '');
+            const refreshRes = await fetch(`/api/telegram/bot-config?email=${email}&t=${Date.now()}`);
+            const refreshData = await refreshRes.json();
+            if (refreshData.success) setCommands(refreshData.commands);
+            
             setNewCommand({ command: "", description: "", action: "Trigger Flow: Welcome" });
         } else {
             alert("❌ BACKEND ERROR: " + (data.error || "Failed to save command."));
@@ -246,7 +242,7 @@ export default function TelegramCommandRouter() {
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
             className="bg-[#0A0A0D] border border-white/5 rounded-[24px] p-5 sm:p-6 md:p-10 shadow-[0_10px_40px_rgba(0,0,0,0.5)]">
             
-            {/* 🚀 FIXED FOR OVERFLOW: Add New Command Form using Flexbox */}
+            {/* Add New Command Form using Flexbox */}
             <div className="bg-[#111114] border border-[#2AABEE]/20 p-5 sm:p-6 rounded-2xl mb-10 flex flex-col gap-5 relative overflow-hidden">
               <div className="absolute top-0 left-0 w-1 h-full bg-[#2AABEE]"></div>
               
