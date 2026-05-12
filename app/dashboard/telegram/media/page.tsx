@@ -8,7 +8,7 @@
  * @description Secure cloud storage for Telegram broadcast and flow media assets.
  * 🚀 SECURED: Fetches and uploads actual files to real database/storage.
  * 🚀 FIXED: Removed dummy simulation. Integrated real <input type="file"> and FormData POST.
- * 🚀 FIXED: Implemented HTML5 Drag & Drop event listeners.
+ * 🚀 FIXED: Implemented HTML5 Drag & Drop event listeners (Wrapped cleanly to prevent TS errors).
  * 🚀 FIXED: Upgraded to premium SpinnerCounter.
  * * ALL RIGHTS RESERVED. CLAWLINK INC.
  * ==============================================================================================
@@ -184,41 +184,43 @@ export default function TelegramMediaLibrary() {
       <div className="flex-1 overflow-y-auto custom-scrollbar p-6 md:p-8">
         <div className="max-w-[1200px] mx-auto space-y-8">
           
-          {/* 🚀 REAL UPLOAD ZONE WITH DRAG & DROP */}
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} 
-            onDragOver={handleDragOver}
-            onDragLeave={handleDragLeave}
-            onDrop={handleDrop}
-            className={`w-full bg-[#0A0A0D] border-2 border-dashed rounded-[32px] p-10 flex flex-col items-center justify-center text-center transition-colors group 
-              ${isDragging ? 'border-[#2AABEE] bg-[#2AABEE]/5 scale-[1.02]' : 'border-white/10 hover:border-[#2AABEE]/50'}
-              ${isUploading ? 'opacity-50 cursor-wait pointer-events-none' : 'cursor-pointer'}
-            `}>
-            
-            <div className={`w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mb-4 transition-all ${isDragging ? 'bg-[#2AABEE]/20 scale-110' : 'group-hover:bg-[#2AABEE]/10 group-hover:scale-110'}`}>
-              {isUploading ? <Activity className="w-8 h-8 text-[#2AABEE] animate-spin"/> : <UploadCloud className={`w-8 h-8 transition-colors ${isDragging ? 'text-[#2AABEE]' : 'text-gray-400 group-hover:text-[#2AABEE]'}`}/>}
-            </div>
-            
-            <h3 className="text-lg font-black text-white mb-2">
-              {isUploading ? "Uploading Securely..." : isDragging ? "Drop File Here" : "Click or Drag & Drop Media Here"}
-            </h3>
-            <p className="text-[13px] text-gray-500 mb-6">Supports Images (JPG, PNG), Videos (MP4), and Documents (PDF) up to 50MB.</p>
-            
-            {/* Hidden actual file input */}
-            <input 
-              type="file" 
-              ref={fileInputRef} 
-              onChange={handleFileSelect} 
-              className="hidden" 
-              accept="image/jpeg, image/png, video/mp4, application/pdf"
-            />
-            
-            <button 
-              onClick={() => fileInputRef.current?.click()}
-              disabled={isUploading} 
-              className={`bg-[#2AABEE] text-white px-8 py-3 rounded-xl text-[12px] font-black uppercase tracking-widest shadow-[0_0_15px_rgba(42,171,238,0.3)] disabled:opacity-50 ${btnHover}`}
+          {/* 🚀 REAL UPLOAD ZONE WITH DRAG & DROP (Wrapped securely to fix TS errors) */}
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+            <div 
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+              className={`w-full bg-[#0A0A0D] border-2 border-dashed rounded-[32px] p-10 flex flex-col items-center justify-center text-center transition-all group 
+                ${isDragging ? 'border-[#2AABEE] bg-[#2AABEE]/5 scale-[1.02]' : 'border-white/10 hover:border-[#2AABEE]/50'}
+                ${isUploading ? 'opacity-50 cursor-wait pointer-events-none' : 'cursor-pointer'}
+              `}
             >
-              {isUploading ? "Processing..." : "Browse Files"}
-            </button>
+              <div className={`w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mb-4 transition-all ${isDragging ? 'bg-[#2AABEE]/20 scale-110' : 'group-hover:bg-[#2AABEE]/10 group-hover:scale-110'}`}>
+                {isUploading ? <Activity className="w-8 h-8 text-[#2AABEE] animate-spin"/> : <UploadCloud className={`w-8 h-8 transition-colors ${isDragging ? 'text-[#2AABEE]' : 'text-gray-400 group-hover:text-[#2AABEE]'}`}/>}
+              </div>
+              
+              <h3 className="text-lg font-black text-white mb-2">
+                {isUploading ? "Uploading Securely..." : isDragging ? "Drop File Here" : "Click or Drag & Drop Media Here"}
+              </h3>
+              <p className="text-[13px] text-gray-500 mb-6">Supports Images (JPG, PNG), Videos (MP4), and Documents (PDF) up to 50MB.</p>
+              
+              {/* Hidden actual file input */}
+              <input 
+                type="file" 
+                ref={fileInputRef} 
+                onChange={handleFileSelect} 
+                className="hidden" 
+                accept="image/jpeg, image/png, video/mp4, application/pdf"
+              />
+              
+              <button 
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isUploading} 
+                className={`bg-[#2AABEE] text-white px-8 py-3 rounded-xl text-[12px] font-black uppercase tracking-widest shadow-[0_0_15px_rgba(42,171,238,0.3)] disabled:opacity-50 ${btnHover}`}
+              >
+                {isUploading ? "Processing..." : "Browse Files"}
+              </button>
+            </div>
           </motion.div>
 
           {/* FILES GRID */}
