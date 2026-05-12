@@ -6,9 +6,8 @@
  * ==============================================================================================
  * @file app/dashboard/telegram/flow/page.tsx
  * @description Advanced Drag & Drop Visual Automation Builder using React Flow.
- * 🚀 FIXED: Swapped 'screenToFlowPosition' with 'project()' for React Flow v11 compatibility.
- * 🚀 FIXED: Bypassed strict TS generics on useNodesState to kill red squiggly errors.
- * 🚀 FIXED: Added bounding client rect calculation for pixel-perfect drops.
+ * 🚀 FIXED: Transformed static nodes into fully EDITABLE dynamic input nodes.
+ * 🚀 FIXED: Removed hardcoded Hindi/English placeholders for Global SaaS standards.
  * * ALL RIGHTS RESERVED. CLAWLINK INC.
  * ==============================================================================================
  */
@@ -24,7 +23,11 @@ import ReactFlow, {
   Handle,
   Position,
   Connection,
-  Edge
+  Edge,
+  NodeProps,
+  Node,
+  ReactFlowInstance,
+  useReactFlow
 } from 'reactflow';
 import 'reactflow/dist/style.css'; 
 import { useSession } from "next-auth/react";
@@ -37,29 +40,65 @@ import TopHeader from "@/components/TopHeader";
 import SpinnerCounter from "@/components/SpinnerCounter";
 
 // ==========================================
-// 🎨 CUSTOM NODE COMPONENTS
+// 🎨 EDITABLE CUSTOM NODE COMPONENTS
 // ==========================================
 
-// Bypassing strict TS for custom nodes to prevent payload typing errors
-const TriggerNode = ({ data, isConnectable }: any) => {
+const TriggerNode = ({ id, data, isConnectable }: NodeProps) => {
+  const { setNodes } = useReactFlow();
+
+  // Update node data dynamically when user types
+  const onKeywordChange = (evt: React.ChangeEvent<HTMLInputElement>) => {
+    setNodes((nds) =>
+      nds.map((node) => {
+        if (node.id === id) {
+          node.data = { ...node.data, triggerKeyword: evt.target.value };
+        }
+        return node;
+      })
+    );
+  };
+
   return (
-    <div className="bg-[#111114] border border-orange-500/50 shadow-[0_0_15px_rgba(249,115,22,0.15)] rounded-xl w-[250px] overflow-hidden group">
-      <div className="bg-orange-500/10 px-3 py-2 flex items-center gap-2 border-b border-orange-500/20">
-        <Zap className="w-4 h-4 text-orange-500" aria-hidden="true" />
-        <span className="text-[11px] font-black uppercase tracking-widest text-orange-400">Trigger</span>
+    <div className="bg-[#111114] border border-orange-500/50 shadow-[0_0_15px_rgba(249,115,22,0.15)] rounded-xl w-[280px] overflow-hidden group">
+      <div className="bg-orange-500/10 px-3 py-2 flex items-center justify-between border-b border-orange-500/20">
+        <div className="flex items-center gap-2">
+            <Zap className="w-4 h-4 text-orange-500" aria-hidden="true" />
+            <span className="text-[11px] font-black uppercase tracking-widest text-orange-400">Trigger</span>
+        </div>
+        <span className="text-[9px] text-orange-500/50 uppercase">Editable</span>
       </div>
-      <div className="p-4">
-        <p className="text-[13px] font-bold text-white">{data?.label}</p>
-        <p className="text-[10px] text-gray-500 mt-1 font-mono">{data?.detail || "Listens for specific input"}</p>
+      <div className="p-4 flex flex-col gap-2">
+        <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Trigger Keyword / Command</label>
+        <input 
+            type="text"
+            placeholder="e.g. /start, price, help..."
+            value={data?.triggerKeyword || ""}
+            onChange={onKeywordChange}
+            className="w-full bg-black/40 border border-white/10 rounded-lg p-2.5 text-xs text-white outline-none focus:border-orange-500/50 transition-colors placeholder:text-gray-600 font-mono"
+        />
       </div>
       <Handle type="source" position={Position.Right} id="a" isConnectable={isConnectable} className="w-3 h-3 bg-orange-500 border-2 border-[#111114]" />
     </div>
   );
 };
 
-const ActionNode = ({ data, isConnectable }: any) => {
+const ActionNode = ({ id, data, isConnectable }: NodeProps) => {
+  const { setNodes } = useReactFlow();
+
+  // Update node data dynamically when user types
+  const onMessageChange = (evt: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setNodes((nds) =>
+      nds.map((node) => {
+        if (node.id === id) {
+          node.data = { ...node.data, messageText: evt.target.value };
+        }
+        return node;
+      })
+    );
+  };
+
   return (
-    <div className="bg-[#111114] border border-blue-500/30 shadow-[0_4px_20px_rgba(0,0,0,0.4)] rounded-xl w-[250px] overflow-hidden group hover:border-blue-500/60 transition-colors">
+    <div className="bg-[#111114] border border-blue-500/30 shadow-[0_4px_20px_rgba(0,0,0,0.4)] rounded-xl w-[300px] overflow-hidden group hover:border-blue-500/60 transition-colors">
       <Handle type="target" position={Position.Left} isConnectable={isConnectable} className="w-3 h-3 bg-blue-500 border-2 border-[#111114]" />
       
       <div className="bg-blue-500/10 px-3 py-2 flex justify-between items-center border-b border-blue-500/20">
@@ -67,13 +106,19 @@ const ActionNode = ({ data, isConnectable }: any) => {
           {data?.type === 'media' ? <ImageIcon className="w-4 h-4 text-blue-400" aria-hidden="true" /> : <MessageSquare className="w-4 h-4 text-blue-400" aria-hidden="true" />}
           <span className="text-[11px] font-black uppercase tracking-widest text-blue-400">Action</span>
         </div>
-        <button title="More options" aria-label="More Options" className="text-gray-500 hover:text-white transition-colors"><MoreHorizontal className="w-4 h-4" aria-hidden="true"/></button>
+        <span className="text-[9px] text-blue-500/50 uppercase">Editable</span>
       </div>
-      <div className="p-4">
-        <p className="text-[13px] font-bold text-white mb-2">{data?.label}</p>
-        <div className="bg-black/30 border border-white/5 rounded-lg p-2 text-[11px] text-gray-400 line-clamp-2">
-          {data?.preview || "Configure message content..."}
-        </div>
+      <div className="p-4 flex flex-col gap-2">
+        <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+            {data?.type === 'media' ? "Media URL / Text" : "Reply Message"}
+        </label>
+        <textarea 
+            rows={4}
+            placeholder="Type the exact message the bot will send..."
+            value={data?.messageText || ""}
+            onChange={onMessageChange}
+            className="w-full bg-black/40 border border-white/10 rounded-lg p-2.5 text-xs text-white outline-none focus:border-blue-500/50 transition-colors placeholder:text-gray-600 resize-none custom-scrollbar"
+        />
       </div>
       
       <Handle type="source" position={Position.Right} id="a" isConnectable={isConnectable} className="w-3 h-3 bg-gray-300 border-2 border-[#111114]" />
@@ -81,6 +126,7 @@ const ActionNode = ({ data, isConnectable }: any) => {
   );
 };
 
+// Node Types Mapping
 const nodeTypes = {
   triggerNode: TriggerNode,
   actionNode: ActionNode,
@@ -95,7 +141,6 @@ export default function TelegramFlowBuilder() {
   const router = useRouter();
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
   
-  // 🔥 CRITICAL FIX: Cast state to <any> to suppress strict object shape errors
   const [nodes, setNodes, onNodesChange] = useNodesState<any>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<any>([]);
   
@@ -124,11 +169,12 @@ export default function TelegramFlowBuilder() {
             setNodes(data.data.nodes);
             setEdges(data.data.edges || []);
           } else {
-            setNodes([{ id: 'telegram-trigger-1', type: 'triggerNode', position: { x: 50, y: 150 }, data: { label: 'User sends /start', detail: 'Matches exact command' } }]);
+            // GLOBAL SAAS UPDATE: Blank nodes by default
+            setNodes([{ id: 'telegram-trigger-1', type: 'triggerNode', position: { x: 50, y: 150 }, data: { triggerKeyword: '' } }]);
           }
         } catch (error) {
           console.error("[SECURITY_LOG] Failed to load flow data", error);
-          setNodes([{ id: 'telegram-trigger-1', type: 'triggerNode', position: { x: 50, y: 150 }, data: { label: 'User sends /start', detail: 'Matches exact command' } }]);
+          setNodes([{ id: 'telegram-trigger-1', type: 'triggerNode', position: { x: 50, y: 150 }, data: { triggerKeyword: '' } }]);
         } finally {
           setIsLoadingFlow(false);
         }
@@ -163,12 +209,10 @@ export default function TelegramFlowBuilder() {
       if (!reactFlowWrapper.current || !reactFlowInstance || !event.dataTransfer) return;
 
       const type = event.dataTransfer.getData('application/reactflow');
-      const nodeLabel = event.dataTransfer.getData('application/label');
       const nodeActionType = event.dataTransfer.getData('application/actionType');
 
       if (!type) return;
 
-      // 🔥 CRITICAL FIX: React Flow v11 projection math
       const reactFlowBounds = reactFlowWrapper.current.getBoundingClientRect();
       const position = reactFlowInstance.project({
         x: event.clientX - reactFlowBounds.left,
@@ -180,10 +224,9 @@ export default function TelegramFlowBuilder() {
         type,
         position,
         data: { 
-            label: nodeLabel,
-            detail: '',
             type: nodeActionType,
-            preview: nodeActionType === 'media' ? 'Select file to attach' : 'Type your message here...'
+            triggerKeyword: '',
+            messageText: ''
         },
       };
 
@@ -193,7 +236,7 @@ export default function TelegramFlowBuilder() {
 
   const handleClearCanvas = () => {
     if(confirm("Are you sure you want to clear the canvas?")) {
-      setNodes([{ id: 'telegram-trigger-1', type: 'triggerNode', position: { x: 50, y: 150 }, data: { label: 'User sends /start', detail: 'Matches exact command' } }]);
+      setNodes([{ id: 'telegram-trigger-1', type: 'triggerNode', position: { x: 50, y: 150 }, data: { triggerKeyword: '' } }]);
       setEdges([]);
     }
   };
@@ -203,7 +246,7 @@ export default function TelegramFlowBuilder() {
           alert("⚠️ Please add at least one Action Node to test the path.");
           return;
       }
-      alert("🟢 Test Initialized: The node path configuration is valid!");
+      alert("🟢 System check passed: You can now Save & Publish.");
   };
 
   const handleSaveFlow = async () => {
@@ -231,7 +274,7 @@ export default function TelegramFlowBuilder() {
         
         const data = await res.json();
         if(data.success) {
-          alert("🚀 Telegram Flow compiled and saved to production database!");
+          alert("🚀 Flow logic mapped and saved globally!");
         } else {
           alert("Failed to save flow: " + (data.error || "Unknown error"));
         }
@@ -272,7 +315,6 @@ export default function TelegramFlowBuilder() {
                   onDragStart={(e) => {
                       if(e.dataTransfer) {
                           e.dataTransfer.setData('application/reactflow', 'triggerNode');
-                          e.dataTransfer.setData('application/label', 'Keyword Match');
                           e.dataTransfer.effectAllowed = 'move';
                       }
                   }}
@@ -295,7 +337,6 @@ export default function TelegramFlowBuilder() {
                   onDragStart={(e) => {
                       if(e.dataTransfer) {
                           e.dataTransfer.setData('application/reactflow', 'actionNode');
-                          e.dataTransfer.setData('application/label', 'Send Message');
                           e.dataTransfer.setData('application/actionType', 'text');
                           e.dataTransfer.effectAllowed = 'move';
                       }
@@ -305,7 +346,7 @@ export default function TelegramFlowBuilder() {
                   <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center shrink-0"><MessageSquare className="w-4 h-4 text-blue-400" aria-hidden="true"/></div>
                   <div className="flex flex-col">
                       <span className="text-[12px] font-bold text-gray-200">Send Message</span>
-                      <span className="text-[9px] text-gray-500 font-mono">Text + Inline Buttons</span>
+                      <span className="text-[9px] text-gray-500 font-mono">Dynamic Text Reply</span>
                   </div>
                 </div>
 
@@ -314,7 +355,6 @@ export default function TelegramFlowBuilder() {
                   onDragStart={(e) => {
                       if(e.dataTransfer) {
                           e.dataTransfer.setData('application/reactflow', 'actionNode');
-                          e.dataTransfer.setData('application/label', 'Send Media');
                           e.dataTransfer.setData('application/actionType', 'media');
                           e.dataTransfer.effectAllowed = 'move';
                       }
@@ -324,7 +364,7 @@ export default function TelegramFlowBuilder() {
                   <div className="w-8 h-8 rounded-lg bg-purple-500/10 flex items-center justify-center shrink-0"><ImageIcon className="w-4 h-4 text-purple-400" aria-hidden="true"/></div>
                   <div className="flex flex-col">
                       <span className="text-[12px] font-bold text-gray-200">Send Media</span>
-                      <span className="text-[9px] text-gray-500 font-mono">Image, Video, PDF</span>
+                      <span className="text-[9px] text-gray-500 font-mono">Image, Video, PDF URL</span>
                   </div>
                 </div>
               </div>
