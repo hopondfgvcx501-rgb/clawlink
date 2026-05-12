@@ -8,6 +8,7 @@
  * FIXED: Upgraded Anthropic Claude logic to strictly alternate user/assistant roles.
  * FIXED: Replaced dots (.) with hyphens (-) in Anthropic 2026 API IDs to prevent 404 errors.
  * FIXED: Direct DB Persona & RAG Injection applied. External compiler bypassed.
+ * 🚀 NEW: Ultra-Fast Command Router Interceptor added before AI execution.
  * * ALL RIGHTS RESERVED. CLAWLINK INC.
  * ==============================================================================================
  */
@@ -87,7 +88,7 @@ async function callGemini(modelId: string, systemPrompt: string, history: any[],
 
     const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelId}:generateContent?key=${apiKey}`, {
         method: "POST", headers: { "Content-Type": "application/json" },
-       body: JSON.stringify({ 
+        body: JSON.stringify({ 
     system_instruction: { parts: { text: systemPrompt } },
     contents: contents,
     generationConfig: { maxOutputTokens: 150 } // 🚨 HARD LIMIT APPLIED
@@ -147,7 +148,7 @@ async function callClaude(modelId: string, systemPrompt: string, history: any[],
 
     const res = await fetch("https://api.anthropic.com/v1/messages", {
         method: "POST", headers: { "Content-Type": "application/json", "x-api-key": apiKey, "anthropic-version": "2023-06-01" },
-       body: JSON.stringify({ 
+        body: JSON.stringify({ 
     model: modelId, 
     max_tokens: 150, // 🚨 HARD LIMIT APPLIED
     system: systemPrompt,
@@ -292,6 +293,43 @@ export async function POST(req: Request) {
         const lastMessageTime = rateLimitMap.get(chatId) || 0;
         if (now - lastMessageTime < COOLDOWN_MS) return NextResponse.json({ success: true });
         rateLimitMap.set(chatId, now);
+
+
+        // ==========================================
+        // 🚀 THE COMMAND ROUTER INTERCEPTOR (Super Fast)
+        // ==========================================
+        if (userText.startsWith('/')) {
+            const { data: commandRule, error: cmdError } = await supabaseAdmin
+                .from("bot_commands")
+                .select("action, description")
+                .eq("email", ownerEmail)
+                .eq("platform", "telegram")
+                .eq("command", userText.trim())
+                .eq("is_active", true)
+                .single();
+
+            if (commandRule) {
+                console.log(`[COMMAND_ROUTER] Intercepted: ${userText}. Executing: ${commandRule.action}`);
+                
+                const routerResponse = `⚡ ClawLink Router Caught Command: ${userText}\n\n🤖 Executing Action: ${commandRule.action}\n📝 Description: ${commandRule.description}`;
+                
+                // Log to Chat History
+                await supabaseAdmin.from("chat_history").insert([
+                    { email: ownerEmail, platform: "telegram", platform_chat_id: chatId, customer_name: customerName, sender_type: "user", message: userText },
+                    { email: ownerEmail, platform: "telegram", platform_chat_id: chatId, customer_name: customerName, sender_type: "bot", message: routerResponse }
+                ]);
+
+                // Fire Message
+                await fetch(`https://api.telegram.org/bot${telegramToken}/sendMessage`, {
+                    method: "POST", headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ chat_id: chatId, text: routerResponse })
+                });
+
+                return NextResponse.json({ success: true });
+            }
+        }
+        // ==========================================
+
 
         // AUTOMATION INTERCEPTOR
         const { data: rules } = await supabaseAdmin
