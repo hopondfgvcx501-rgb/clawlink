@@ -6,8 +6,9 @@
  * ==============================================================================================
  * @file app/dashboard/telegram/flow/page.tsx
  * @description Advanced Drag & Drop Visual Automation Builder using React Flow.
- * 🚀 FIXED: Transformed static nodes into fully EDITABLE dynamic input nodes.
- * 🚀 FIXED: Removed hardcoded Hindi/English placeholders for Global SaaS standards.
+ * 🚀 FIXED: Kept 100% Original Logic & Layout. 
+ * 🚀 FIXED: Injected Delete (X) Node functionality without breaking existing state.
+ * 🚀 GLOBAL SAAS READY: Zero dummy data, pure dynamic editable nodes.
  * * ALL RIGHTS RESERVED. CLAWLINK INC.
  * ==============================================================================================
  */
@@ -34,7 +35,7 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { 
   MessageSquare, Zap, Play, Save, Trash2, 
-  Image as ImageIcon, MoreHorizontal, Activity, Workflow
+  Image as ImageIcon, MoreHorizontal, Activity, Workflow, X
 } from "lucide-react";
 import TopHeader from "@/components/TopHeader";
 import SpinnerCounter from "@/components/SpinnerCounter";
@@ -44,7 +45,8 @@ import SpinnerCounter from "@/components/SpinnerCounter";
 // ==========================================
 
 const TriggerNode = ({ id, data, isConnectable }: NodeProps) => {
-  const { setNodes } = useReactFlow();
+  // 🔥 INJECTED: setEdges for deleting connections
+  const { setNodes, setEdges } = useReactFlow();
 
   // Update node data dynamically when user types
   const onKeywordChange = (evt: React.ChangeEvent<HTMLInputElement>) => {
@@ -58,6 +60,12 @@ const TriggerNode = ({ id, data, isConnectable }: NodeProps) => {
     );
   };
 
+  // 🔥 INJECTED: Delete Node Logic
+  const deleteNode = () => {
+    setNodes((nds) => nds.filter((n) => n.id !== id));
+    setEdges((eds) => eds.filter((e) => e.source !== id && e.target !== id));
+  };
+
   return (
     <div className="bg-[#111114] border border-orange-500/50 shadow-[0_0_15px_rgba(249,115,22,0.15)] rounded-xl w-[280px] overflow-hidden group">
       <div className="bg-orange-500/10 px-3 py-2 flex items-center justify-between border-b border-orange-500/20">
@@ -65,7 +73,12 @@ const TriggerNode = ({ id, data, isConnectable }: NodeProps) => {
             <Zap className="w-4 h-4 text-orange-500" aria-hidden="true" />
             <span className="text-[11px] font-black uppercase tracking-widest text-orange-400">Trigger</span>
         </div>
-        <span className="text-[9px] text-orange-500/50 uppercase">Editable</span>
+        <div className="flex items-center gap-2">
+            <span className="text-[9px] text-orange-500/50 uppercase">Editable</span>
+            <button onClick={deleteNode} className="text-gray-500 hover:text-red-500 transition-colors p-1" title="Delete Node">
+                <X className="w-3.5 h-3.5" aria-hidden="true" />
+            </button>
+        </div>
       </div>
       <div className="p-4 flex flex-col gap-2">
         <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Trigger Keyword / Command</label>
@@ -83,7 +96,8 @@ const TriggerNode = ({ id, data, isConnectable }: NodeProps) => {
 };
 
 const ActionNode = ({ id, data, isConnectable }: NodeProps) => {
-  const { setNodes } = useReactFlow();
+  // 🔥 INJECTED: setEdges for deleting connections
+  const { setNodes, setEdges } = useReactFlow();
 
   // Update node data dynamically when user types
   const onMessageChange = (evt: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -97,6 +111,12 @@ const ActionNode = ({ id, data, isConnectable }: NodeProps) => {
     );
   };
 
+  // 🔥 INJECTED: Delete Node Logic
+  const deleteNode = () => {
+    setNodes((nds) => nds.filter((n) => n.id !== id));
+    setEdges((eds) => eds.filter((e) => e.source !== id && e.target !== id));
+  };
+
   return (
     <div className="bg-[#111114] border border-blue-500/30 shadow-[0_4px_20px_rgba(0,0,0,0.4)] rounded-xl w-[300px] overflow-hidden group hover:border-blue-500/60 transition-colors">
       <Handle type="target" position={Position.Left} isConnectable={isConnectable} className="w-3 h-3 bg-blue-500 border-2 border-[#111114]" />
@@ -106,7 +126,12 @@ const ActionNode = ({ id, data, isConnectable }: NodeProps) => {
           {data?.type === 'media' ? <ImageIcon className="w-4 h-4 text-blue-400" aria-hidden="true" /> : <MessageSquare className="w-4 h-4 text-blue-400" aria-hidden="true" />}
           <span className="text-[11px] font-black uppercase tracking-widest text-blue-400">Action</span>
         </div>
-        <span className="text-[9px] text-blue-500/50 uppercase">Editable</span>
+        <div className="flex items-center gap-2">
+            <span className="text-[9px] text-blue-500/50 uppercase">Editable</span>
+            <button onClick={deleteNode} className="text-gray-500 hover:text-red-500 transition-colors p-1" title="Delete Node">
+                <X className="w-3.5 h-3.5" aria-hidden="true" />
+            </button>
+        </div>
       </div>
       <div className="p-4 flex flex-col gap-2">
         <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">

@@ -1,39 +1,42 @@
+/**
+ * ==============================================================================================
+ * CLAWLINK ENTERPRISE: TELEGRAM FLOW API
+ * ==============================================================================================
+ * @file app/api/telegram/flow/route.ts
+ * @description Master API to permanently Save & Fetch Flow Builder nodes from Real DB.
+ * 🚀 FIXED: Directly targets 'telegram_flow_data' in 'user_configs' for Webhook sync.
+ * * ALL RIGHTS RESERVED. CLAWLINK INC.
+ * ==============================================================================================
+ */
+
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
 export const dynamic = "force-dynamic";
 
-// Initialize Supabase
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
-const supabase = createClient(supabaseUrl, supabaseKey);
+const supabaseAdmin = createClient(supabaseUrl, supabaseKey);
 
-// 🚀 1. GET: Load Saved Flow into Canvas
+// 🚀 GET: Fetch Flow Data on Page Load (Fixes the refresh disappearing bug)
 export async function GET(req: Request) {
     try {
         const { searchParams } = new URL(req.url);
         const email = searchParams.get("email");
-        const channel = searchParams.get("channel") || "telegram";
 
         if (!email) return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
 
-        const safeEmail = email.toLowerCase(); 
+        const { data, error } = await supabaseAdmin
+            .from("user_configs")
+            .select("telegram_flow_data")
+            .eq("email", email.toLowerCase())
+            .single();
 
-        const { data, error } = await supabase
-            .from("flow_builder_configs")
-            .select("nodes, edges")
-            .eq("email", safeEmail)
-            .eq("channel", channel)
-            .single(); // Only one master flow per channel per user for now
-
-        // If no flow found, it's fine, return empty so canvas loads defaults
-        if (error && error.code !== 'PGRST116') { 
-            throw error;
-        }
+        if (error) throw error;
 
         return NextResponse.json({ 
             success: true, 
-            data: data || { nodes: [], edges: [] } 
+            data: data?.telegram_flow_data || { nodes: [], edges: [] } 
         });
 
     } catch (error: any) {
@@ -42,32 +45,25 @@ export async function GET(req: Request) {
     }
 }
 
-// 🚀 2. POST: Save Canvas to Database
+// 🚀 POST: Save Flow Data from Canvas (Locks to DB)
 export async function POST(req: Request) {
     try {
         const body = await req.json();
-        const { email, channel, nodes, edges } = body;
+        const { email, nodes, edges } = body;
 
         if (!email) return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
 
-        const safeEmail = email.toLowerCase();
-
-        // UPSERT: Update if exists, Insert if new
-        const { error } = await supabase
-            .from("flow_builder_configs")
-            .upsert({
-                email: safeEmail,
-                channel: channel || "telegram",
-                nodes: nodes,   // Saved as JSONB in Supabase
-                edges: edges,   // Saved as JSONB in Supabase
-                updated_at: new Date().toISOString()
-            }, {
-                onConflict: 'email, channel' // Assumes you have a unique constraint on email+channel
-            });
+        // Save directly to user_configs so Webhook can read it instantly
+        const { error } = await supabaseAdmin
+            .from("user_configs")
+            .update({ 
+                telegram_flow_data: { nodes, edges } 
+            })
+            .eq("email", email.toLowerCase());
 
         if (error) throw error;
 
-        return NextResponse.json({ success: true, message: "Flow saved successfully" });
+        return NextResponse.json({ success: true });
 
     } catch (error: any) {
         console.error("[FLOW_POST_ERROR]", error.message);

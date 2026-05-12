@@ -379,7 +379,9 @@ export async function POST(req: Request) {
             return NextResponse.json({ success: true }); 
         }
 
-        // FLOW PARSER ENGINE
+        // ==========================================
+        // 🔀 DYNAMIC FLOW PARSER ENGINE
+        // ==========================================
         if (config.telegram_flow_data && config.telegram_flow_data.nodes) {
             const nodes = config.telegram_flow_data.nodes;
             const edges = config.telegram_flow_data.edges || [];
@@ -389,8 +391,9 @@ export async function POST(req: Request) {
 
             for (const node of nodes) {
                 if (node.type === "triggerNode") {
-                    const triggerText = (node.data.label || "").toLowerCase();
-                    if (triggerText.includes(userTextLower) || userTextLower.includes(triggerText.replace('user sends ', '').trim())) {
+                    // 🚀 FIXED: Now reads the dynamic 'triggerKeyword' from the new editable UI
+                    const triggerText = (node.data.triggerKeyword || "").toLowerCase().trim();
+                    if (triggerText && (triggerText === userTextLower || userTextLower.includes(triggerText))) {
                         activeTriggerNode = node;
                         break;
                     }
@@ -404,7 +407,8 @@ export async function POST(req: Request) {
                     const actionNode = nodes.find((n: any) => n.id === outgoingEdge.target);
                     
                     if (actionNode && actionNode.type === "actionNode") {
-                        let responseText = `[Flow Executed] Action: ${actionNode.data.label}. You triggered the path from: ${activeTriggerNode.data.label}`;
+                        // 🚀 FIXED: Now sends the exact 'messageText' typed by the user in the canvas
+                        let responseText = actionNode.data.messageText || "Message not configured in flow.";
                         
                         const { error: userDbError } = await supabaseAdmin.from("chat_history").insert({ 
                             email: ownerEmail, platform: "telegram", platform_chat_id: chatId, customer_name: customerName, sender_type: "user", message: crmLogMessage 
