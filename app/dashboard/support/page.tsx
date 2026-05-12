@@ -17,6 +17,7 @@ import { motion } from "framer-motion";
 import { LifeBuoy, Send, MessageSquare, AlertCircle, CheckCircle, ArrowLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
 import TopHeader from "@/components/TopHeader";
+import SpinnerCounter from "@/components/SpinnerCounter";
 
 export default function HelpDesk() {
   const { data: session, status } = useSession();

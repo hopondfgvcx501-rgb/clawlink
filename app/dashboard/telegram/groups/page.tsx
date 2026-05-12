@@ -22,6 +22,7 @@ import {
   Settings2, Trash2
 } from "lucide-react";
 import TopHeader from "@/components/TopHeader";
+import SpinnerCounter from "@/components/SpinnerCounter";
 
 interface TelegramGroup {
   id: string;
@@ -118,7 +119,7 @@ export default function TelegramGroups() {
   if (isLoading || status === "loading") {
     return (
       <div className="w-full h-screen bg-[#07070A] flex flex-col items-center justify-center text-[#2AABEE] font-mono">
-        <SpinnerCounter text="INITIALIZING..." />
+        <Activity className="w-10 h-10 animate-spin mb-4" />
         SYNCING TELEGRAM GROUPS...
       </div>
     );

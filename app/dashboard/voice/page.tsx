@@ -6,6 +6,7 @@ import { motion } from "framer-motion";
 import { PhoneCall, Mic, Settings, Save, Activity, AlertCircle, Phone, Volume2, Shield } from "lucide-react";
 import { useRouter } from "next/navigation";
 import TopHeader from "@/components/TopHeader";
+import SpinnerCounter from "@/components/SpinnerCounter";
 
 export default function VoiceEngineDashboard() {
   const { data: session, status } = useSession();

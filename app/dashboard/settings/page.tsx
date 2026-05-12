@@ -22,6 +22,7 @@ import {
   Database, Zap, Cpu, Smartphone, Server, Sliders, Briefcase, Camera, Download
 } from "lucide-react";
 import TopHeader from "@/components/TopHeader";
+import SpinnerCounter from "@/components/SpinnerCounter";
 
 export default function SettingsDashboard() {
   const { data: session, status } = useSession();
