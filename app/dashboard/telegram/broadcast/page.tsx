@@ -421,7 +421,7 @@ export default function TelegramBroadcast() {
                      <h3 className="text-[14px] font-black text-white flex items-center gap-2">
                         <CalendarClock className="w-5 h-5 text-[#2AABEE]"/> Schedule Broadcast
                      </h3>
-                     <button type="button" onClick={() => setShowScheduleModal(false)} className="text-gray-400 hover:text-red-400">
+                     <button type="button" onClick={() => setShowScheduleModal(false)} className="text-gray-400 hover:text-red-400" aria-label="Close">
                         <X className="w-4 h-4"/>
                      </button>
                   </div>
