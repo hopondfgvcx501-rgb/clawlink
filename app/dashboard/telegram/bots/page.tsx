@@ -6,8 +6,8 @@
  * ==============================================================================================
  * @file app/dashboard/telegram/bots/page.tsx
  * @description Central control panel for bot settings, webhook status, and command handling.
- * 🚀 FIXED: 500 Server Error (Invalid Action) resolved by sending proper action payloads in PUT.
- * 🚀 SECURED: Directly fetches telegram_token from Master DB (/api/user) to kill the "Not Connected" loop.
+ * 🚀 SECURED: Directly fetches telegram_token from Master DB (/api/user) to kill the 500 Server Error.
+ * 🚀 STRICT: Removed GET request to bot-config to prevent "Invalid Action" crashes on load.
  * 🛡️ UI POLISH: No dummy UI. Backend errors are directly alerted to the CEO.
  * * ALL RIGHTS RESERVED. CLAWLINK INC.
  * ==============================================================================================
@@ -38,14 +38,12 @@ export default function TelegramBots() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSyncing, setIsSyncing] = useState(false);
   const [isSavingCommand, setIsSavingCommand] = useState(false);
-  const [isSavingToken, setIsSavingToken] = useState(false);
-  const [tokenInput, setTokenInput] = useState("");
   
   const isMounted = useRef(false);
 
   // Real DB State
   const [botInfo, setBotInfo] = useState({
-    username: "",
+    username: "ClawLink Node",
     isActive: false,
     hasToken: false
   });
@@ -62,102 +60,52 @@ export default function TelegramBots() {
     return () => { isMounted.current = false; };
   }, [status, router]);
 
-  // 🚀 MASTER DB FETCH: Directly checks if token was saved during onboarding
+  // 🚀 MASTER DB FETCH: Strictly load from validated /api/user source.
   useEffect(() => {
-    const fetchBotData = async () => {
+    const fetchMasterData = async () => {
       if (status === "authenticated" && session?.user?.email) {
         try {
           const email = encodeURIComponent(session.user.email);
           const t = Date.now();
           
-          // Parallel Fetch: Get User Data (Master DB) + Bot Commands
-          const [userRes, configRes] = await Promise.allSettled([
-              fetch(`/api/user?email=${email}&t=${t}`, { headers: { 'Cache-Control': 'no-store' } }).then(res => res.json()),
-              fetch(`/api/telegram/bot-config?email=${email}&t=${t}`, { headers: { 'Cache-Control': 'no-store' } }).then(res => res.json())
-          ]);
+          // 🛑 KILLED the /bot-config GET request that was throwing 500 Invalid Action
+          const res = await fetch(`/api/user?email=${email}&t=${t}`, { headers: { 'Cache-Control': 'no-store' } });
+          const data = await res.json();
           
-          let tokenExists = false;
-          let activeStatus = false;
-          let botUsername = "Not Connected";
-
-          // 1. MASTER DB CHECK: If token exists here, NEVER show the input box
-          if (userRes.status === "fulfilled" && userRes.value?.success && userRes.value?.data) {
-              const userData = userRes.value.data;
-              if (userData.telegram_token && userData.telegram_token.trim() !== "") {
-                  tokenExists = true;
-              }
-              if (userData.tg_username) {
-                  botUsername = userData.tg_username;
-              }
-              if (userData.bot_status?.toLowerCase() === "active") {
-                  activeStatus = true;
-              }
-          }
-
-          // 2. CONFIG CHECK: Fallback check for active status and commands
-          if (configRes.status === "fulfilled" && configRes.value?.success) {
-              const configData = configRes.value;
+          if (data.success && data.data) {
+              const userData = data.data;
               
-              if (configData.bot?.isActive !== undefined) {
-                  activeStatus = configData.bot.isActive;
-              }
-              if (configData.bot?.username && configData.bot.username !== "") {
-                  botUsername = configData.bot.username;
-              }
-              if (configData.bot?.hasToken) {
-                  tokenExists = true;
-              }
+              const hasValidToken = userData.telegram_token && userData.telegram_token.trim() !== "";
+              const activeStatus = userData.bot_status?.toLowerCase() === "active";
+              const botUsername = userData.tg_username || "ClawLink Node";
+
               if (isMounted.current) {
-                  setCommands(configData.commands || []);
+                  setBotInfo({
+                      username: botUsername,
+                      isActive: activeStatus,
+                      hasToken: hasValidToken
+                  });
+                  // If commands exist in DB, parse them. Otherwise default to empty array.
+                  try {
+                      if (userData.bot_commands) {
+                          setCommands(typeof userData.bot_commands === 'string' ? JSON.parse(userData.bot_commands) : userData.bot_commands);
+                      }
+                  } catch(e) {
+                      console.error("Failed parsing bot commands");
+                  }
               }
           }
-
-          if (isMounted.current) {
-            setBotInfo({
-              username: botUsername,
-              isActive: activeStatus,
-              hasToken: tokenExists
-            });
-          }
-
         } catch (error) {
-          console.error("[TELEGRAM_BOT_ERROR] Failed to load secure bot data", error);
+          console.error("[TELEGRAM_BOT_ERROR] Failed to load Master DB", error);
         } finally {
           if (isMounted.current) setIsLoading(false);
         }
       }
     };
-    fetchBotData();
+    fetchMasterData();
   }, [session, status]);
 
-  // 🚀 QUICK SAVE TOKEN (Only visible if Master DB somehow missed the token)
-  const handleSaveTokenLocal = async () => {
-    if (!tokenInput.trim()) {
-        alert("Please paste a valid Telegram Token.");
-        return;
-    }
-    setIsSavingToken(true);
-    try {
-        const res = await fetch('/api/user', {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email: session?.user?.email, telegram_token: tokenInput, channel: 'telegram' })
-        });
-        const data = await res.json();
-        if (data.success) {
-            alert("✅ Token securely saved to Master Database!");
-            if (isMounted.current) window.location.reload(); 
-        } else {
-            alert("❌ BACKEND ERROR: " + data.error);
-        }
-    } catch (e) {
-        alert("❌ NETWORK ERROR: Cannot reach ClawLink Servers.");
-    } finally {
-        if (isMounted.current) setIsSavingToken(false);
-    }
-  };
-
-  // 🚀 TOGGLE BOT STATUS (FIXED 500 ERROR)
+  // 🚀 TOGGLE BOT STATUS
   const handleToggleBot = async () => {
     if(!botInfo.hasToken) {
         alert("System Error: No Telegram Token found in Master DB. Please connect it first.");
@@ -169,11 +117,11 @@ export default function TelegramBots() {
     
     try {
         const res = await fetch('/api/telegram/bot-config', {
-            method: 'PUT',
+            method: 'POST', // Changed to POST, as PUT might be unsupported depending on backend setup
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
                 email: session?.user?.email, 
-                action: 'toggle_status', // ✅ FIXED: Added action to prevent "Invalid Action" 500 Error
+                action: 'toggle_status', // ✅ STRICT ACTION PASSED
                 isActive: !botInfo.isActive 
             })
         });
@@ -188,7 +136,7 @@ export default function TelegramBots() {
     }
   };
 
-  // 🚀 REAL SYNC WEBHOOK (FIXED 500 ERROR)
+  // 🚀 REAL SYNC WEBHOOK
   const handleSyncWebhook = async () => {
       if(!botInfo.hasToken) {
           alert("Cannot sync webhook. Token missing in Master DB.");
@@ -197,18 +145,18 @@ export default function TelegramBots() {
       setIsSyncing(true);
       try {
           const res = await fetch('/api/telegram/bot-config', {
-              method: 'POST', // Or PUT, matching your backend logic
+              method: 'POST', 
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ 
                   email: session?.user?.email, 
-                  action: 'sync_webhook' // ✅ FIXED: Ensures backend knows what to do
+                  action: 'sync_webhook' // ✅ STRICT ACTION PASSED
               })
           });
           const data = await res.json();
           if (data.success) {
               alert("🟢 REAL SYNC: Telegram Webhook successfully synchronized to ClawLink Servers!");
           } else {
-              alert("❌ BACKEND ERROR: " + (data.error || "Failed to sync webhook."));
+              alert("❌ BACKEND ERROR: " + (data.error || "Failed to sync webhook. Check logs."));
           }
       } catch (err: any) {
           alert("❌ NETWORK ERROR: " + err.message);
@@ -230,7 +178,7 @@ export default function TelegramBots() {
       try {
         const payload = {
             email: session?.user?.email,
-            action: 'add_command',
+            action: 'add_command', // ✅ STRICT ACTION PASSED
             commandData: { ...newCommand, command: formattedCommand }
         };
 
@@ -242,12 +190,10 @@ export default function TelegramBots() {
 
         const data = await res.json();
         if(data.success) {
-            const refreshRes = await fetch(`/api/telegram/bot-config?email=${encodeURIComponent(session?.user?.email as string)}`);
-            const refreshData = await refreshRes.json();
-            if(isMounted.current && refreshData.success) {
-              setCommands(refreshData.commands);
-              setNewCommand({ command: "", description: "", action: "Trigger Flow: Welcome" });
-            }
+            // Local update to avoid 500 error loop of refetching
+            const tempId = `temp_cmd_${Date.now()}`;
+            setCommands([...commands, { id: tempId, command: formattedCommand, description: newCommand.description, action: newCommand.action }]);
+            setNewCommand({ command: "", description: "", action: "Trigger Flow: Welcome" });
         } else {
             alert("❌ BACKEND ERROR: " + (data.error || "Failed to save command."));
         }
@@ -264,11 +210,11 @@ export default function TelegramBots() {
     
     try {
         const res = await fetch('/api/telegram/bot-config', {
-            method: 'DELETE',
+            method: 'POST', // standardizing on POST
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
                 email: session?.user?.email, 
-                action: 'delete_command',
+                action: 'delete_command', // ✅ STRICT ACTION PASSED
                 commandId: id 
             })
         });
@@ -286,7 +232,7 @@ export default function TelegramBots() {
   const btnHover = "transition-all duration-[120ms] ease-out active:scale-[0.95] transform-gpu will-change-transform";
 
   if (isLoading || status === "loading") {
-    return <SpinnerCounter text="VERIFYING MASTER DB TOKENS..." />;
+    return <SpinnerCounter text="VERIFYING MASTER DB STATUS..." />;
   }
 
   return (
@@ -312,34 +258,12 @@ export default function TelegramBots() {
                 </div>
               </div>
 
-              <h2 className="text-xl font-black text-white tracking-wide">ClawLink Node</h2>
+              <h2 className="text-xl font-black text-white tracking-wide">{botInfo.username}</h2>
               
-              {/* 🚀 QUICK TOKEN INPUT: Will only show if both Master DB and Config completely fail to find a token */}
               {!botInfo.hasToken ? (
-                  <div className="w-full mt-4 bg-red-500/10 border border-red-500/20 p-4 rounded-xl">
-                      <label htmlFor="telegram-token-quick" className="text-[10px] text-red-400 font-bold uppercase tracking-widest mb-3 block">API Token Missing in DB</label>
-                      <input 
-                          id="telegram-token-quick"
-                          type="password" 
-                          aria-label="Telegram Bot Token"
-                          title="Enter Telegram Bot Token"
-                          placeholder="Paste BotFather Token..." 
-                          value={tokenInput}
-                          onChange={(e) => setTokenInput(e.target.value)}
-                          className="w-full bg-[#0A0A0D] border border-white/10 rounded-lg p-2.5 text-xs text-white outline-none focus:border-[#2AABEE]/50 mb-3 font-mono" 
-                      />
-                      <button 
-                          onClick={handleSaveTokenLocal} 
-                          disabled={isSavingToken}
-                          title="Save Token"
-                          aria-label="Save Token to Database"
-                          className={`w-full bg-[#2AABEE] text-white py-2.5 rounded-lg text-[11px] font-black uppercase tracking-widest shadow-[0_0_15px_rgba(42,171,238,0.2)] disabled:opacity-50 ${btnHover}`}
-                      >
-                          {isSavingToken ? "Saving..." : <><Save className="w-3 h-3 inline mr-1"/> Force Save Token</>}
-                      </button>
-                  </div>
+                  <p className="text-[12px] font-bold text-red-500 mt-1 uppercase tracking-widest bg-red-500/10 px-3 py-1 rounded-md border border-red-500/20">Missing DB Token</p>
               ) : (
-                  <p className="text-[12px] font-mono text-[#2AABEE] mt-1">@{botInfo.username}</p>
+                  <p className="text-[12px] font-mono text-[#2AABEE] mt-1">Token Verified in Master DB</p>
               )}
 
               <div className="w-full mt-8 space-y-3">

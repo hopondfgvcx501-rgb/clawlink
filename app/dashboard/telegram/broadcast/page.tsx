@@ -6,9 +6,10 @@
  * ==============================================================================================
  * @file app/dashboard/telegram/broadcast/page.tsx
  * @description Advanced bulk messaging system. Replaces email marketing.
+ * 🚀 FIXED: Modals changed from absolute to fixed z-[100] to prevent background clipping.
+ * 🚀 FIXED: Added type="button" to prevent accidental default behavior.
  * 🚀 SECURED: Real-time PostgreSQL database sync for campaigns. No dummy data.
- * 🚀 FIXED: Modals changed to fixed z-[100] to prevent background clipping.
- * 🛡️ UI POLISH: 100% ESLint a11y compliant. Added strict TypeScript interfaces.
+ * 🛡️ UI POLISH: Added strict TypeScript interfaces and fixed ESLint a11y warnings.
  * * ALL RIGHTS RESERVED. CLAWLINK INC.
  * ==============================================================================================
  */
