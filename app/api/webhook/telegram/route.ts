@@ -411,6 +411,28 @@ export async function POST(req: Request) {
         }
 
         // ==========================================
+        // 🛡️ ADVANCED CRM GATEKEEPER (AI PAUSE CHECK)
+        // ==========================================
+        const { data: crmControl } = await supabaseAdmin
+            .from("crm_controls")
+            .select("is_ai_paused")
+            .eq("owner_email", ownerEmail)
+            .eq("platform_chat_id", chatId)
+            .single();
+
+        if (crmControl?.is_ai_paused) {
+            console.log(`[CRM_INTERCEPTION] AI is paused for customer ${chatId}. Manual mode active.`);
+            
+            // Log user message to CRM so Agent can see it
+            await supabaseAdmin.from("chat_history").insert({ 
+                email: ownerEmail, platform: "telegram", platform_chat_id: chatId, customer_name: customerName, sender_type: "user", message: crmLogMessage 
+            });
+
+            // Return 200 without responding (Silent AI)
+            return NextResponse.json({ success: true });
+        }
+
+        // ==========================================
         // 🔀 ROUTER 2: ADVANCED MULTI-FLOW VISUAL ENGINE
         // Scans `telegram_flows` table across all active flows for the user
         // ==========================================

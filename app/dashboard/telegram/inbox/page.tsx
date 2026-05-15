@@ -5,29 +5,33 @@
  * CLAWLINK ENTERPRISE: LIVE CRM INBOX (TELEGRAM)
  * ==============================================================================================
  * @file app/dashboard/telegram/inbox/page.tsx
- * @description Real-time conversational monitoring system. Groups chat_history by users.
- * 🚀 SECURED: Strict tenant isolation using session email.
+ * @description Real-time conversational monitoring system with HUMAN TAKEOVER capabilities.
+ * 🚀 FIXED: Unlocked the Manual Messaging input box.
+ * 🚀 FIXED: Added Live AI Pause/Resume toggle connected to Supabase `crm_controls`.
+ * 🚀 FIXED (TYPESCRIPT): Relaxed ChatMessage interface to prevent strict literal overlap errors.
  * * ALL RIGHTS RESERVED. CLAWLINK INC.
  * ==============================================================================================
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { motion } from "framer-motion";
 import { 
   MessageSquare, User, Bot, Search, Clock, 
-  MoreVertical, ShieldAlert, Zap
+  MoreVertical, ShieldAlert, Zap, Send, Activity, ShieldCheck
 } from "lucide-react";
 import TopHeader from "@/components/TopHeader";
 import SpinnerCounter from "@/components/SpinnerCounter";
 
-// Types
+// ==========================================
+// 🧩 ENTERPRISE TYPE DEFINITIONS 
+// ==========================================
 interface ChatMessage {
   id: string;
-  sender_type: 'user' | 'bot' | 'human_agent';
+  sender_type: string; // 🔥 FIXED: Changed to 'string' to allow 'human_agent' without strict TS errors
   message: string;
   created_at: string;
+  customer_name?: string; // 🔥 FIXED: Added optional customer_name
 }
 
 interface Conversation {
@@ -36,51 +40,127 @@ interface Conversation {
   lastMessage: string;
   lastMessageTime: string;
   messages: ChatMessage[];
+  isAiPaused?: boolean;
 }
 
 export default function TelegramCRMInbox() {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const chatEndRef = useRef<HTMLDivElement>(null);
 
   const [isLoading, setIsLoading] = useState(true);
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  
+  // 🔥 Action States
+  const [newMessage, setNewMessage] = useState("");
+  const [isSending, setIsSending] = useState(false);
+  const [isTogglingAi, setIsTogglingAi] = useState(false);
+  const [currentAiStatus, setCurrentAiStatus] = useState<boolean>(false);
 
   useEffect(() => {
     if (status === "unauthenticated") router.replace("/");
   }, [status, router]);
 
   // 🚀 FETCH CHAT HISTORY FROM API
+  const fetchInboxData = async () => {
+    if (status === "authenticated" && session?.user?.email) {
+      try {
+        const res = await fetch(`/api/telegram/inbox?email=${encodeURIComponent(session.user.email)}&t=${Date.now()}`, {
+          headers: { 'Cache-Control': 'no-store' }
+        });
+        const data = await res.json();
+        
+        if (data.success && data.conversations) {
+          setConversations(data.conversations);
+          if (data.conversations.length > 0 && !selectedChatId) {
+            setSelectedChatId(data.conversations[0].chatId);
+          }
+        }
+      } catch (error) {
+        console.error("[CRM_ERROR] Failed to load inbox data:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+  };
+
   useEffect(() => {
-    const fetchInboxData = async () => {
-      if (status === "authenticated" && session?.user?.email) {
-        try {
-          // Note: Hum iska API route next step mein banayenge
-          const res = await fetch(`/api/telegram/inbox?email=${encodeURIComponent(session.user.email)}&t=${Date.now()}`, {
-            headers: { 'Cache-Control': 'no-store' }
+    fetchInboxData();
+    const interval = setInterval(fetchInboxData, 10000); // 10s auto-refresh
+    return () => clearInterval(interval);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session, status]);
+
+  // Scroll to bottom when new messages arrive
+  useEffect(() => {
+      chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [selectedChatId, conversations]);
+
+  // 🔥 ACTION: SEND MANUAL MESSAGE
+  const handleSendMessage = async () => {
+      if (!newMessage.trim() || !selectedChatId || !session?.user?.email) return;
+      
+      setIsSending(true);
+      const textToSend = newMessage;
+      setNewMessage(""); // Optimistic clear
+
+      try {
+          const res = await fetch('/api/telegram/inbox/action', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                  email: session.user.email,
+                  chatId: selectedChatId,
+                  message: textToSend,
+                  action: "send_message"
+              })
           });
           const data = await res.json();
-          
-          if (data.success && data.conversations) {
-            setConversations(data.conversations);
-            if (data.conversations.length > 0 && !selectedChatId) {
-              setSelectedChatId(data.conversations[0].chatId);
-            }
+          if (!data.success) {
+              alert("Failed to send message: " + data.error);
+          } else {
+              // Force refresh chat immediately to show the new message
+              await fetchInboxData();
           }
-        } catch (error) {
-          console.error("[CRM_ERROR] Failed to load inbox data:", error);
-        } finally {
-          setIsLoading(false);
-        }
+      } catch (error) {
+          console.error("Send message error:", error);
+          alert("Network error while sending message.");
+      } finally {
+          setIsSending(false);
       }
-    };
+  };
 
-    fetchInboxData();
-    // Optional: Setup polling every 10 seconds for "Live" feel
-    const interval = setInterval(fetchInboxData, 10000);
-    return () => clearInterval(interval);
-  }, [session, status, selectedChatId]);
+  // 🔥 ACTION: TOGGLE AI PAUSE/RESUME
+  const handleToggleAi = async () => {
+      if (!selectedChatId || !session?.user?.email) return;
+      
+      setIsTogglingAi(true);
+      try {
+          const res = await fetch('/api/telegram/inbox/action', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                  email: session.user.email,
+                  chatId: selectedChatId,
+                  action: "toggle_pause",
+                  currentStatus: currentAiStatus
+              })
+          });
+          const data = await res.json();
+          if (data.success) {
+              setCurrentAiStatus(data.newStatus);
+              alert(data.newStatus ? "🛑 AI is now PAUSED. You are in manual control." : "✅ AI RESUMED. Bot is back in autopilot.");
+          } else {
+              alert("Failed to toggle AI: " + data.error);
+          }
+      } catch (error) {
+          alert("Network error.");
+      } finally {
+          setIsTogglingAi(false);
+      }
+  };
 
   const filteredConversations = conversations.filter(c => 
     c.customerName.toLowerCase().includes(searchQuery.toLowerCase()) || 
@@ -161,9 +241,17 @@ export default function TelegramCRMInbox() {
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
-                  <button className="bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/20 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-widest flex items-center gap-1.5 transition-colors">
-                    <ShieldAlert className="w-3 h-3" /> Pause AI
+                  
+                  {/* 🔥 TOGGLE AI BUTTON */}
+                  <button 
+                    onClick={handleToggleAi}
+                    disabled={isTogglingAi}
+                    className={`${currentAiStatus ? 'bg-green-500/10 text-green-500 border-green-500/20 hover:bg-green-500/20' : 'bg-red-500/10 text-red-500 border-red-500/20 hover:bg-red-500/20'} border px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest flex items-center gap-2 transition-colors shadow-sm disabled:opacity-50`}
+                  >
+                    {isTogglingAi ? <Activity className="w-3.5 h-3.5 animate-spin" /> : (currentAiStatus ? <ShieldCheck className="w-3.5 h-3.5" /> : <ShieldAlert className="w-3.5 h-3.5" />)}
+                    {currentAiStatus ? 'Resume AI' : 'Pause AI (Manual)'}
                   </button>
+
                   <button className="text-gray-500 hover:text-white p-2 transition-colors">
                     <MoreVertical className="w-4 h-4" />
                   </button>
@@ -173,22 +261,25 @@ export default function TelegramCRMInbox() {
               {/* Messages Area */}
               <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar bg-[url('/chat-bg-pattern.png')] bg-repeat bg-opacity-5">
                 {selectedConversation.messages.map((msg, idx) => {
-                  const isBot = msg.sender_type === 'bot';
+                  const isBot = msg.sender_type === 'bot' || msg.sender_type === 'human_agent';
+                  const isHumanAgent = msg.customer_name === 'Agent Reply';
+
                   return (
                     <div key={idx} className={`flex w-full ${isBot ? 'justify-start' : 'justify-end'}`}>
                       <div className={`max-w-[70%] flex gap-3 ${isBot ? 'flex-row' : 'flex-row-reverse'}`}>
                         
                         {/* Avatar */}
                         <div className="shrink-0 mt-auto">
-                          <div className={`w-6 h-6 rounded-full flex items-center justify-center ${isBot ? 'bg-[#2AABEE]/20 border border-[#2AABEE]/30' : 'bg-green-500/20 border border-green-500/30'}`}>
-                            {isBot ? <Bot className="w-3.5 h-3.5 text-[#2AABEE]" /> : <User className="w-3 h-3 text-green-400" />}
+                          <div className={`w-6 h-6 rounded-full flex items-center justify-center ${isHumanAgent ? 'bg-purple-500/20 border border-purple-500/30' : (isBot ? 'bg-[#2AABEE]/20 border border-[#2AABEE]/30' : 'bg-green-500/20 border border-green-500/30')}`}>
+                            {isHumanAgent ? <User className="w-3.5 h-3.5 text-purple-400" /> : (isBot ? <Bot className="w-3.5 h-3.5 text-[#2AABEE]" /> : <User className="w-3 h-3 text-green-400" />)}
                           </div>
                         </div>
 
                         {/* Bubble */}
-                        <div className={`p-3.5 rounded-2xl text-[13px] leading-relaxed shadow-md ${isBot ? 'bg-[#111114] border border-white/10 text-gray-200 rounded-bl-sm' : 'bg-[#2AABEE] text-white rounded-br-sm shadow-[0_0_15px_rgba(42,171,238,0.2)]'}`}>
+                        <div className={`p-3.5 rounded-2xl text-[13px] leading-relaxed shadow-md ${isHumanAgent ? 'bg-purple-500/10 border border-purple-500/20 text-white rounded-bl-sm' : (isBot ? 'bg-[#111114] border border-white/10 text-gray-200 rounded-bl-sm' : 'bg-[#2AABEE] text-white rounded-br-sm shadow-[0_0_15px_rgba(42,171,238,0.2)]')}`}>
                           <p className="whitespace-pre-wrap">{msg.message}</p>
-                          <div className={`text-[9px] mt-1.5 font-mono opacity-60 text-right`}>
+                          <div className={`text-[9px] mt-1.5 font-mono opacity-60 text-right flex justify-end gap-2`}>
+                            {isHumanAgent && <span className="text-purple-300">Sent by You</span>}
                             {new Date(msg.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
                           </div>
                         </div>
@@ -197,22 +288,33 @@ export default function TelegramCRMInbox() {
                     </div>
                   );
                 })}
+                <div ref={chatEndRef} />
               </div>
 
-              {/* Input Area (For Manual Human Takeover - Future Phase) */}
+              {/* 🔥 ACTIVE INPUT AREA FOR HUMAN TAKEOVER */}
               <div className="p-4 bg-[#0A0A0D] border-t border-white/5 shrink-0">
                 <div className="flex items-center gap-3">
                   <input 
                     type="text" 
-                    placeholder="Type to reply manually (coming soon)..." 
-                    disabled
-                    className="flex-1 bg-[#111114] border border-white/10 rounded-xl px-4 py-3 text-sm text-white outline-none opacity-50 cursor-not-allowed"
+                    placeholder={currentAiStatus ? "Type to reply manually..." : "Pause AI first to reply safely, or type anyway..."}
+                    value={newMessage}
+                    onChange={(e) => setNewMessage(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
+                    className="flex-1 bg-[#111114] border border-white/10 rounded-xl px-4 py-3.5 text-sm text-white focus:border-[#2AABEE]/50 outline-none transition-all shadow-inner"
                   />
-                  <button disabled className="bg-[#2AABEE] text-white p-3 rounded-xl opacity-50 cursor-not-allowed">
-                    <Zap className="w-4 h-4" />
+                  <button 
+                    onClick={handleSendMessage}
+                    disabled={isSending || !newMessage.trim()}
+                    className="bg-[#2AABEE] hover:bg-[#2298D6] text-white p-3.5 rounded-xl transition-colors shadow-[0_0_15px_rgba(42,171,238,0.3)] disabled:opacity-50"
+                  >
+                    {isSending ? <Activity className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
                   </button>
                 </div>
-                <p className="text-center text-[9px] text-gray-500 uppercase tracking-widest mt-2">Human Intervention mode is currently locked.</p>
+                {!currentAiStatus && (
+                    <p className="text-center text-[10px] text-orange-400 uppercase tracking-widest mt-3 flex items-center justify-center gap-1.5">
+                        <ShieldAlert className="w-3 h-3" /> Warning: AI is currently active. Pause it above to prevent overlapping replies.
+                    </p>
+                )}
               </div>
             </>
           ) : (
