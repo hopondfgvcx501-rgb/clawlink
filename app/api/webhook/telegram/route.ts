@@ -18,15 +18,35 @@
 
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { Redis } from "@upstash/redis";
+import { Ratelimit } from "@upstash/ratelimit";
 
 export const dynamic = "force-dynamic";
 
 // ==========================================
-// 🛡️ SECURITY & MEMORY MANAGEMENT
+// 🧱 KNOX SECURITY PROTOCOL (UPSTASH REDIS)
 // ==========================================
-const rateLimitMap = new Map<string, number>();
-const COOLDOWN_MS = 1500;
+// Fallback setup in case env variables are missing during local dev
+const redisUrl = process.env.UPSTASH_REDIS_REST_URL || "";
+const redisToken = process.env.UPSTASH_REDIS_REST_TOKEN || "";
 
+let ratelimit: Ratelimit | null = null;
+
+if (redisUrl && redisToken) {
+    const redis = new Redis({ url: redisUrl, token: redisToken });
+    // Rule: Allow max 5 messages per 10 seconds per Telegram User (Chat ID)
+    ratelimit = new Ratelimit({
+        redis: redis,
+        limiter: Ratelimit.slidingWindow(5, "10 s"),
+        analytics: true,
+    });
+} else {
+    console.warn("[KNOX_WARNING] Upstash Redis credentials missing. DDoS protection is offline.");
+}
+
+// ==========================================
+// 🛡️ DB CONNECTION
+// ==========================================
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
 
@@ -366,11 +386,23 @@ export async function POST(req: Request) {
             crmLogMessage = userText;
         }
 
-        // 🛡️ DDoS Rate Limiting
-        const now = Date.now();
-        const lastMessageTime = rateLimitMap.get(chatId) || 0;
-        if (now - lastMessageTime < COOLDOWN_MS) return NextResponse.json({ success: true });
-        rateLimitMap.set(chatId, now);
+        // ==========================================
+        // 🧱 KNOX PROTOCOL (DDoS SHIELD EXECUTION)
+        // ==========================================
+        if (ratelimit) {
+            try {
+                const { success } = await ratelimit.limit(`ratelimit_tg_${chatId}`);
+                
+                if (!success) {
+                    console.warn(`[KNOX_SHIELD] Spam attempt blocked for ChatID: ${chatId}.`);
+                    // Silent rejection. Saves AI tokens and bandwidth.
+                    return NextResponse.json({ success: true });
+                }
+            } catch (redisError) {
+                console.error("[REDIS_ERROR] Rate limiter failed (Fail-open):", redisError);
+            }
+        }
+        // ==========================================
 
         // ==========================================
         // 🚀 ROUTER 1: ULTRA-FAST COMMAND INTERCEPTOR
