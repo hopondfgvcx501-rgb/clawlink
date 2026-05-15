@@ -411,6 +411,23 @@ export async function POST(req: Request) {
         }
 
         // ==========================================
+        // 🛑 BANNED USER SHIELD (CRM)
+        // ==========================================
+        const { data: subscriberData } = await supabaseAdmin
+            .from("bot_subscribers")
+            .select("status")
+            .eq("chat_id", chatId)
+            .eq("email", ownerEmail)
+            .single();
+
+        if (subscriberData?.status === 'banned') {
+            console.log(`[BAN_SHIELD] Blocked message from banned user ${chatId}`);
+            // Send silent rejection. Bot completely ignores this user.
+            return NextResponse.json({ success: true });
+        }
+        // ==========================================
+
+        // ==========================================
         // 🛡️ ADVANCED CRM GATEKEEPER (AI PAUSE CHECK)
         // ==========================================
         const { data: crmControl } = await supabaseAdmin
