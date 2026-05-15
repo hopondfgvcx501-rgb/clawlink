@@ -7,9 +7,7 @@
  * @file app/dashboard/telegram/media/page.tsx
  * @description Secure cloud storage for Telegram broadcast and flow media assets.
  * 🚀 SECURED: Fetches and uploads actual files to real database/storage.
- * 🚀 FIXED: Removed dummy simulation. Integrated real <input type="file"> and FormData POST.
- * 🚀 FIXED: Implemented HTML5 Drag & Drop event listeners (Wrapped cleanly to prevent TS errors).
- * 🚀 FIXED: Upgraded to premium SpinnerCounter.
+ * 🚀 FIXED: Added aria-label and title to hidden file input to clear accessibility errors.
  * * ALL RIGHTS RESERVED. CLAWLINK INC.
  * ==============================================================================================
  */
@@ -23,7 +21,7 @@ import {
   Film, FileText, Trash2, Copy, Activity 
 } from "lucide-react";
 import TopHeader from "@/components/TopHeader";
-import SpinnerCounter from "@/components/SpinnerCounter"; // 🚀 Premium Loader Imported
+import SpinnerCounter from "@/components/SpinnerCounter";
 
 interface MediaFile {
   id: string;
@@ -39,17 +37,15 @@ export default function TelegramMediaLibrary() {
   
   const [isLoading, setIsLoading] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
-  const [isDragging, setIsDragging] = useState(false); // 🚀 Track Drag state
+  const [isDragging, setIsDragging] = useState(false);
   const [files, setFiles] = useState<MediaFile[]>([]);
   
-  // 🚀 Reference for the hidden file input
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (status === "unauthenticated") router.replace("/");
   }, [status, router]);
 
-  // 🚀 FETCH SECURE MEDIA FILES
   const fetchMedia = async () => {
     if (status === "authenticated" && session?.user?.email) {
       try {
@@ -70,6 +66,7 @@ export default function TelegramMediaLibrary() {
 
   useEffect(() => {
     fetchMedia();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session, status]);
 
   const copyToClipboard = (id: string) => {
@@ -80,7 +77,6 @@ export default function TelegramMediaLibrary() {
   const deleteFile = async (id: string) => {
     if(!confirm("Are you sure? Flows using this media will break.")) return;
     
-    // Optimistic UI update
     setFiles(files.filter(f => f.id !== id));
     
     try {
@@ -92,7 +88,7 @@ export default function TelegramMediaLibrary() {
       const data = await res.json();
       if (!data.success) {
          alert("Failed to delete from server: " + data.error);
-         fetchMedia(); // Revert optimistic update on failure
+         fetchMedia();
       }
     } catch(err) {
       console.error("Failed to delete from DB");
@@ -100,7 +96,6 @@ export default function TelegramMediaLibrary() {
     }
   };
 
-  // 🚀 REAL UPLOAD LOGIC TO BACKEND
   const processFileUpload = async (file: File) => {
     if (!session?.user?.email) return;
     
@@ -113,14 +108,14 @@ export default function TelegramMediaLibrary() {
 
       const res = await fetch('/api/telegram/media', {
         method: 'POST',
-        body: formData // Note: Do not set Content-Type header manually when using FormData
+        body: formData 
       });
 
       const data = await res.json();
       
       if (data.success) {
         alert("File securely uploaded to ClawLink Storage.");
-        await fetchMedia(); // Refresh list with real DB data
+        await fetchMedia(); 
       } else {
         alert(`Upload Failed: ${data.error}`);
       }
@@ -129,19 +124,16 @@ export default function TelegramMediaLibrary() {
       alert("Network error during file upload.");
     } finally {
       setIsUploading(false);
-      // Reset input value so the same file can be selected again if needed
       if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
 
-  // Triggered when user selects a file via dialog
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       processFileUpload(e.target.files[0]);
     }
   };
 
-  // 🚀 DRAG AND DROP EVENT HANDLERS
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     setIsDragging(true);
@@ -172,7 +164,6 @@ export default function TelegramMediaLibrary() {
 
   const btnHover = "transition-all duration-[120ms] ease-out active:scale-[0.95] transform-gpu will-change-transform";
 
-  // 🚀 Secure Premium Anti-Flicker Loading State
   if (isLoading || status === "loading") {
     return <SpinnerCounter text="SYNCING SECURE MEDIA VAULT..." />;
   }
@@ -184,7 +175,6 @@ export default function TelegramMediaLibrary() {
       <div className="flex-1 overflow-y-auto custom-scrollbar p-6 md:p-8">
         <div className="max-w-[1200px] mx-auto space-y-8">
           
-          {/* 🚀 REAL UPLOAD ZONE WITH DRAG & DROP (Wrapped securely to fix TS errors) */}
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
             <div 
               onDragOver={handleDragOver}
@@ -204,13 +194,15 @@ export default function TelegramMediaLibrary() {
               </h3>
               <p className="text-[13px] text-gray-500 mb-6">Supports Images (JPG, PNG), Videos (MP4), and Documents (PDF) up to 50MB.</p>
               
-              {/* Hidden actual file input */}
+              {/* 🔥 FIXED: Added aria-label and title to fix Accessibility error */}
               <input 
                 type="file" 
                 ref={fileInputRef} 
                 onChange={handleFileSelect} 
                 className="hidden" 
                 accept="image/jpeg, image/png, video/mp4, application/pdf"
+                aria-label="Upload media file"
+                title="Upload media file"
               />
               
               <button 

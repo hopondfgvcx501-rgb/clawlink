@@ -7,6 +7,7 @@
  * @file app/dashboard/telegram/command-router/page.tsx
  * @description Advanced UI to manage Telegram Bot Menu Commands. Syncs instantly to the Telegram app.
  * 🚀 SECURED: Strict TS Interfaces and Real DB connection. No dummy data.
+ * 🚀 FIXED: Removed unused eslint directive and added aria-labels to fix accessibility errors.
  * * ALL RIGHTS RESERVED. CLAWLINK INC.
  * ==============================================================================================
  */
@@ -62,7 +63,6 @@ export default function TelegramCommandRouter() {
 
     useEffect(() => {
         fetchCommands();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [session, status]);
 
     const handleSaveCommand = async () => {
@@ -220,8 +220,13 @@ export default function TelegramCommandRouter() {
                                                     <span className="text-[13px] font-bold text-[#2AABEE] font-mono">{cmd.command}</span>
                                                     <p className="text-[11px] text-gray-400 mt-0.5">{cmd.description}</p>
                                                 </div>
-                                                <button onClick={() => handleDeleteCommand(cmd.id)} className="text-gray-500 hover:text-red-500 p-2 transition-all">
-                                                    <Trash2 className="w-4 h-4" />
+                                                <button 
+                                                    aria-label="Delete Command"
+                                                    title="Delete Command"
+                                                    onClick={() => handleDeleteCommand(cmd.id)} 
+                                                    className="text-gray-500 hover:text-red-500 p-2 transition-all"
+                                                >
+                                                    <Trash2 className="w-4 h-4" aria-hidden="true" />
                                                 </button>
                                             </div>
                                             <div className="mt-3 pl-2 p-3 bg-black/40 rounded-xl border border-white/5">
