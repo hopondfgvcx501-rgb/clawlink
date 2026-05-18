@@ -16,8 +16,8 @@ import { motion } from "framer-motion";
 import { Send } from "lucide-react";
 
 export default function TelegramDemoWidget() {
-    // 🔴 TERA BOT USERNAME YAHAN SET HAI
-    const botUsername = "clawlinkhelpbot"; 
+    // 🔥 FIXED: Asli Bot Username yahan update kar diya hai!
+    const botUsername = "samu_a9_bot"; 
     const telegramUrl = `https://t.me/${botUsername}?start=demo`;
 
     return (
