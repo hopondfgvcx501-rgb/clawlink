@@ -17,7 +17,7 @@ import { Send } from "lucide-react";
 
 export default function TelegramDemoWidget() {
     // 🔴 TERA BOT USERNAME YAHAN SET HAI
-    const botUsername = "clawlinkhelp"; 
+    const botUsername = "clawlinkhelpbot"; 
     const telegramUrl = `https://t.me/${botUsername}?start=demo`;
 
     return (
