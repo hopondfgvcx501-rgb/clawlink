@@ -1,4 +1,5 @@
 import React from "react";
+import Link from "next/link"; // 🔥 FIX: Imported Next.js Link component
 
 export const metadata = {
   title: "Refund Policy | ClawLink AI",
@@ -30,7 +31,10 @@ export default function RefundPage() {
         </div>
 
         <div className="mt-16 pt-8 border-t border-white/10 text-center">
-          <a href="/" className="text-blue-400 hover:text-white transition-colors font-bold uppercase tracking-widest text-xs">← Return to Home</a>
+          {/* 🔥 FIX: Replaced <a> with Next.js <Link> */}
+          <Link href="/" className="text-blue-400 hover:text-white transition-colors font-bold uppercase tracking-widest text-xs">
+            ← Return to Home
+          </Link>
         </div>
       </div>
     </div>
