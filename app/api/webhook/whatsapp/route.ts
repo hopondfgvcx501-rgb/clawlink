@@ -6,6 +6,7 @@ import { compileEnterprisePrompt } from "../../../lib/ai/prompt-compiler"; // �
 const sendEmail = async (...args: any[]) => console.log("Email disabled");
 
 export const dynamic = "force-dynamic";
+export const maxDuration = 60; // 🚀 FIX: Vercel serverless limit extended to 60 seconds!
 
 const rateLimitMap = new Map<string, number>();
 const COOLDOWN_MS = 2000; // Ultra-fast WhatsApp cooldown
@@ -213,9 +214,9 @@ export async function POST(req: Request) {
         });
 
         // 🚀 We check if there are ANY recent messages from 'admin' for this user
-        // If an admin sent a message in the last 15 minutes, we pause AI auto-replies.
+        // 🚀 FIX: Changed 15 minutes to 1 minute for faster testing and AI wakeup!
         const fifteenMinutesAgo = new Date();
-        fifteenMinutesAgo.setMinutes(fifteenMinutesAgo.getMinutes() - 15);
+        fifteenMinutesAgo.setMinutes(fifteenMinutesAgo.getMinutes() - 1);
 
         const { data: adminIntervention } = await supabase
             .from("chat_history")
