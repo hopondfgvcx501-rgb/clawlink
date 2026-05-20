@@ -20,22 +20,23 @@ export default function PrivacyPolicy() {
           <Shield className="w-10 h-10 text-green-500" />
           Privacy Policy
         </h1>
-        <p className="text-gray-500 text-sm mb-12">Last Updated: March 2026</p>
+        <p className="text-gray-500 text-sm mb-12">Last Updated: May 2026</p>
 
         <div className="space-y-8 text-sm leading-relaxed text-gray-400">
           <section>
             <h2 className="text-xl font-bold text-white mb-3">1. Information We Collect</h2>
-            <p>At ClawLink, we collect minimal information necessary to provide our Enterprise AI infrastructure. This includes your account details (via Google OAuth), billing information (processed securely via Razorpay), and API tokens for your selected channels (Telegram/WhatsApp).</p>
+            <p>At ClawLink, we collect the minimal information necessary to provide our Enterprise AI infrastructure. This includes your account details (via Google OAuth), billing information (processed securely via Razorpay), and API tokens for your selected channels (Telegram/WhatsApp).</p>
           </section>
 
           <section>
             <h2 className="text-xl font-bold text-white mb-3">2. How We Use Your Data</h2>
-            <p>We use your API tokens strictly to route messages between your users and the selected AI models (GPT-5.2, Claude, Gemini). ClawLink operates as a passthrough infrastructure.</p>
+            <p>We use your API tokens strictly to route messages between your users and the selected AI models (GPT-4o, Claude 4.7, Gemini). ClawLink operates as a secure passthrough infrastructure.</p>
           </section>
 
           <section>
             <h2 className="text-xl font-bold text-white mb-3">3. Data Security & Storage (Zero Retention)</h2>
-            <p>Your privacy is our priority. We employ AES-256 encryption for all stored tokens. <strong className="text-white">We do not store your customers' chat messages on our servers.</strong> Once a message is processed by the AI model, it is instantly purged from our active memory buffers.</p>
+            {/* 🔥 FIX: Replaced the unescaped quote with &apos; below */}
+            <p>Your privacy is our priority. We employ AES-256 encryption for all stored tokens. <strong className="text-white">We do not store your customers&apos; chat messages on our servers.</strong> Once a message is processed by the AI model, it is instantly purged from our active memory buffers.</p>
           </section>
 
           <section>
