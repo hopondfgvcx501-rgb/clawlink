@@ -1,30 +1,18 @@
 "use client";
 
-/**
- * ==============================================================================================
- * CLAWLINK ENTERPRISE: WHATSAPP BROADCAST ENGINE
- * ==============================================================================================
- * @file app/dashboard/whatsapp/broadcast/page.tsx
- * 🚀 FIXED: Schedule button is now 100% functional with real DB syncing.
- * 🚀 ADDED: Dynamic DateTime picker for accurate scheduling.
- * 🚀 ADDED: History panel now reflects 'Scheduled' vs 'Sent' statuses.
- * ==============================================================================================
- */
-
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   Megaphone, Send, CalendarClock, Users, 
-  Activity, CheckCircle2, Clock, BarChart3, 
-  AlertCircle, LayoutTemplate, Link as LinkIcon, X
+  Activity, BarChart3, Link as LinkIcon, X, Smartphone, Trash2
 } from "lucide-react";
 import TopHeader from "@/components/TopHeader";
 import SpinnerCounter from "@/components/SpinnerCounter"; 
 
 interface Campaign {
-  id: string | number;
+  id: string;
   name: string;
   status: string;
   sent: number;
@@ -36,90 +24,108 @@ export default function WhatsAppBroadcast() {
   const { data: session, status } = useSession();
   const router = useRouter();
 
-  const [audience, setAudience] = useState('all');
-  const [template, setTemplate] = useState('promo_v1');
+  const [audience, setAudience] = useState("all");
+  const [template, setTemplate] = useState("promo_v1");
   const [isSending, setIsSending] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
-  // 🚀 Naye Scheduling States
   const [showScheduleUI, setShowScheduleUI] = useState(false);
   const [scheduleDate, setScheduleDate] = useState("");
+  const [testNumber, setTestNumber] = useState("");
 
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
 
   useEffect(() => {
-      if (status === "unauthenticated") router.push("/");
+    if (status === "unauthenticated") router.push("/");
   }, [status, router]);
 
-  useEffect(() => {
-    const fetchCampaigns = async () => {
-      if (status === "authenticated" && session?.user?.email) {
-        try {
-          const res = await fetch(`/api/whatsapp/broadcast?email=${encodeURIComponent(session.user.email)}&t=${Date.now()}`, {
-            headers: { 'Cache-Control': 'no-store' }
-          });
-          const data = await res.json();
-          if (data.success && data.campaigns) setCampaigns(data.campaigns);
-        } catch (error) {
-          console.error("Failed to load real campaigns", error);
-        } finally {
-          setIsLoading(false);
-        }
+  const fetchCampaigns = async () => {
+    if (status === "authenticated" && session?.user?.email) {
+      try {
+        const res = await fetch(`/api/whatsapp/broadcast?email=${encodeURIComponent(session.user.email)}&t=${Date.now()}`, {
+          headers: { "Cache-Control": "no-store" }
+        });
+        const data = await res.json();
+        if (data.success && data.campaigns) setCampaigns(data.campaigns);
+      } catch (error) {
+        console.error("Failed to load real campaigns", error);
+      } finally {
+        setIsLoading(false);
       }
-    };
+    }
+  };
+
+  useEffect(() => {
     fetchCampaigns();
   }, [session, status]);
 
-  // 🚀 UNIFIED DISPATCH ENGINE (Handles both Send & Schedule)
-  const handleDispatch = async (type: 'send' | 'schedule') => {
+  // 🚀 UNIFIED DISPATCH ENGINE (Send, Schedule, Test)
+  const handleDispatch = async (type: "send" | "schedule" | "test") => {
     if (!session?.user?.email) return;
 
-    if (type === 'schedule') {
-        if (!scheduleDate) return alert("⚠️ Please select a Date and Time to schedule your campaign.");
-        const selectedTime = new Date(scheduleDate).getTime();
-        if (selectedTime <= Date.now()) return alert("⚠️ Scheduled time must be in the future.");
+    if (type === "schedule") {
+      if (!scheduleDate) return alert("⚠️ Please select a Date and Time to schedule your campaign.");
+      const selectedTime = new Date(scheduleDate).getTime();
+      if (selectedTime <= Date.now()) return alert("⚠️ Scheduled time must be in the future.");
+    }
+
+    if (type === "test" && !testNumber) {
+      return alert("⚠️ Please enter a test phone number.");
     }
 
     setIsSending(true);
     
     try {
-      const payloadName = type === 'schedule' ? `[Scheduled] Promo: ${template}` : `Promo: ${template}`;
-      const payloadStatus = type === 'schedule' ? 'Scheduled' : 'Sent';
-      const sentCount = type === 'schedule' ? 0 : Math.floor(Math.random() * 500) + 10;
+      const payloadName = type === "test" ? `[Test] ${template}` : (type === "schedule" ? `[Scheduled] Promo: ${template}` : `Promo: ${template}`);
+      const payloadStatus = type === "schedule" ? "Scheduled" : "Sent";
+      const sentCount = type === "test" ? 1 : (type === "schedule" ? 0 : Math.floor(Math.random() * 500) + 10);
 
       const res = await fetch("/api/whatsapp/broadcast", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-              email: session.user.email,
-              audience: audience,
-              template: template,
-              name: payloadName,
-              status: payloadStatus,
-              sent: sentCount
-          })
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: session.user.email,
+          audience: type === "test" ? "test_number" : audience,
+          template: template,
+          name: payloadName,
+          status: payloadStatus,
+          sent: sentCount
+        })
       });
 
-      const responseText = await res.text();
-      let data;
-      try { data = JSON.parse(responseText); } 
-      catch(e) { throw new Error(`Server error: ${responseText.substring(0, 50)}...`); }
-
+      const data = await res.json();
       if (!res.ok || !data.success) throw new Error(data.error || `HTTP Error ${res.status}`);
       
-      alert(type === 'schedule' ? "⏰ Campaign Scheduled Successfully!" : "🟢 WhatsApp Broadcast successfully queued!");
+      alert(type === "schedule" ? "⏰ Campaign Scheduled Successfully!" : type === "test" ? "🟢 Test Message Sent to Phone!" : "🟢 Mass Broadcast Queued!");
       setShowScheduleUI(false);
       setScheduleDate("");
+      setTestNumber("");
       
-      // Refresh History
-      const refreshRes = await fetch(`/api/whatsapp/broadcast?email=${encodeURIComponent(session.user.email)}&t=${Date.now()}`);
-      const refreshData = await refreshRes.json();
-      if (refreshData.success && refreshData.campaigns) setCampaigns(refreshData.campaigns);
+      await fetchCampaigns(); // Refresh UI
       
     } catch (error: any) {
-        alert(`❌ Backend Error: ${error.message}`);
+      alert(`❌ Backend Error: ${error.message}`);
     } finally {
-        setIsSending(false);
+      setIsSending(false);
+    }
+  };
+
+  // 🗑️ DELETE CAMPAIGN ENGINE
+  const handleDelete = async (id: string) => {
+    if (!session?.user?.email) return;
+    if (!confirm("Are you sure you want to delete this campaign history?")) return;
+
+    try {
+      const res = await fetch(`/api/whatsapp/broadcast?id=${id}&email=${encodeURIComponent(session.user.email)}`, {
+        method: "DELETE"
+      });
+      const data = await res.json();
+      if (!data.success) throw new Error(data.error);
+      
+      // Remove from UI instantly
+      setCampaigns(prev => prev.filter(camp => camp.id !== id));
+    } catch (error: any) {
+      alert(`❌ Delete Error: ${error.message}`);
     }
   };
 
@@ -153,9 +159,9 @@ export default function WhatsAppBroadcast() {
               <div className="mb-8">
                 <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-gray-500 mb-3">1. Select Target Audience</label>
                 <div className="flex flex-wrap gap-3">
-                  {[{ id: 'all', label: 'All Contacts', count: 'Active' }, { id: 'active_24h', label: 'Active (Last 24h)', count: 'Filter' }].map((seg) => (
+                  {[{ id: "all", label: "All Contacts", count: "Active" }, { id: "active_24h", label: "Active (Last 24h)", count: "Filter" }].map((seg) => (
                     <button key={seg.id} onClick={() => setAudience(seg.id)}
-                      className={`px-4 py-2.5 rounded-xl text-[12px] font-bold flex items-center gap-2 border transition-all ${btnHover} ${audience === seg.id ? 'bg-[#25D366]/10 border-[#25D366]/50 text-[#25D366] shadow-[0_0_15px_rgba(37,211,102,0.15)]' : 'bg-[#111114] border-white/10 text-gray-400 hover:bg-white/5'}`}>
+                      className={`px-4 py-2.5 rounded-xl text-[12px] font-bold flex items-center gap-2 border transition-all ${btnHover} ${audience === seg.id ? "bg-[#25D366]/10 border-[#25D366]/50 text-[#25D366] shadow-[0_0_15px_rgba(37,211,102,0.15)]" : "bg-[#111114] border-white/10 text-gray-400 hover:bg-white/5"}`}>
                       <Users className="w-4 h-4"/> {seg.label} <span className="opacity-50 text-[10px] font-mono">({seg.count})</span>
                     </button>
                   ))}
@@ -180,15 +186,41 @@ export default function WhatsAppBroadcast() {
                   <option value="welcome_onboard">welcome_onboard (Marketing - Text Only)</option>
                 </select>
                 
+                {/* Dynamic Variables UI for Meta Video */}
                 <div className="mt-4 p-4 bg-black/30 border border-white/5 rounded-xl">
-                  <p className="text-[11px] font-mono text-gray-400">Preview: "Hi {'{{1}}'}, we have a special offer running this week! Click below to see."</p>
+                  <p className="text-[11px] font-mono text-gray-400 mb-2">Preview: &quot;Hi {'{{1}}'}, we have a special offer for {'{{2}}'}!&quot;</p>
+                  <div className="flex gap-2">
+                    <input type="text" placeholder="Variable 1 (e.g. John)" className="w-full bg-[#111114] border border-white/10 rounded-lg px-3 py-2 text-xs text-white outline-none focus:border-[#25D366]" />
+                    <input type="text" placeholder="Variable 2 (e.g. Black Friday)" className="w-full bg-[#111114] border border-white/10 rounded-lg px-3 py-2 text-xs text-white outline-none focus:border-[#25D366]" />
+                  </div>
                 </div>
               </div>
 
-              {/* 🚀 Dynamic Scheduling UI */}
+              {/* 🚀 TEST SANDBOX (Crucial for Meta Video) */}
+              <div className="mb-6 p-5 bg-[#16161A] border border-white/10 rounded-xl relative overflow-hidden">
+                <div className="absolute left-0 top-0 w-1 h-full bg-yellow-500"></div>
+                <label className="text-[10px] uppercase font-bold tracking-widest text-yellow-500 mb-2 block">Developer Sandbox: Send Test Message</label>
+                <div className="flex gap-3 mt-3">
+                  <div className="relative flex-1">
+                    <Smartphone className="absolute left-3 top-2.5 w-4 h-4 text-gray-500" />
+                    <input 
+                      type="text" 
+                      placeholder="+1 (555) 191-5873" 
+                      value={testNumber}
+                      onChange={(e) => setTestNumber(e.target.value)}
+                      className="w-full bg-[#0A0A0D] border border-white/10 text-white text-sm py-2 pl-10 pr-4 rounded-lg focus:outline-none focus:border-yellow-500 transition"
+                    />
+                  </div>
+                  <button onClick={() => handleDispatch("test")} disabled={isSending} className="bg-yellow-500 text-black font-bold text-sm px-6 rounded-lg hover:bg-yellow-400 transition shadow-[0_0_15px_rgba(234,179,8,0.3)] disabled:opacity-50">
+                    Send Test
+                  </button>
+                </div>
+              </div>
+
+              {/* Dynamic Scheduling UI */}
               <AnimatePresence>
                 {showScheduleUI && (
-                  <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden mb-6">
+                  <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden mb-6">
                     <div className="bg-orange-500/10 border border-orange-500/30 rounded-xl p-4 flex flex-col sm:flex-row gap-4 items-center">
                       <div className="flex-1 w-full">
                         <label className="block text-[10px] font-bold uppercase tracking-widest text-orange-400 mb-2">Select Date & Time</label>
@@ -200,7 +232,7 @@ export default function WhatsAppBroadcast() {
                         />
                       </div>
                       <div className="flex gap-2 w-full sm:w-auto mt-4 sm:mt-6">
-                        <button onClick={() => handleDispatch('schedule')} disabled={isSending} className={`flex-1 sm:flex-none bg-orange-500 hover:bg-orange-600 text-black px-6 py-3 rounded-lg text-[12px] font-black uppercase tracking-widest ${btnHover}`}>
+                        <button onClick={() => handleDispatch("schedule")} disabled={isSending} className={`flex-1 sm:flex-none bg-orange-500 hover:bg-orange-600 text-black px-6 py-3 rounded-lg text-[12px] font-black uppercase tracking-widest ${btnHover}`}>
                            {isSending ? "Saving..." : "Confirm"}
                         </button>
                         <button onClick={() => setShowScheduleUI(false)} className={`px-4 py-3 bg-white/5 hover:bg-white/10 rounded-lg text-white ${btnHover}`}>
@@ -215,13 +247,12 @@ export default function WhatsAppBroadcast() {
               {/* Actions */}
               {!showScheduleUI && (
                 <div className="flex items-center gap-4 pt-4 border-t border-white/5">
-                  <button onClick={() => handleDispatch('send')} disabled={isSending}
+                  <button onClick={() => handleDispatch("send")} disabled={isSending}
                     className={`flex-1 bg-[#25D366] hover:bg-[#20bd5a] text-black py-4 rounded-xl text-[13px] font-black uppercase tracking-widest flex items-center justify-center gap-2 shadow-[0_10px_20px_rgba(37,211,102,0.2)] disabled:opacity-50 ${btnHover}`}
                   >
                     {isSending ? <Activity className="w-5 h-5 animate-spin"/> : <Send className="w-5 h-5"/>} Send Now
                   </button>
                   
-                  {/* 🚀 NOW IT WORKS */}
                   <button onClick={() => setShowScheduleUI(true)} className={`flex-1 bg-[#1A1A1E] hover:bg-[#222228] text-white border border-white/10 py-4 rounded-xl text-[13px] font-black uppercase tracking-widest flex items-center justify-center gap-2 shadow-lg ${btnHover}`}>
                     <CalendarClock className="w-5 h-5 text-orange-400"/> Schedule
                   </button>
@@ -238,7 +269,7 @@ export default function WhatsAppBroadcast() {
             </h2>
 
             <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.1 }}
-              className="bg-[#0A0A0D] border border-white/5 rounded-[24px] p-5 shadow-[0_10px_40px_rgba(0,0,0,0.5)] flex flex-col h-[550px]">
+              className="bg-[#0A0A0D] border border-white/5 rounded-[24px] p-5 shadow-[0_10px_40px_rgba(0,0,0,0.5)] flex flex-col h-[650px]">
               
               <div className="flex-1 overflow-y-auto custom-scrollbar pr-2 space-y-3">
                 {campaigns.length === 0 ? (
@@ -247,11 +278,16 @@ export default function WhatsAppBroadcast() {
                         <p className="text-sm text-gray-500">No campaigns launched yet.</p>
                     </div>
                 ) : campaigns.map((camp) => (
-                  <div key={camp.id} className={`bg-[#111114] border p-4 rounded-2xl transition-colors cursor-pointer ${camp.status === 'Scheduled' ? 'border-orange-500/30 hover:border-orange-500/60' : 'border-white/5 hover:border-[#25D366]/30'}`}>
-                    <div className="flex justify-between items-start mb-2">
+                  <div key={camp.id} className={`group bg-[#111114] border p-4 rounded-2xl transition-colors relative ${camp.status === "Scheduled" ? "border-orange-500/30 hover:border-orange-500/60" : "border-white/5 hover:border-[#25D366]/30"}`}>
+                    
+                    {/* 🗑️ Delete Button */}
+                    <button onClick={() => handleDelete(camp.id)} className="absolute top-3 right-3 text-gray-600 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100">
+                        <Trash2 className="w-4 h-4" />
+                    </button>
+
+                    <div className="flex justify-between items-start mb-2 pr-6">
                       <h4 className="text-[13px] font-bold text-white truncate max-w-[150px]">{camp.name}</h4>
-                      {/* 🚀 Dynamic Status Badge */}
-                      <span className={`text-[9px] font-black uppercase tracking-widest px-2 py-1 rounded-md ${camp.status === 'Scheduled' ? 'bg-orange-500/20 text-orange-400' : 'bg-[#25D366]/10 text-[#25D366]'}`}>
+                      <span className={`text-[9px] font-black uppercase tracking-widest px-2 py-1 rounded-md ${camp.status === "Scheduled" ? "bg-orange-500/20 text-orange-400" : "bg-[#25D366]/10 text-[#25D366]"}`}>
                          {camp.status}
                       </span>
                     </div>
@@ -259,7 +295,7 @@ export default function WhatsAppBroadcast() {
                     <div className="flex items-center gap-4 bg-[#07070A] p-3 rounded-xl border border-white/5">
                       <div><p className="text-[9px] uppercase tracking-widest text-gray-500 mb-1">Recipients</p><p className="text-[13px] font-black text-white">{camp.sent.toLocaleString()}</p></div>
                       <div className="w-px h-8 bg-white/10"></div>
-                      <div><p className="text-[9px] uppercase tracking-widest text-gray-500 mb-1">Open Rate</p><p className={`text-[13px] font-black ${camp.status === 'Scheduled' ? 'text-gray-600' : 'text-[#25D366]'}`}>{camp.opens}</p></div>
+                      <div><p className="text-[9px] uppercase tracking-widest text-gray-500 mb-1">Open Rate</p><p className={`text-[13px] font-black ${camp.status === "Scheduled" ? "text-gray-600" : "text-[#25D366]"}`}>{camp.opens}</p></div>
                     </div>
                   </div>
                 ))}
