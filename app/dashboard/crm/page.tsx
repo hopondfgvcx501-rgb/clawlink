@@ -24,6 +24,9 @@ import {
 } from "lucide-react";
 import TopHeader from "@/components/TopHeader";
 import SpinnerCounter from "@/components/SpinnerCounter";
+import { createClient } from "@supabase/supabase-js";
+
+const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
 
 interface ChatMessage {
   id: string;
@@ -72,6 +75,48 @@ export default function LiveCRMInbox() {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  // 🚀 LIVE WIRE: Real-time listener for incoming messages
+  useEffect(() => {
+    if (!session?.user?.email || !activeChatId) return;
+
+    const email = session.user.email.toLowerCase();
+
+    const chatListener = supabase
+        .channel('crm-live-inbox')
+        .on(
+            'postgres_changes',
+            {
+                event: 'INSERT',
+                schema: 'public',
+                table: 'chat_history',
+                filter: `email=eq.${email}`
+            },
+            (payload) => {
+                const newMessage = payload.new;
+
+                if (newMessage.chat_id === activeChatId || newMessage.platform_chat_id === activeChatId) {
+                    setMessages((prev) => [...prev, {
+                        id: newMessage.id,
+                        sender: newMessage.sender_type === 'admin' ? 'admin' : 'user',
+                        text: newMessage.message,
+                        time: 'Just now'
+                    }]);
+                }
+
+                setChats((prev) => prev.map(chat => 
+                    (chat.id === newMessage.chat_id || chat.id === newMessage.platform_chat_id)
+                    ? { ...chat, lastMessage: newMessage.message, time: 'Now' }
+                    : chat
+                ));
+            }
+        )
+        .subscribe();
+
+    return () => {
+        supabase.removeChannel(chatListener);
+    };
+  }, [activeChatId, session?.user?.email]);
+
   useEffect(() => {
     const initInbox = async () => {
       if (status === "authenticated" && session?.user?.email) {
@@ -95,13 +140,11 @@ export default function LiveCRMInbox() {
     initInbox();
   }, [session, status]);
 
-  // 🚀 THE OMNI-ADAPTER: Automatically translates backend variables to UI variables
   const fetchChatsForChannel = async (email: string, channel: string) => {
     setIsLoading(true);
     setActiveChatId(null);
     setMessages([]);
     try {
-      // Direct routing to our custom API routes
       let endpoint = `/api/crm/chats?email=${encodeURIComponent(email)}&channel=${channel}&t=${Date.now()}`;
       if (channel === 'instagram') endpoint = `/api/instagram/crm?email=${encodeURIComponent(email)}&t=${Date.now()}`;
       if (channel === 'telegram') endpoint = `/api/crm/telegram?email=${encodeURIComponent(email)}&t=${Date.now()}`;
@@ -110,25 +153,22 @@ export default function LiveCRMInbox() {
       const data = await res.json();
 
       if (data.success) {
-        // Find where the array actually is (handles Omni-Payload structure)
         const rawList = data.chats || data.data || data.leads || data.contacts || [];
 
-        // Translate Backend Data into strict UI format
         const formattedChats: ChatSession[] = rawList.map((chat: any) => {
           const dateObj = new Date(chat.last_message_time || chat.created_at || Date.now());
           const timeString = dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
-          // Extract Chat History perfectly
           let chatMessages: ChatMessage[] = [];
           if (data.groupedChats && data.groupedChats[chat.platform_chat_id || chat.id]) {
              chatMessages = data.groupedChats[chat.platform_chat_id || chat.id].map((m: any) => ({
-                id: m.id || Math.random().toString(),
-                sender: m.sender_type === "bot" ? "bot" : (m.sender_type === "human" || m.sender_type === "admin" ? "admin" : "user"),
-                text: m.message || "",
-                time: new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+               id: m.id || Math.random().toString(),
+               sender: m.sender_type === "bot" ? "bot" : (m.sender_type === "human" || m.sender_type === "admin" ? "admin" : "user"),
+               text: m.message || "",
+               time: new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
              }));
           } else if (chat.messages) {
-             chatMessages = chat.messages; // Fallback to old behavior
+             chatMessages = chat.messages;
           }
 
           return {
@@ -248,7 +288,6 @@ export default function LiveCRMInbox() {
       
       <div className="flex-1 flex overflow-hidden border-t border-white/5">
         
-        {/* 🗂️ LEFT SIDEBAR: CHAT LIST */}
         <aside className="w-full md:w-[350px] bg-[#0A0A0D] border-r border-white/5 flex flex-col z-20 shrink-0">
           <div className="p-5 border-b border-white/5 bg-[#111114]">
             <div className="flex bg-black/40 p-1 rounded-xl border border-white/10 mb-4">
@@ -257,7 +296,7 @@ export default function LiveCRMInbox() {
                    (chan === 'whatsapp' && userData?.whatsapp_phone_id) ||
                    (chan === 'telegram' && userData?.telegram_token) ||
                    (chan === 'instagram' && userData?.instagram_account_id);
-                
+               
                  if (!isConfigured && chan !== activeChannel) return null;
 
                  return (
@@ -313,7 +352,6 @@ export default function LiveCRMInbox() {
           </div>
         </aside>
 
-        {/* 💬 RIGHT SIDE: ACTIVE CHAT */}
         <div className={`flex-1 flex flex-col bg-[#07070A] ${!activeChatId && 'hidden md:flex'}`}>
           {!activeChatId ? (
             <div className="flex-1 flex flex-col items-center justify-center text-center p-8">
@@ -325,7 +363,6 @@ export default function LiveCRMInbox() {
             </div>
           ) : (
             <>
-              {/* Chat Header */}
               <div className="h-[72px] px-6 border-b border-white/5 bg-[#0A0A0D] flex items-center justify-between shrink-0 relative">
                 <div className="flex items-center gap-4">
                   <div className={`w-10 h-10 rounded-full ${theme.bg} ${theme.border} border flex items-center justify-center ${theme.text} font-bold`}>
@@ -375,7 +412,6 @@ export default function LiveCRMInbox() {
                 </div>
               </div>
 
-              {/* Chat Messages */}
               <div className="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-6">
                 <div className="text-center mb-8">
                   <span className="bg-white/5 border border-white/10 px-3 py-1 rounded-full text-[10px] font-mono text-gray-500 uppercase tracking-widest">
@@ -409,7 +445,6 @@ export default function LiveCRMInbox() {
                 <div ref={chatEndRef} />
               </div>
 
-              {/* Chat Input */}
               <div className="p-6 bg-[#0A0A0D] border-t border-white/5">
                 {isAiPaused && (
                     <div className="mb-3 flex items-center gap-2 text-orange-500 text-[10px] font-black uppercase tracking-widest">
@@ -457,7 +492,6 @@ export default function LiveCRMInbox() {
             </>
           )}
         </div>
-
       </div>
     </div>
   );
