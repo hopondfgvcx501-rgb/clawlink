@@ -286,15 +286,31 @@ export default function WhatsAppFlowBuilder() {
     }, [reactFlowInstance, setNodes]
   );
 
-  // 🚀 SECURE DB SAVE
+  // 🚀 SECURE DB SAVE (UPGRADED FOR DUAL ENGINE)
   const handleSaveFlow = async () => {
       if (!session?.user?.email || !reactFlowInstance) return;
       setIsSaving(true);
       
+      // 1. Get visual canvas data
+      const currentNodes = reactFlowInstance.getNodes();
+      const currentEdges = reactFlowInstance.getEdges();
+
+      // 🧠 2. EXTRACT KEYWORD & RESPONSE FOR WEBHOOK INTERCEPTOR
+      // Find the trigger node to get the keyword (e.g. "START")
+      const triggerNode = currentNodes.find((n: any) => n.type === 'triggerNode');
+      // Find the action node to get the reply message
+      const actionNode = currentNodes.find((n: any) => n.type === 'interactiveNode' || n.type === 'textNode');
+
+      const flowKeyword = triggerNode?.data?.label || "";
+      const flowResponse = actionNode?.data?.content || "";
+
+      // 3. Build the Ultimate Payload
       const payload = {
         email: session.user.email,
-        nodes: reactFlowInstance.getNodes(),
-        edges: reactFlowInstance.getEdges()
+        nodes: currentNodes,
+        edges: currentEdges,
+        keyword: flowKeyword,
+        responseText: flowResponse
       };
 
       try {
@@ -307,18 +323,18 @@ export default function WhatsAppFlowBuilder() {
         const responseText = await res.text();
         
         if (!res.ok) {
-            throw new Error(`API returned ${res.status}: Ensure backend is deployed.`);
+            throw new Error(`API returned ${res.status}: ${responseText.substring(0, 100)}`);
         }
 
         let data;
         try {
             data = JSON.parse(responseText);
         } catch(e) {
-            throw new Error(`Invalid JSON response from server.`);
+            throw new Error(`Invalid JSON response from server. Raw: ${responseText.substring(0, 50)}...`);
         }
 
         if(data.success) {
-          alert("🟢 Graph Compiled Successfully! Flow is now active in Database.");
+          alert("🟢 Boom! Graph Compiled Successfully! Flow is now active Worldwide.");
         } else {
           alert(`Failed: ${data.error}`);
         }
