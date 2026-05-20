@@ -233,6 +233,41 @@ export async function POST(req: Request) {
             return NextResponse.json({ success: true });
         }
 
+        // ==========================================
+        // 🛑 FLOW BUILDER INTERCEPTOR (Keyword Override)
+        // ==========================================
+        const normalizedText = userText.trim().toLowerCase();
+        
+        // Check if the exact keyword exists in automation_rules for this user
+        const { data: flowRule, error: flowErr } = await supabase
+            .from("automation_rules")
+            .select("response_text") // Replace with your actual column name if different (e.g., 'flow_json')
+            .eq("email", userEmail)
+            .eq("platform", "whatsapp")
+            .eq("trigger_keyword", normalizedText)
+            .eq("is_active", true)
+            .limit(1)
+            .maybeSingle();
+
+        if (flowRule && flowRule.response_text) {
+            console.log(`[FLOW_TRIGGERED] Keyword match found for: ${normalizedText}. Bypassing AI.`);
+            
+            // 1. Send the predefined Flow Builder message directly to Meta
+            await fetch(`https://graph.facebook.com/v18.0/${phoneNumberId}/messages`, {
+                method: "POST", 
+                headers: { "Content-Type": "application/json", "Authorization": `Bearer ${whatsappToken}` },
+                body: JSON.stringify({ messaging_product: "whatsapp", to: chatId, text: { body: flowRule.response_text } })
+            });
+
+            // 2. Save the bot's flow response to chat history
+            await supabase.from("chat_history").insert({ 
+                email: userEmail, platform: "whatsapp", platform_chat_id: chatId, customer_name: customerName, sender_type: "bot", message: flowRule.response_text 
+            });
+
+            // 3. HALT EXECUTION: Return early so the AI (Omni Engine) DOES NOT run
+            return NextResponse.json({ success: true });
+        }
+        
         // 🚀 SMART PROVIDER DETECTION (Omni vs Normal)
         let rawProvider = (config.ai_provider || config.selected_model || "openai").toLowerCase();
         let provider = "openai"; 
