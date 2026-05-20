@@ -1,3 +1,13 @@
+/**
+ * ==============================================================================================
+ * CLAWLINK ENTERPRISE USER API (PRODUCTION MODE)
+ * ==============================================================================================
+ * 🚀 FIXED: Omni-Catcher active. No more NULL tokens due to UI/Backend variable mismatches.
+ * 🚀 SECURED: Knox Security + TG Admin Error Logging integrated.
+ * 🚀 RETAINED: 100% Titanium Identity Engine & Enterprise Filter Logic.
+ * ==============================================================================================
+ */
+
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { getToken } from "next-auth/jwt"; // MASTER SECURITY LOCK
@@ -10,6 +20,20 @@ export const revalidate = 0;
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
 const supabase = createClient(supabaseUrl, supabaseKey);
+
+// 🚨 TERA STRICT RULE: Send ALL backend errors to TG Admin
+async function sendErrorToTG(errorMsg: string) {
+    const TG_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+    const TG_ADMIN_ID = process.env.TELEGRAM_ADMIN_CHAT_ID;
+    if (!TG_BOT_TOKEN || !TG_ADMIN_ID) return;
+    try {
+        await fetch(`https://api.telegram.org/bot${TG_BOT_TOKEN}/sendMessage`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ chat_id: TG_ADMIN_ID, text: `🚨 [CLAWLINK USER API CRASH]:\n\n${errorMsg}` })
+        });
+    } catch (e) { console.error("TG Alert Failed", e); }
+}
 
 // ============================================================================
 // 1. GET: Fetch User Stats for Dashboard (ENTERPRISE FILTERING ARCHITECTURE)
@@ -153,6 +177,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ success: true, data: dashboardData });
   } catch (error: any) {
     console.error("[USER_API_ERROR] Core retrieval failure:", error.message);
+    await sendErrorToTG(`GET Failure: ${error.message}`);
     return NextResponse.json({ success: false, error: "Internal Server Error" }, { status: 500 });
   }
 }
@@ -170,7 +195,15 @@ export async function POST(req: NextRequest) {
 
         const body = await req.json();
         
-        const { selectedModel, selectedChannel, plan, telegram_token, whatsapp_phone_id, whatsapp_token, instagram_token, instagram_account_id } = body;
+        // 🚀 OMNI-CATCHER ACTIVE (Replacing strict destructuring)
+        const selectedModel = body.selectedModel || body.selected_model;
+        const selectedChannel = body.selectedChannel || body.selected_channel;
+        const plan = body.plan;
+        const telegram_token = body.telegram_token || body.telegramToken;
+        const whatsapp_phone_id = body.whatsapp_phone_id || body.whatsappPhoneId || body.waPhoneId;
+        const whatsapp_token = body.whatsapp_token || body.whatsappToken; 
+        const instagram_token = body.instagram_token || body.instagramToken;
+        const instagram_account_id = body.instagram_account_id || body.instagramAccountId;
 
         // Force secure cryptographic email string
         const email = token.email.toLowerCase();
@@ -229,6 +262,7 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ success: true, message: "User configuration verified and secured via token isolation." });
     } catch (error: any) {
         console.error("[CONFIG_POST_ERROR] Data synchronization failed:", error.message);
+        await sendErrorToTG(`POST Config Failed: ${error.message}`);
         return NextResponse.json({ success: false, error: "Server Error" }, { status: 500 });
     }
 }
@@ -246,9 +280,16 @@ export async function PUT(req: NextRequest) {
 
     const body = await req.json();
     
+    // 🚀 OMNI-CATCHER (Protecting tokens from variable drop)
+    const telegram_token = body.telegram_token || body.telegramToken;
+    const whatsapp_phone_id = body.whatsapp_phone_id || body.whatsappPhoneId || body.waPhoneId;
+    const whatsapp_token = body.whatsapp_token || body.whatsappToken; 
+    const instagram_account_id = body.instagram_account_id || body.instagramAccountId;
+    const instagram_token = body.instagram_token || body.instagramToken;
+
+    // Standard destructuring for the rest
     const { 
       systemPrompt, selectedModel, selectedChannel, channel, 
-      telegram_token, whatsapp_phone_id, whatsapp_token, instagram_account_id, instagram_token,
       // 🔥 TITANIUM ADDITIONS
       knowledge_base, company_name, bot_name, industry, tone, fallback_mode, allowed_topics, personality_config 
     } = body;
@@ -320,6 +361,7 @@ export async function PUT(req: NextRequest) {
     return NextResponse.json({ success: true, message: `System persona integrated securely.` });
   } catch (error: any) {
     console.error("[USER_PUT_ERROR] Execution error:", error.message);
+    await sendErrorToTG(`PUT Persona Mod Failed: ${error.message}`);
     return NextResponse.json({ success: false, error: "Internal Server Error" }, { status: 500 });
   }
 }

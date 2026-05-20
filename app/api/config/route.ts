@@ -2,11 +2,9 @@
  * ==============================================================================================
  * CLAWLINK ENTERPRISE CONFIGURATION API (PRODUCTION MODE)
  * ==============================================================================================
- * @file app/api/config/route.ts
- * @description Securely provisions the user's database record using real payload data.
- * SECURITY UPGRADE: Added NextAuth JWT Session verification to prevent Payload Spoofing.
- * FIXED: Replaced .maybeSingle() with .limit(1) to make DB updates completely crash-proof.
- * * ALL RIGHTS RESERVED. CLAWLINK INC.
+ * @description Securely provisions the user's database record.
+ * 🚀 UPGRADE: Knox Security Protocol V2 & Telegram Admin Error Logging.
+ * 🚀 UPGRADE: Strict Token Isolation (Zero Bleeding). Omni-Catcher active.
  * ==============================================================================================
  */
 
@@ -19,15 +17,28 @@ export const dynamic = "force-dynamic";
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
 
+// 🚨 TERA STRICT RULE: Send ALL backend errors to TG Admin
+async function sendErrorToTG(errorMsg: string) {
+    const TG_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+    const TG_ADMIN_ID = process.env.TELEGRAM_ADMIN_CHAT_ID;
+    if (!TG_BOT_TOKEN || !TG_ADMIN_ID) return;
+    try {
+        await fetch(`https://api.telegram.org/bot${TG_BOT_TOKEN}/sendMessage`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ chat_id: TG_ADMIN_ID, text: `🚨 [CLAWLINK CONFIG CRASH]:\n\n${errorMsg}` })
+        });
+    } catch (e) { console.error("TG Alert Failed", e); }
+}
+
 if (!supabaseUrl || !supabaseKey) {
-    console.error("[KNOX_SECURITY] FATAL: Supabase environment variables are missing.");
+    const msg = "[KNOX_SECURITY] FATAL: Supabase environment variables are missing.";
+    console.error(msg);
+    sendErrorToTG(msg);
 }
 
 const supabaseAdmin = createClient(supabaseUrl, supabaseKey, {
-    auth: {
-        persistSession: false,
-        autoRefreshToken: false,
-    }
+    auth: { persistSession: false, autoRefreshToken: false }
 });
 
 function sanitizeInput(input: string | null | undefined): string {
@@ -37,38 +48,38 @@ function sanitizeInput(input: string | null | undefined): string {
 
 export async function POST(req: Request) {
   try {
-    // SECURITY LAYER 1: JWT SESSION VERIFICATION
+    // 🛡️ SECURITY LAYER 1: STRICT JWT AUTHENTICATION
     const token = await getToken({ req: req as any, secret: process.env.NEXTAUTH_SECRET });
     
     if (!token || !token.email) {
+        await sendErrorToTG("Unauthorized Access Attempt: No valid JWT Session.");
         return NextResponse.json({ success: false, error: "Unauthorized. Secure Session Required." }, { status: 401 });
     }
 
     const body = await req.json();
     
-    // SECURITY LAYER 2: OVERRIDE BODY EMAIL WITH CRYPTOGRAPHIC TOKEN
+    // 🛡️ SECURITY LAYER 2: CRYPTOGRAPHIC EMAIL OVERRIDE
     const email = sanitizeInput(token.email.toLowerCase());
     
-    const selectedModel = sanitizeInput(body.selectedModel);
-    const selectedChannel = sanitizeInput(body.selectedChannel);
+    // 🚀 OMNI-CATCHER: Grabs both CamelCase (UI) and Snake_case (Backend)
+    const selectedModel = sanitizeInput(body.selectedModel || body.selected_model);
+    const selectedChannel = sanitizeInput(body.selectedChannel || body.selected_channel);
     
-    // UNMERGED VARIABLES: Independent channel variables
-    const telegramToken = sanitizeInput(body.telegramToken);
-    
-    const whatsappPhoneId = sanitizeInput(body.whatsappPhoneId || body.waPhoneId);
-    const whatsappToken = sanitizeInput(body.whatsappToken || body.telegramToken); 
-    const whatsappPhoneNumber = sanitizeInput(body.whatsappPhoneNumber || body.waPhoneNumber);
-    
-    const instagramAccountId = sanitizeInput(body.instagramAccountId || body.waPhoneId);
-    const instagramToken = sanitizeInput(body.instagramToken || body.telegramToken);
+    // 🔒 STRICT ISOLATION: No cross-contamination of tokens
+    const telegramToken = sanitizeInput(body.telegramToken || body.telegram_token);
+    const whatsappPhoneId = sanitizeInput(body.whatsappPhoneId || body.whatsapp_phone_id || body.waPhoneId);
+    const whatsappToken = sanitizeInput(body.whatsappToken || body.whatsapp_token); 
+    const whatsappPhoneNumber = sanitizeInput(body.whatsappPhoneNumber || body.whatsapp_number || body.waPhoneNumber);
+    const instagramAccountId = sanitizeInput(body.instagramAccountId || body.instagram_account_id);
+    const instagramToken = sanitizeInput(body.instagramToken || body.instagram_token);
 
-    // Plan & Status Variables
     const actualPlan = sanitizeInput(body.plan || "free").toLowerCase();
     const actualPlanStatus = sanitizeInput(body.plan_status || "Inactive");
     const actualBotStatus = sanitizeInput(body.bot_status || "Sleeping");
 
+    // 🤖 OMNI-FALLBACK ENGINE ROUTING
     let providerToSave = "openai";
-    let exactModelVersion = "GPT-5.5 Pro";
+    let exactModelVersion = "GPT-5.5 Pro"; // Default
     const safeModel = (selectedModel || "GPT-5.5 Pro").toLowerCase();
 
     if (safeModel.includes("omni") || safeModel.includes("nexus")) {
@@ -90,7 +101,7 @@ export async function POST(req: Request) {
         selected_channel: selectedChannel || "telegram"
     };
 
-    // FIX: Restored safety locks. If the frontend does not send a token, the existing DB token remains SECURE.
+    // 🚦 TRAFFIC CONTROLLER: Ensures pure channel data writing
     if (selectedChannel === "telegram") {
         if (telegramToken) payload.telegram_token = telegramToken;
     } 
@@ -104,30 +115,29 @@ export async function POST(req: Request) {
         if (instagramToken) payload.instagram_token = instagramToken; 
     }
 
-    // SECURITY LAYER 3: BULLETPROOF UPDATE/INSERT (CRASH-PROOF)
+    // 🛡️ SECURITY LAYER 3: CRASH-PROOF DB EXECUTION
     const { data: existingUsers, error: lookupError } = await supabaseAdmin
         .from("user_configs")
         .select("id")
         .eq("email", email)
-        .order("created_at", { ascending: false }) // Ensures we always target the most recent row
-        .limit(1); // Completely prevents multiple-row DB crashes
+        .order("created_at", { ascending: false }) 
+        .limit(1); 
 
-    if (lookupError) throw new Error("Database Lookup Failed: " + lookupError.message);
+    if (lookupError) throw new Error("DB Lookup Failed: " + lookupError.message);
 
     const existingUser = existingUsers?.[0];
 
     if (existingUser) {
-        // OVERWRITE GUARANTEED
         const { error: updateError } = await supabaseAdmin
             .from("user_configs")
             .update(payload)
             .eq("id", existingUser.id);
-        if (updateError) throw new Error("Database Update Failed: " + updateError.message);
+        if (updateError) throw new Error("DB Update Failed: " + updateError.message);
     } else {
         const { error: insertError } = await supabaseAdmin
             .from("user_configs")
             .insert({ email: email, ...payload });
-        if (insertError) throw new Error("Database Insert Failed: " + insertError.message);
+        if (insertError) throw new Error("DB Insert Failed: " + insertError.message);
     }
 
     // Dynamic Link Generation
@@ -146,10 +156,14 @@ export async function POST(req: Request) {
       botLink = `/dashboard`;
     }
 
-    return NextResponse.json({ success: true, botLink, message: "Configuration synced with production database successfully." });
+    return NextResponse.json({ success: true, botLink, message: "Configuration synced with Knox Security successfully." });
 
   } catch (error: any) {
-    console.error("[KNOX_API_FATAL] Configuration Error:", error.message);
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    const errorMsg = error.message || "Unknown Runtime Exception";
+    console.error("[KNOX_API_FATAL] Configuration Error:", errorMsg);
+    // 🚨 SENDING ERROR TO ADMIN TELEGRAM
+    await sendErrorToTG(`Payload Sync Failed for user.\nError: ${errorMsg}`);
+    
+    return NextResponse.json({ success: false, error: errorMsg }, { status: 500 });
   }
 }
