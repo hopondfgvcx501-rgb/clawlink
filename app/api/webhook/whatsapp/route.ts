@@ -5,8 +5,10 @@ import { compileEnterprisePrompt } from "../../../lib/ai/prompt-compiler"; // �
 // 🚀 FIX: Removed external import to prevent Vercel build errors
 const sendEmail = async (...args: any[]) => console.log("Email disabled");
 
+// 🚀 THE CACHE KILLER: Forces Next.js to fetch LIVE Database state instantly
 export const dynamic = "force-dynamic";
-export const maxDuration = 60; // 🚀 FIX: Vercel serverless limit extended to 60 seconds!
+export const fetchCache = "force-no-store";
+export const revalidate = 0;
 
 const rateLimitMap = new Map<string, number>();
 const COOLDOWN_MS = 2000; // Ultra-fast WhatsApp cooldown
