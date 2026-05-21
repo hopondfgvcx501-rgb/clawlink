@@ -1,3 +1,12 @@
+/**
+ * ==============================================================================================
+ * CLAWLINK ENTERPRISE: BILLING HISTORY API
+ * ==============================================================================================
+ * @description Securely retrieves payment history for the authenticated user.
+ * * ALL RIGHTS RESERVED. CLAWLINK INC.
+ * ==============================================================================================
+ */
+
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { getToken } from "next-auth/jwt"; 
@@ -13,16 +22,17 @@ export async function GET(req: Request) {
         // 🛡️ SECURITY LOCK: Only logged-in users can see their bills
         const token = await getToken({ req: req as any, secret: process.env.NEXTAUTH_SECRET });
         if (!token || !token.email) {
-            return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+            return NextResponse.json({ success: false, error: "Unauthorized access attempt." }, { status: 401 });
         }
 
         const email = token.email.toLowerCase();
 
         // 📥 Fetch all past invoices for this user
+        // 🚀 FIX: Changed '.eq("email", email)' to '.eq("user_email", email)' to match DB schema.
         const { data, error } = await supabaseAdmin
             .from("billing_history")
             .select("*")
-            .eq("email", email)
+            .eq("user_email", email) 
             .order("created_at", { ascending: false });
 
         if (error) throw error;
@@ -30,6 +40,6 @@ export async function GET(req: Request) {
         return NextResponse.json({ success: true, data: data || [] });
     } catch (error: any) {
         console.error("[BILLING_HISTORY_ERROR]:", error);
-        return NextResponse.json({ success: false, error: "Internal Server Error" }, { status: 500 });
+        return NextResponse.json({ success: false, error: "Internal Server Error retrieving billing data." }, { status: 500 });
     }
 }
