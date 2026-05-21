@@ -75,14 +75,15 @@ export default function LiveCRMInbox() {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // 🚀 LIVE WIRE: Real-time listener for incoming messages
+  // 🚀 LIVE WIRE: Real-time listener for incoming messages (WITH DEBUG MODE)
   useEffect(() => {
     if (!session?.user?.email || !activeChatId) return;
 
     const email = session.user.email.toLowerCase();
 
+    // DEBUG: Changed channel name to 'public:chat_history' to match Supabase defaults
     const chatListener = supabase
-        .channel('crm-live-inbox')
+        .channel('public:chat_history')
         .on(
             'postgres_changes',
             {
@@ -92,6 +93,9 @@ export default function LiveCRMInbox() {
                 filter: `email=eq.${email}`
             },
             (payload) => {
+                // DEBUG: This will fire when a new message hits the database
+                console.log("🟢 [LIVE RADAR] Message Event Received:", payload);
+
                 const newMessage = payload.new;
 
                 if (newMessage.chat_id === activeChatId || newMessage.platform_chat_id === activeChatId) {
@@ -110,7 +114,13 @@ export default function LiveCRMInbox() {
                 ));
             }
         )
-        .subscribe();
+        .subscribe((status, err) => {
+            // DEBUG: This logs the exact backend connection status to the browser console
+            console.log("📡 [SUPABASE STATUS] Realtime Connection:", status);
+            if (err) {
+                console.error("🚨 [SUPABASE FATAL ERROR] Backend rejected connection:", err);
+            }
+        });
 
     return () => {
         supabase.removeChannel(chatListener);
