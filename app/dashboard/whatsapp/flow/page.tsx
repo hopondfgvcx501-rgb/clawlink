@@ -286,31 +286,53 @@ export default function WhatsAppFlowBuilder() {
     }, [reactFlowInstance, setNodes]
   );
 
-  // 🚀 SECURE DB SAVE (UPGRADED FOR DUAL ENGINE)
+  // 🚀 SECURE DB SAVE (UPGRADED META GRAPH API COMPILER)
   const handleSaveFlow = async () => {
       if (!session?.user?.email || !reactFlowInstance) return;
       setIsSaving(true);
       
-      // 1. Get visual canvas data
       const currentNodes = reactFlowInstance.getNodes();
       const currentEdges = reactFlowInstance.getEdges();
 
-      // 🧠 2. EXTRACT KEYWORD & RESPONSE FOR WEBHOOK INTERCEPTOR
-      // Find the trigger node to get the keyword (e.g. "START")
+      // 🧠 1. EXTRACT TRIGGER AND ACTION
       const triggerNode = currentNodes.find((n: any) => n.type === 'triggerNode');
-      // Find the action node to get the reply message
       const actionNode = currentNodes.find((n: any) => n.type === 'interactiveNode' || n.type === 'textNode');
 
-      const flowKeyword = triggerNode?.data?.label || "";
-      const flowResponse = actionNode?.data?.content || "";
+      if (!triggerNode || !actionNode) {
+          alert("Compile Error: Flow must contain at least one Trigger and one Action node.");
+          setIsSaving(false);
+          return;
+      }
 
-      // 3. Build the Ultimate Payload
+      const flowKeyword = triggerNode.data?.label || "";
+      const responseText = actionNode.data?.content || "";
+      const nodeActionType = actionNode.data?.type || "text"; // 'text', 'button', or 'list'
+      const actionItems = actionNode.data?.items || [];
+
+      // 🧠 2. BUILD META-COMPATIBLE JSON PAYLOAD
+      let compiledPayload: any = {
+          type: nodeActionType,
+          text: responseText
+      };
+
+      if (nodeActionType === 'button' && actionItems.length > 0) {
+          compiledPayload.buttons = actionItems.map((item: any, index: number) => ({
+              type: "reply",
+              reply: { id: `btn_${index}`, title: item.text }
+          }));
+      } else if (nodeActionType === 'list' && actionItems.length > 0) {
+          compiledPayload.list_options = actionItems.map((item: any, index: number) => ({
+              id: `list_${index}`, title: item.text 
+          }));
+      }
+
+      // 3. SECURE PAYLOAD DISPATCH
       const payload = {
         email: session.user.email,
         nodes: currentNodes,
         edges: currentEdges,
         keyword: flowKeyword,
-        responseText: flowResponse
+        responsePayload: compiledPayload // Sending the compiled JSON object
       };
 
       try {
@@ -320,32 +342,22 @@ export default function WhatsAppFlowBuilder() {
           body: JSON.stringify(payload)
         });
         
-        const responseText = await res.text();
-        
-        if (!res.ok) {
-            throw new Error(`API returned ${res.status}: ${responseText.substring(0, 100)}`);
-        }
+        const responseTextRaw = await res.text();
+        if (!res.ok) throw new Error(`API returned ${res.status}: ${responseTextRaw}`);
 
-        let data;
-        try {
-            data = JSON.parse(responseText);
-        } catch(e) {
-            throw new Error(`Invalid JSON response from server. Raw: ${responseText.substring(0, 50)}...`);
-        }
-
+        let data = JSON.parse(responseTextRaw);
         if(data.success) {
-          alert("🟢 Boom! Graph Compiled Successfully! Flow is now active Worldwide.");
+          alert("🟢 Boom! Graph Compiled Successfully! WhatsApp Flow is now live.");
         } else {
           alert(`Failed: ${data.error}`);
         }
       } catch(err: any) {
-        console.error("Save error:", err);
-        alert(`❌ Backend Error: ${err.message || "Failed to reach server."}`);
+        console.error("[COMPILER_ERROR]:", err);
+        alert(`❌ Backend Error: ${err.message}`);
       } finally {
         setIsSaving(false);
       }
   };
-
   const handleClearCanvas = () => {
     if(confirm("Are you sure you want to clear the canvas?")) {
       setNodes([{ id: 'trigger-1', type: 'triggerNode', position: { x: 100, y: 250 }, data: { label: 'START' } }]);

@@ -1,15 +1,26 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { compileEnterprisePrompt } from "../../../lib/ai/prompt-compiler"; // 🚀 THE MASTER BRAIN
+import { compileEnterprisePrompt } from "../../../lib/ai/prompt-compiler";
 
-// 🚀 FIX: Removed external import to prevent Vercel build errors
+// FIX: Removed external import to prevent Vercel build errors
 const sendEmail = async (...args: any[]) => console.log("Email disabled");
 
-// 🚀 THE CACHE KILLER: Forces Next.js to fetch LIVE Database state instantly
+// THE CACHE KILLER: Forces Next.js to fetch LIVE Database state instantly
 export const dynamic = "force-dynamic";
 export const fetchCache = "force-no-store";
 export const revalidate = 0;
 
+const rateLimitMap = new Map<string, number>();
+const COOLDOWN_MS = 2000; // Ultra-fast WhatsApp cooldown
+
+// INITIALIZE SUPABASE
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
+const supabase = createClient(supabaseUrl, supabaseKey);
+
+export async function POST(req: Request) {
+    // YOUR ORIGINAL WEBHOOK LOGIC REMAINS BELOW THIS LINE
+// ... rest of your webhook logic
 const rateLimitMap = new Map<string, number>();
 const COOLDOWN_MS = 2000; // Ultra-fast WhatsApp cooldown
 
