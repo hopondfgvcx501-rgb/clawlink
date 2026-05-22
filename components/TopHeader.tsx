@@ -1,9 +1,9 @@
 /**
  * ==============================================================================================
- * CLAWLINK ENTERPRISE: OMNI-CHANNEL GLOBAL COMMAND HEADER
+ * CLAWLINK ENTERPRISE: OMNI-CHANNEL GLOBAL COMMAND HEADER (DEEP SEARCH)
  * ==============================================================================================
- * @description Retains the original UI structure while injecting Supabase Realtime WebSockets
- * for cross-channel notifications and a debounced semantic search matrix.
+ * @description Highly secured Global Header. Uses RPC for deep search across Contacts AND 
+ * Chat History. Implements strict Row-Level Security isolation to prevent data leaks.
  * * ALL RIGHTS RESERVED. CLAWLINK INC.
  * ==============================================================================================
  */
@@ -26,16 +26,19 @@ interface HeaderProps {
   onBotClick?: () => void;
 }
 
+// 🚀 UPDATED INTERFACE: Handles both Contact and Deep Message matches
 interface SearchResult {
+  result_type: 'contact' | 'message';
   id: string;
   customer_name: string;
   channel: string;
-  phone_number?: string;
   platform_chat_id: string;
+  snippet: string;
 }
 
 export default function TopHeader({ title, session, onBotClick }: HeaderProps) {
   const router = useRouter();
+  // Ensure strict email formatting for security matching
   const userEmail = session?.user?.email?.toLowerCase();
 
   // Search State
@@ -53,7 +56,7 @@ export default function TopHeader({ title, session, onBotClick }: HeaderProps) {
   useEffect(() => {
     if (!userEmail) return;
 
-    // Listen for incoming messages across all active channels for this account
+    // Listen for incoming messages across all active channels for this specific CEO account
     const globalNotificationSub = supabase
       .channel(`global_alerts_${userEmail}`)
       .on(
@@ -65,7 +68,7 @@ export default function TopHeader({ title, session, onBotClick }: HeaderProps) {
         },
         (payload) => {
           try {
-            // Validate the message belongs to the active CEO account
+            // TITANIUM SECURITY CHECK: Double-verify the message belongs to the active account
             if (payload.new.user_email === userEmail) {
               setHasUnread(true);
               triggerAudioAlert();
@@ -97,7 +100,7 @@ export default function TopHeader({ title, session, onBotClick }: HeaderProps) {
   };
 
   // ============================================================================
-  // 2. OMNI-CHANNEL DEBOUNCED SEARCH ENGINE
+  // 2. SECURE RPC-BASED DEEP OMNI-SEARCH ENGINE (Contacts + Messages)
   // ============================================================================
   useEffect(() => {
     const delaySearch = setTimeout(async () => {
@@ -113,17 +116,19 @@ export default function TopHeader({ title, session, onBotClick }: HeaderProps) {
       try {
         if (!userEmail) throw new Error("Unauthenticated search attempt.");
 
-        const { data, error } = await supabase
-          .from("contacts")
-          .select("id, customer_name, channel, phone_number, platform_chat_id")
-          .eq("user_email", userEmail)
-          .or(`customer_name.ilike.%${searchQuery}%,phone_number.ilike.%${searchQuery}%,platform_chat_id.ilike.%${searchQuery}%`)
-          .limit(5);
+        // 🚀 SECURE FIX: Calling the locked-down Database Function (RPC)
+        const { data, error } = await supabase.rpc('global_omni_search', {
+          search_term: searchQuery.trim(),
+          p_email: userEmail
+        });
 
-        if (error) throw error;
+        if (error) {
+            console.error("[RPC_SEARCH_EXECUTION_ERROR]:", error);
+            throw error;
+        }
         setSearchResults(data || []);
       } catch (error: any) {
-        console.error("[GLOBAL_SEARCH_ERROR]: Search query failed.", error.message);
+        console.error("[GLOBAL_SEARCH_ERROR]: Secure query failed.", error.message);
       } finally {
         setIsSearching(false);
       }
@@ -168,38 +173,45 @@ export default function TopHeader({ title, session, onBotClick }: HeaderProps) {
             />
           </div>
 
-          {/* Search Results Dropdown */}
+          {/* 🚀 SMART SEARCH RESULTS DROPDOWN */}
           {showDropdown && (
-            <div className="absolute top-12 right-0 w-80 bg-[#1A1A1A] border border-white/10 rounded-lg shadow-2xl z-50 overflow-hidden">
+            <div className="absolute top-12 right-0 w-96 bg-[#1A1A1A] border border-white/10 rounded-lg shadow-2xl z-50 overflow-hidden">
               {searchResults.length > 0 ? (
-                <ul className="flex flex-col">
+                <ul className="flex flex-col max-h-[400px] overflow-y-auto">
                   {searchResults.map((result) => (
                     <li 
-                      key={result.id} 
+                      key={`${result.result_type}-${result.id}`} 
                       className="p-3 hover:bg-white/5 cursor-pointer border-b border-white/5 last:border-0 transition-colors"
                       onClick={() => {
-                        console.log(`Routing to chat ID: ${result.platform_chat_id}`);
+                        console.log(`Routing to ${result.channel} chat: ${result.platform_chat_id}`);
                         setShowDropdown(false);
                         setSearchQuery("");
                       }}
                     >
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm text-white font-medium truncate">
+                      <div className="flex justify-between items-center mb-1">
+                        <span className="text-sm text-white font-medium truncate flex items-center gap-2">
                           {result.customer_name || "Unknown Identity"}
+                          {result.result_type === 'message' && (
+                            <span className="text-[9px] bg-purple-500/20 text-purple-400 px-1.5 py-0.5 rounded border border-purple-500/30">
+                              Message Match
+                            </span>
+                          )}
                         </span>
                         <span className="text-[10px] px-2 py-0.5 rounded uppercase font-bold bg-white/10 text-gray-300">
                           {result.channel}
                         </span>
                       </div>
-                      <p className="text-xs text-gray-500 mt-1 font-mono truncate">
-                        {result.phone_number || result.platform_chat_id}
+                      
+                      {/* Dynamic Snippet: Shows the exact matched message or the phone number */}
+                      <p className="text-xs text-gray-400 font-mono line-clamp-2">
+                        {result.result_type === 'message' ? `"${result.snippet}"` : `Phone: ${result.snippet || 'N/A'}`}
                       </p>
                     </li>
                   ))}
                 </ul>
               ) : (
                 <div className="p-4 text-center text-sm text-gray-500">
-                  {!isSearching && "No matching records found."}
+                  {!isSearching && "No matching contacts or messages found."}
                 </div>
               )}
             </div>
