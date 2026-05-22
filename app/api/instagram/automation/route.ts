@@ -10,7 +10,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { getToken } from "next-auth/jwt";
-import { dispatchAdminAlert } from "@/lib/monitoring/adminAlert";
+import { dispatchAdminAlert } from "../../../lib/monitoring/adminAlert";
 
 export const dynamic = "force-dynamic";
 
