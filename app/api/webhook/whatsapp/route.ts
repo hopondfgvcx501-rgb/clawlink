@@ -10,6 +10,7 @@ export const dynamic = "force-dynamic";
 export const fetchCache = "force-no-store";
 export const revalidate = 0;
 
+// 🚀 GLOBAL VARIABLES (Outside of functions to maintain state)
 const rateLimitMap = new Map<string, number>();
 const COOLDOWN_MS = 2000; // Ultra-fast WhatsApp cooldown
 
@@ -208,6 +209,18 @@ export async function POST(req: Request) {
         const userEmail = config.email;
 
         // ==========================================
+        // 🚀 ENTERPRISE UPGRADE: CRM CONTACTS AUTO-SYNC
+        // ==========================================
+        // Automatically save/update the customer in the CRM database so it appears in the sidebar
+        await supabase.from("contacts").upsert({
+            user_email: userEmail,
+            platform_chat_id: chatId,
+            customer_name: customerName,
+            channel: "whatsapp",
+            phone_number: chatId.replace(/\D/g, '') // WhatsApp IDs are usually phone numbers
+        }, { onConflict: "user_email, platform_chat_id, channel" });
+
+        // ==========================================
         // 🛑 THE ADMIN HANDOVER CHECK (PAUSE AI)
         // ==========================================
         // Save the incoming message from the user first
@@ -243,7 +256,7 @@ export async function POST(req: Request) {
         // Check if the exact keyword exists in automation_rules for this user
         const { data: flowRule, error: flowErr } = await supabase
             .from("automation_rules")
-            .select("response_text") // Replace with your actual column name if different (e.g., 'flow_json')
+            .select("response_text, response_payload") 
             .eq("email", userEmail)
             .eq("platform", "whatsapp")
             .eq("trigger_keyword", normalizedText)
@@ -251,19 +264,22 @@ export async function POST(req: Request) {
             .limit(1)
             .maybeSingle();
 
-        if (flowRule && flowRule.response_text) {
+        if (flowRule) {
             console.log(`[FLOW_TRIGGERED] Keyword match found for: ${normalizedText}. Bypassing AI.`);
+            
+            // Handle rich payload (Buttons/Lists) if exists, else fallback to text
+            const payloadBody = flowRule.response_payload || { text: { body: flowRule.response_text } };
             
             // 1. Send the predefined Flow Builder message directly to Meta
             await fetch(`https://graph.facebook.com/v18.0/${phoneNumberId}/messages`, {
                 method: "POST", 
                 headers: { "Content-Type": "application/json", "Authorization": `Bearer ${whatsappToken}` },
-                body: JSON.stringify({ messaging_product: "whatsapp", to: chatId, text: { body: flowRule.response_text } })
+                body: JSON.stringify({ messaging_product: "whatsapp", to: chatId, ...payloadBody })
             });
 
             // 2. Save the bot's flow response to chat history
             await supabase.from("chat_history").insert({ 
-                email: userEmail, platform: "whatsapp", platform_chat_id: chatId, customer_name: customerName, sender_type: "bot", message: flowRule.response_text 
+                email: userEmail, platform: "whatsapp", platform_chat_id: chatId, customer_name: customerName, sender_type: "bot", message: flowRule.response_text || "[Interactive Flow Message Sent]"
             });
 
             // 3. HALT EXECUTION: Return early so the AI (Omni Engine) DOES NOT run
@@ -310,18 +326,28 @@ export async function POST(req: Request) {
             return NextResponse.json({ success: true });
         }
 
+        // ==========================================
+        // 🚀 ENTERPRISE UPGRADE: ISOLATED RAG FETCH
+        // ==========================================
         let customKnowledge = "";
         try {
             const queryVector = await generateEmbedding(userText);
             if (queryVector) {
-                const { data: matchedDocs } = await supabase.rpc("match_knowledge", {
+                // EXPLICITLY passing userEmail to ensure data isolation (No cross-tenant data leaks)
+                const { data: matchedDocs, error: rpcError } = await supabase.rpc("match_knowledge", {
                     query_embedding: queryVector, match_threshold: 0.65, match_count: 3, p_user_email: userEmail
                 });
-                if (matchedDocs && matchedDocs.length > 0) {
+                
+                if (rpcError) {
+                    console.error("[RAG_ISOLATION_ERROR] RPC execution failed for user:", userEmail, rpcError);
+                } else if (matchedDocs && matchedDocs.length > 0) {
                     customKnowledge = matchedDocs.map((doc: any) => sanitizeInput(doc.content)).join("\n\n");
+                    console.log(`[RAG_SUCCESS] Fetched knowledge specific to tenant: ${userEmail}`);
                 }
             }
-        } catch (e) {}
+        } catch (e) {
+            console.error("[RAG_CRASH]", e);
+        }
 
         // 🧠 MEMORY ENGINE
         const { data: pastChats } = await supabase
@@ -340,8 +366,19 @@ export async function POST(req: Request) {
             }));
         }
 
-        // 🚀 THE TITANIUM BRAIN INJECTION: Dynamically compiled from DB settings
-        const fullSystemContext = compileEnterprisePrompt(config, customKnowledge);
+        // ==========================================
+        // 🚀 ENTERPRISE UPGRADE: CHANNEL-SPECIFIC PERSONA
+        // ==========================================
+        // Priority 1: WhatsApp specific persona (from config.whatsapp_persona)
+        // Priority 2: Global Persona (from config.ai_persona)
+        // Priority 3: Fallback 
+        const activePersona = config.whatsapp_persona || config.ai_persona || "You are a helpful AI assistant representing the business.";
+        
+        let fullSystemContext = `You are an AI Agent operating on WhatsApp. STRICTLY adhere to the following identity and rules:\n\n${activePersona}\n\n`;
+        
+        if (customKnowledge) {
+            fullSystemContext += `\n\nCRITICAL BUSINESS KNOWLEDGE (Use this ONLY if relevant to answer factual questions accurately. NEVER makeup facts outside of this scope.):\n${customKnowledge}\n`;
+        }
         
         // =========================================================================
         // 8. 🧠 CLAWLINK 2026 DIRECT EXECUTION & SMART OMNI ROUTER
