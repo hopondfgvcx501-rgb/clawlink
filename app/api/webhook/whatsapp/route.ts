@@ -173,8 +173,8 @@ export async function POST(req: Request) {
         // 🛡️ Sanitize User Text
         let rawUserText = sanitizeInput(message.text.body);
         
-        // ✂️ COST CONTROL: Cut message if it's suspiciously long
-        const userText = rawUserText.length > 800 ? rawUserText.substring(0, 800) + "..." : rawUserText;
+        // ✂️ COST CONTROL: Cut message if it's suspiciously long (CHANGED TO LET FOR DYNAMIC OVERRIDE)
+        let userText = rawUserText.length > 800 ? rawUserText.substring(0, 800) + "..." : rawUserText;
         
         phoneNumberId = sanitizeInput(value.metadata.phone_number_id); 
 
@@ -211,7 +211,6 @@ export async function POST(req: Request) {
         // ==========================================
         // 🚀 ENTERPRISE UPGRADE: CRM CONTACTS AUTO-SYNC
         // ==========================================
-        // Automatically save/update the customer in the CRM database so it appears in the sidebar
         await supabase.from("contacts").upsert({
             user_email: userEmail,
             platform_chat_id: chatId,
@@ -223,13 +222,10 @@ export async function POST(req: Request) {
         // ==========================================
         // 🛑 THE ADMIN HANDOVER CHECK (PAUSE AI)
         // ==========================================
-        // Save the incoming message from the user first
         await supabase.from("chat_history").insert({ 
             email: userEmail, platform: "whatsapp", platform_chat_id: chatId, customer_name: customerName, sender_type: "user", message: userText 
         });
 
-        // 🚀 We check if there are ANY recent messages from 'admin' for this user
-        // 🚀 FIX: Changed 15 minutes to 1 minute for faster testing and AI wakeup!
         const fifteenMinutesAgo = new Date();
         fifteenMinutesAgo.setMinutes(fifteenMinutesAgo.getMinutes() - 1);
 
@@ -244,7 +240,6 @@ export async function POST(req: Request) {
 
         if (adminIntervention && adminIntervention.length > 0) {
             console.log(`[AI_PAUSED] Manual intervention detected for chat ${chatId}. Bot will not reply.`);
-            // Return 200 to Meta so they know we got the message, but we do NOT fire the AI.
             return NextResponse.json({ success: true });
         }
 
@@ -253,7 +248,6 @@ export async function POST(req: Request) {
         // ==========================================
         const normalizedText = userText.trim().toLowerCase();
         
-        // Check if the exact keyword exists in automation_rules for this user
         const { data: flowRule, error: flowErr } = await supabase
             .from("automation_rules")
             .select("response_text, response_payload") 
@@ -267,26 +261,21 @@ export async function POST(req: Request) {
         if (flowRule) {
             console.log(`[FLOW_TRIGGERED] Keyword match found for: ${normalizedText}. Bypassing AI.`);
             
-            // Handle rich payload (Buttons/Lists) if exists, else fallback to text
             const payloadBody = flowRule.response_payload || { text: { body: flowRule.response_text } };
             
-            // 1. Send the predefined Flow Builder message directly to Meta
             await fetch(`https://graph.facebook.com/v18.0/${phoneNumberId}/messages`, {
                 method: "POST", 
                 headers: { "Content-Type": "application/json", "Authorization": `Bearer ${whatsappToken}` },
                 body: JSON.stringify({ messaging_product: "whatsapp", to: chatId, ...payloadBody })
             });
 
-            // 2. Save the bot's flow response to chat history
             await supabase.from("chat_history").insert({ 
                 email: userEmail, platform: "whatsapp", platform_chat_id: chatId, customer_name: customerName, sender_type: "bot", message: flowRule.response_text || "[Interactive Flow Message Sent]"
             });
 
-            // 3. HALT EXECUTION: Return early so the AI (Omni Engine) DOES NOT run
             return NextResponse.json({ success: true });
         }
         
-        // 🚀 SMART PROVIDER DETECTION (Omni vs Normal)
         let rawProvider = (config.ai_provider || config.selected_model || "openai").toLowerCase();
         let provider = "openai"; 
         
@@ -327,13 +316,38 @@ export async function POST(req: Request) {
         }
 
         // ==========================================
+        // 🚀 ENTERPRISE UPGRADE: DYNAMIC WELCOME AI
+        // ==========================================
+        const { count: chatCount, error: countErr } = await supabase
+            .from("chat_history")
+            .select("*", { count: 'exact', head: true })
+            .eq("email", userEmail)
+            .eq("platform_chat_id", chatId)
+            .eq("sender_type", "user");
+
+        // If chatCount is 1 (because we just inserted the current message at line 144), it's a brand new customer!
+        if (!countErr && chatCount === 1) {
+            const { data: welcomeRule } = await supabase
+                .from("automation_rules")
+                .select("response_text")
+                .eq("email", userEmail)
+                .eq("platform", "whatsapp")
+                .eq("trigger_keyword", "welcomeMsg")
+                .single();
+
+            if (welcomeRule && welcomeRule.response_text === 'true') {
+                console.log(`[WELCOME_TRIGGERED] Injecting AI Welcome Context for tenant: ${userEmail}`);
+                userText = `[SYSTEM EVENT: This is a brand new customer. Their first message to you is: "${userText}". Introduce yourself according to your configured persona, welcome them to the business warmly, and ask how you can help them.]`;
+            }
+        }
+
+        // ==========================================
         // 🚀 ENTERPRISE UPGRADE: ISOLATED RAG FETCH
         // ==========================================
         let customKnowledge = "";
         try {
             const queryVector = await generateEmbedding(userText);
             if (queryVector) {
-                // EXPLICITLY passing userEmail to ensure data isolation (No cross-tenant data leaks)
                 const { data: matchedDocs, error: rpcError } = await supabase.rpc("match_knowledge", {
                     query_embedding: queryVector, match_threshold: 0.65, match_count: 3, p_user_email: userEmail
                 });
@@ -342,7 +356,6 @@ export async function POST(req: Request) {
                     console.error("[RAG_ISOLATION_ERROR] RPC execution failed for user:", userEmail, rpcError);
                 } else if (matchedDocs && matchedDocs.length > 0) {
                     customKnowledge = matchedDocs.map((doc: any) => sanitizeInput(doc.content)).join("\n\n");
-                    console.log(`[RAG_SUCCESS] Fetched knowledge specific to tenant: ${userEmail}`);
                 }
             }
         } catch (e) {
@@ -366,18 +379,12 @@ export async function POST(req: Request) {
             }));
         }
 
-        // ==========================================
-        // 🚀 ENTERPRISE UPGRADE: CHANNEL-SPECIFIC PERSONA
-        // ==========================================
-        // Priority 1: WhatsApp specific persona (from config.whatsapp_persona)
-        // Priority 2: Global Persona (from config.ai_persona)
-        // Priority 3: Fallback 
-        const activePersona = config.whatsapp_persona || config.ai_persona || "You are a helpful AI assistant representing the business.";
-        
-        let fullSystemContext = `You are an AI Agent operating on WhatsApp. STRICTLY adhere to the following identity and rules:\n\n${activePersona}\n\n`;
-        
-        if (customKnowledge) {
-            fullSystemContext += `\n\nCRITICAL BUSINESS KNOWLEDGE (Use this ONLY if relevant to answer factual questions accurately. NEVER makeup facts outside of this scope.):\n${customKnowledge}\n`;
+        // 🚀 THE TITANIUM BRAIN INJECTION
+        let fullSystemContext = compileEnterprisePrompt(config, customKnowledge);
+
+        // 🔥 FORCED WHATSAPP PERSONA OVERRIDE
+        if (config.whatsapp_persona) {
+            fullSystemContext += `\n\n=== CRITICAL WHATSAPP IDENTITY OVERRIDE ===\nIGNORE all previous instructions about being a polite corporate assistant. You MUST strictly adopt this exact persona and tone for this specific chat:\n\n${config.whatsapp_persona}\n===========================================\n`;
         }
         
         // =========================================================================
@@ -389,7 +396,6 @@ export async function POST(req: Request) {
         const words = userText.split(/\s+/).length;
         const usageRatio = isUnlimited ? 0 : (tokensUsed / tokensAllocated) * 100;
 
-        // THE ULTIMATE FIX: Hyphens (-) strictly used for Anthropic models to bypass 404
         const GEMINI_NANO = "gemini-3.1-flash-lite"; 
         const GEMINI_MID = "gemini-3.1-flash";       
         const GEMINI_PREMIUM = "gemini-3.1-pro";     
@@ -441,9 +447,7 @@ export async function POST(req: Request) {
             if (!wasSuccessful) wasSuccessful = await attemptFetch(GPT_NANO, "openai");
 
         } else if (provider === "anthropic") {
-            console.log(`[ROUTER] Claude Only Active.`);
             let targetModel = CLAUDE_MID;
-            
             if (words <= 15 || usageRatio >= 85) targetModel = CLAUDE_NANO; 
             else if (words > 60) targetModel = CLAUDE_PREMIUM;
 
@@ -456,15 +460,10 @@ export async function POST(req: Request) {
                     }
                 }
             }
-            if (!wasSuccessful) {
-                console.log("[ROUTER_SHIELD] Anthropic crashed. Invisible Failover to OpenAI Nano.");
-                wasSuccessful = await attemptFetch(GPT_NANO, "openai");
-            }
+            if (!wasSuccessful) wasSuccessful = await attemptFetch(GPT_NANO, "openai");
 
         } else if (provider === "google") {
-            console.log(`[ROUTER] Gemini Only Active.`);
             let targetModel = GEMINI_MID;
-            
             if (words <= 15 || usageRatio >= 85) targetModel = GEMINI_NANO; 
             else if (words > 60) targetModel = GEMINI_PREMIUM;
 
@@ -477,15 +476,10 @@ export async function POST(req: Request) {
                     }
                 }
             }
-            if (!wasSuccessful) {
-                console.log("[ROUTER_SHIELD] Gemini crashed. Invisible Failover to OpenAI Nano.");
-                wasSuccessful = await attemptFetch(GPT_NANO, "openai");
-            }
+            if (!wasSuccessful) wasSuccessful = await attemptFetch(GPT_NANO, "openai");
 
         } else {
-            console.log(`[ROUTER] OpenAI Only Active.`);
             let targetModel = GPT_MID;
-            
             if (words <= 15 || usageRatio >= 85) targetModel = GPT_NANO; 
             else if (words > 60) targetModel = GPT_PREMIUM;
 
@@ -498,10 +492,7 @@ export async function POST(req: Request) {
                     }
                 }
             }
-            if (!wasSuccessful) {
-                console.log("[ROUTER_SHIELD] OpenAI crashed. Invisible Failover to Anthropic Nano.");
-                wasSuccessful = await attemptFetch(CLAUDE_NANO, "anthropic");
-            }
+            if (!wasSuccessful) wasSuccessful = await attemptFetch(CLAUDE_NANO, "anthropic");
         }
 
         if (!wasSuccessful) {
