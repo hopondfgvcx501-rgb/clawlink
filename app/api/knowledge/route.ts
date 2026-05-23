@@ -142,3 +142,32 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: false, error: "Failed to save knowledge to database" }, { status: 500 });
   }
 }
+
+// 3. 🗑️ NEW: DELETE KNOWLEDGE BASE (WIPE RAG FOR SPECIFIC TENANT)
+export async function DELETE(req: NextRequest) {
+    try {
+        // 🛡️ SECURITY LOCK: Verify Session
+        const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
+        if (!token || !token.email) {
+            return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+        }
+
+        const email = token.email.toLowerCase();
+
+        // Wipe all knowledge vectors ONLY for this specific user_email (Tenant Isolation)
+        const { error } = await supabase
+            .from("knowledge_base")
+            .delete()
+            .eq("user_email", email);
+        
+        if (error) {
+            console.error("Supabase Knowledge Delete Error:", error);
+            throw error;
+        }
+
+        return NextResponse.json({ success: true, message: "Knowledge base wiped successfully for tenant." });
+    } catch (error: any) {
+        console.error("Knowledge Delete Endpoint Error:", error);
+        return NextResponse.json({ success: false, error: "Server Error deleting knowledge base." }, { status: 500 });
+    }
+}

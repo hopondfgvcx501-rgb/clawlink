@@ -51,3 +51,32 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ success: false, error: "Server Error saving persona." }, { status: 500 });
     }
 }
+
+// 🗑️ NEW: DELETE PERSONA API (Clear channel-specific persona)
+export async function DELETE(req: NextRequest) {
+    try {
+        const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
+        if (!token || !token.email) return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+
+        const { searchParams } = new URL(req.url);
+        const channel = searchParams.get("channel");
+
+        let updateColumn = "";
+        if (channel === "whatsapp") updateColumn = "whatsapp_persona";
+        else if (channel === "telegram") updateColumn = "telegram_persona";
+        else if (channel === "instagram") updateColumn = "instagram_persona";
+        else return NextResponse.json({ success: false, error: "Invalid channel" }, { status: 400 });
+
+        // Set persona to NULL to clear it securely
+        const { error } = await supabase
+            .from("user_configs")
+            .update({ [updateColumn]: null })
+            .eq("email", token.email.toLowerCase());
+        
+        if (error) throw error;
+        return NextResponse.json({ success: true, message: "Persona deleted successfully." });
+    } catch (error: any) {
+        console.error("[PERSONA_DELETE_ERROR]", error);
+        return NextResponse.json({ success: false, error: "Server Error deleting persona." }, { status: 500 });
+    }
+}
