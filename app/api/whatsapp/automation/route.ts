@@ -3,7 +3,7 @@
  * CLAWLINK ENTERPRISE: WHATSAPP AUTOMATION API
  * ==============================================================================================
  * @description Syncs UI Keyword Routing and Global Rules (Welcome/Away) with the Real DB.
- * Mapped to Webhook-compatible columns (trigger_keyword, response_text).
+ * 🚀 FIXED: Bypasses Postgres 23502 (NOT NULL) constraint by feeding both legacy and new columns.
  * * ALL RIGHTS RESERVED. CLAWLINK INC.
  * ==============================================================================================
  */
@@ -50,27 +50,30 @@ export async function GET(req: Request) {
 
         if (rules) {
             rules.forEach(row => {
-                // Map real DB columns back to UI state
+                // Determine the correct keys based on what the DB returned (handling both legacy and new schema)
+                const currentKeyword = row.trigger_keyword || row.keyword;
+                const currentContent = row.response_text || row.content;
+
                 if (row.match_type === 'global') {
-                    if (row.trigger_keyword === 'welcomeMsg') {
+                    if (currentKeyword === 'welcomeMsg') {
                         globalSettings.welcomeMsg = (row.is_active === true);
-                        globalSettings.welcomeMsgText = row.response_text !== 'true' && row.response_text !== 'false' ? row.response_text : "";
+                        globalSettings.welcomeMsgText = currentContent !== 'true' && currentContent !== 'false' ? currentContent : "";
                     }
-                    if (row.trigger_keyword === 'awayMsg') {
+                    if (currentKeyword === 'awayMsg') {
                          globalSettings.awayMsg = (row.is_active === true);
-                         globalSettings.awayMsgText = row.response_text !== 'true' && row.response_text !== 'false' ? row.response_text : "";
+                         globalSettings.awayMsgText = currentContent !== 'true' && currentContent !== 'false' ? currentContent : "";
                     }
-                    if (row.trigger_keyword === 'businessHours') {
+                    if (currentKeyword === 'businessHours') {
                         globalSettings.businessHours = (row.is_active === true);
                     }
                 } else {
                     // Map Custom Keyword Rules for the UI list
                     formattedRules.push({
                         id: row.id, 
-                        keyword: row.trigger_keyword, // Sent to UI as 'keyword'
+                        keyword: currentKeyword, 
                         matchType: row.match_type, 
                         actionType: row.action_type, 
-                        content: row.response_text // Sent to UI as 'content'
+                        content: currentContent 
                     });
                 }
             });
@@ -83,7 +86,7 @@ export async function GET(req: Request) {
     }
 }
 
-// 🚀 ISOLATED WHATSAPP POST API (Saves UI data directly to Webhook-ready DB)
+// 🚀 ISOLATED WHATSAPP POST API (Saves UI data directly to Webhook-ready DB without crashing)
 export async function POST(req: Request) {
     try {
         const { email, rules = [], globalSettings = {} } = await req.json();
@@ -106,7 +109,7 @@ export async function POST(req: Request) {
 
         const rowsToInsert: any[] = [];
 
-        // 🔥 GLOBAL RULES (Mapped to webhook expected schema)
+        // 🔥 GLOBAL RULES (Mapped to Webhook)
         const wMsgContent = globalSettings.welcomeMsgText ? globalSettings.welcomeMsgText : 'true';
         const aMsgContent = globalSettings.awayMsgText ? globalSettings.awayMsgText : 'true';
         
@@ -114,9 +117,24 @@ export async function POST(req: Request) {
         const aMsgActive = !!globalSettings.awayMsg;
         const bHrsActive = !!globalSettings.businessHours;
 
-        rowsToInsert.push({ email: safeEmail, platform: "whatsapp", match_type: 'global', action_type: 'system', trigger_keyword: 'welcomeMsg', response_text: wMsgContent, is_active: wMsgActive });
-        rowsToInsert.push({ email: safeEmail, platform: "whatsapp", match_type: 'global', action_type: 'system', trigger_keyword: 'awayMsg', response_text: aMsgContent, is_active: aMsgActive });
-        rowsToInsert.push({ email: safeEmail, platform: "whatsapp", match_type: 'global', action_type: 'system', trigger_keyword: 'businessHours', response_text: 'true', is_active: bHrsActive });
+        // CRITICAL FIX: Feeding both 'keyword' and 'trigger_keyword' to bypass the 23502 NOT NULL constraint
+        rowsToInsert.push({ 
+            email: safeEmail, platform: "whatsapp", match_type: 'global', action_type: 'system', is_active: wMsgActive,
+            keyword: 'welcomeMsg', content: wMsgContent, 
+            trigger_keyword: 'welcomeMsg', response_text: wMsgContent 
+        });
+        
+        rowsToInsert.push({ 
+            email: safeEmail, platform: "whatsapp", match_type: 'global', action_type: 'system', is_active: aMsgActive,
+            keyword: 'awayMsg', content: aMsgContent, 
+            trigger_keyword: 'awayMsg', response_text: aMsgContent 
+        });
+        
+        rowsToInsert.push({ 
+            email: safeEmail, platform: "whatsapp", match_type: 'global', action_type: 'system', is_active: bHrsActive,
+            keyword: 'businessHours', content: 'true', 
+            trigger_keyword: 'businessHours', response_text: 'true' 
+        });
 
         // 🔥 KEYWORD ROUTING RULES (UI to DB Translation)
         if (Array.isArray(rules)) {
@@ -125,11 +143,14 @@ export async function POST(req: Request) {
                     rowsToInsert.push({
                         email: safeEmail, 
                         platform: "whatsapp", 
-                        trigger_keyword: r.keyword.toLowerCase(), // Maps to Webhook expectation
                         match_type: r.matchType || 'contains', 
                         action_type: r.actionType || 'text', 
-                        response_text: r.content, // Maps to Webhook expectation
-                        is_active: true
+                        is_active: true,
+                        // Feed both sets of columns to keep DB happy and Webhook functional
+                        keyword: r.keyword.toLowerCase(), 
+                        content: r.content,
+                        trigger_keyword: r.keyword.toLowerCase(), 
+                        response_text: r.content 
                     });
                 }
             });
