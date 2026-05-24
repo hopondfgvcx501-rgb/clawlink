@@ -230,11 +230,12 @@ export default function WhatsAppFlowBuilder() {
             setNodes(data.data.nodes);
             setEdges(data.data.edges || []);
           } else {
-            setNodes([{ id: 'trigger-1', type: 'triggerNode', position: { x: 100, y: 250 }, data: { label: 'START' } }]);
+            // Default blank canvas with Trigger Node
+            setNodes([{ id: 'trigger-1', type: 'triggerNode', position: { x: 100, y: 250 }, data: { label: '' } }]);
           }
         } catch (error) {
           console.error("Failed to load flow data", error);
-          setNodes([{ id: 'trigger-1', type: 'triggerNode', position: { x: 100, y: 250 }, data: { label: 'START' } }]);
+          setNodes([{ id: 'trigger-1', type: 'triggerNode', position: { x: 100, y: 250 }, data: { label: '' } }]);
         } finally {
           setIsLoadingFlow(false);
         }
@@ -305,6 +306,12 @@ export default function WhatsAppFlowBuilder() {
       }
 
       const flowKeyword = triggerNode.data?.label || "";
+      if (!flowKeyword) {
+          alert("Compile Error: Please enter a trigger keyword in the Trigger Node.");
+          setIsSaving(false);
+          return;
+      }
+
       const responseText = actionNode.data?.content || "";
       const nodeActionType = actionNode.data?.type || "text"; // 'text', 'button', or 'list'
       const actionItems = actionNode.data?.items || [];
@@ -358,9 +365,10 @@ export default function WhatsAppFlowBuilder() {
         setIsSaving(false);
       }
   };
+
   const handleClearCanvas = () => {
-    if(confirm("Are you sure you want to clear the canvas?")) {
-      setNodes([{ id: 'trigger-1', type: 'triggerNode', position: { x: 100, y: 250 }, data: { label: 'START' } }]);
+    if(confirm("Are you sure you want to clear the canvas? This will NOT delete your live flow until you Compile & Deploy again.")) {
+      setNodes([{ id: 'trigger-1', type: 'triggerNode', position: { x: 100, y: 250 }, data: { label: '' } }]);
       setEdges([]);
     }
   };
@@ -370,7 +378,7 @@ export default function WhatsAppFlowBuilder() {
   };
 
   if (status === "loading" || isLoadingFlow) {
-     return <SpinnerCounter text="SYNCHRONIZING CANVAS..." />;
+      return <SpinnerCounter text="SYNCHRONIZING CANVAS..." />;
   }
 
   return (
@@ -479,7 +487,7 @@ export default function WhatsAppFlowBuilder() {
               {/* Top Right Control Panel */}
               <Panel position="top-right" className="flex items-center gap-4 m-6">
                 <button onClick={handleClearCanvas} className="text-[11px] font-bold uppercase tracking-widest text-gray-500 hover:text-red-400 transition-colors flex items-center gap-1.5">
-                  <Trash2 className="w-3.5 h-3.5" /> Clear
+                  <Trash2 className="w-3.5 h-3.5" /> Clear Canvas
                 </button>
                 
                 <div className="h-6 w-px bg-white/10 mx-2"></div>

@@ -4,6 +4,7 @@
  * ==============================================================================================
  * @description Handles saving visual flow data and compiling it into Meta Graph API 
  * compatible JSON payloads. Integrated with the centralized Omni-Channel Alert Matrix.
+ * 🚀 FIXED: Bypassed 23502 DB constraint by feeding dual columns (keyword + trigger_keyword).
  * * ALL RIGHTS RESERVED. CLAWLINK INC.
  * ==============================================================================================
  */
@@ -70,6 +71,7 @@ export async function POST(req: Request) {
         extractedEmail = email;
         const cleanEmail = email.toLowerCase().trim();
 
+        // 1. SAVE THE VISUAL GRAPH DATA
         if (nodes && edges) {
             const flowData = { nodes: nodes, edges: edges };
             const { error: configErr } = await supabase
@@ -80,9 +82,11 @@ export async function POST(req: Request) {
             if (configErr) throw configErr;
         }
 
+        // 2. COMPILE & SAVE TO AUTOMATION ENGINE FOR WEBHOOK
         if (keyword && responsePayload) {
             const cleanKeyword = keyword.toLowerCase().trim();
 
+            // Wipe existing rule for this exact keyword and tenant
             await supabase
                 .from("automation_rules")
                 .delete()
@@ -90,15 +94,21 @@ export async function POST(req: Request) {
                 .eq("platform", "whatsapp")
                 .eq("trigger_keyword", cleanKeyword);
                 
+            // Insert compiled logic into automation_rules (bypassing 23502 NOT NULL)
             const { error: ruleErr } = await supabase
                 .from("automation_rules")
                 .insert({
                     email: cleanEmail,
                     platform: "whatsapp",
+                    match_type: "exact", // Flows usually trigger on exact keyword matches
+                    action_type: responsePayload.type || "flow",
+                    is_active: true,
+                    // Dual Column Feeding for Database Constraint Safety
+                    keyword: cleanKeyword,
+                    content: responsePayload.text || "Interactive Flow",
                     trigger_keyword: cleanKeyword,
-                    response_text: responsePayload.text,
-                    response_payload: responsePayload,
-                    is_active: true
+                    response_text: responsePayload.text || "Interactive Flow",
+                    response_payload: responsePayload
                 });
 
             if (ruleErr) throw ruleErr;
