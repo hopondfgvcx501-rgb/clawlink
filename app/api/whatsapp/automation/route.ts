@@ -12,12 +12,14 @@ import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
 export const dynamic = "force-dynamic";
+export const fetchCache = "force-no-store";
+export const revalidate = 0;
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-// 🚀 ISOLATED WHATSAPP GET API
+// 🚀 ISOLATED WHATSAPP GET API (Fetches real data for Dashboard UI)
 export async function GET(req: Request) {
     try {
         const { searchParams } = new URL(req.url);
@@ -27,11 +29,12 @@ export async function GET(req: Request) {
 
         const safeEmail = email.toLowerCase();
 
+        // 🛡️ Tenant Isolation: Only fetch rules for this specific user
         const { data: rules, error } = await supabase
             .from("automation_rules")
             .select("*")
             .eq("email", safeEmail)
-            .eq("platform", "whatsapp"); // Strictly WhatsApp Isolation
+            .eq("platform", "whatsapp");
 
         if (error) {
             console.error("[AUTOMATION_GET_DB_ERROR]", error);
@@ -39,7 +42,6 @@ export async function GET(req: Request) {
         }
 
         let formattedRules: any[] = [];
-        // Updated state to handle both boolean state and actual text content from DB
         let globalSettings = { 
             welcomeMsg: false, welcomeMsgText: "",
             awayMsg: false, awayMsgText: "",
@@ -48,7 +50,7 @@ export async function GET(req: Request) {
 
         if (rules) {
             rules.forEach(row => {
-                // Map DB columns back to UI state
+                // Map real DB columns back to UI state
                 if (row.match_type === 'global') {
                     if (row.trigger_keyword === 'welcomeMsg') {
                         globalSettings.welcomeMsg = (row.is_active === true);
@@ -58,8 +60,11 @@ export async function GET(req: Request) {
                          globalSettings.awayMsg = (row.is_active === true);
                          globalSettings.awayMsgText = row.response_text !== 'true' && row.response_text !== 'false' ? row.response_text : "";
                     }
-                    if (row.trigger_keyword === 'businessHours') globalSettings.businessHours = (row.is_active === true);
+                    if (row.trigger_keyword === 'businessHours') {
+                        globalSettings.businessHours = (row.is_active === true);
+                    }
                 } else {
+                    // Map Custom Keyword Rules for the UI list
                     formattedRules.push({
                         id: row.id, 
                         keyword: row.trigger_keyword, // Sent to UI as 'keyword'
@@ -78,7 +83,7 @@ export async function GET(req: Request) {
     }
 }
 
-// 🚀 ISOLATED WHATSAPP POST API
+// 🚀 ISOLATED WHATSAPP POST API (Saves UI data directly to Webhook-ready DB)
 export async function POST(req: Request) {
     try {
         const { email, rules = [], globalSettings = {} } = await req.json();
@@ -87,7 +92,7 @@ export async function POST(req: Request) {
 
         const safeEmail = email.toLowerCase();
 
-        // Wipe old WA rules only for this tenant
+        // 🗑️ Wipe old WA rules ONLY for this tenant to avoid duplicates on save/delete
         const { error: deleteErr } = await supabase
             .from("automation_rules")
             .delete()
@@ -101,8 +106,7 @@ export async function POST(req: Request) {
 
         const rowsToInsert: any[] = [];
 
-        // 🔥 GLOBAL RULES (Mapped to webhook expected schema with custom text support)
-        // If user provided text, save the text. If not, default to 'true' string to trigger dynamic AI.
+        // 🔥 GLOBAL RULES (Mapped to webhook expected schema)
         const wMsgContent = globalSettings.welcomeMsgText ? globalSettings.welcomeMsgText : 'true';
         const aMsgContent = globalSettings.awayMsgText ? globalSettings.awayMsgText : 'true';
         
@@ -114,7 +118,7 @@ export async function POST(req: Request) {
         rowsToInsert.push({ email: safeEmail, platform: "whatsapp", match_type: 'global', action_type: 'system', trigger_keyword: 'awayMsg', response_text: aMsgContent, is_active: aMsgActive });
         rowsToInsert.push({ email: safeEmail, platform: "whatsapp", match_type: 'global', action_type: 'system', trigger_keyword: 'businessHours', response_text: 'true', is_active: bHrsActive });
 
-        // 🔥 KEYWORD ROUTING RULES
+        // 🔥 KEYWORD ROUTING RULES (UI to DB Translation)
         if (Array.isArray(rules)) {
             rules.forEach((r: any) => {
                 if (r.keyword && r.content) {
@@ -132,6 +136,7 @@ export async function POST(req: Request) {
         }
 
         if (rowsToInsert.length > 0) {
+            // Bulk insert all new/updated rules into the database
             const { error: insertErr } = await supabase.from("automation_rules").insert(rowsToInsert);
             if (insertErr) {
                 console.error("[AUTOMATION_INSERT_ERROR]", insertErr);
