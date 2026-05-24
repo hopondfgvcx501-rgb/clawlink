@@ -316,7 +316,7 @@ export async function POST(req: Request) {
         }
 
         // ==========================================
-        // 🚀 ENTERPRISE UPGRADE: DYNAMIC WELCOME AI
+        // 🚀 ENTERPRISE UPGRADE: DYNAMIC & STATIC WELCOME
         // ==========================================
         const { count: chatCount, error: countErr } = await supabase
             .from("chat_history")
@@ -325,19 +325,39 @@ export async function POST(req: Request) {
             .eq("platform_chat_id", chatId)
             .eq("sender_type", "user");
 
-        // If chatCount is 1 (because we just inserted the current message at line 144), it's a brand new customer!
+        // If chatCount is 1 (because we just inserted the current message above), it's a brand new customer!
         if (!countErr && chatCount === 1) {
             const { data: welcomeRule } = await supabase
                 .from("automation_rules")
-                .select("response_text")
+                .select("response_text, response_payload")
                 .eq("email", userEmail)
                 .eq("platform", "whatsapp")
                 .eq("trigger_keyword", "welcomeMsg")
+                .eq("is_active", true)
                 .single();
 
-            if (welcomeRule && welcomeRule.response_text === 'true') {
-                console.log(`[WELCOME_TRIGGERED] Injecting AI Welcome Context for tenant: ${userEmail}`);
-                userText = `[SYSTEM EVENT: This is a brand new customer. Their first message to you is: "${userText}". Introduce yourself according to your configured persona, welcome them to the business warmly, and ask how you can help them.]`;
+            if (welcomeRule) {
+                if (welcomeRule.response_text === 'true') {
+                    // UNIVERSAL AI GREETING (Language Neutral)
+                    console.log(`[WELCOME_TRIGGERED] Dynamic AI Welcome Context for tenant: ${userEmail}`);
+                    userText = `[SYSTEM NOTIFICATION: THIS IS A BRAND NEW USER. GREET THEM ACCORDING TO YOUR CONFIGURED PERSONA AND LANGUAGE.]\n\nUser Message: ${userText}`;
+                } else if (welcomeRule.response_text && welcomeRule.response_text !== 'false') {
+                    // STATIC CUSTOM TEXT GREETING (User-defined in Dashboard)
+                    console.log(`[WELCOME_TRIGGERED] Sending Static Custom Welcome for tenant: ${userEmail}`);
+                    const payloadBody = welcomeRule.response_payload || { text: { body: welcomeRule.response_text } };
+                    
+                    await fetch(`https://graph.facebook.com/v18.0/${phoneNumberId}/messages`, {
+                        method: "POST", 
+                        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${whatsappToken}` },
+                        body: JSON.stringify({ messaging_product: "whatsapp", to: chatId, ...payloadBody })
+                    });
+                    
+                    await supabase.from("chat_history").insert({ 
+                        email: userEmail, platform: "whatsapp", platform_chat_id: chatId, customer_name: customerName, sender_type: "bot", message: welcomeRule.response_text 
+                    });
+                    
+                    return NextResponse.json({ success: true }); // Halt AI, direct reply sent!
+                }
             }
         }
 
@@ -348,6 +368,7 @@ export async function POST(req: Request) {
         try {
             const queryVector = await generateEmbedding(userText);
             if (queryVector) {
+                // EXPLICITLY passing userEmail to ensure data isolation (No cross-tenant data leaks)
                 const { data: matchedDocs, error: rpcError } = await supabase.rpc("match_knowledge", {
                     query_embedding: queryVector, match_threshold: 0.65, match_count: 3, p_user_email: userEmail
                 });
