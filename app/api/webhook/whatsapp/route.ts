@@ -337,12 +337,8 @@ export async function POST(req: Request) {
                 .single();
 
             if (welcomeRule) {
-                if (welcomeRule.response_text === 'true') {
-                    // UNIVERSAL AI GREETING (Language Neutral)
-                    console.log(`[WELCOME_TRIGGERED] Dynamic AI Welcome Context for tenant: ${userEmail}`);
-                    userText = `[SYSTEM NOTIFICATION: THIS IS A BRAND NEW USER. GREET THEM ACCORDING TO YOUR CONFIGURED PERSONA AND LANGUAGE.]\n\nUser Message: ${userText}`;
-                } else if (welcomeRule.response_text && welcomeRule.response_text !== 'false') {
-                    // STATIC CUSTOM TEXT GREETING (User-defined in Dashboard)
+                // If the user configured custom static text in the dashboard, send it directly!
+                if (welcomeRule.response_text !== 'true' && welcomeRule.response_text !== 'false') {
                     console.log(`[WELCOME_TRIGGERED] Sending Static Custom Welcome for tenant: ${userEmail}`);
                     const payloadBody = welcomeRule.response_payload || { text: { body: welcomeRule.response_text } };
                     
@@ -357,6 +353,11 @@ export async function POST(req: Request) {
                     });
                     
                     return NextResponse.json({ success: true }); // Halt AI, direct reply sent!
+                } 
+                // If it's just 'true' (toggle ON but no custom text), inject dynamic AI instructions
+                else if (welcomeRule.response_text === 'true') {
+                    console.log(`[WELCOME_TRIGGERED] Dynamic AI Welcome Context for tenant: ${userEmail}`);
+                    userText = `[SYSTEM NOTIFICATION: THIS IS A BRAND NEW USER. GREET THEM WARMLY ACCORDING TO YOUR CONFIGURED PERSONA AND LANGUAGE.]\n\nUser Message: ${userText}`;
                 }
             }
         }

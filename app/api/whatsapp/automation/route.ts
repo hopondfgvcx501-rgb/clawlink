@@ -39,15 +39,26 @@ export async function GET(req: Request) {
         }
 
         let formattedRules: any[] = [];
-        let globalSettings = { welcomeMsg: false, awayMsg: false, businessHours: false };
+        // Updated state to handle both boolean state and actual text content from DB
+        let globalSettings = { 
+            welcomeMsg: false, welcomeMsgText: "",
+            awayMsg: false, awayMsgText: "",
+            businessHours: false 
+        };
 
         if (rules) {
             rules.forEach(row => {
                 // Map DB columns back to UI state
                 if (row.match_type === 'global') {
-                    if (row.trigger_keyword === 'welcomeMsg') globalSettings.welcomeMsg = (row.response_text === 'true');
-                    if (row.trigger_keyword === 'awayMsg') globalSettings.awayMsg = (row.response_text === 'true');
-                    if (row.trigger_keyword === 'businessHours') globalSettings.businessHours = (row.response_text === 'true');
+                    if (row.trigger_keyword === 'welcomeMsg') {
+                        globalSettings.welcomeMsg = (row.is_active === true);
+                        globalSettings.welcomeMsgText = row.response_text !== 'true' && row.response_text !== 'false' ? row.response_text : "";
+                    }
+                    if (row.trigger_keyword === 'awayMsg') {
+                         globalSettings.awayMsg = (row.is_active === true);
+                         globalSettings.awayMsgText = row.response_text !== 'true' && row.response_text !== 'false' ? row.response_text : "";
+                    }
+                    if (row.trigger_keyword === 'businessHours') globalSettings.businessHours = (row.is_active === true);
                 } else {
                     formattedRules.push({
                         id: row.id, 
@@ -90,14 +101,18 @@ export async function POST(req: Request) {
 
         const rowsToInsert: any[] = [];
 
-        const wMsg = globalSettings.welcomeMsg ? 'true' : 'false';
-        const aMsg = globalSettings.awayMsg ? 'true' : 'false';
-        const bHrs = globalSettings.businessHours ? 'true' : 'false';
+        // 🔥 GLOBAL RULES (Mapped to webhook expected schema with custom text support)
+        // If user provided text, save the text. If not, default to 'true' string to trigger dynamic AI.
+        const wMsgContent = globalSettings.welcomeMsgText ? globalSettings.welcomeMsgText : 'true';
+        const aMsgContent = globalSettings.awayMsgText ? globalSettings.awayMsgText : 'true';
+        
+        const wMsgActive = !!globalSettings.welcomeMsg;
+        const aMsgActive = !!globalSettings.awayMsg;
+        const bHrsActive = !!globalSettings.businessHours;
 
-        // 🔥 GLOBAL RULES (Mapped to webhook expected schema)
-        rowsToInsert.push({ email: safeEmail, platform: "whatsapp", match_type: 'global', action_type: 'system', trigger_keyword: 'welcomeMsg', response_text: wMsg, is_active: true });
-        rowsToInsert.push({ email: safeEmail, platform: "whatsapp", match_type: 'global', action_type: 'system', trigger_keyword: 'awayMsg', response_text: aMsg, is_active: true });
-        rowsToInsert.push({ email: safeEmail, platform: "whatsapp", match_type: 'global', action_type: 'system', trigger_keyword: 'businessHours', response_text: bHrs, is_active: true });
+        rowsToInsert.push({ email: safeEmail, platform: "whatsapp", match_type: 'global', action_type: 'system', trigger_keyword: 'welcomeMsg', response_text: wMsgContent, is_active: wMsgActive });
+        rowsToInsert.push({ email: safeEmail, platform: "whatsapp", match_type: 'global', action_type: 'system', trigger_keyword: 'awayMsg', response_text: aMsgContent, is_active: aMsgActive });
+        rowsToInsert.push({ email: safeEmail, platform: "whatsapp", match_type: 'global', action_type: 'system', trigger_keyword: 'businessHours', response_text: 'true', is_active: bHrsActive });
 
         // 🔥 KEYWORD ROUTING RULES
         if (Array.isArray(rules)) {
