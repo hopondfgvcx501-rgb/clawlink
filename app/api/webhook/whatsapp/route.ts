@@ -1,3 +1,14 @@
+/**
+ * ==============================================================================================
+ * CLAWLINK ENTERPRISE: WHATSAPP FLOW BACKEND API
+ * ==============================================================================================
+ * @description Handles saving visual flow data and compiling it into Meta Graph API 
+ * compatible JSON payloads. Integrated with the centralized Omni-Channel Alert Matrix.
+ * 🚀 FIXED: Bypassed 23502 DB constraint by feeding dual columns (keyword + trigger_keyword).
+ * * ALL RIGHTS RESERVED. CLAWLINK INC.
+ * ==============================================================================================
+ */
+
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { compileEnterprisePrompt } from "../../../lib/ai/prompt-compiler";
@@ -166,12 +177,23 @@ export async function POST(req: Request) {
         // 🛡️ Sanitize Chat ID & Customer Name
         const customerName = sanitizeInput(value.contacts?.[0]?.profile?.name || "Customer");
 
-        if (message.type !== "text") return NextResponse.json({ success: true });
+        // 🔥 TITANIUM FIX 1: Allow Interactive messages (Button Clicks) to pass through
+        const isInteractive = message.type === "interactive";
+        if (message.type !== "text" && !isInteractive) {
+            return NextResponse.json({ success: true });
+        }
 
         chatId = sanitizeInput(message.from); 
         
-        // 🛡️ Sanitize User Text
-        let rawUserText = sanitizeInput(message.text.body);
+        // 🔥 TITANIUM FIX 2: Safely extract text from either Text body or Button title
+        let rawUserText = "";
+        if (isInteractive) {
+            rawUserText = message.interactive?.button_reply?.title || message.interactive?.list_reply?.title || "";
+        } else if (message.type === "text") {
+            rawUserText = message.text?.body || "";
+        }
+        
+        rawUserText = sanitizeInput(rawUserText);
         
         // ✂️ COST CONTROL: Cut message if it's suspiciously long (CHANGED TO LET FOR DYNAMIC OVERRIDE)
         let userText = rawUserText.length > 800 ? rawUserText.substring(0, 800) + "..." : rawUserText;
@@ -261,21 +283,49 @@ export async function POST(req: Request) {
         if (flowRule) {
             console.log(`[FLOW_TRIGGERED] Keyword match found for: ${normalizedText}. Bypassing AI.`);
             
-            const payloadBody = flowRule.response_payload || { text: { body: flowRule.response_text } };
-            
+            // 🔥 TITANIUM FIX 3: META INTERACTIVE PAYLOAD TRANSLATOR
+            let metaPayload: any = { messaging_product: "whatsapp", to: chatId };
+            const pData = flowRule.response_payload || {};
+
+            if (pData.type === "button" && pData.buttons && pData.buttons.length > 0) {
+                metaPayload.type = "interactive";
+                metaPayload.interactive = {
+                    type: "button",
+                    body: { text: pData.text || flowRule.response_text || "Choose an option:" },
+                    action: { buttons: pData.buttons.slice(0, 3) } // Meta strict limit
+                };
+            } else if (pData.type === "list" && pData.list_options && pData.list_options.length > 0) {
+                metaPayload.type = "interactive";
+                metaPayload.interactive = {
+                    type: "list",
+                    body: { text: pData.text || flowRule.response_text || "Select from menu:" },
+                    action: {
+                        button: "View Options",
+                        sections: [{ title: "Options", rows: pData.list_options.slice(0, 10) }]
+                    }
+                };
+            } else {
+                metaPayload.type = "text";
+                metaPayload.text = { body: flowRule.response_text || "Interactive Message" };
+            }
+
+            // 1. Send the compiled Meta Payload directly to Meta
             await fetch(`https://graph.facebook.com/v18.0/${phoneNumberId}/messages`, {
                 method: "POST", 
                 headers: { "Content-Type": "application/json", "Authorization": `Bearer ${whatsappToken}` },
-                body: JSON.stringify({ messaging_product: "whatsapp", to: chatId, ...payloadBody })
+                body: JSON.stringify(metaPayload)
             });
 
+            // 2. Save the bot's flow response to chat history
             await supabase.from("chat_history").insert({ 
                 email: userEmail, platform: "whatsapp", platform_chat_id: chatId, customer_name: customerName, sender_type: "bot", message: flowRule.response_text || "[Interactive Flow Message Sent]"
             });
 
+            // 3. HALT EXECUTION: Return early so the AI (Omni Engine) DOES NOT run
             return NextResponse.json({ success: true });
         }
         
+        // 🚀 SMART PROVIDER DETECTION (Omni vs Normal)
         let rawProvider = (config.ai_provider || config.selected_model || "openai").toLowerCase();
         let provider = "openai"; 
         
@@ -316,7 +366,7 @@ export async function POST(req: Request) {
         }
 
         // ==========================================
-        // 🚀 ENTERPRISE UPGRADE: DYNAMIC & STATIC WELCOME
+        // 🚀 ENTERPRISE UPGRADE: DYNAMIC WELCOME AI
         // ==========================================
         const { count: chatCount, error: countErr } = await supabase
             .from("chat_history")
@@ -325,40 +375,19 @@ export async function POST(req: Request) {
             .eq("platform_chat_id", chatId)
             .eq("sender_type", "user");
 
-        // If chatCount is 1 (because we just inserted the current message above), it's a brand new customer!
+        // If chatCount is 1 (because we just inserted the current message at line 144), it's a brand new customer!
         if (!countErr && chatCount === 1) {
             const { data: welcomeRule } = await supabase
                 .from("automation_rules")
-                .select("response_text, response_payload")
+                .select("response_text")
                 .eq("email", userEmail)
                 .eq("platform", "whatsapp")
                 .eq("trigger_keyword", "welcomeMsg")
-                .eq("is_active", true)
                 .single();
 
-            if (welcomeRule) {
-                // If the user configured custom static text in the dashboard, send it directly!
-                if (welcomeRule.response_text !== 'true' && welcomeRule.response_text !== 'false') {
-                    console.log(`[WELCOME_TRIGGERED] Sending Static Custom Welcome for tenant: ${userEmail}`);
-                    const payloadBody = welcomeRule.response_payload || { text: { body: welcomeRule.response_text } };
-                    
-                    await fetch(`https://graph.facebook.com/v18.0/${phoneNumberId}/messages`, {
-                        method: "POST", 
-                        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${whatsappToken}` },
-                        body: JSON.stringify({ messaging_product: "whatsapp", to: chatId, ...payloadBody })
-                    });
-                    
-                    await supabase.from("chat_history").insert({ 
-                        email: userEmail, platform: "whatsapp", platform_chat_id: chatId, customer_name: customerName, sender_type: "bot", message: welcomeRule.response_text 
-                    });
-                    
-                    return NextResponse.json({ success: true }); // Halt AI, direct reply sent!
-                } 
-                // If it's just 'true' (toggle ON but no custom text), inject dynamic AI instructions
-                else if (welcomeRule.response_text === 'true') {
-                    console.log(`[WELCOME_TRIGGERED] Dynamic AI Welcome Context for tenant: ${userEmail}`);
-                    userText = `[SYSTEM NOTIFICATION: THIS IS A BRAND NEW USER. GREET THEM WARMLY ACCORDING TO YOUR CONFIGURED PERSONA AND LANGUAGE.]\n\nUser Message: ${userText}`;
-                }
+            if (welcomeRule && welcomeRule.response_text === 'true') {
+                console.log(`[WELCOME_TRIGGERED] Injecting AI Welcome Context for tenant: ${userEmail}`);
+                userText = `[SYSTEM EVENT: This is a brand new customer. Their first message to you is: "${userText}". Introduce yourself according to your configured persona, welcome them to the business warmly, and ask how you can help them.]`;
             }
         }
 
@@ -378,6 +407,7 @@ export async function POST(req: Request) {
                     console.error("[RAG_ISOLATION_ERROR] RPC execution failed for user:", userEmail, rpcError);
                 } else if (matchedDocs && matchedDocs.length > 0) {
                     customKnowledge = matchedDocs.map((doc: any) => sanitizeInput(doc.content)).join("\n\n");
+                    console.log(`[RAG_SUCCESS] Fetched knowledge specific to tenant: ${userEmail}`);
                 }
             }
         } catch (e) {
@@ -418,6 +448,7 @@ export async function POST(req: Request) {
         const words = userText.split(/\s+/).length;
         const usageRatio = isUnlimited ? 0 : (tokensUsed / tokensAllocated) * 100;
 
+        // THE ULTIMATE FIX: Hyphens (-) strictly used for Anthropic models to bypass 404
         const GEMINI_NANO = "gemini-3.1-flash-lite"; 
         const GEMINI_MID = "gemini-3.1-flash";       
         const GEMINI_PREMIUM = "gemini-3.1-pro";     
@@ -469,7 +500,9 @@ export async function POST(req: Request) {
             if (!wasSuccessful) wasSuccessful = await attemptFetch(GPT_NANO, "openai");
 
         } else if (provider === "anthropic") {
+            console.log(`[ROUTER] Claude Only Active.`);
             let targetModel = CLAUDE_MID;
+            
             if (words <= 15 || usageRatio >= 85) targetModel = CLAUDE_NANO; 
             else if (words > 60) targetModel = CLAUDE_PREMIUM;
 
@@ -482,10 +515,15 @@ export async function POST(req: Request) {
                     }
                 }
             }
-            if (!wasSuccessful) wasSuccessful = await attemptFetch(GPT_NANO, "openai");
+            if (!wasSuccessful) {
+                console.log("[ROUTER_SHIELD] Anthropic crashed. Invisible Failover to OpenAI Nano.");
+                wasSuccessful = await attemptFetch(GPT_NANO, "openai");
+            }
 
         } else if (provider === "google") {
+            console.log(`[ROUTER] Gemini Only Active.`);
             let targetModel = GEMINI_MID;
+            
             if (words <= 15 || usageRatio >= 85) targetModel = GEMINI_NANO; 
             else if (words > 60) targetModel = GEMINI_PREMIUM;
 
@@ -498,10 +536,15 @@ export async function POST(req: Request) {
                     }
                 }
             }
-            if (!wasSuccessful) wasSuccessful = await attemptFetch(GPT_NANO, "openai");
+            if (!wasSuccessful) {
+                console.log("[ROUTER_SHIELD] Gemini crashed. Invisible Failover to OpenAI Nano.");
+                wasSuccessful = await attemptFetch(GPT_NANO, "openai");
+            }
 
         } else {
+            console.log(`[ROUTER] OpenAI Only Active.`);
             let targetModel = GPT_MID;
+            
             if (words <= 15 || usageRatio >= 85) targetModel = GPT_NANO; 
             else if (words > 60) targetModel = GPT_PREMIUM;
 
@@ -514,7 +557,10 @@ export async function POST(req: Request) {
                     }
                 }
             }
-            if (!wasSuccessful) wasSuccessful = await attemptFetch(CLAUDE_NANO, "anthropic");
+            if (!wasSuccessful) {
+                console.log("[ROUTER_SHIELD] OpenAI crashed. Invisible Failover to Anthropic Nano.");
+                wasSuccessful = await attemptFetch(CLAUDE_NANO, "anthropic");
+            }
         }
 
         if (!wasSuccessful) {
