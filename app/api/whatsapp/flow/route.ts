@@ -4,7 +4,7 @@
  * ==============================================================================================
  * @description Handles saving visual flow data and compiling it into Meta Graph API 
  * compatible JSON payloads. Integrated with the centralized Omni-Channel Alert Matrix.
- * 🚀 FIXED: Bypassed 23502 DB constraint by feeding dual columns (keyword + trigger_keyword).
+ * 🚀 FIXED: Aggressively bypassed 23502 DB constraint by feeding dual columns with Titanium Fallbacks.
  * * ALL RIGHTS RESERVED. CLAWLINK INC.
  * ==============================================================================================
  */
@@ -14,6 +14,8 @@ import { createClient } from "@supabase/supabase-js";
 import { dispatchAdminAlert } from "../../../lib/monitoring/adminAlert";
 
 export const dynamic = "force-dynamic";
+export const fetchCache = "force-no-store";
+export const revalidate = 0;
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
@@ -62,7 +64,8 @@ export async function POST(req: Request) {
     let extractedEmail = "Unknown";
     
     try {
-        const { email, nodes, edges, keyword, responsePayload } = await req.json();
+        const body = await req.json();
+        const { email, nodes, edges, keyword, responsePayload } = body;
 
         if (!email) {
             return NextResponse.json({ success: false, error: "Authentication identity missing." }, { status: 400 });
@@ -84,7 +87,12 @@ export async function POST(req: Request) {
 
         // 2. COMPILE & SAVE TO AUTOMATION ENGINE FOR WEBHOOK
         if (keyword && responsePayload) {
-            const cleanKeyword = keyword.toLowerCase().trim();
+            // 🔥 TITANIUM FALLBACKS: Never allow null/undefined to hit the database
+            const rawKeyword = keyword ? String(keyword) : "unnamed_flow_trigger";
+            const cleanKeyword = rawKeyword.toLowerCase().trim();
+            
+            const cleanResponseText = responsePayload?.text ? String(responsePayload.text) : "Interactive Flow Payload";
+            const cleanActionType = responsePayload?.type ? String(responsePayload.type) : "flow";
 
             // Wipe existing rule for this exact keyword and tenant
             await supabase
@@ -101,13 +109,13 @@ export async function POST(req: Request) {
                     email: cleanEmail,
                     platform: "whatsapp",
                     match_type: "exact", // Flows usually trigger on exact keyword matches
-                    action_type: responsePayload.type || "flow",
+                    action_type: cleanActionType,
                     is_active: true,
-                    // Dual Column Feeding for Database Constraint Safety
+                    // Dual Column Feeding with guaranteed strings for Database Constraint Safety
                     keyword: cleanKeyword,
-                    content: responsePayload.text || "Interactive Flow",
+                    content: cleanResponseText,
                     trigger_keyword: cleanKeyword,
-                    response_text: responsePayload.text || "Interactive Flow",
+                    response_text: cleanResponseText,
                     response_payload: responsePayload
                 });
 
