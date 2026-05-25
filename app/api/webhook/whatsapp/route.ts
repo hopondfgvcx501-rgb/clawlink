@@ -177,7 +177,7 @@ export async function POST(req: Request) {
         // 🛡️ Sanitize Chat ID & Customer Name
         const customerName = sanitizeInput(value.contacts?.[0]?.profile?.name || "Customer");
 
-        // 🔥 TITANIUM FIX 1: Allow Interactive messages (Button Clicks) to pass through
+        // 🔥 TITANIUM FIX 1: Allow Interactive messages (Button Clicks)
         const isInteractive = message.type === "interactive";
         if (message.type !== "text" && !isInteractive) {
             return NextResponse.json({ success: true });
@@ -185,7 +185,7 @@ export async function POST(req: Request) {
 
         chatId = sanitizeInput(message.from); 
         
-        // 🔥 TITANIUM FIX 2: Safely extract text from either Text body or Button title
+        // 🔥 TITANIUM FIX 2: Safely extract text from Text or Button
         let rawUserText = "";
         if (isInteractive) {
             rawUserText = message.interactive?.button_reply?.title || message.interactive?.list_reply?.title || "";
