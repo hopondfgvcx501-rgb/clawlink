@@ -6,8 +6,8 @@
  * ==============================================================================================
  * @file app/dashboard/whatsapp/flow/page.tsx
  * @description Enterprise-grade Visual Drag & Drop Builder for WhatsApp Interactive Messages.
+ * 🚀 FIXED: Compiler now reads Live State instead of stale ReactFlow instance cache.
  * 🚀 FIXED: Dynamic node states (+ Add List Item/Buttons) now 100% functional.
- * 🚀 FIXED: Inputs inside nodes now securely bind to DB payload on change.
  * 🚀 SECURED: Compiles visual graph to JSON payload for real database saving.
  * * ALL RIGHTS RESERVED. CLAWLINK INC.
  * ==============================================================================================
@@ -280,7 +280,7 @@ export default function WhatsAppFlowBuilder() {
         id: getId(),
         type,
         position,
-        data: { type: nodeActionType, content: '', items: [] },
+        data: { type: nodeActionType, content: '', items: [], label: '' }, // Ensure label exists
       };
 
       setNodes((nds) => nds.concat(newNode));
@@ -289,11 +289,12 @@ export default function WhatsAppFlowBuilder() {
 
   // 🚀 SECURE DB SAVE (UPGRADED META GRAPH API COMPILER)
   const handleSaveFlow = async () => {
-      if (!session?.user?.email || !reactFlowInstance) return;
+      if (!session?.user?.email) return;
       setIsSaving(true);
       
-      const currentNodes = reactFlowInstance.getNodes();
-      const currentEdges = reactFlowInstance.getEdges();
+      // 🔥 CRITICAL FIX: Read from LIVE state 'nodes' & 'edges', NOT the stale 'reactFlowInstance' cache
+      const currentNodes = nodes;
+      const currentEdges = edges;
 
       // 🧠 1. EXTRACT TRIGGER AND ACTION
       const triggerNode = currentNodes.find((n: any) => n.type === 'triggerNode');
@@ -306,7 +307,7 @@ export default function WhatsAppFlowBuilder() {
       }
 
       const flowKeyword = triggerNode.data?.label || "";
-      if (!flowKeyword) {
+      if (!flowKeyword || flowKeyword.trim() === "") {
           alert("Compile Error: Please enter a trigger keyword in the Trigger Node.");
           setIsSaving(false);
           return;
