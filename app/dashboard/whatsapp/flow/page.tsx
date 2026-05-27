@@ -6,8 +6,7 @@
  * ==============================================================================================
  * @file app/dashboard/whatsapp/flow/page.tsx
  * @description Enterprise-grade Visual Drag & Drop Builder for WhatsApp Interactive Messages.
- * 🚀 FIXED: Compiler now reads Live State instead of stale ReactFlow instance cache.
- * 🚀 FIXED: Dynamic node states (+ Add List Item/Buttons) now 100% functional.
+ * 🚀 FIXED: "Smart Find Compiler" added to prevent ghost-state empty keyword errors.
  * 🚀 SECURED: Compiles visual graph to JSON payload for real database saving.
  * * ALL RIGHTS RESERVED. CLAWLINK INC.
  * ==============================================================================================
@@ -289,29 +288,37 @@ export default function WhatsAppFlowBuilder() {
 
   // 🚀 SECURE DB SAVE (UPGRADED META GRAPH API COMPILER)
   const handleSaveFlow = async () => {
-      if (!session?.user?.email) return;
+      if (!session?.user?.email || !reactFlowInstance) return;
       setIsSaving(true);
       
-      // 🔥 CRITICAL FIX: Read from LIVE state 'nodes' & 'edges', NOT the stale 'reactFlowInstance' cache
-      const currentNodes = nodes;
-      const currentEdges = edges;
+      // 🔥 TITANIUM FIX: Read directly from live reactFlowInstance to avoid React state ghosting
+      const currentNodes = reactFlowInstance.getNodes();
+      const currentEdges = reactFlowInstance.getEdges();
 
-      // 🧠 1. EXTRACT TRIGGER AND ACTION
-      const triggerNode = currentNodes.find((n: any) => n.type === 'triggerNode');
-      const actionNode = currentNodes.find((n: any) => n.type === 'interactiveNode' || n.type === 'textNode');
+      // 🧠 1. SMART FIND EXTRACTOR (Handles multiple dragged nodes safely)
+      const triggerNodes = currentNodes.filter((n: any) => n.type === 'triggerNode');
+      const actionNodes = currentNodes.filter((n: any) => n.type === 'interactiveNode' || n.type === 'textNode');
 
-      if (!triggerNode || !actionNode) {
+      if (triggerNodes.length === 0 || actionNodes.length === 0) {
           alert("Compile Error: Flow must contain at least one Trigger and one Action node.");
           setIsSaving(false);
           return;
       }
 
+      // If user dragged multiple triggers, smartly pick the one that actually has text
+      let triggerNode = triggerNodes.find((n: any) => n.data?.label && String(n.data.label).trim() !== "");
+      if (!triggerNode) triggerNode = triggerNodes[0]; // fallback
+
       const flowKeyword = triggerNode.data?.label || "";
-      if (!flowKeyword || flowKeyword.trim() === "") {
+      if (!flowKeyword || String(flowKeyword).trim() === "") {
           alert("Compile Error: Please enter a trigger keyword in the Trigger Node.");
           setIsSaving(false);
           return;
       }
+
+      // Pick the action node that has content
+      let actionNode = actionNodes.find((n: any) => n.data?.content && String(n.data.content).trim() !== "");
+      if (!actionNode) actionNode = actionNodes[0];
 
       const responseText = actionNode.data?.content || "";
       const nodeActionType = actionNode.data?.type || "text"; // 'text', 'button', or 'list'
