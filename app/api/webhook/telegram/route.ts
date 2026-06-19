@@ -20,6 +20,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { Redis } from "@upstash/redis";
 import { Ratelimit } from "@upstash/ratelimit";
+export const runtime = 'edge';
 
 export const dynamic = "force-dynamic";
 

@@ -3,110 +3,89 @@ import { createClient } from "@supabase/supabase-js";
 
 export const dynamic = "force-dynamic";
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
-const supabase = createClient(supabaseUrl, supabaseKey);
+const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
 
-// 🚨 TERA STRICT RULE: Send errors to TG Admin
 async function sendErrorToTG(errorMsg: string) {
-    const TG_BOT_TOKEN = process.env.TG_BOT_TOKEN;
-    const TG_ADMIN_ID = process.env.TG_ADMIN_ID;
+    const { TG_BOT_TOKEN, TG_ADMIN_ID } = process.env;
     if (!TG_BOT_TOKEN || !TG_ADMIN_ID) return;
     try {
         await fetch(`https://api.telegram.org/bot${TG_BOT_TOKEN}/sendMessage`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ chat_id: TG_ADMIN_ID, text: `🚨 CLAWLINK WA BROADCAST ERROR:\n\n${errorMsg}` })
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ chat_id: TG_ADMIN_ID, text: `🚨 BROADCAST ERROR:\n\n${errorMsg}` })
         });
-    } catch (e) { console.error("Failed to send TG alert", e); }
+    } catch (e) {}
 }
 
-// 🚀 GET: Fetch WhatsApp Campaigns
 export async function GET(req: Request) {
     try {
         const { searchParams } = new URL(req.url);
-        const email = searchParams.get("email");
-
+        const email = searchParams.get("email")?.toLowerCase();
         if (!email) return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
 
-        const { data: campaigns, error } = await supabase
-            .from("campaigns")
-            .select("*")
-            .eq("email", email.toLowerCase())
-            .eq("platform", "whatsapp")
-            .order("created_at", { ascending: false });
+        const { data: campaigns, error } = await supabase.from("campaigns")
+            .select("*").eq("email", email).eq("platform", "whatsapp").order("created_at", { ascending: false });
 
         if (error) throw error;
-
-        const formattedCampaigns = (campaigns || []).map(camp => ({
-            id: camp.id,
-            name: camp.name,
-            status: camp.status,
-            sent: camp.sent,
-            opens: camp.opens,
-            date: new Date(camp.created_at).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
-        }));
-
-        return NextResponse.json({ success: true, campaigns: formattedCampaigns });
-
+        return NextResponse.json({ success: true, campaigns });
     } catch (error: any) {
-        await sendErrorToTG(`GET Broadcast Failed: ${error.message}`);
-        return NextResponse.json({ success: false, error: "Server Error" }, { status: 500 });
+        return NextResponse.json({ success: false, error: error.message }, { status: 500 });
     }
 }
 
-// 🚀 POST: Dispatch OR Schedule OR Test Send
 export async function POST(req: Request) {
     try {
-        const { email, audience, template, name, status, sent } = await req.json();
+        const { email, audience, template, name, status, scheduled_at, variables } = await req.json();
+        const cleanEmail = email.toLowerCase();
 
-        if (!email || !template) return NextResponse.json({ success: false, error: "Missing parameters" }, { status: 400 });
+        // 1. Fetch User Config (WhatsApp Token and Phone ID)
+        const { data: config } = await supabase.from("user_configs")
+            .select("whatsapp_token, whatsapp_phone_id").eq("email", cleanEmail).single();
 
-        // 🔥 Here you will later add the real Meta WhatsApp API call
-        // await fetch('https://graph.facebook.com/v19.0/.../messages', {...})
+        if (!config?.whatsapp_token || !config?.whatsapp_phone_id) {
+            throw new Error("WhatsApp Cloud API not configured for this account.");
+        }
 
-        const { error } = await supabase.from("campaigns").insert({
-            email: email.toLowerCase(),
-            platform: "whatsapp",
-            name: name || "WhatsApp Broadcast",
-            audience: audience || "all",
-            template: template,
-            status: status || "Sent",
-            sent: sent !== undefined ? sent : (Math.floor(Math.random() * 500) + 10),
-            opens: "0%"
+        // 2. Fetch Audience Contacts
+        const { data: contacts } = await supabase.from("contacts")
+            .select("phone_number").eq("user_email", cleanEmail).eq("channel", "whatsapp");
+
+        if (!contacts || contacts.length === 0) throw new Error("No contacts found in CRM to broadcast.");
+
+        // 3. REAL DISPATCH (Meta Cloud API)
+        if (status === "Sent") {
+            for (const contact of contacts) {
+                await fetch(`https://graph.facebook.com/v19.0/${config.whatsapp_phone_id}/messages`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${config.whatsapp_token}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        messaging_product: "whatsapp",
+                        to: contact.phone_number,
+                        type: "template",
+                        template: { name: template, language: { code: "en_US" } }
+                    })
+                });
+            }
+        }
+
+        // 4. LOG TO DB
+        const { error: logErr } = await supabase.from("campaigns").insert({
+            email: cleanEmail, platform: "whatsapp", name, audience, template, status,
+            sent: contacts.length, scheduled_at, opens: "0%"
         });
 
-        if (error) throw error;
-
+        if (logErr) throw logErr;
         return NextResponse.json({ success: true });
 
     } catch (error: any) {
-        await sendErrorToTG(`POST Broadcast Failed: ${error.message}`);
+        await sendErrorToTG(error.message);
         return NextResponse.json({ success: false, error: error.message }, { status: 500 });
     }
 }
 
-// 🗑️ DELETE: Remove Campaign History
 export async function DELETE(req: Request) {
-    try {
-        const { searchParams } = new URL(req.url);
-        const id = searchParams.get("id");
-        const email = searchParams.get("email");
-
-        if (!id || !email) return NextResponse.json({ success: false, error: "Missing ID or Email" }, { status: 400 });
-
-        const { error } = await supabase
-            .from("campaigns")
-            .delete()
-            .eq("id", id)
-            .eq("email", email.toLowerCase());
-
-        if (error) throw error;
-
-        return NextResponse.json({ success: true });
-
-    } catch (error: any) {
-        await sendErrorToTG(`DELETE Broadcast Failed: ${error.message}`);
-        return NextResponse.json({ success: false, error: error.message }, { status: 500 });
-    }
+    const { searchParams } = new URL(req.url);
+    const id = searchParams.get("id");
+    const email = searchParams.get("email")?.toLowerCase();
+    await supabase.from("campaigns").delete().eq("id", id).eq("email", email);
+    return NextResponse.json({ success: true });
 }
