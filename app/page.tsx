@@ -567,7 +567,63 @@ export default function Home() {
         setIsVerifying(false);
     }
   };
+// 🔥 🚀 NEW INJECTED: 1-CLICK EMBEDDED META LOGIN
+  const handleEmbeddedFacebookLogin = () => {
+    if (typeof window === "undefined" || !(window as any).FB) {
+      alert("System Initializing... Please wait a second.");
+      return;
+    }
+    
+    setIsVerifying(true);
+    
+    (window as any).FB.login((response: any) => {
+      if (response.authResponse) {
+        const tempToken = response.authResponse.accessToken;
+        
+        // Send to Backend to exchange for Permanent Token & Save to DB
+        fetch("/api/whatsapp/embedded", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email: session?.user?.email,
+            accessToken: tempToken,
+            channel: activeChannel
+          }),
+        })
+        .then(res => res.json())
+        .then(data => {
+          if (data.success) {
+             // Redirect strictly to Dashboard!
+             router.push("/dashboard");
+          } else {
+             alert("Verification Failed. Please try again.");
+             setIsVerifying(false);
+          }
+        })
+        .catch(err => {
+          console.error("Network Error", err);
+          setIsVerifying(false);
+        });
 
+      } else {
+        // ⚠️ TG ADMIN ALERT: Exact Backend Error
+        fetch("/api/tg-admin", {
+          method: "POST",
+          body: JSON.stringify({
+            message: `🔴 [ClawLink Fatal Error] User ${session?.user?.email} failed Meta Embedded Auth on Landing Page. Pop-up closed.`
+          })
+        });
+        setIsVerifying(false);
+      }
+    }, {
+      config_id: process.env.NEXT_PUBLIC_META_CONFIG_ID,
+      response_type: 'code',
+      override_default_response_type: true,
+      extras: { setup: {} }
+    });
+  };
+  // 🔥 🚀 END INJECTION
+  
   const handleSendHelpRequest = () => {
     if (!helpEmail.trim() || !helpMessage.trim()) { alert("Please complete all necessary input fields."); return; }
     setHelpStatus("sending");
