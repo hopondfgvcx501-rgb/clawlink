@@ -23,7 +23,8 @@ import { useRouter } from "next/navigation";
 import {
   Globe, Database, Mic, Zap, MessageSquare, Activity,
   LogOut, Shield, ExternalLink, CheckCircle2, Copy,
-  MessageCircle, X, Send, Mail, User, LayoutDashboard
+  MessageCircle, X, Send, Mail, User, LayoutDashboard,
+  Sun, Moon, Monitor // 🔥 INJECTED THEME ICONS
 } from "lucide-react";
 import Image from "next/image";
 import TelegramDemoWidget from "@/components/TelegramDemoWidget";
@@ -258,6 +259,39 @@ export default function Home() {
   const [isMounted, setIsMounted] = useState(false);
   const [isTelegramModalOpen, setIsTelegramModalOpen] = useState(false);
   
+// 🔥 🚀 INJECTED: PREMIUM THEME ENGINE STATE
+  const [theme, setTheme] = useState("dark");
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const savedTheme = localStorage.getItem("clawlink_theme") || "dark";
+      setTheme(savedTheme);
+      // System match check
+      const prefersLight = window.matchMedia("(prefers-color-scheme: light)").matches;
+      if (savedTheme === "light" || (savedTheme === "system" && prefersLight)) {
+         document.documentElement.classList.add("light-theme-active");
+      }
+    }
+  }, []);
+
+  const cycleTheme = () => {
+    const nextTheme = theme === "dark" ? "light" : theme === "light" ? "system" : "dark";
+    setTheme(nextTheme);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("clawlink_theme", nextTheme);
+      console.warn(`[ClawLink System] Theme synced to: ${nextTheme.toUpperCase()}. (Note: Add CSS variables in globals.css for full color inversion).`);
+      
+      // Toggle logic for root class
+      const prefersLight = window.matchMedia("(prefers-color-scheme: light)").matches;
+      if (nextTheme === "light" || (nextTheme === "system" && prefersLight)) {
+        document.documentElement.classList.add("light-theme-active");
+      } else {
+        document.documentElement.classList.remove("light-theme-active");
+      }
+    }
+  };
+  // 🔥 🚀 END THEME ENGINE
+
   const [telegramToken, setTelegramToken] = useState("");
   const [waPhoneId, setWaPhoneId] = useState("");
   const [waPhoneNumber, setWaPhoneNumber] = useState("");
@@ -850,6 +884,33 @@ export default function Home() {
         </svg>
 
         <div className="flex items-center gap-4 md:gap-6">
+          {/* 🔥 🚀 INJECTED: PREMIUM THEME TOGGLE BUTTON */}
+          <button
+            onClick={cycleTheme}
+            aria-label="Toggle System Theme"
+            title={`Theme: ${theme.toUpperCase()}`}
+            className="relative flex items-center justify-center w-10 h-10 rounded-full border border-white/10 bg-white/5 hover:bg-white/10 transition-all duration-300 hover:shadow-[0_0_15px_rgba(255,255,255,0.1)] group overflow-hidden"
+          >
+            <AnimatePresence mode="wait">
+              {theme === "dark" && (
+                <motion.div key="dark" initial={{ rotate: -90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: 90, opacity: 0 }} transition={{ duration: 0.15 }}>
+                  <Moon className="w-4 h-4 text-gray-400 group-hover:text-white transition-colors" />
+                </motion.div>
+              )}
+              {theme === "light" && (
+                <motion.div key="light" initial={{ rotate: -90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: 90, opacity: 0 }} transition={{ duration: 0.15 }}>
+                  <Sun className="w-5 h-5 text-orange-400 drop-shadow-[0_0_8px_rgba(249,115,22,0.5)]" />
+                </motion.div>
+              )}
+              {theme === "system" && (
+                <motion.div key="system" initial={{ scale: 0.5, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.5, opacity: 0 }} transition={{ duration: 0.15 }}>
+                  <Monitor className="w-4 h-4 text-blue-400 drop-shadow-[0_0_8px_rgba(59,130,246,0.5)]" />
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </button>
+          {/* 🔥 🚀 END INJECTION */}
+          
           {status === "authenticated" && (
             <div className="hidden md:flex items-center gap-3">
               <img src={session?.user?.image || "https://ui-avatars.com/api/?name=User&background=random"} className="w-8 h-8 rounded-full border border-white/20 ring-1 ring-white/10" alt="User Avatar"/>
