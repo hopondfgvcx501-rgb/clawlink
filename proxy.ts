@@ -5,13 +5,13 @@ export default function proxy(request: NextRequest) {
     const origin = request.headers.get('origin') || request.headers.get('referer') || '';
     const pathname = request.nextUrl.pathname;
     
-    // Allow ALL webhooks, public widgets, and auth routes automatically
+    // Allow all webhooks, public widgets, and authentication routes automatically
     const isWebhook = pathname.startsWith('/api/webhook/');
     const isWidget = pathname.startsWith('/api/widget');
     const isAuth = pathname.startsWith('/api/auth');
     const isPublicRoute = isWebhook || isWidget || isAuth;
 
-    // Block only completely unauthorized core API calls
+    // Block unauthorized core API calls
     if (pathname.startsWith('/api/') && !isPublicRoute) {
         const allowedOrigins = [
             'https://clawlink.com',
@@ -21,13 +21,13 @@ export default function proxy(request: NextRequest) {
             'http://localhost:3000'
         ];
 
-        // If origin is empty, it might be an internal server call
+        // Allow internal server calls where origin might be empty
         const isAllowed = origin === '' || allowedOrigins.some(allowed => origin.startsWith(allowed));
 
         if (!isAllowed) {
             console.warn(`[SECURITY] Blocked unauthorized API access from: ${origin}`);
             return new NextResponse(
-                JSON.stringify({ error: "Access Denied: ClawLink Security Protocol Active 🛡️" }),
+                JSON.stringify({ error: "Access Denied: ClawLink Security Protocol Active" }),
                 { status: 403, headers: { 'Content-Type': 'application/json' } }
             );
         }
@@ -36,6 +36,8 @@ export default function proxy(request: NextRequest) {
     return NextResponse.next();
 }
 
+// Force Cloudflare Edge Runtime for Proxy
 export const config = {
+    runtime: 'edge',
     matcher: '/api/:path*',
 };
