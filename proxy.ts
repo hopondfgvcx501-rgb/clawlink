@@ -35,9 +35,4 @@ export default function proxy(request: NextRequest) {
 
     return NextResponse.next();
 }
-
-// Force Cloudflare Edge Runtime for Proxy
-export const config = {
-    runtime: 'edge',
-    matcher: '/api/:path*',
-};
+// The invalid 'config' export has been completely removed to satisfy the compiler.
