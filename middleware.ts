@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-export default function proxy(request: NextRequest) {
+export default function middleware(request: NextRequest) {
     const origin = request.headers.get('origin') || request.headers.get('referer') || '';
     const pathname = request.nextUrl.pathname;
     
@@ -35,4 +35,9 @@ export default function proxy(request: NextRequest) {
 
     return NextResponse.next();
 }
-// The invalid 'config' export has been completely removed to satisfy the compiler.
+
+// Force Cloudflare Edge Runtime
+export const config = {
+    runtime: 'edge',
+    matcher: '/api/:path*',
+};
