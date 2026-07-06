@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-export default function middleware(request: NextRequest) {
+export function middleware(request: NextRequest) {
     const origin = request.headers.get('origin') || request.headers.get('referer') || '';
     const pathname = request.nextUrl.pathname;
     
@@ -36,8 +36,10 @@ export default function middleware(request: NextRequest) {
     return NextResponse.next();
 }
 
-// Force Cloudflare Edge Runtime
+// Force Cloudflare Experimental Edge Runtime
 export const config = {
-    runtime: 'edge',
-    matcher: '/api/:path*',
+    runtime: 'experimental-edge',
+    matcher: [
+        '/((?!api|_next/static|_next/image|favicon.ico).*)',
+    ],
 };
