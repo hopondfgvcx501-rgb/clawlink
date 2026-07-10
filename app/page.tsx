@@ -212,7 +212,8 @@ const ChatBubble = ({ text, delay, isUser }: { text: string; delay: number; isUs
     animate={{ opacity: 1, y: 0 }} 
     transition={{ delay, duration: 0.12, ease: "easeOut" }}
     className={`p-3 rounded-2xl max-w-[85%] text-[11px] shadow-md leading-relaxed transform-gpu
-      ${isUser ? "bg-[#2AABEE] text-white self-end rounded-tr-sm" : "bg-[#1A1A1A] border border-white/5 text-gray-200 self-start rounded-tl-sm"}`}
+      ${isUser ? "bg-[#2AABEE] text-white self-end rounded-tr-sm" : "bg-black/40 border border-white/5 self-start rounded-tl-sm"}`}
+      style={{ color: "var(--text-main)" }}
   >
     {text}
   </motion.div>
@@ -223,14 +224,15 @@ const GuideStep = ({ step, title, desc, delay }: { step: string; title: string; 
     initial={{ opacity: 0, x: 16 }} 
     animate={{ opacity: 1, x: 0 }} 
     transition={{ delay, duration: 0.12, ease: "easeOut" }}
-    className="flex gap-3 bg-[#1A1A1A] border border-white/5 p-3 rounded-xl shadow-md w-[90%] self-center mx-auto items-start transform-gpu"
+    className="flex gap-3 border border-white/5 p-3 rounded-xl shadow-md w-[90%] self-center mx-auto items-start transform-gpu"
+    style={{ backgroundColor: "var(--bg-main)" }}
   >
     <div className="w-5 h-5 rounded-full bg-[#25D366]/20 text-[#25D366] flex items-center justify-center font-bold text-[10px] shrink-0 mt-0.5">
       {step}
     </div>
     <div className="flex flex-col">
-      <span className="text-white font-bold mb-1 text-[11px]">{title}</span>
-      <span className="text-gray-400 text-[9px] leading-relaxed">{desc}</span>
+      <span className="font-bold mb-1 text-[11px]" style={{ color: "var(--text-main)" }}>{title}</span>
+      <span className="text-[9px] leading-relaxed" style={{ color: "var(--text-muted)" }}>{desc}</span>
     </div>
   </motion.div>
 );
@@ -244,7 +246,7 @@ const MarqueeRow = ({ items, reverse = false }: { items: string[]; reverse?: boo
       transition={{ ease: "linear", duration: 45, repeat: Infinity }}
     >
       {[...items, ...items, ...items, ...items].map((item, i) => (
-        <span key={i} className="inline-flex items-center gap-2.5 text-[12px] text-gray-300 font-medium bg-white/[0.04] px-5 py-2.5 rounded-full border border-white/[0.08] whitespace-nowrap hover:border-orange-500/50 hover:text-white hover:bg-white/[0.08] transition-colors duration-200">
+        <span key={i} className="inline-flex items-center gap-2.5 text-[12px] font-medium px-5 py-2.5 rounded-full border border-white/[0.08] whitespace-nowrap hover:border-orange-500/50 hover:text-orange-500 transition-colors duration-200" style={{ color: "var(--text-muted)", backgroundColor: "rgba(128, 128, 128, 0.05)" }}>
           <span className="w-1.5 h-1.5 rounded-full bg-orange-500/80 shrink-0"/>{item}
         </span>
       ))}
@@ -400,7 +402,9 @@ export default function Home() {
 
     const handleScroll = () => {
       const nav = document.getElementById('clnav');
-      if (nav) nav.style.background = window.scrollY > 30 ? 'rgba(7,7,10,0.92)' : 'rgba(7,7,10,0.4)';
+      // 🔥 Updated to use CSS variable for sticky nav background
+      if (nav) nav.style.backgroundColor = window.scrollY > 30 ? 'var(--bg-main)' : 'transparent';
+      if (nav) nav.style.opacity = window.scrollY > 30 ? '0.95' : '1';
     };
     window.addEventListener('scroll', handleScroll, { passive: true });
 
@@ -699,7 +703,7 @@ export default function Home() {
   const btn = "transition-all duration-[120ms] ease-out hover:-translate-y-1 hover:shadow-lg transform-gpu will-change-transform";
 
   const getButtonClass = (isActive: boolean, categorySelected: boolean, hoverBorderColorClass: string) => {
-      let classes = `bg-[#E5E7EB] border cursor-pointer overflow-hidden ${btn} hover:bg-[#D1D5DB] flex flex-row h-[60px] w-full px-[16px] gap-[12px] justify-start items-center rounded-[12px] transition-colors duration-300`;
+      let classes = `border cursor-pointer overflow-hidden ${btn} flex flex-row h-[60px] w-full px-[16px] gap-[12px] justify-start items-center rounded-[12px] transition-colors duration-300`;
       
       if (isActive) {
           classes += ` border-transparent ${hoverBorderColorClass.replace('hover:', '')}`; 
@@ -717,7 +721,8 @@ export default function Home() {
   const chanActive  = (id: string) => activeChannel === id && !(isTokenSaved && activeChannel !== id);
 
   return (
-    <div className="bg-[#07070A] min-h-screen text-[#E8E8EC] font-sans selection:bg-orange-500/30 overflow-x-hidden">
+    // 🔥 Updated to use CSS Variables for background and text colors
+    <div className="min-h-screen font-sans selection:bg-orange-500/30 overflow-x-hidden transition-colors duration-300" style={{ backgroundColor: "var(--bg-main)", color: "var(--text-main)" }}>
 
       <style dangerouslySetInnerHTML={{__html:`
         *{box-sizing:border-box;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
@@ -843,8 +848,8 @@ export default function Home() {
         .icon-lift{transition:transform .2s cubic-bezier(.34,1.56,.64,1)}
         .icon-lift:hover{transform:scale(1.12) rotate(-4deg)}
         
-        .ptx-name{font-size:14px;font-weight:800;color:#111827;white-space:nowrap;letter-spacing:0.02em}
-        .ptx-soon{font-size:10px;font-weight:900;color:#6b7280;text-transform:uppercase;margin-left:auto;}
+        .ptx-name{font-size:14px;font-weight:800;color:var(--text-main);white-space:nowrap;letter-spacing:0.02em}
+        .ptx-soon{font-size:10px;font-weight:900;color:var(--text-muted);text-transform:uppercase;margin-left:auto;}
         
         @media(max-width:1024px){
           .ptx-name{font-size:12px;text-overflow:ellipsis;overflow:hidden;}
@@ -863,10 +868,11 @@ export default function Home() {
       <div className="fixed top-[30%] left-[40%] w-[600px] h-[600px] rounded-full pointer-events-none z-0 float-c"
            style={{background:"radial-gradient(circle,rgba(168,85,247,0.10) 0%,transparent 70%)"}}/>
 
+      {/* 🔥 Updated to use CSS Variable for background */}
       <nav id="clnav" aria-label="Main Navigation"
-        className="fixed top-0 left-0 right-0 z-[100] h-[64px] flex items-center justify-between px-6 md:px-12 transition-colors duration-200"
+        className="fixed top-0 left-0 right-0 z-[100] h-[64px] flex items-center justify-between px-6 md:px-12 transition-colors duration-300"
         style={{backdropFilter:"blur(12px)",WebkitBackdropFilter:"blur(12px)",
-                background:"rgba(7,7,10,0.4)",borderBottom:"1px solid rgba(255,255,255,0.055)"}}>
+                background:"var(--bg-main)", borderBottom:"1px solid var(--border-color)"}}>
 
         <svg aria-label="ClawLink Home" width="140" height="24" viewBox="0 0 152 26" fill="none" className="shrink-0 cursor-pointer transition-transform hover:scale-105" onClick={() => router.push("/")}>
           <defs>
@@ -879,7 +885,7 @@ export default function Home() {
           <line x1="7.5" y1="3" x2="14.5" y2="11.5" stroke="#f97316" strokeWidth="2.2" strokeLinecap="round"/>
           <line x1="12.5" y1="1.5" x2="19.5" y2="10" stroke="#f97316" strokeWidth="2.2" strokeLinecap="round"/>
           <line x1="17.5" y1="2.5" x2="24" y2="10.5" stroke="#f97316" strokeWidth="2" strokeLinecap="round"/>
-          <text x="30" y="18" fontFamily="-apple-system,BlinkMacSystemFont,sans-serif" fontSize="14.5" fontWeight="800" letterSpacing="1.4" fill="#fff">LAWLINK</text>
+          <text x="30" y="18" fontFamily="-apple-system,BlinkMacSystemFont,sans-serif" fontSize="14.5" fontWeight="800" letterSpacing="1.4" fill="currentColor">LAWLINK</text>
           <text x="116" y="18" fontFamily="-apple-system,BlinkMacSystemFont,sans-serif" fontSize="9.5" fontWeight="700" letterSpacing=".7" fill="#f97316">.COM</text>
         </svg>
 
@@ -889,7 +895,8 @@ export default function Home() {
             onClick={cycleTheme}
             aria-label="Toggle System Theme"
             title={`Theme: ${theme.toUpperCase()}`}
-            className="relative flex items-center justify-center w-10 h-10 rounded-full border border-white/10 bg-white/5 hover:bg-white/10 transition-all duration-300 hover:shadow-[0_0_15px_rgba(255,255,255,0.1)] group overflow-hidden"
+            className="relative flex items-center justify-center w-10 h-10 rounded-full border border-white/10 hover:bg-black/10 transition-all duration-300 hover:shadow-[0_0_15px_rgba(255,255,255,0.1)] group overflow-hidden"
+            style={{ backgroundColor: "rgba(128, 128, 128, 0.1)" }}
           >
             <AnimatePresence mode="wait">
               {theme === "dark" && (
@@ -915,7 +922,7 @@ export default function Home() {
             <div className="hidden md:flex items-center gap-3">
               <img src={session?.user?.image || "https://ui-avatars.com/api/?name=User&background=random"} className="w-8 h-8 rounded-full border border-white/20 ring-1 ring-white/10" alt="User Avatar"/>
               <button aria-label="Sign out of ClawLink" title="Sign out of ClawLink" onClick={()=>signOut()}
-                className={`flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-widest text-gray-500 hover:text-white transition-all duration-150`}>
+                className={`flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-widest text-gray-500 hover:text-orange-500 transition-all duration-150`}>
                 <LogOut className="w-4 h-4"/> Logout
               </button>
               {hasDeployedBefore && (
@@ -926,7 +933,8 @@ export default function Home() {
             </div>
           )}
           <button aria-label="Contact ClawLink Support" title="Contact Support" data-spring onClick={()=>setIsSupportModalOpen(true)}
-            className={`flex items-center gap-2 text-[11px] font-bold uppercase tracking-widest text-gray-400 hover:text-white px-4 py-2 rounded-full border border-white/10 hover:border-white/20 bg-white/5 transition-all hover:-translate-y-1 hover:shadow-lg`}>
+            className={`flex items-center gap-2 text-[11px] font-bold uppercase tracking-widest px-4 py-2 rounded-full border hover:border-orange-500 transition-all hover:-translate-y-1 hover:shadow-lg`}
+            style={{ color: "var(--text-muted)", borderColor: "var(--border-color)", backgroundColor: "rgba(128, 128, 128, 0.05)" }}>
             <MessageSquare className="w-4 h-4 text-orange-500"/>
             <span className="hidden sm:inline">Support</span>
           </button>
@@ -940,60 +948,66 @@ export default function Home() {
           LIVE NOW &nbsp;·&nbsp; 30-SECOND DEPLOY
         </div>
 
-        <h1 className="anim-h1 text-[clamp(2.5rem,5vw,5.5rem)] font-black leading-[1.1] tracking-[-0.04em] text-white w-full px-4 mb-2">
+        <h1 className="anim-h1 text-[clamp(2.5rem,5vw,5.5rem)] font-black leading-[1.1] tracking-[-0.04em] w-full px-4 mb-2" style={{ color: "var(--text-main)" }}>
           Deploy <span className="color-flow-text">OpenClaw AI Assistance</span>
         </h1>
         
-        <p className="anim-sub text-white font-black text-[22px] md:text-[28px] mb-8 uppercase tracking-wide">
+        <p className="anim-sub font-black text-[22px] md:text-[28px] mb-8 uppercase tracking-wide" style={{ color: "var(--text-main)" }}>
           FASTEST SERVER 1-CLICK DEPLOY
         </p>
 
-        <p className="anim-sub text-gray-400 font-medium text-[16px] md:text-[18px] max-w-[600px] mb-12 leading-[1.8]">
+        <p className="anim-sub font-medium text-[16px] md:text-[18px] max-w-[600px] mb-12 leading-[1.8]" style={{ color: "var(--text-muted)" }}>
           Avoid all technical complexity — one-click deploy your own 24/7 active Personal AI Assistant for WhatsApp, Telegram & Instagram. No code. No servers. Just results.
         </p>
 
-        <div className="anim-card tilt-el relative w-full max-w-[1100px] rounded-[24px] p-6 md:p-8 mb-8 overflow-hidden bg-[#0A0A0D] border border-white/[0.06] shadow-[0_30px_80px_rgba(0,0,0,0.6)]">
+        <div className="anim-card tilt-el relative w-full max-w-[1100px] rounded-[24px] p-6 md:p-8 mb-8 overflow-hidden transition-colors duration-300 shadow-[0_30px_80px_rgba(0,0,0,0.6)]"
+             style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border-color)" }}>
           
             {/* ============================================================== */}
             {/* 1 CHOOSE YOUR AI MODEL */}
             {/* ============================================================== */}
-            <p className="text-[10px] font-black tracking-[.2em] uppercase text-gray-500 text-left flex items-center gap-2 border-b border-white/5 pb-3 mb-4">
-              <span className="w-4 h-4 text-[9px] rounded bg-white/10 flex items-center justify-center text-white">1</span>
+            <p className="text-[10px] font-black tracking-[.2em] uppercase text-left flex items-center gap-2 pb-3 mb-4" style={{ color: "var(--text-muted)", borderBottom: "1px solid var(--border-color)" }}>
+              <span className="w-4 h-4 text-[9px] rounded flex items-center justify-center" style={{ backgroundColor: "rgba(128, 128, 128, 0.2)", color: "var(--text-main)" }}>1</span>
               Choose Your AI Model
             </p>
             <div className="grid grid-cols-2 md:grid-cols-5 gap-[12px] mb-8">
               
               <button aria-label="Select GPT-5.5 Pro Model" title="GPT-5.5 Pro" data-spring onClick={() => handleModelSelect("GPT-5.5 Pro")} 
                 disabled={(isTokenSaved || hasDeployedBefore) && activeModel!=="GPT-5.5 Pro"}
-                className={getButtonClass(modelActive("GPT-5.5 Pro"), activeModel !== null, "hover:border-green-400 hover:shadow-[0_0_15px_rgba(74,222,128,0.25)]")}>
+                className={getButtonClass(modelActive("GPT-5.5 Pro"), activeModel !== null, "hover:border-green-400 hover:shadow-[0_0_15px_rgba(74,222,128,0.25)]")}
+                style={{ backgroundColor: "rgba(128, 128, 128, 0.05)" }}>
                 <OpenAI_Icon size={ICON_SIZE}/>
                 <span className="ptx-name">GPT-5.5 Pro</span>
               </button>
 
               <button aria-label="Select Claude Opus 4.7 Model" title="Claude Opus 4.7" data-spring onClick={() => handleModelSelect("Claude Opus 4.7")} 
                 disabled={(isTokenSaved || hasDeployedBefore) && activeModel!=="Claude Opus 4.7"}
-                className={getButtonClass(modelActive("Claude Opus 4.7"), activeModel !== null, "hover:border-[#e6683c] hover:shadow-[0_0_15px_rgba(230,104,60,0.25)]")}>
+                className={getButtonClass(modelActive("Claude Opus 4.7"), activeModel !== null, "hover:border-[#e6683c] hover:shadow-[0_0_15px_rgba(230,104,60,0.25)]")}
+                style={{ backgroundColor: "rgba(128, 128, 128, 0.05)" }}>
                 <Claude_Icon size={ICON_SIZE}/>
                 <span className="ptx-name">Claude Opus 4.7</span>
               </button>
 
               <button aria-label="Select Gemini 3.1 Pro Model" title="Gemini 3.1 Pro" data-spring onClick={() => handleModelSelect("gemini 3.1 Pro")} 
                 disabled={(isTokenSaved || hasDeployedBefore) && activeModel!=="gemini 3.1 Pro"}
-                className={getButtonClass(modelActive("gemini 3.1 Pro"), activeModel !== null, "hover:border-blue-400 hover:shadow-[0_0_15px_rgba(96,165,250,0.25)]")}>
+                className={getButtonClass(modelActive("gemini 3.1 Pro"), activeModel !== null, "hover:border-blue-400 hover:shadow-[0_0_15px_rgba(96,165,250,0.25)]")}
+                style={{ backgroundColor: "rgba(128, 128, 128, 0.05)" }}>
                 <Gemini_Icon size={ICON_SIZE}/>
                 <span className="ptx-name">Gemini 3.1 Pro</span>
               </button>
 
               <button aria-label="Select Omni 3 Nexus Fallback Model" title="Omni 3 Nexus Fallback" data-spring onClick={() => handleModelSelect("omni 3 nexus")} 
                 disabled={(isTokenSaved || hasDeployedBefore) && activeModel!=="omni 3 nexus"}
-                className={getButtonClass(modelActive("omni 3 nexus"), activeModel !== null, "hover:border-[#00BFFF] hover:shadow-[0_0_15px_rgba(0,191,255,0.25)]")}>
+                className={getButtonClass(modelActive("omni 3 nexus"), activeModel !== null, "hover:border-[#00BFFF] hover:shadow-[0_0_15px_rgba(0,191,255,0.25)]")}
+                style={{ backgroundColor: "rgba(128, 128, 128, 0.05)" }}>
                 <Omni_Icon size={ICON_SIZE}/>
                 <span className="ptx-name">Omni 3 Nexus</span>
               </button>
 
-              <div aria-label="Llama 4 coming soon" title="Llama 4 (Coming Soon)" className="bg-[#E5E7EB] border border-white/5 overflow-hidden opacity-40 cursor-not-allowed pointer-events-none flex flex-row h-[60px] w-full px-[16px] gap-[12px] justify-start items-center rounded-[12px] col-span-2 md:col-span-1">
+              <div aria-label="Llama 4 coming soon" title="Llama 4 (Coming Soon)" className="overflow-hidden opacity-40 cursor-not-allowed pointer-events-none flex flex-row h-[60px] w-full px-[16px] gap-[12px] justify-start items-center rounded-[12px] col-span-2 md:col-span-1"
+                   style={{ backgroundColor: "rgba(128, 128, 128, 0.05)", border: "1px solid var(--border-color)" }}>
                 <Llama_Icon size={ICON_SIZE}/>
-                <span className="ptx-name text-gray-500">Llama 4</span>
+                <span className="ptx-name" style={{ color: "var(--text-muted)" }}>Llama 4</span>
                 <span className="ptx-soon">SOON</span>
               </div>
             </div>
@@ -1001,63 +1015,68 @@ export default function Home() {
             {/* ============================================================== */}
             {/* 2 SELECT YOUR CHANNEL */}
             {/* ============================================================== */}
-            <p className="text-[10px] font-black tracking-[.2em] uppercase text-gray-500 text-left flex items-center gap-2 border-b border-white/5 pb-3 mb-4">
-              <span className="w-4 h-4 text-[9px] rounded bg-white/10 flex items-center justify-center text-white">2</span>
+            <p className="text-[10px] font-black tracking-[.2em] uppercase text-left flex items-center gap-2 pb-3 mb-4" style={{ color: "var(--text-muted)", borderBottom: "1px solid var(--border-color)" }}>
+              <span className="w-4 h-4 text-[9px] rounded flex items-center justify-center" style={{ backgroundColor: "rgba(128, 128, 128, 0.2)", color: "var(--text-main)" }}>2</span>
               Select Your Channel
             </p>
             <div className="grid grid-cols-2 md:grid-cols-5 gap-[12px] mb-8">
               
               <button aria-label="Connect Telegram Channel" title="Telegram Channel" data-spring onClick={()=>handleChannelSelect("telegram")} 
                 disabled={(isTokenSaved || hasDeployedBefore) && activeChannel!=="telegram"}
-                className={getButtonClass(chanActive("telegram"), activeChannel !== null, "hover:border-[#2AABEE] hover:shadow-[0_0_15px_rgba(42,171,238,0.25)]")}>
+                className={getButtonClass(chanActive("telegram"), activeChannel !== null, "hover:border-[#2AABEE] hover:shadow-[0_0_15px_rgba(42,171,238,0.25)]")}
+                style={{ backgroundColor: "rgba(128, 128, 128, 0.05)" }}>
                 <Telegram_Icon size={ICON_SIZE}/>
                 <span className="ptx-name">Telegram</span>
               </button>
 
               <button aria-label="Connect WhatsApp Channel" title="WhatsApp Channel" data-spring onClick={()=>handleChannelSelect("whatsapp")} 
                 disabled={(isTokenSaved || hasDeployedBefore) && activeChannel!=="whatsapp"}
-                className={getButtonClass(chanActive("whatsapp"), activeChannel !== null, "hover:border-[#25D366] hover:shadow-[0_0_15px_rgba(37,211,102,0.25)]")}>
+                className={getButtonClass(chanActive("whatsapp"), activeChannel !== null, "hover:border-[#25D366] hover:shadow-[0_0_15px_rgba(37,211,102,0.25)]")}
+                style={{ backgroundColor: "rgba(128, 128, 128, 0.05)" }}>
                 <WhatsApp_Icon size={ICON_SIZE}/>
                 <span className="ptx-name">WhatsApp</span>
               </button>
               
               <button aria-label="Connect Instagram Channel" title="Instagram Channel" data-spring onClick={()=>handleChannelSelect("instagram")} 
                 disabled={(isTokenSaved || hasDeployedBefore) && activeChannel!=="instagram"}
-                className={getButtonClass(chanActive("instagram"), activeChannel !== null, "hover:border-pink-500 hover:shadow-[0_0_15px_rgba(236,72,153,0.25)]")}>
+                className={getButtonClass(chanActive("instagram"), activeChannel !== null, "hover:border-pink-500 hover:shadow-[0_0_15px_rgba(236,72,153,0.25)]")}
+                style={{ backgroundColor: "rgba(128, 128, 128, 0.05)" }}>
                 <Instagram_Icon size={ICON_SIZE}/>
                 <span className="ptx-name">Instagram</span>
               </button>
 
-              <div aria-label="Discord Bot Coming Soon" title="Discord (Coming Soon)" className="bg-[#E5E7EB] border border-white/5 overflow-hidden opacity-40 cursor-not-allowed pointer-events-none flex flex-row h-[60px] w-full px-[16px] gap-[12px] justify-start items-center rounded-[12px]">
+              <div aria-label="Discord Bot Coming Soon" title="Discord (Coming Soon)" className="overflow-hidden opacity-40 cursor-not-allowed pointer-events-none flex flex-row h-[60px] w-full px-[16px] gap-[12px] justify-start items-center rounded-[12px]"
+                   style={{ backgroundColor: "rgba(128, 128, 128, 0.05)", border: "1px solid var(--border-color)" }}>
                 <Discord_Icon size={ICON_SIZE}/>
-                <span className="ptx-name text-gray-500">Discord</span>
+                <span className="ptx-name" style={{ color: "var(--text-muted)" }}>Discord</span>
                 <span className="ptx-soon">SOON</span>
               </div>
 
-              <div aria-label="Slack Bot Coming Soon" title="Slack (Coming Soon)" className="bg-[#E5E7EB] border border-white/5 overflow-hidden opacity-40 cursor-not-allowed pointer-events-none flex flex-row h-[60px] w-full px-[16px] gap-[12px] justify-start items-center rounded-[12px] col-span-2 md:col-span-1">
+              <div aria-label="Slack Bot Coming Soon" title="Slack (Coming Soon)" className="overflow-hidden opacity-40 cursor-not-allowed pointer-events-none flex flex-row h-[60px] w-full px-[16px] gap-[12px] justify-start items-center rounded-[12px] col-span-2 md:col-span-1"
+                   style={{ backgroundColor: "rgba(128, 128, 128, 0.05)", border: "1px solid var(--border-color)" }}>
                 <div className="w-[20px] h-[20px] rounded-full flex items-center justify-center shrink-0 bg-[#4a154b]">
                   <svg viewBox="0 0 24 24" width="12" height="12" fill="white" aria-hidden="true"><path d="M5.04 15.44a2.52 2.52 0 01-5.04 0 2.52 2.52 0 012.52-2.52h2.52v2.52zm1.26 0a2.52 2.52 0 015.04 0v6.3a2.52 2.52 0 01-5.04 0v-6.3zM8.56 5.04a2.52 2.52 0 010-5.04 2.52 2.52 0 012.52 2.52v2.52H8.56zm0 1.26a2.52 2.52 0 010 5.04H2.26a2.52 2.52 0 010-5.04h6.3z"/></svg>
                 </div>
-                <span className="ptx-name text-gray-500">Slack</span>
+                <span className="ptx-name" style={{ color: "var(--text-muted)" }}>Slack</span>
                 <span className="ptx-soon">SOON</span>
               </div>
             </div>
           
-          <div className="mt-8 pt-6 border-t border-white/10 flex justify-center w-full">
+          <div className="mt-8 pt-6 flex justify-center w-full" style={{ borderTop: "1px solid var(--border-color)" }}>
             <AnimatePresence mode="wait">
               {botLink ? (
                 <motion.div key="success" initial={{opacity:0,scale:0.95}} animate={{opacity:1,scale:1}} exit={{opacity:0}} transition={{duration:.12,ease:"easeOut"}}
                   className="rounded-[20px] p-6 text-center w-full"
                   style={{background:"rgba(34,197,94,0.06)",border:"1px solid rgba(34,197,94,0.2)"}}>
-                  <p className="text-[16px] font-bold text-white mb-5">🚀 Your Bot is Live!</p>
+                  <p className="text-[16px] font-bold mb-5" style={{ color: "var(--text-main)" }}>🚀 Your Bot is Live!</p>
                   <div className="flex flex-col sm:flex-row justify-center gap-4">
                     <button aria-label="Open Live Bot Interface" title="Open Live Bot" data-ripple data-spring onClick={openLiveBotHandler}
                       className={`relative overflow-hidden bg-white text-black font-black uppercase tracking-widest px-8 py-3.5 rounded-xl text-[13px] hover:-translate-y-1 hover:shadow-lg transition-transform duration-150`}>
                       <span className="mt">Open Live Bot</span>
                     </button>
                     <button aria-label="Navigate to Command Center Dashboard" title="Go to Dashboard" data-spring onClick={()=>router.push("/dashboard")}
-                      className={`flex items-center justify-center gap-2 text-white font-bold px-8 py-3.5 rounded-xl text-[13px] hover:-translate-y-1 hover:shadow-lg transition-transform duration-150`}
-                      style={{background:"rgba(255,255,255,0.06)",border:"1px solid rgba(255,255,255,0.12)"}}>
+                      className={`flex items-center justify-center gap-2 font-bold px-8 py-3.5 rounded-xl text-[13px] hover:-translate-y-1 hover:shadow-lg transition-transform duration-150`}
+                      style={{ color: "var(--text-main)", background:"rgba(128, 128, 128, 0.1)", border:"1px solid var(--border-color)"}}>
                       <Activity className="w-5 h-5"/> Live Dashboard
                     </button>
                   </div>
@@ -1066,9 +1085,9 @@ export default function Home() {
               ) : (
                 <motion.div key="login" id="login-section" initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} transition={{duration:.12}} className="w-full flex flex-col items-center">
                   {status === "authenticated" && session?.user?.email && (
-                    <motion.div initial={{opacity: 0, y: 10}} animate={{opacity: 1, y: 0}} className="mb-4 flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/5 border border-white/10">
-                      <User className="w-3 h-3 text-gray-400" />
-                      <span className="text-xs text-gray-400 font-mono tracking-wide">Logged in as: <span className="text-white font-bold">{session.user.email}</span></span>
+                    <motion.div initial={{opacity: 0, y: 10}} animate={{opacity: 1, y: 0}} className="mb-4 flex items-center gap-2 px-4 py-1.5 rounded-full" style={{ backgroundColor: "rgba(128, 128, 128, 0.1)", border: "1px solid var(--border-color)" }}>
+                      <User className="w-3 h-3" style={{ color: "var(--text-muted)" }} />
+                      <span className="text-xs font-mono tracking-wide" style={{ color: "var(--text-muted)" }}>Logged in as: <span className="font-bold" style={{ color: "var(--text-main)" }}>{session.user.email}</span></span>
                     </motion.div>
                   )}
                   
@@ -1079,7 +1098,8 @@ export default function Home() {
                       </button>
                   ) : (
                       <button aria-label="Login with Google to Deploy Bot" title="Login & Deploy" data-ripple data-spring onClick={handleLoginOrDeploy} disabled={isDeploying}
-                        className={`relative overflow-hidden w-full max-w-[600px] ${isDeploying ? 'bg-white/10 text-white cursor-not-allowed border border-white/20' : 'bg-white text-black hover:scale-[1.02] hover:-translate-y-1 hover:shadow-[0_10px_30px_rgba(255,255,255,0.2)] active:bg-gray-200'} py-4 md:py-5 rounded-[12px] flex items-center justify-center gap-3 text-[15px] md:text-[17px] font-black tracking-[0.05em] transition-all duration-150`}>
+                        className={`relative overflow-hidden w-full max-w-[600px] ${isDeploying ? 'cursor-not-allowed' : 'bg-white text-black hover:scale-[1.02] hover:-translate-y-1 hover:shadow-[0_10px_30px_rgba(255,255,255,0.2)] active:bg-gray-200'} py-4 md:py-5 rounded-[12px] flex items-center justify-center gap-3 text-[15px] md:text-[17px] font-black tracking-[0.05em] transition-all duration-150`}
+                        style={isDeploying ? { backgroundColor: "rgba(128, 128, 128, 0.1)", color: "var(--text-main)", border: "1px solid var(--border-color)" } : {}}>
                         {isDeploying ? (
                           <span className="flex items-center gap-3 font-mono tracking-widest text-[13px] uppercase">
                              <div className="bouncing-dots"><span/><span/><span/></div> DEPLOYING TO SECURE SERVER
@@ -1093,8 +1113,8 @@ export default function Home() {
                   )}
                   
                   {!hasDeployedBefore && (
-                      <p className="mt-5 text-[13px] text-gray-500 text-center leading-relaxed">
-                        Deploying <strong className="text-gray-300">{activeModel ? PRICING_DATA[activeModel].name : "GPT-5.5 Pro"}</strong> to <strong className="text-gray-300 capitalize">{activeChannel || "Telegram"}</strong>.{" "}
+                      <p className="mt-5 text-[13px] text-center leading-relaxed" style={{ color: "var(--text-muted)" }}>
+                        Deploying <strong style={{ color: "var(--text-main)" }}>{activeModel ? PRICING_DATA[activeModel].name : "GPT-5.5 Pro"}</strong> to <strong className="capitalize" style={{ color: "var(--text-main)" }}>{activeChannel || "Telegram"}</strong>.{" "}
                         <span className="text-[#34A853] font-semibold text-[13px]">Limited enterprise servers available.</span>
                       </p>
                   )}
@@ -1104,24 +1124,25 @@ export default function Home() {
           </div>
         </div>
 
-        <div className="anim-stats grid grid-cols-3 w-full max-w-[700px] border border-white/[0.05] rounded-[24px] overflow-hidden bg-[#0A0A0D]/50 backdrop-blur-md shadow-2xl">
-          {[["30s","Deploy time"],["5+","AI models"],["24/7","Always active"]].map(([n,l]) => (
-            <div key={n} className="stat-hover flex flex-col items-center py-8 px-4 transition-colors duration-150 hover:bg-white/[0.04]"
-              style={{background:"rgba(255,255,255,0.015)",borderRight:"1px solid rgba(255,255,255,0.04)"}}>
+        <div className="anim-stats grid grid-cols-3 w-full max-w-[700px] rounded-[24px] overflow-hidden backdrop-blur-md shadow-2xl transition-colors duration-300"
+             style={{ backgroundColor: "var(--bg-section)", border: "1px solid var(--border-color)" }}>
+          {[["30s","Deploy time"],["5+","AI models"],["24/7","Always active"]].map(([n,l], i) => (
+            <div key={n} className="stat-hover flex flex-col items-center py-8 px-4 transition-colors duration-150 hover:bg-black/5"
+              style={{borderRight: i < 2 ? "1px solid var(--border-color)" : "none"}}>
               <span className="text-[2.4rem] lg:text-[2.8rem] font-black leading-none grad-text drop-shadow-md">{n}</span>
-              <span className="text-[11px] lg:text-[12px] font-bold tracking-[0.2em] uppercase text-gray-500 mt-3 text-center">{l}</span>
+              <span className="text-[11px] lg:text-[12px] font-bold tracking-[0.2em] uppercase mt-3 text-center" style={{ color: "var(--text-muted)" }}>{l}</span>
             </div>
           ))}
         </div>
       </section>
 
       {/* ══ HOW IT WORKS ══ */}
-      <section className="relative z-10 py-28 px-6 md:px-12" style={{borderTop:"1px solid rgba(255,255,255,0.04)"}}>
+      <section className="relative z-10 py-28 px-6 md:px-12 transition-colors duration-300" style={{ borderTop: "1px solid var(--border-color)", backgroundColor: "var(--bg-main)" }}>
         <div className="max-w-[1200px] mx-auto">
           <div className="sr-up text-center mb-20">
             <p className="text-[11px] font-black tracking-[.2em] uppercase text-orange-500 mb-3">How It Works</p>
-            <h2 className="text-[clamp(2rem,4vw,3.2rem)] font-black tracking-[-0.035em] text-white mb-4">4 steps to go live</h2>
-            <p className="text-gray-400 text-[16px] max-w-[500px] mx-auto leading-relaxed">Zero to live AI agent in 30 seconds. No tech expertise needed.</p>
+            <h2 className="text-[clamp(2rem,4vw,3.2rem)] font-black tracking-[-0.035em] mb-4" style={{ color: "var(--text-main)" }}>4 steps to go live</h2>
+            <p className="text-[16px] max-w-[500px] mx-auto leading-relaxed" style={{ color: "var(--text-muted)" }}>Zero to live AI agent in 30 seconds. No tech expertise needed.</p>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-10 lg:gap-14 relative">
             <div className="hidden md:block absolute top-10 left-[12%] right-[12%] h-px" style={{background:"linear-gradient(90deg,transparent,rgba(249,115,22,.25) 30%,rgba(249,115,22,.25) 70%,transparent)"}}/>
@@ -1132,15 +1153,15 @@ export default function Home() {
               {n:"04",e:"🚀",t:"Go Live",              d:"Enterprise infra spins up. 24/7, zero maintenance."},
             ].map(({n,e,t,d},i)=>(
               <div key={n} className={`sr-up sd${i+1} flex flex-col items-center text-center px-4 relative z-10`}>
-                <div className="icon-lift w-[70px] h-[70px] lg:w-[80px] lg:h-[80px] rounded-full flex items-center justify-center font-black text-[22px] lg:text-[26px] text-orange-500 mb-6 z-10 shadow-[0_0_30px_rgba(249,115,22,0.1)]"
-                  style={{background:"#07070A",border:"2px solid rgba(249,115,22,0.25)",transition:"all .2s"}}
-                  onMouseEnter={e2=>{(e2.target as HTMLElement).style.background="rgba(249,115,22,0.1)";(e2.target as HTMLElement).style.boxShadow="0 0 40px rgba(249,115,22,0.3)"}}
-                  onMouseLeave={e2=>{(e2.target as HTMLElement).style.background="#07070A";(e2.target as HTMLElement).style.boxShadow="0 0 30px rgba(249,115,22,0.1)"}}>
+                <div className="icon-lift w-[70px] h-[70px] lg:w-[80px] lg:h-[80px] rounded-full flex items-center justify-center font-black text-[22px] lg:text-[26px] text-orange-500 mb-6 z-10 shadow-[0_0_30px_rgba(249,115,22,0.1)] transition-colors duration-300"
+                  style={{backgroundColor:"var(--bg-main)",border:"2px solid rgba(249,115,22,0.25)"}}
+                  onMouseEnter={e2=>{(e2.target as HTMLElement).style.backgroundColor="rgba(249,115,22,0.1)";(e2.target as HTMLElement).style.boxShadow="0 0 40px rgba(249,115,22,0.3)"}}
+                  onMouseLeave={e2=>{(e2.target as HTMLElement).style.backgroundColor="var(--bg-main)";(e2.target as HTMLElement).style.boxShadow="0 0 30px rgba(249,115,22,0.1)"}}>
                   {n}
                 </div>
                 <div className="text-[26px] mb-3">{e}</div>
-                <div className="text-[15px] font-black text-white mb-2">{t}</div>
-                <div className="text-[13px] text-gray-500 leading-relaxed">{d}</div>
+                <div className="text-[15px] font-black mb-2" style={{ color: "var(--text-main)" }}>{t}</div>
+                <div className="text-[13px] leading-relaxed" style={{ color: "var(--text-muted)" }}>{d}</div>
               </div>
             ))}
           </div>
@@ -1148,53 +1169,60 @@ export default function Home() {
       </section>
 
       {/* ══ FEATURES ══ */}
-      <section className="relative z-10 py-28 px-6 md:px-12" style={{background:"#0A0A0D",borderTop:"1px solid rgba(255,255,255,0.04)"}}>
+      {/* 🔥 Updated section background */}
+      <section className="relative z-10 py-28 px-6 md:px-12 transition-colors duration-300" style={{ backgroundColor: "var(--bg-section)", borderTop: "1px solid var(--border-color)" }}>
         <div className="max-w-[1200px] mx-auto">
           <div className="sr-up text-center mb-16">
             <p className="text-[11px] font-black tracking-[.2em] uppercase text-orange-500 mb-3">Features</p>
-            <h2 className="text-[clamp(2rem,4vw,3.2rem)] font-black tracking-[-0.035em] text-white mb-4">Enterprise power, zero complexity</h2>
-            <p className="text-gray-400 text-[16px] max-w-[500px] mx-auto leading-relaxed">Built in, battle-tested, ready on day one.</p>
+            <h2 className="text-[clamp(2rem,4vw,3.2rem)] font-black tracking-[-0.035em] mb-4" style={{ color: "var(--text-main)" }}>Enterprise power, zero complexity</h2>
+            <p className="text-[16px] max-w-[500px] mx-auto leading-relaxed" style={{ color: "var(--text-muted)" }}>Built in, battle-tested, ready on day one.</p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-[2fr_1fr_1fr] gap-[1px] rounded-t-[28px] overflow-hidden bg-white/[0.05] border border-white/[0.06] border-b-0">
+          <div className="grid grid-cols-1 md:grid-cols-[2fr_1fr_1fr] gap-[1px] rounded-t-[28px] overflow-hidden border border-b-0 transition-colors duration-300" style={{ backgroundColor: "var(--border-color)", borderColor: "var(--border-color)" }}>
             {[
               {bg:"rgba(59,130,246,.09)", e:"🌐",t:"Omnichannel Deployment",  d:"Deploy an AI Agent across Telegram, WhatsApp, and Instagram simultaneously. Switch channels in seconds.",tag:"Multi-platform"},
               {bg:"rgba(168,85,247,.09)",e:"🎙️",t:"Voice Intelligence",      d:"Whisper AI transcribes voice notes and replies naturally in real-time.",tag:"Whisper AI"},
               {bg:"rgba(234,179,8,.09)", e:"🚀",t:"Ultra Low Latency",         d:"Global edge network ensures sub-second response times worldwide.",tag:"Fast Response"},
             ].map(({bg,e,t,d,tag})=>(
-              <div key={t} className="fi-card bg-[#0A0A0D] p-8 md:p-10 hover:bg-[#111116] transition-colors duration-150">
+              <div key={t} className="fi-card p-8 md:p-10 transition-colors duration-300" style={{ backgroundColor: "var(--bg-card)" }}
+                   onMouseEnter={e2 => (e2.currentTarget as HTMLElement).style.filter = "brightness(1.1)"}
+                   onMouseLeave={e2 => (e2.currentTarget as HTMLElement).style.filter = "brightness(1)"}>
                 <div className="icon-lift w-[52px] h-[52px] rounded-[14px] flex items-center justify-center mb-6 text-[24px]" style={{background:bg}}>{e}</div>
-                <h3 className="text-[16px] font-black text-white mb-3">{t}</h3>
-                <p className="text-[13px] text-gray-400 leading-[1.8] mb-5">{d}</p>
+                <h3 className="text-[16px] font-black mb-3" style={{ color: "var(--text-main)" }}>{t}</h3>
+                <p className="text-[13px] leading-[1.8] mb-5" style={{ color: "var(--text-muted)" }}>{d}</p>
                 <span className="inline-flex px-3.5 py-1.5 rounded-full text-[10px] font-bold text-orange-400 uppercase tracking-[.1em]" style={{background:"rgba(249,115,22,0.07)",border:"1px solid rgba(249,115,22,0.18)"}}>{tag}</span>
               </div>
             ))}
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-[1fr_2fr] gap-[1px] bg-white/[0.05] border border-white/[0.06] border-t-0 border-b-0">
+          <div className="grid grid-cols-1 md:grid-cols-[1fr_2fr] gap-[1px] border border-t-0 border-b-0 transition-colors duration-300" style={{ backgroundColor: "var(--border-color)", borderColor: "var(--border-color)" }}>
             {[
               {bg:"rgba(34,197,94,.09)", e:"🗃️",t:"Enterprise RAG Memory",      d:"Inject catalog, FAQs, brand voice into Vector DB. Your agent knows your business inside out.",tag:"Vector DB"},
               {bg:"rgba(0,191,255,.09)", e:"🧠",t:"OmniAgent — 3x AI Fallback", d:"Routes between GPT-5.4, Claude Opus 4.7, and Gemini 3.1 in real-time. 0% downtime. The ultimate OpenClaw alternative.",tag:"0% Downtime"},
             ].map(({bg,e,t,d,tag})=>(
-              <div key={t} className="fi-card bg-[#0A0A0D] p-8 md:p-10 hover:bg-[#111116] transition-colors duration-150">
+              <div key={t} className="fi-card p-8 md:p-10 transition-colors duration-300" style={{ backgroundColor: "var(--bg-card)" }}
+                   onMouseEnter={e2 => (e2.currentTarget as HTMLElement).style.filter = "brightness(1.1)"}
+                   onMouseLeave={e2 => (e2.currentTarget as HTMLElement).style.filter = "brightness(1)"}>
                 <div className="icon-lift w-[52px] h-[52px] rounded-[14px] flex items-center justify-center mb-6 text-[24px]" style={{background:bg}}>{e}</div>
-                <h3 className="text-[16px] font-black text-white mb-3">{t}</h3>
-                <p className="text-[13px] text-gray-400 leading-[1.8] mb-5">{d}</p>
+                <h3 className="text-[16px] font-black mb-3" style={{ color: "var(--text-main)" }}>{t}</h3>
+                <p className="text-[13px] leading-[1.8] mb-5" style={{ color: "var(--text-muted)" }}>{d}</p>
                 <span className="inline-flex px-3.5 py-1.5 rounded-full text-[10px] font-bold text-orange-400 uppercase tracking-[.1em]" style={{background:"rgba(249,115,22,0.07)",border:"1px solid rgba(249,115,22,0.18)"}}>{tag}</span>
               </div>
             ))}
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-[1px] rounded-b-[28px] overflow-hidden bg-white/[0.05] border border-white/[0.06] border-t-0">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-[1px] rounded-b-[28px] overflow-hidden border border-t-0 transition-colors duration-300" style={{ backgroundColor: "var(--border-color)", borderColor: "var(--border-color)" }}>
             {[
               {bg:"rgba(249,115,22,.09)",e:"⚡",t:"AI Interceptor",      d:"Check orders, book slots, trigger webhooks, update CRMs — fully autonomous.",tag:"API Triggers"},
               {bg:"rgba(236,72,153,.09)",e:"💬",t:"Live CRM & Handoff",  d:"Monitor all conversations. One click to take over from AI seamlessly.",tag:"Real-time CRM"},
               {bg:"rgba(16,185,129,.09)",e:"🔒",t:"Enterprise Security", d:"AES-256 encryption. SOC 2 compliant. Zero data retention on our servers.",tag:"AES-256"},
             ].map(({bg,e,t,d,tag})=>(
-              <div key={t} className="fi-card bg-[#0A0A0D] p-8 md:p-10 hover:bg-[#111116] transition-colors duration-150">
+              <div key={t} className="fi-card p-8 md:p-10 transition-colors duration-300" style={{ backgroundColor: "var(--bg-card)" }}
+                   onMouseEnter={e2 => (e2.currentTarget as HTMLElement).style.filter = "brightness(1.1)"}
+                   onMouseLeave={e2 => (e2.currentTarget as HTMLElement).style.filter = "brightness(1)"}>
                 <div className="icon-lift w-[52px] h-[52px] rounded-[14px] flex items-center justify-center mb-6 text-[24px]" style={{background:bg}}>{e}</div>
-                <h3 className="text-[16px] font-black text-white mb-3">{t}</h3>
-                <p className="text-[13px] text-gray-400 leading-[1.8] mb-5">{d}</p>
+                <h3 className="text-[16px] font-black mb-3" style={{ color: "var(--text-main)" }}>{t}</h3>
+                <p className="text-[13px] leading-[1.8] mb-5" style={{ color: "var(--text-muted)" }}>{d}</p>
                 <span className="inline-flex px-3.5 py-1.5 rounded-full text-[10px] font-bold text-orange-400 uppercase tracking-[.1em]" style={{background:"rgba(249,115,22,0.07)",border:"1px solid rgba(249,115,22,0.18)"}}>{tag}</span>
               </div>
             ))}
@@ -1203,15 +1231,16 @@ export default function Home() {
       </section>
 
       {/* ══ COMPARISON ══ */}
-      <section id="features" className="relative z-10 py-28 px-6 md:px-12" style={{background:"#0D0D10",borderTop:"1px solid rgba(255,255,255,0.04)"}}>
+      {/* 🔥 Updated comparison section background */}
+      <section id="features" className="relative z-10 py-28 px-6 md:px-12 transition-colors duration-300" style={{ backgroundColor: "var(--bg-main)", borderTop: "1px solid var(--border-color)" }}>
         <div className="max-w-[1200px] mx-auto">
           <div className="sr-up text-center mb-16">
             <p className="text-[11px] font-black tracking-[.2em] uppercase text-orange-500 mb-3">Comparison</p>
-            <h2 className="text-[clamp(2rem,4vw,3.2rem)] font-black tracking-[-0.035em] text-white">Traditional Setup vs ClawLink</h2>
+            <h2 className="text-[clamp(2rem,4vw,3.2rem)] font-black tracking-[-0.035em]" style={{ color: "var(--text-main)" }}>Traditional Setup vs ClawLink</h2>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-[1.5fr_1fr] gap-6 lg:gap-10">
-            <div className="sr-left rounded-[24px] overflow-hidden bg-[#0A0A0D]" style={{border:"1px solid rgba(255,255,255,0.08)",boxShadow:"0 10px 40px rgba(0,0,0,0.5)"}}>
-              <div className="px-6 py-5 text-[11px] font-black uppercase tracking-[.2em] text-gray-500" style={{borderBottom:"1px solid rgba(255,255,255,0.06)",background:"rgba(255,255,255,0.02)"}}>
+            <div className="sr-left rounded-[24px] overflow-hidden transition-colors duration-300" style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border-color)", boxShadow: "0 10px 40px rgba(0,0,0,0.1)" }}>
+              <div className="px-6 py-5 text-[11px] font-black uppercase tracking-[.2em]" style={{ color: "var(--text-muted)", borderBottom: "1px solid var(--border-color)", backgroundColor: "rgba(128,128,128,0.05)" }}>
                 Traditional Setup — Step by Step
               </div>
               {[
@@ -1220,24 +1249,24 @@ export default function Home() {
                 ["Installing OpenClaw manually","7 min"],["Setting up OpenClaw database","10 min"],
                 ["Connecting to AI provider","4 min"],["Pairing with Telegram / WhatsApp API","4 min"],
               ].map(([l,t])=>(
-                <div key={l} className="flex justify-between items-center px-6 py-4 transition-colors duration-150 hover:bg-white/[0.02]" style={{borderBottom:"1px solid rgba(255,255,255,0.04)"}}>
-                  <span className="text-[14px] text-gray-300 font-medium">{l}</span>
-                  <span className="text-[11px] text-white font-bold bg-white/[0.06] px-3 py-1.5 rounded-lg whitespace-nowrap ml-4 border border-white/10">{t}</span>
+                <div key={l} className="flex justify-between items-center px-6 py-4 transition-colors duration-150 hover:bg-black/5" style={{ borderBottom: "1px solid var(--border-color)" }}>
+                  <span className="text-[14px] font-medium" style={{ color: "var(--text-main)" }}>{l}</span>
+                  <span className="text-[11px] font-bold px-3 py-1.5 rounded-lg whitespace-nowrap ml-4 transition-colors duration-300" style={{ color: "var(--text-main)", backgroundColor: "rgba(128,128,128,0.1)", border: "1px solid var(--border-color)" }}>{t}</span>
                 </div>
               ))}
-              <div className="flex justify-between items-center px-6 py-5 font-black text-[15px]" style={{background:"rgba(255,255,255,0.03)",borderTop:"1px solid rgba(255,255,255,0.08)"}}>
-                <span className="text-white tracking-wide">Total Time</span><span className="text-red-400 bg-red-400/10 px-4 py-1.5 rounded-xl border border-red-400/20">60 MINUTES</span>
+              <div className="flex justify-between items-center px-6 py-5 font-black text-[15px]" style={{ backgroundColor: "rgba(128,128,128,0.05)", borderTop: "1px solid var(--border-color)" }}>
+                <span className="tracking-wide" style={{ color: "var(--text-main)" }}>Total Time</span><span className="text-red-500 bg-red-500/10 px-4 py-1.5 rounded-xl border border-red-500/20">60 MINUTES</span>
               </div>
             </div>
 
-            <div className="sr-rght rounded-[24px] flex flex-col items-center justify-center text-center p-12 relative overflow-hidden" style={{border:"2px solid rgba(249,115,22,0.25)",background:"linear-gradient(160deg,rgba(249,115,22,0.08),#0A0A0D 60%)",boxShadow:"0 20px 60px rgba(249,115,22,0.15)"}}>
+            <div className="sr-rght rounded-[24px] flex flex-col items-center justify-center text-center p-12 relative overflow-hidden transition-colors duration-300" style={{ border: "2px solid rgba(249,115,22,0.25)", backgroundColor: "var(--bg-card)", boxShadow: "0 20px 60px rgba(249,115,22,0.1)" }}>
               <p className="text-[11px] font-black tracking-[.2em] uppercase text-orange-500 mb-4">With ClawLink</p>
-              <p className="font-black leading-none mb-2 text-[4rem] lg:text-[4.5rem] grad-text drop-shadow-lg" style={{letterSpacing:"-.05em"}}>ClawLink</p>
-              <p className="text-[3rem] lg:text-[3.5rem] font-black text-white leading-none mb-6 drop-shadow-md" style={{letterSpacing:"-.04em"}}>&lt;30 sec</p>
-              <p className="text-[14px] text-gray-400 max-w-[260px] leading-[1.8]">Pick a model, connect your channel, deploy. All infrastructure handled for you.</p>
+              <p className="font-black leading-none mb-2 text-[4rem] lg:text-[4.5rem] grad-text drop-shadow-sm" style={{ letterSpacing: "-.05em" }}>ClawLink</p>
+              <p className="text-[3rem] lg:text-[3.5rem] font-black leading-none mb-6 drop-shadow-sm" style={{ color: "var(--text-main)", letterSpacing: "-.04em" }}>&lt;30 sec</p>
+              <p className="text-[14px] max-w-[260px] leading-[1.8]" style={{ color: "var(--text-muted)" }}>Pick a model, connect your channel, deploy. All infrastructure handled for you.</p>
               <button aria-label="Start Building Free Now" title="Start Free Now" data-ripple data-spring onClick={()=>document.getElementById("hero")?.scrollIntoView({behavior:"smooth"})}
                 className={`mag-el relative overflow-hidden mt-10 px-10 py-4 rounded-xl text-[14px] font-black text-white uppercase tracking-widest hover:-translate-y-1 hover:shadow-lg transition-transform duration-150 orange-glow`}
-                style={{background:"linear-gradient(135deg,#f97316,#ea6a00)"}}>
+                style={{ background: "linear-gradient(135deg,#f97316,#ea6a00)" }}>
                 <span className="mt">Start Free Now →</span>
               </button>
             </div>
@@ -1246,38 +1275,42 @@ export default function Home() {
       </section>
 
       {/* ══ MARQUEE ══ */}
-      <section className="relative z-10 py-28 overflow-hidden" style={{background:"#07070A",borderTop:"1px solid rgba(255,255,255,0.04)"}}>
+      {/* 🔥 Updated marquee section background */}
+      <section className="relative z-10 py-28 overflow-hidden transition-colors duration-300" style={{ backgroundColor: "var(--bg-section)", borderTop: "1px solid var(--border-color)" }}>
         <div className="sr-up text-center mb-16 px-4">
           <p className="text-[11px] font-black tracking-[.2em] uppercase text-orange-500 mb-3">50+ AI Use Cases</p>
-          <h2 className="text-[clamp(2.4rem,6vw,4.2rem)] font-black tracking-[-0.04em] text-white">Thousands of Use Cases</h2>
-          <p className="text-gray-400 font-medium text-[16px] mt-4">Your agent handles complex tasks around the clock.</p>
+          <h2 className="text-[clamp(2.4rem,6vw,4.2rem)] font-black tracking-[-0.04em]" style={{ color: "var(--text-main)" }}>Thousands of Use Cases</h2>
+          <p className="font-medium text-[16px] mt-4" style={{ color: "var(--text-muted)" }}>Your agent handles complex tasks around the clock.</p>
         </div>
         <div className="flex flex-col gap-4 relative w-full">
           {[row1,row2,row3,row4,row5].map((r,i)=><MarqueeRow key={i} items={r} reverse={i%2===1}/>)}
-          <div className="absolute inset-0 pointer-events-none" style={{background:"linear-gradient(90deg,#07070A 0%,transparent 20%,transparent 80%,#07070A 100%)"}}/>
+          {/* Dynamic gradient for marquee edges */}
+          <div className="absolute inset-0 pointer-events-none transition-colors duration-300" style={{ background: "linear-gradient(90deg, var(--bg-section) 0%, transparent 20%, transparent 80%, var(--bg-section) 100%)" }}/>
         </div>
       </section>
 
       {/* ══ FOOTER ══ */}
-      <footer className="relative z-10 pt-28 pb-14 px-6 md:px-16" style={{background:"#040405",borderTop:"1px solid rgba(255,255,255,0.05)"}}>
-        <h2 className="sr-up text-[clamp(2.8rem,6vw,4.8rem)] font-black tracking-[-0.04em] mb-8 text-white" style={{fontFamily:"Georgia,serif",lineHeight:1.06}}>Deploy. Automate. Relax.</h2>
+      {/* 🔥 Updated footer background */}
+      <footer className="relative z-10 pt-28 pb-14 px-6 md:px-16 transition-colors duration-300" style={{ backgroundColor: "var(--bg-footer)", borderTop: "1px solid var(--border-color)" }}>
+        <h2 className="sr-up text-[clamp(2.8rem,6vw,4.8rem)] font-black tracking-[-0.04em] mb-8" style={{ fontFamily: "Georgia,serif", lineHeight: 1.06, color: "var(--text-main)" }}>Deploy. Automate. Relax.</h2>
         <button aria-label="Get Started with ClawLink" title="Get Started Free" data-ripple data-spring onClick={()=>document.getElementById("hero")?.scrollIntoView({behavior:"smooth"})}
           className={`mag-el sr-up relative overflow-hidden px-12 py-5 rounded-[16px] text-[15px] font-black text-black mb-24 uppercase tracking-widest hover:-translate-y-1 hover:shadow-lg transition-transform duration-150 orange-glow`}
           style={{background:"linear-gradient(135deg,#FFA87A,#F97316)"}}>
           <span className="mt">Get Started Free →</span>
         </button>
-        <div className="flex flex-col md:flex-row justify-between items-center gap-6 text-[12px] text-gray-500 pt-10" style={{borderTop:"1px solid rgba(255,255,255,0.06)"}}>
+        <div className="flex flex-col md:flex-row justify-between items-center gap-6 text-[12px] pt-10 transition-colors duration-300" style={{ color: "var(--text-muted)", borderTop: "1px solid var(--border-color)" }}>
           <span className="font-medium">© 2026 ClawLink Inc. All rights reserved.</span>
           <span className="hidden md:block uppercase tracking-[.15em] text-[10px] font-bold">© 2026 CLAWLINK INC. GLOBAL AI SAAS INFRASTRUCTURE.</span>
           <div className="flex flex-wrap justify-center gap-6 font-medium">
             {[["Privacy Policy","/privacy"], ["Terms of Service","/terms"], ["Refund Policy", "/refund"], ["Documentation","/docs"]].map(([l,h])=>(
-              <a key={h} href={h} className="hover:text-white transition-colors duration-200">{l}</a>
+              <a key={h} href={h} className="transition-colors duration-200" style={{ color: "var(--text-muted)" }} onMouseEnter={e => e.currentTarget.style.color = "var(--text-main)"} onMouseLeave={e => e.currentTarget.style.color = "var(--text-muted)"}>{l}</a>
             ))}
           </div>
         </div>
       </footer>
 
       {/* ══ MODALS ══ */}
+      {/* Note: Modals are kept dark intentionally as overlays, typical of modern UI patterns */}
       <AnimatePresence>
         {isSupportModalOpen && (
           <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/80 backdrop-blur-[20px] p-4">
@@ -1555,4 +1588,4 @@ export default function Home() {
 
     </div>
   );
-}  
+}
