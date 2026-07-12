@@ -12,6 +12,7 @@
  * ⚡ ULTRA-FAST: Optimized API calls to run in PARALLEL (Promise.allSettled).
  * 🛡️ UI POLISH: Strictly locked to ONLY use <SpinnerCounter />. Removed any generic/Z loaders.
  * 🛡️ A11Y & CSS FIXED: Removed inline styles triggering warnings & added proper aria-labels to all buttons.
+ * 🌟 NEW: Premium Light/Dark Theme Engine Injected via CSS Variables.
  * * ALL RIGHTS RESERVED. CLAWLINK INC.
  * ==============================================================================================
  */
@@ -52,6 +53,9 @@ import {
   TrendingUp,
   Shield,
   Mail,
+  Sun, 
+  Moon, 
+  Monitor // 🔥 THEME ICONS
 } from "lucide-react";
 import {
   AreaChart,
@@ -87,7 +91,7 @@ const PRICING_DATA: Record<string, any> = {
         msgs: "Optimized Speed",
         desc: "Instant customer conversions & rapid response.",
         accent: "rgba(255,255,255,.35)",
-        color: "text-gray-400",
+        color: "var(--text-muted)",
       },
       {
         id: "pro",
@@ -97,7 +101,7 @@ const PRICING_DATA: Record<string, any> = {
         msgs: "Enterprise Scale",
         desc: "Complex query mastermind & priority routing.",
         accent: "#3B82F6",
-        color: "text-blue-400",
+        color: "text-blue-500",
         badge: "Popular",
       },
       {
@@ -108,7 +112,7 @@ const PRICING_DATA: Record<string, any> = {
         msgs: "Peak Execution",
         desc: "Zero parallel chat limit & max system power.",
         accent: "#A855F7",
-        color: "text-purple-400",
+        color: "text-purple-500",
       },
       {
         id: "adv_max",
@@ -118,7 +122,7 @@ const PRICING_DATA: Record<string, any> = {
         msgs: "Unlimited Tier",
         desc: "Global system dominance & uncapped scaling.",
         accent: "#F97316",
-        color: "text-orange-400",
+        color: "text-orange-500",
         badge: "Yearly ⭐",
         isYearly: true,
       },
@@ -135,7 +139,7 @@ const PRICING_DATA: Record<string, any> = {
         msgs: "Optimized Speed",
         desc: "Instant customer conversions & rapid response.",
         accent: "rgba(255,255,255,.35)",
-        color: "text-gray-400",
+        color: "var(--text-muted)",
       },
       {
         id: "pro",
@@ -145,7 +149,7 @@ const PRICING_DATA: Record<string, any> = {
         msgs: "Enterprise Scale",
         desc: "Complex query mastermind & priority routing.",
         accent: "#3B82F6",
-        color: "text-blue-400",
+        color: "text-blue-500",
         badge: "Popular",
       },
       {
@@ -156,7 +160,7 @@ const PRICING_DATA: Record<string, any> = {
         msgs: "Peak Execution",
         desc: "Zero parallel chat limit & max system power.",
         accent: "#A855F7",
-        color: "text-purple-400",
+        color: "text-purple-500",
       },
       {
         id: "adv_max",
@@ -166,7 +170,7 @@ const PRICING_DATA: Record<string, any> = {
         msgs: "Unlimited Tier",
         desc: "Global system dominance & uncapped scaling.",
         accent: "#F97316",
-        color: "text-orange-400",
+        color: "text-orange-500",
         badge: "Yearly ⭐",
         isYearly: true,
       },
@@ -183,7 +187,7 @@ const PRICING_DATA: Record<string, any> = {
         msgs: "Optimized Speed",
         desc: "Instant customer conversions & rapid response.",
         accent: "rgba(255,255,255,.35)",
-        color: "text-gray-400",
+        color: "var(--text-muted)",
       },
       {
         id: "pro",
@@ -193,7 +197,7 @@ const PRICING_DATA: Record<string, any> = {
         msgs: "Enterprise Scale",
         desc: "Complex query mastermind & priority routing.",
         accent: "#3B82F6",
-        color: "text-blue-400",
+        color: "text-blue-500",
         badge: "Popular",
       },
       {
@@ -204,7 +208,7 @@ const PRICING_DATA: Record<string, any> = {
         msgs: "Peak Execution",
         desc: "Zero parallel chat limit & max system power.",
         accent: "#A855F7",
-        color: "text-purple-400",
+        color: "text-purple-500",
       },
       {
         id: "adv_max",
@@ -214,7 +218,7 @@ const PRICING_DATA: Record<string, any> = {
         msgs: "Unlimited Tier",
         desc: "Global system dominance & uncapped scaling.",
         accent: "#F97316",
-        color: "text-orange-400",
+        color: "text-orange-500",
         badge: "Yearly ⭐",
         isYearly: true,
       },
@@ -284,6 +288,37 @@ export default function Dashboard() {
   // ─── CURRENCY DYNAMICS ───
   const [currency, setCurrency] = useState<"USD" | "INR">("USD");
   const [currencySymbol, setCurrencySymbol] = useState("$");
+
+  // 🔥 🚀 THEME ENGINE STATE
+  const [theme, setTheme] = useState("dark");
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const savedTheme = localStorage.getItem("clawlink_theme") || "dark";
+      setTheme(savedTheme);
+      const prefersLight = window.matchMedia("(prefers-color-scheme: light)").matches;
+      if (savedTheme === "light" || (savedTheme === "system" && prefersLight)) {
+         document.documentElement.classList.add("light-theme-active");
+      }
+    }
+  }, []);
+
+  const cycleTheme = () => {
+    const nextTheme = theme === "dark" ? "light" : theme === "light" ? "system" : "dark";
+    setTheme(nextTheme);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("clawlink_theme", nextTheme);
+      console.warn(`[ClawLink System] Theme synced to: ${nextTheme.toUpperCase()}`);
+      
+      const prefersLight = window.matchMedia("(prefers-color-scheme: light)").matches;
+      if (nextTheme === "light" || (nextTheme === "system" && prefersLight)) {
+        document.documentElement.classList.add("light-theme-active");
+      } else {
+        document.documentElement.classList.remove("light-theme-active");
+      }
+    }
+  };
+  // 🔥 🚀 END THEME ENGINE
 
   // Fetch Knowledge Logic
   const fetchKnowledge = async () => {
@@ -768,7 +803,7 @@ export default function Dashboard() {
         bgLight: "bg-blue-500/5",
         bgHover: "group-hover:bg-blue-500/10",
         dot: hasTgToken && hasActivePlan ? "bg-green-500 animate-pulse shadow-[0_0_8px_#22c55e]" : hasTgToken ? "bg-yellow-500" : "bg-red-500",
-        text: hasTgToken && hasActivePlan ? "text-green-400" : "text-blue-400",
+        text: hasTgToken && hasActivePlan ? "text-green-500" : "text-blue-500",
         border: "border-blue-500/20",
         iconBg: "bg-blue-500/10",
         isSetup: hasTgToken,
@@ -782,7 +817,7 @@ export default function Dashboard() {
         bgLight: "bg-green-500/5",
         bgHover: "group-hover:bg-green-500/10",
         dot: hasWaId && hasActivePlan ? "bg-green-500 animate-pulse shadow-[0_0_8px_#22c55e]" : hasWaId ? "bg-yellow-500" : "bg-red-500",
-        text: hasWaId && hasActivePlan ? "text-green-400" : "text-green-500",
+        text: hasWaId && hasActivePlan ? "text-green-500" : "text-green-500",
         border: "border-green-500/20",
         iconBg: "bg-green-500/10",
         isSetup: hasWaId,
@@ -796,7 +831,7 @@ export default function Dashboard() {
         bgLight: "bg-pink-500/5",
         bgHover: "group-hover:bg-pink-500/10",
         dot: hasIgId && hasActivePlan ? "bg-green-500 animate-pulse shadow-[0_0_8px_#22c55e]" : hasIgId ? "bg-yellow-500" : "bg-red-500",
-        text: hasIgId && hasActivePlan ? "text-green-400" : "text-pink-500",
+        text: hasIgId && hasActivePlan ? "text-green-500" : "text-pink-500",
         border: "border-pink-500/20",
         iconBg: "bg-pink-500/10",
         isSetup: hasIgId,
@@ -846,7 +881,7 @@ export default function Dashboard() {
   const gridColsClass = isOmniActive ? "grid-cols-1 sm:grid-cols-2 max-w-2xl" : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 max-w-5xl";
 
   return (
-    <div className="w-full min-h-screen bg-[#07070A] text-[#E8E8EC] font-sans relative selection:bg-orange-500/30 overflow-y-auto custom-scrollbar flex flex-col">
+    <div className="w-full min-h-screen font-sans relative selection:bg-orange-500/30 overflow-y-auto custom-scrollbar flex flex-col transition-colors duration-300" style={{ backgroundColor: "var(--bg-main)", color: "var(--text-main)" }}>
       <Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="lazyOnload" />
 
       {/* ─── PLG PRICING GATING MODAL ─── */}
@@ -857,24 +892,26 @@ export default function Dashboard() {
               initial={{ opacity: 0, scale: 0.95, y: 10 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 10 }}
-              className="bg-[#0A0A0C] border border-white/10 rounded-2xl p-5 sm:p-8 max-w-5xl w-full relative shadow-[0_20px_60px_rgba(0,0,0,0.8)] max-h-[90vh] flex flex-col"
+              className="border rounded-2xl p-5 sm:p-8 max-w-5xl w-full relative shadow-[0_20px_60px_rgba(0,0,0,0.8)] max-h-[90vh] flex flex-col transition-colors duration-300"
+              style={{ backgroundColor: "var(--bg-card)", borderColor: "var(--border-color)" }}
             >
               <button
                 title="Close pricing popup"
                 aria-label="Close pricing popup"
                 onClick={() => setShowPricingPopup(false)}
-                className="absolute top-4 right-4 z-50 p-2 bg-white/5 hover:bg-white/10 rounded-full text-gray-400 hover:text-white transition-colors"
+                className="absolute top-4 right-4 z-50 p-2 hover:bg-black/10 rounded-full transition-colors"
+                style={{ color: "var(--text-muted)", backgroundColor: "rgba(128,128,128,0.1)" }}
               >
                 <X className="w-5 h-5" />
               </button>
 
               <div className="overflow-y-auto custom-scrollbar flex-1 -mx-2 px-2 pb-2">
                 <div className="text-center mb-6 mt-2">
-                  <h2 className="text-xl sm:text-2xl font-black text-white uppercase tracking-widest mb-2 flex items-center justify-center gap-2">
+                  <h2 className="text-xl sm:text-2xl font-black uppercase tracking-widest mb-2 flex items-center justify-center gap-2" style={{ color: "var(--text-main)" }}>
                     <Globe className="w-5 h-5 sm:w-6 sm:h-6 text-orange-500" /> SECURE DEPLOYMENT PLAN
                   </h2>
-                  <p className="text-xs sm:text-sm text-gray-400">
-                    Select a tier to activate your <span className="text-white font-bold">{currentPricing.name}</span> engine.
+                  <p className="text-xs sm:text-sm" style={{ color: "var(--text-muted)" }}>
+                    Select a tier to activate your <span className="font-bold" style={{ color: "var(--text-main)" }}>{currentPricing.name}</span> engine.
                   </p>
                 </div>
 
@@ -888,7 +925,7 @@ export default function Dashboard() {
                         className={`pricing-card relative p-5 rounded-2xl cursor-pointer transition-all duration-150 ${btn} ${isActive ? "scale-[1.02]" : "hover:scale-[1.01]"}`}
                         style={
                           {
-                            "--pricing-bg": isActive ? "rgba(255,255,255,0.05)" : "rgba(255,255,255,0.02)",
+                            "--pricing-bg": isActive ? "rgba(128,128,128,0.05)" : "rgba(128,128,128,0.02)",
                             "--pricing-border": plan.accent,
                             "--pricing-active": isActive ? "1" : "0",
                           } as React.CSSProperties
@@ -903,20 +940,20 @@ export default function Dashboard() {
                           </div>
                         )}
                         <h3 className={`font-bold uppercase text-[11px] tracking-widest mb-2 ${plan.color}`}>{plan.name}</h3>
-                        <div className="text-[1.6rem] sm:text-[1.9rem] font-black text-white mb-2">
+                        <div className="text-[1.6rem] sm:text-[1.9rem] font-black mb-2" style={{ color: "var(--text-main)" }}>
                           {currencySymbol}
                           {(currency === "INR" ? plan.inr || 0 : plan.usd || 0).toLocaleString()}
-                          <span className="pricing-suffix">{plan.isYearly ? "/yr" : "/mo"}</span>
+                          <span className="pricing-suffix" style={{ color: "var(--text-muted)" }}>{plan.isYearly ? "/yr" : "/mo"}</span>
                         </div>
-                        <p className="text-[11px] text-gray-400 leading-relaxed mb-3 h-auto sm:h-8">{plan.desc}</p>
-                        <span className="inline-block px-2 py-1 bg-white/5 rounded text-[10px] text-gray-300 border border-white/10">{plan.msgs}</span>
+                        <p className="text-[11px] leading-relaxed mb-3 h-auto sm:h-8" style={{ color: "var(--text-muted)" }}>{plan.desc}</p>
+                        <span className="inline-block px-2 py-1 rounded text-[10px] border" style={{ backgroundColor: "rgba(128,128,128,0.1)", color: "var(--text-muted)", borderColor: "var(--border-color)" }}>{plan.msgs}</span>
                       </div>
                     );
                   })}
                 </div>
               </div>
 
-              <div className="mt-4 pt-4 border-t border-white/10 flex flex-col sm:flex-row gap-4 w-full max-w-lg mx-auto justify-center shrink-0">
+              <div className="mt-4 pt-4 flex flex-col sm:flex-row gap-4 w-full max-w-lg mx-auto justify-center shrink-0" style={{ borderTop: "1px solid var(--border-color)" }}>
                 {currency === "INR" ? (
                   <button
                     onClick={triggerRazorpayPayment}
@@ -949,49 +986,79 @@ export default function Dashboard() {
       <div className="fixed bottom-[-20%] left-[-8%] w-[800px] h-[800px] rounded-full pointer-events-none z-0 gradient-indigo-dark" />
 
       {/* ─── HEADER ─── */}
-      <header className="flex items-center justify-between p-6 md:p-8 border-b border-white/5 bg-[#07070A]/70 backdrop-blur-xl sticky top-0 z-30 transition-all duration-300">
+      <header className="flex items-center justify-between p-6 md:p-8 border-b backdrop-blur-xl sticky top-0 z-30 transition-all duration-300" style={{ backgroundColor: "var(--bg-main)", borderColor: "var(--border-color)", opacity: 0.95 }}>
         <div className="flex items-center gap-6">
           <svg width="130" height="22" viewBox="0 0 152 26" fill="none" className="shrink-0 cursor-pointer transition-transform hover:scale-105" onClick={() => router.push("/")}>
             <defs>
               <linearGradient id="cgh" x1="0" y1="0" x2="0" y2="26" gradientUnits="userSpaceOnUse">
-                <stop stopColor="#fff" />
-                <stop offset="1" stopColor="rgba(255,255,255,.65)" />
+                <stop stopColor="currentColor" />
+                <stop offset="1" stopColor="currentColor" stopOpacity="0.65" />
               </linearGradient>
             </defs>
             <path d="M22 3C18 .5 10 .5 7 4.5S3.5 18 7 22.5 18 26 22 23" stroke="url(#cgh)" strokeWidth="4.5" strokeLinecap="round" fill="none" />
             <line x1="7.5" y1="3" x2="14.5" y2="11.5" stroke="#f97316" strokeWidth="2.2" strokeLinecap="round" />
             <line x1="12.5" y1="1.5" x2="19.5" y2="10" stroke="#f97316" strokeWidth="2.2" strokeLinecap="round" />
             <line x1="17.5" y1="2.5" x2="24" y2="10.5" stroke="#f97316" strokeWidth="2" strokeLinecap="round" />
-            <text x="30" y="18" fontFamily="-apple-system,BlinkMacSystemFont,sans-serif" fontSize="14.5" fontWeight="800" letterSpacing="1.4" fill="#fff">LAWLINK</text>
+            <text x="30" y="18" fontFamily="-apple-system,BlinkMacSystemFont,sans-serif" fontSize="14.5" fontWeight="800" letterSpacing="1.4" fill="currentColor">LAWLINK</text>
             <text x="116" y="18" fontFamily="-apple-system,BlinkMacSystemFont,sans-serif" fontSize="9.5" fontWeight="700" letterSpacing=".7" fill="#f97316">.COM</text>
           </svg>
 
-          <div className="hidden md:block border-l border-white/10 pl-6">
-            <h1 className="text-xl font-black text-white tracking-tight leading-none">Command Center</h1>
-            <p className="text-xs text-gray-400 mt-1">
-              Welcome back, <span className="capitalize">{session?.user?.name?.split(" ")[0] || "Agent"}</span>. Your AI Agent is active.
+          <div className="hidden md:block border-l pl-6" style={{ borderColor: "var(--border-color)" }}>
+            <h1 className="text-xl font-black tracking-tight leading-none" style={{ color: "var(--text-main)" }}>Command Center</h1>
+            <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>
+              Welcome back, <span className="capitalize" style={{ color: "var(--text-main)" }}>{session?.user?.name?.split(" ")[0] || "Agent"}</span>. Your AI Agent is active.
             </p>
           </div>
         </div>
 
         <div className="flex items-center gap-4">
+          {/* 🔥 🚀 INJECTED: PREMIUM THEME TOGGLE BUTTON */}
+          <button
+            onClick={cycleTheme}
+            aria-label="Toggle System Theme"
+            title={`Theme: ${theme.toUpperCase()}`}
+            className="relative flex items-center justify-center w-9 h-9 rounded-full border transition-all duration-300 hover:shadow-[0_0_15px_rgba(255,255,255,0.1)] group overflow-hidden"
+            style={{ backgroundColor: "rgba(128, 128, 128, 0.1)", borderColor: "var(--border-color)" }}
+          >
+            <AnimatePresence mode="wait">
+              {theme === "dark" && (
+                <motion.div key="dark" initial={{ rotate: -90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: 90, opacity: 0 }} transition={{ duration: 0.15 }}>
+                  <Moon className="w-4 h-4 text-gray-400 group-hover:text-white transition-colors" />
+                </motion.div>
+              )}
+              {theme === "light" && (
+                <motion.div key="light" initial={{ rotate: -90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: 90, opacity: 0 }} transition={{ duration: 0.15 }}>
+                  <Sun className="w-4 h-4 text-orange-400 drop-shadow-[0_0_8px_rgba(249,115,22,0.5)]" />
+                </motion.div>
+              )}
+              {theme === "system" && (
+                <motion.div key="system" initial={{ scale: 0.5, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.5, opacity: 0 }} transition={{ duration: 0.15 }}>
+                  <Monitor className="w-4 h-4 text-blue-500 drop-shadow-[0_0_8px_rgba(59,130,246,0.5)]" />
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </button>
+          {/* 🔥 🚀 END INJECTION */}
+
           <button
             onClick={handleOpenLiveBot}
             aria-label="Open Live Bot"
             title="Open Live Bot Interface"
-            className={`hidden sm:flex items-center gap-2 bg-white text-black hover:bg-gray-100 px-5 py-2.5 rounded-full font-black text-[11px] uppercase tracking-widest shadow-[0_0_20px_rgba(255,255,255,0.15)] ${btn}`}
+            className={`hidden sm:flex items-center gap-2 px-5 py-2.5 rounded-full font-black text-[11px] uppercase tracking-widest shadow-[0_0_20px_rgba(255,255,255,0.15)] ${btn}`}
+            style={{ backgroundColor: "var(--text-main)", color: "var(--bg-main)" }}
           >
             <Bot className="w-4 h-4" /> OPEN LIVE BOT <ExternalLink className="w-3 h-3 ml-1" />
           </button>
-          <div className="hidden md:flex items-center bg-[#1A1A1A] border border-white/10 rounded-full px-4 py-2">
-            <Search className="w-4 h-4 text-gray-500" />
-            <input type="text" placeholder="Search logs..." className="bg-transparent border-none outline-none text-sm ml-2 text-white placeholder-gray-600 w-32 font-mono" />
+          <div className="hidden md:flex items-center border rounded-full px-4 py-2" style={{ backgroundColor: "rgba(128,128,128,0.05)", borderColor: "var(--border-color)" }}>
+            <Search className="w-4 h-4" style={{ color: "var(--text-muted)" }} />
+            <input type="text" placeholder="Search logs..." className="bg-transparent border-none outline-none text-sm ml-2 font-mono" style={{ color: "var(--text-main)" }} />
           </div>
           <button 
             onClick={() => signOut()} 
             aria-label="Secure Logout"
             title="Logout"
-            className={`flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-gray-500 hover:text-white ${btn}`}
+            className={`flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest hover:text-orange-500 transition-colors ${btn}`}
+            style={{ color: "var(--text-muted)" }}
           >
             <LogOut className="w-3 h-3" /> Logout
           </button>
@@ -1009,17 +1076,18 @@ export default function Dashboard() {
               transition={{ duration: 0.2 }}
               className="bg-gradient-to-r from-blue-600/20 to-purple-600/20 border border-blue-500/30 rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-lg"
             >
-              <div className="flex items-center gap-3 text-blue-200 text-sm font-medium">
-                <Smartphone className="w-5 h-5 text-blue-400 flex-shrink-0" />
+              <div className="flex items-center gap-3 text-sm font-medium" style={{ color: "var(--text-main)" }}>
+                <Smartphone className="w-5 h-5 text-blue-500 flex-shrink-0" />
                 <p>
-                  For optimal reliability, click <strong className="text-white">&quot;Add to Home Screen&quot;</strong> in your browser to deploy the ClawLink Progressive Web App.
+                  For optimal reliability, click <strong>&quot;Add to Home Screen&quot;</strong> in your browser to deploy the ClawLink Progressive Web App.
                 </p>
               </div>
               <button 
                 onClick={() => setShowAppBanner(false)} 
                 aria-label="Dismiss Banner"
                 title="Dismiss App Install Banner"
-                className="text-gray-400 hover:text-white flex-shrink-0 bg-white/5 p-2 rounded-full"
+                className="flex-shrink-0 p-2 rounded-full transition-colors"
+                style={{ backgroundColor: "rgba(128,128,128,0.1)", color: "var(--text-muted)" }}
               >
                 <X className="w-4 h-4" />
               </button>
@@ -1029,14 +1097,14 @@ export default function Dashboard() {
 
         {/* 🚀 CRITICAL PLG GATEKEEPER UI */}
         {!hasActivePlan && (
-          <div className="bg-[#1A1A24] border border-orange-500/30 p-5 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4 shadow-[0_0_30px_rgba(249,115,22,0.08)]">
+          <div className="border border-orange-500/30 p-5 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4 shadow-[0_0_30px_rgba(249,115,22,0.08)] transition-colors duration-300" style={{ backgroundColor: "var(--bg-card)" }}>
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-full bg-orange-500/20 flex items-center justify-center shrink-0">
-                <Activity className="w-5 h-5 text-orange-400" />
+                <Activity className="w-5 h-5 text-orange-500" />
               </div>
               <div>
-                <h3 className="text-white font-bold text-lg">Agent Infrastructure Sleeping</h3>
-                <p className="text-gray-400 text-sm mt-1">Your AI integration is verified but requires an active execution plan to process API requests.</p>
+                <h3 className="font-bold text-lg" style={{ color: "var(--text-main)" }}>Agent Infrastructure Sleeping</h3>
+                <p className="text-sm mt-1" style={{ color: "var(--text-muted)" }}>Your AI integration is verified but requires an active execution plan to process API requests.</p>
               </div>
             </div>
             <button
@@ -1056,13 +1124,14 @@ export default function Dashboard() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.25, ease: "easeOut" }}
-            className="bg-[#111113] border border-white/5 p-6 rounded-[1.5rem] shadow-xl flex flex-col justify-between relative overflow-hidden group hover:border-white/10 transition-colors h-48"
+            className="border p-6 rounded-[1.5rem] shadow-xl flex flex-col justify-between relative overflow-hidden group transition-colors duration-300 h-48"
+            style={{ backgroundColor: "var(--bg-card)", borderColor: "var(--border-color)" }}
           >
             <div className="absolute top-0 left-0 w-32 h-32 bg-blue-500/5 rounded-full blur-3xl group-hover:bg-blue-500/10 transition-colors"></div>
             <div className="relative z-10 flex justify-between items-start">
               <div>
-                <h3 className="text-gray-500 text-[10px] font-bold uppercase tracking-widest mb-1">Current Plan</h3>
-                <p className="text-3xl font-black text-white font-serif uppercase tracking-wide leading-none mt-2">{currentPlan}</p>
+                <h3 className="text-[10px] font-bold uppercase tracking-widest mb-1" style={{ color: "var(--text-muted)" }}>Current Plan</h3>
+                <p className="text-3xl font-black font-serif uppercase tracking-wide leading-none mt-2" style={{ color: "var(--text-main)" }}>{currentPlan}</p>
                 {isPremium && !isExpired && (
                   <span className="mt-2 bg-gradient-to-r from-orange-500 to-pink-500 text-white px-3 py-1 rounded border border-orange-400/50 text-[9px] font-black uppercase tracking-widest flex items-center gap-1 w-fit shadow-[0_0_15px_rgba(249,115,22,0.4)]">
                     <Crown className="w-3 h-3" /> PRIORITY TIER
@@ -1078,7 +1147,8 @@ export default function Dashboard() {
               disabled={hasActivePlan}
               aria-label={primaryButtonText}
               title={primaryButtonText}
-              className={`relative z-10 w-full py-3 rounded-xl text-[11px] font-bold uppercase tracking-widest transition-all ${!hasActivePlan ? "bg-white text-black hover:scale-[1.02] shadow-[0_0_15px_rgba(255,255,255,0.2)]" : "bg-green-500/10 text-green-400 border border-green-500/20 cursor-default"}`}
+              className={`relative z-10 w-full py-3 rounded-xl text-[11px] font-bold uppercase tracking-widest transition-all ${!hasActivePlan ? "hover:scale-[1.02] shadow-[0_0_15px_rgba(128,128,128,0.2)]" : "bg-green-500/10 text-green-500 border border-green-500/20 cursor-default"}`}
+              style={!hasActivePlan ? { backgroundColor: "var(--text-main)", color: "var(--bg-main)" } : {}}
             >
               {primaryButtonText}
             </button>
@@ -1089,13 +1159,14 @@ export default function Dashboard() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.25, delay: 0.1, ease: "easeOut" }}
-            className="bg-[#111113] border border-white/5 p-6 rounded-[1.5rem] shadow-xl flex flex-col justify-between relative overflow-hidden group hover:border-white/10 transition-colors h-48"
+            className="border p-6 rounded-[1.5rem] shadow-xl flex flex-col justify-between relative overflow-hidden group transition-colors duration-300 h-48"
+            style={{ backgroundColor: "var(--bg-card)", borderColor: "var(--border-color)" }}
           >
             <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/5 rounded-full blur-3xl group-hover:bg-purple-500/10 transition-colors"></div>
             <div className="relative z-10 flex justify-between items-start">
               <div>
-                <h3 className="text-gray-500 text-[10px] font-bold uppercase tracking-widest mb-1">Active AI Brain</h3>
-                <p className="text-xl font-black text-white font-sans tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-blue-400 mt-2 leading-tight">
+                <h3 className="text-[10px] font-bold uppercase tracking-widest mb-1" style={{ color: "var(--text-muted)" }}>Active AI Brain</h3>
+                <p className="text-xl font-black font-sans tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-purple-500 to-blue-500 mt-2 leading-tight">
                   {currentPricing.name}
                 </p>
                 {isOmniActive ? (
@@ -1104,14 +1175,14 @@ export default function Dashboard() {
                     <span className="text-[#00BFFF] text-[9px] font-black tracking-widest uppercase">3x Matrix Fallback</span>
                   </div>
                 ) : (
-                  <p className="text-[10px] text-gray-500 font-mono mt-1">Single-node execution</p>
+                  <p className="text-[10px] font-mono mt-1" style={{ color: "var(--text-muted)" }}>Single-node execution</p>
                 )}
               </div>
               <div className="w-10 h-10 rounded-xl bg-purple-500/10 flex items-center justify-center text-purple-500 border border-purple-500/20">
                 <BrainCircuit className="w-5 h-5" />
               </div>
             </div>
-            <div className={`relative z-10 w-full py-3 rounded-xl text-[11px] font-bold border flex items-center justify-center gap-2 ${hasActivePlan ? "bg-green-500/10 text-green-400 border-green-500/20" : "bg-blue-500/10 text-blue-400 border-blue-500/20"}`}>
+            <div className={`relative z-10 w-full py-3 rounded-xl text-[11px] font-bold border flex items-center justify-center gap-2 ${hasActivePlan ? "bg-green-500/10 text-green-500 border-green-500/20" : "bg-blue-500/10 text-blue-500 border-blue-500/20"}`}>
               <Zap className="w-3 h-3" /> {hasActivePlan ? "Infrastructure Unlocked" : "Infrastructure Locked"}
             </div>
           </motion.div>
@@ -1121,18 +1192,19 @@ export default function Dashboard() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.25, delay: 0.2, ease: "easeOut" }}
-            className="bg-[#111113] border border-white/5 p-6 rounded-[1.5rem] shadow-xl flex flex-col justify-between relative overflow-hidden group hover:border-white/10 transition-colors h-48"
+            className="border p-6 rounded-[1.5rem] shadow-xl flex flex-col justify-between relative overflow-hidden group transition-colors duration-300 h-48"
+            style={{ backgroundColor: "var(--bg-card)", borderColor: "var(--border-color)" }}
           >
             <div className={`absolute top-0 right-0 w-32 h-32 ${primaryChannel.bgLight} rounded-full blur-3xl ${primaryChannel.bgHover} transition-colors`}></div>
             <div className="relative z-10 flex justify-between items-start">
               <div>
-                <h3 className="text-gray-500 text-[10px] font-bold uppercase tracking-widest mb-1">Live Channel</h3>
-                <div className={`text-xl font-black mt-2 leading-tight ${primaryChannel.text === "text-gray-500" ? "text-gray-400 italic" : "text-white"}`}>
+                <h3 className="text-[10px] font-bold uppercase tracking-widest mb-1" style={{ color: "var(--text-muted)" }}>Live Channel</h3>
+                <div className={`text-xl font-black mt-2 leading-tight`} style={primaryChannel.text === "text-gray-500" ? { color: "var(--text-muted)", fontStyle: "italic" } : { color: "var(--text-main)" }}>
                   {primaryChannel.name}
                 </div>
                 {!hasActivePlan ? (
-                  <p className="text-[10px] font-mono mt-2 flex items-center gap-1.5 text-gray-500">
-                    <span className="w-1.5 h-1.5 rounded-full bg-gray-600"></span>
+                  <p className="text-[10px] font-mono mt-2 flex items-center gap-1.5" style={{ color: "var(--text-muted)" }}>
+                    <span className="w-1.5 h-1.5 rounded-full bg-gray-500"></span>
                     Awaiting Payment
                   </p>
                 ) : (
@@ -1153,7 +1225,8 @@ export default function Dashboard() {
               disabled={!primaryChannel.isSetup}
               aria-label="Open Assigned Live Bot Channel"
               title="Open Live Bot"
-              className={`relative z-10 w-full py-3 rounded-xl text-[11px] font-bold uppercase tracking-widest transition-all bg-white/5 text-gray-300 border border-white/10 hover:bg-white/10 flex items-center justify-center gap-2 ${btn} disabled:opacity-50`}
+              className={`relative z-10 w-full py-3 rounded-xl text-[11px] font-bold uppercase tracking-widest transition-all border flex items-center justify-center gap-2 ${btn} disabled:opacity-50`}
+              style={{ backgroundColor: "rgba(128,128,128,0.1)", color: "var(--text-main)", borderColor: "var(--border-color)" }}
             >
               Open Live Bot <ExternalLink className="w-3 h-3" />
             </button>
@@ -1166,17 +1239,18 @@ export default function Dashboard() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.25, delay: 0.5, ease: "easeOut" }}
-            className="bg-[#111113] border border-white/5 p-6 rounded-[1.5rem] shadow-xl relative overflow-hidden group hover:border-white/10 transition-colors"
+            className="border p-6 rounded-[1.5rem] shadow-xl relative overflow-hidden group transition-colors duration-300"
+            style={{ backgroundColor: "var(--bg-card)", borderColor: "var(--border-color)" }}
           >
             <div className="absolute top-0 right-0 w-32 h-32 bg-green-500/5 rounded-full blur-3xl group-hover:bg-green-500/10 transition-colors"></div>
             <div className="flex justify-between items-start mb-4 relative z-10">
               <div className="w-10 h-10 rounded-xl bg-green-500/10 flex items-center justify-center text-green-500 border border-green-500/20">
                 <Users className="w-5 h-5" />
               </div>
-              <span className="text-[10px] font-bold uppercase tracking-widest text-gray-500">Total Leads</span>
+              <span className="text-[10px] font-bold uppercase tracking-widest" style={{ color: "var(--text-muted)" }}>Total Leads</span>
             </div>
-            <h3 className="text-3xl font-black text-white relative z-10">{(stats?.totalLeads || 0).toLocaleString()}</h3>
-            <p className="text-xs text-green-400 mt-1 flex items-center gap-1 relative z-10">
+            <h3 className="text-3xl font-black relative z-10" style={{ color: "var(--text-main)" }}>{(stats?.totalLeads || 0).toLocaleString()}</h3>
+            <p className="text-xs text-green-500 mt-1 flex items-center gap-1 relative z-10">
               <TrendingUp className="w-3 h-3" /> Captured Automatically
             </p>
           </motion.div>
@@ -1185,17 +1259,18 @@ export default function Dashboard() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.25, delay: 0.6, ease: "easeOut" }}
-            className="bg-[#111113] border border-white/5 p-6 rounded-[1.5rem] shadow-xl relative overflow-hidden group hover:border-white/10 transition-colors"
+            className="border p-6 rounded-[1.5rem] shadow-xl relative overflow-hidden group transition-colors duration-300"
+            style={{ backgroundColor: "var(--bg-card)", borderColor: "var(--border-color)" }}
           >
             <div className="absolute top-0 right-0 w-32 h-32 bg-orange-500/5 rounded-full blur-3xl group-hover:bg-orange-500/10 transition-colors"></div>
             <div className="flex justify-between items-start mb-4 relative z-10">
               <div className="w-10 h-10 rounded-xl bg-orange-500/10 flex items-center justify-center text-orange-500 border border-orange-500/20">
                 <MessageSquare className="w-5 h-5" />
               </div>
-              <span className="text-[10px] font-bold uppercase tracking-widest text-gray-500">Traffic</span>
+              <span className="text-[10px] font-bold uppercase tracking-widest" style={{ color: "var(--text-muted)" }}>Traffic</span>
             </div>
-            <h3 className="text-3xl font-black text-white relative z-10">{(totalMsgs || 0).toLocaleString()}</h3>
-            <p className="text-xs text-gray-400 mt-1 relative z-10">Messages Processed</p>
+            <h3 className="text-3xl font-black relative z-10" style={{ color: "var(--text-main)" }}>{(totalMsgs || 0).toLocaleString()}</h3>
+            <p className="text-xs mt-1 relative z-10" style={{ color: "var(--text-muted)" }}>Messages Processed</p>
           </motion.div>
         </div>
 
@@ -1205,14 +1280,15 @@ export default function Dashboard() {
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.3, delay: 0.7, ease: "easeOut" }}
-            className="lg:col-span-2 bg-[#111113] border border-white/5 p-6 md:p-8 rounded-[1.5rem] shadow-xl"
+            className="lg:col-span-2 border p-6 md:p-8 rounded-[1.5rem] shadow-xl transition-colors duration-300"
+            style={{ backgroundColor: "var(--bg-card)", borderColor: "var(--border-color)" }}
           >
-            <h3 className="text-sm font-bold uppercase tracking-widest text-gray-500 mb-8">AI Traffic (Last 7 Days)</h3>
+            <h3 className="text-sm font-bold uppercase tracking-widest mb-8" style={{ color: "var(--text-muted)" }}>AI Traffic (Last 7 Days)</h3>
             <div className="h-[300px] w-full relative">
               {!stats?.chartData || stats.chartData.length === 0 ? (
-                <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#07070A]/50 rounded-xl border border-white/5">
+                <div className="absolute inset-0 flex flex-col items-center justify-center rounded-xl border" style={{ backgroundColor: "rgba(128,128,128,0.05)", borderColor: "var(--border-color)" }}>
                   <BarChart3 className="w-8 h-8 text-orange-500/40 mb-3" />
-                  <p className="text-xs font-mono text-gray-400">Awaiting Real-Time Traffic Data...</p>
+                  <p className="text-xs font-mono" style={{ color: "var(--text-muted)" }}>Awaiting Real-Time Traffic Data...</p>
                 </div>
               ) : (
                 <ResponsiveContainer width="100%" height="100%">
@@ -1223,16 +1299,16 @@ export default function Dashboard() {
                         <stop offset="95%" stopColor="#f97316" stopOpacity={0} />
                       </linearGradient>
                     </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" vertical={false} />
-                    <XAxis dataKey="name" stroke="#ffffff50" fontSize={10} tickLine={false} axisLine={false} />
-                    <YAxis stroke="#ffffff50" fontSize={10} tickLine={false} axisLine={false} />
+                    <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" vertical={false} />
+                    <XAxis dataKey="name" stroke="var(--text-muted)" fontSize={10} tickLine={false} axisLine={false} />
+                    <YAxis stroke="var(--text-muted)" fontSize={10} tickLine={false} axisLine={false} />
                     <Tooltip
                       contentStyle={{
-                        backgroundColor: "#07070A",
-                        borderColor: "#ffffff20",
+                        backgroundColor: "var(--bg-card)",
+                        borderColor: "var(--border-color)",
                         borderRadius: "12px",
                         fontSize: "12px",
-                        color: "#fff",
+                        color: "var(--text-main)",
                       }}
                       itemStyle={{ color: "#f97316", fontWeight: "bold" }}
                     />
@@ -1247,23 +1323,24 @@ export default function Dashboard() {
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.3, delay: 0.8, ease: "easeOut" }}
-            className="bg-[#111113] border border-white/5 p-6 md:p-8 rounded-[1.5rem] shadow-xl flex flex-col"
+            className="border p-6 md:p-8 rounded-[1.5rem] shadow-xl flex flex-col transition-colors duration-300"
+            style={{ backgroundColor: "var(--bg-card)", borderColor: "var(--border-color)" }}
           >
-            <h3 className="text-sm font-bold uppercase tracking-widest text-gray-500 mb-8">Channel Traffic</h3>
+            <h3 className="text-sm font-bold uppercase tracking-widest mb-8" style={{ color: "var(--text-muted)" }}>Channel Traffic</h3>
             <div className="flex-1 flex flex-col justify-center gap-8">
               <div>
                 <div className="flex justify-between items-end mb-2">
-                  <span className="text-sm font-bold text-white flex items-center gap-2 capitalize">
+                  <span className="text-sm font-bold flex items-center gap-2 capitalize" style={{ color: "var(--text-main)" }}>
                     <div
-                      className={`w-2 h-2 rounded-full ${exactSelectedChannel === "whatsapp" ? "bg-green-500" : exactSelectedChannel === "instagram" ? "bg-pink-500" : "bg-blue-400"}`}
+                      className={`w-2 h-2 rounded-full ${exactSelectedChannel === "whatsapp" ? "bg-green-500" : exactSelectedChannel === "instagram" ? "bg-pink-500" : "bg-blue-500"}`}
                     ></div>
                     {exactSelectedChannel || "Telegram"}
                   </span>
-                  <span className="text-xs text-gray-400 font-mono">{stats?.platformStats?.[exactSelectedChannel] || totalMsgs || 0} msgs</span>
+                  <span className="text-xs font-mono" style={{ color: "var(--text-muted)" }}>{stats?.platformStats?.[exactSelectedChannel] || totalMsgs || 0} msgs</span>
                 </div>
-                <div className="w-full bg-[#1A1A1A] h-2 rounded-full overflow-hidden">
+                <div className="w-full h-2 rounded-full overflow-hidden" style={{ backgroundColor: "rgba(128,128,128,0.1)" }}>
                   <div
-                    className={`h-full rounded-full transition-all duration-500 ${totalMsgs > 0 ? "w-full" : "w-0"} ${exactSelectedChannel === "whatsapp" ? "bg-green-500" : exactSelectedChannel === "instagram" ? "bg-pink-500" : "bg-blue-400"}`}
+                    className={`h-full rounded-full transition-all duration-500 ${totalMsgs > 0 ? "w-full" : "w-0"} ${exactSelectedChannel === "whatsapp" ? "bg-green-500" : exactSelectedChannel === "instagram" ? "bg-pink-500" : "bg-blue-500"}`}
                   ></div>
                 </div>
               </div>
@@ -1276,11 +1353,12 @@ export default function Dashboard() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3, delay: 0.9, ease: "easeOut" }}
-            className="bg-[#111113] border border-white/5 rounded-[1.5rem] p-8 shadow-2xl relative flex flex-col"
+            className="border rounded-[1.5rem] p-8 shadow-2xl relative flex flex-col transition-colors duration-300"
+            style={{ backgroundColor: "var(--bg-card)", borderColor: "var(--border-color)" }}
           >
             <div className="flex items-center justify-between mb-2">
-              <h3 className="text-lg font-black text-white tracking-wide flex items-center gap-2">🤖 AI Persona Configuration</h3>
-              <div className="flex bg-[#1A1A1A] border border-white/10 rounded-lg p-1">
+              <h3 className="text-lg font-black tracking-wide flex items-center gap-2" style={{ color: "var(--text-main)" }}>🤖 AI Persona Configuration</h3>
+              <div className="flex border rounded-lg p-1" style={{ backgroundColor: "rgba(128,128,128,0.05)", borderColor: "var(--border-color)" }}>
                 <span
                   className={`px-4 py-1 text-[10px] font-black uppercase tracking-widest rounded-md text-white ${selectedChannel === "telegram" ? "bg-blue-500" : selectedChannel === "whatsapp" ? "bg-green-500" : selectedChannel === "instagram" ? "bg-pink-500" : "bg-purple-500"}`}
                 >
@@ -1288,8 +1366,8 @@ export default function Dashboard() {
                 </span>
               </div>
             </div>
-            <p className="text-sm text-gray-400 mb-6">
-              Define exactly how your AI agent should behave for <span className="text-white font-bold uppercase">{selectedChannel}</span>.
+            <p className="text-sm mb-6" style={{ color: "var(--text-muted)" }}>
+              Define exactly how your AI agent should behave for <span className="font-bold uppercase" style={{ color: "var(--text-main)" }}>{selectedChannel}</span>.
             </p>
 
             <textarea
@@ -1297,7 +1375,8 @@ export default function Dashboard() {
               value={channelPrompts[selectedChannel as keyof typeof channelPrompts] || ""}
               onChange={handlePromptChange}
               placeholder={`e.g., You are a friendly customer support agent for ClawLink on ${selectedChannel}...`}
-              className="flex-1 w-full bg-[#07070A] border border-white/10 rounded-xl p-4 text-sm text-gray-200 focus:border-orange-500 focus:shadow-[0_0_15px_rgba(249,115,22,0.15)] focus:outline-none transition-all resize-none mb-6 font-mono custom-scrollbar"
+              className="flex-1 w-full border rounded-xl p-4 text-sm focus:border-orange-500 focus:shadow-[0_0_15px_rgba(249,115,22,0.15)] focus:outline-none transition-all resize-none mb-6 font-mono custom-scrollbar"
+              style={{ backgroundColor: "var(--bg-main)", borderColor: "var(--border-color)", color: "var(--text-main)" }}
             />
 
             <div className="flex justify-end mt-auto">
@@ -1306,7 +1385,8 @@ export default function Dashboard() {
                 disabled={isSavingPrompt}
                 aria-label="Save Selected Persona"
                 title="Save Persona"
-                className={`bg-white text-black px-8 py-3.5 rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-gray-200 shadow-[0_0_20px_rgba(255,255,255,0.1)] disabled:opacity-50 disabled:scale-100 ${btn}`}
+                className={`px-8 py-3.5 rounded-xl text-sm font-bold flex items-center gap-2 shadow-[0_0_20px_rgba(128,128,128,0.1)] disabled:opacity-50 disabled:scale-100 ${btn}`}
+                style={{ backgroundColor: "var(--text-main)", color: "var(--bg-main)" }}
               >
                 {isSavingPrompt ? "Saving..." : <><Save className="w-4 h-4" /> Save {selectedChannel} Persona</>}
               </button>
@@ -1318,21 +1398,22 @@ export default function Dashboard() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3, delay: 1.0, ease: "easeOut" }}
-            className={`bg-[#111113] border ${hasActivePlan ? "border-green-500/20" : "border-white/5"} rounded-[1.5rem] p-8 shadow-[0_0_30px_rgba(34,197,94,0.05)] relative overflow-hidden flex flex-col`}
+            className={`border rounded-[1.5rem] p-8 shadow-[0_0_30px_rgba(34,197,94,0.05)] relative overflow-hidden flex flex-col transition-colors duration-300`}
+            style={{ backgroundColor: "var(--bg-card)", borderColor: hasActivePlan ? "rgba(34,197,94,0.2)" : "var(--border-color)" }}
           >
             {!hasActivePlan && (
-              <div className="absolute inset-0 bg-[#0A0A0C]/80 backdrop-blur-sm z-20 flex flex-col items-center justify-center text-center p-6 border border-white/5 rounded-[1.5rem]">
+              <div className="absolute inset-0 backdrop-blur-sm z-20 flex flex-col items-center justify-center text-center p-6 border rounded-[1.5rem]" style={{ backgroundColor: "rgba(0,0,0,0.5)", borderColor: "var(--border-color)" }}>
                 <Shield className="w-10 h-10 text-orange-500 mb-3 opacity-80" />
-                <h4 className="text-sm font-black text-white uppercase tracking-widest">RAG Engine Locked</h4>
-                <p className="text-xs text-gray-400 mt-2 max-w-sm">You must have an active subscription to inject custom business data into the Vector Database.</p>
+                <h4 className="text-sm font-black uppercase tracking-widest" style={{ color: "var(--text-main)" }}>RAG Engine Locked</h4>
+                <p className="text-xs mt-2 max-w-sm" style={{ color: "var(--text-muted)" }}>You must have an active subscription to inject custom business data into the Vector Database.</p>
               </div>
             )}
 
             <div className="absolute top-0 right-0 p-6 opacity-10 pointer-events-none">
               <BrainCircuit className="w-32 h-32 text-green-500" />
             </div>
-            <h3 className="text-lg font-black text-green-400 mb-2 tracking-wide flex items-center gap-2 relative z-10">🧠 Custom Knowledge Base (RAG)</h3>
-            <p className="text-sm text-gray-400 mb-6 relative z-10">
+            <h3 className="text-lg font-black text-green-500 mb-2 tracking-wide flex items-center gap-2 relative z-10">🧠 Custom Knowledge Base (RAG)</h3>
+            <p className="text-sm mb-6 relative z-10" style={{ color: "var(--text-muted)" }}>
               Train your AI with your specific business data. Paste product details, FAQs, or policies below to convert them into vectors.
             </p>
 
@@ -1341,10 +1422,11 @@ export default function Dashboard() {
               value={knowledgeText}
               onChange={(e) => setKnowledgeText(e.target.value)}
               placeholder="Paste your business information here..."
-              className="w-full bg-[#07070A] border border-green-500/30 rounded-xl p-4 text-sm text-green-100 focus:border-green-400 focus:shadow-[0_0_15px_rgba(34,197,94,0.2)] focus:outline-none transition-all resize-none mb-4 font-mono placeholder:text-green-900/50 relative z-10 custom-scrollbar"
+              className="w-full border border-green-500/30 rounded-xl p-4 text-sm focus:border-green-500 focus:shadow-[0_0_15px_rgba(34,197,94,0.2)] focus:outline-none transition-all resize-none mb-4 font-mono relative z-10 custom-scrollbar"
+              style={{ backgroundColor: "var(--bg-main)", color: "var(--text-main)" }}
             />
             <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6 relative z-10">
-              <p className="text-[10px] text-gray-500 font-mono flex items-center gap-1">
+              <p className="text-[10px] font-mono flex items-center gap-1" style={{ color: "var(--text-muted)" }}>
                 <Database className="w-3 h-3" /> Encrypted in Vector DB
               </p>
               <button
@@ -1352,29 +1434,29 @@ export default function Dashboard() {
                 disabled={isInjecting || !knowledgeText.trim()}
                 aria-label="Inject Knowledge to Vector DB"
                 title="Inject Knowledge"
-                className={`bg-green-500 text-black px-6 py-3 rounded-xl text-xs font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-green-400 shadow-[0_0_20px_rgba(34,197,94,0.2)] disabled:opacity-50 disabled:scale-100 ${btn}`}
+                className={`bg-green-500 text-white px-6 py-3 rounded-xl text-xs font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-green-600 shadow-[0_0_20px_rgba(34,197,94,0.2)] disabled:opacity-50 disabled:scale-100 ${btn}`}
               >
                 {isInjecting ? "Injecting..." : <><Zap className="w-4 h-4" /> Inject Knowledge</>}
               </button>
             </div>
             {knowledgeItems.length > 0 && (
-              <div className="mt-auto border-t border-white/10 pt-6 relative z-10">
+              <div className="mt-auto border-t pt-6 relative z-10" style={{ borderColor: "var(--border-color)" }}>
                 <div className="flex justify-between items-center mb-3 pr-2">
-                  <h4 className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Active Memory Blocks</h4>
+                  <h4 className="text-[10px] font-bold uppercase tracking-widest" style={{ color: "var(--text-muted)" }}>Active Memory Blocks</h4>
                   <button
                     onClick={handleClearMemory}
                     aria-label="Clear All Custom Memory"
                     title="Clear All Memory"
-                    className={`text-[9px] font-black uppercase tracking-widest text-red-500 hover:text-red-400 bg-red-500/10 px-2.5 py-1 rounded border border-red-500/20 shadow-[0_0_10px_rgba(239,68,68,0.15)] ${btn}`}
+                    className={`text-[9px] font-black uppercase tracking-widest text-red-500 bg-red-500/10 px-2.5 py-1 rounded border border-red-500/20 shadow-[0_0_10px_rgba(239,68,68,0.15)] ${btn}`}
                   >
                     Clear All 🗑️
                   </button>
                 </div>
                 <div className="space-y-2 max-h-[140px] overflow-y-auto custom-scrollbar pr-2">
                   {knowledgeItems.map((item, idx) => (
-                    <div key={item.id} className="bg-[#07070A]/80 border border-white/5 p-3 rounded-lg flex items-start gap-3 hover:border-green-500/30 transition-colors">
+                    <div key={item.id} className="border p-3 rounded-lg flex items-start gap-3 hover:border-green-500/30 transition-colors" style={{ backgroundColor: "var(--bg-main)", borderColor: "var(--border-color)" }}>
                       <span className="text-green-500 text-xs mt-0.5 font-mono">[{idx + 1}]</span>
-                      <p className="text-xs text-gray-300 font-mono line-clamp-2 leading-relaxed">{item.content}</p>
+                      <p className="text-xs font-mono line-clamp-2 leading-relaxed" style={{ color: "var(--text-main)" }}>{item.content}</p>
                     </div>
                   ))}
                 </div>
@@ -1387,25 +1469,26 @@ export default function Dashboard() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3, delay: 1.1, ease: "easeOut" }}
-          className="bg-[#111113] border border-white/5 rounded-[1.5rem] overflow-hidden shadow-2xl"
+          className="border rounded-[1.5rem] overflow-hidden shadow-2xl transition-colors duration-300"
+          style={{ backgroundColor: "var(--bg-card)", borderColor: "var(--border-color)" }}
         >
-          <div className="p-6 md:p-8 border-b border-white/5 flex items-center justify-between bg-[#0A0A0C]">
+          <div className="p-6 md:p-8 border-b flex items-center justify-between transition-colors duration-300" style={{ backgroundColor: "var(--bg-section)", borderColor: "var(--border-color)" }}>
             <div className="flex items-center gap-3">
-              <Receipt className="w-5 h-5 text-white" />
-              <h3 className="text-lg font-black text-white tracking-wide">Billing & Invoices</h3>
+              <Receipt className="w-5 h-5" style={{ color: "var(--text-main)" }} />
+              <h3 className="text-lg font-black tracking-wide" style={{ color: "var(--text-main)" }}>Billing & Invoices</h3>
             </div>
           </div>
           {billingHistory.length === 0 ? (
-            <div className="text-center p-12 bg-[#0A0A0C]/50">
-              <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center mx-auto mb-4">
-                <Receipt className="w-5 h-5 text-gray-500" />
+            <div className="text-center p-12" style={{ backgroundColor: "var(--bg-main)" }}>
+              <div className="w-12 h-12 rounded-full border flex items-center justify-center mx-auto mb-4" style={{ backgroundColor: "rgba(128,128,128,0.05)", borderColor: "var(--border-color)" }}>
+                <Receipt className="w-5 h-5" style={{ color: "var(--text-muted)" }} />
               </div>
-              <p className="text-gray-400 text-sm font-medium">No past payments found. Deploy an agent to generate an invoice.</p>
+              <p className="text-sm font-medium" style={{ color: "var(--text-muted)" }}>No past payments found. Deploy an agent to generate an invoice.</p>
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm text-gray-300">
-                <thead className="bg-[#0A0A0C] text-[10px] uppercase font-bold text-gray-500 tracking-widest border-b border-white/5">
+              <table className="w-full text-left text-sm" style={{ color: "var(--text-main)" }}>
+                <thead className="text-[10px] uppercase font-bold tracking-widest border-b transition-colors duration-300" style={{ backgroundColor: "var(--bg-section)", color: "var(--text-muted)", borderColor: "var(--border-color)" }}>
                   <tr>
                     <th className="p-5 pl-8">Order Date</th>
                     <th className="p-5">Plan Name</th>
@@ -1414,16 +1497,16 @@ export default function Dashboard() {
                     <th className="p-5 pr-8 text-right">Action</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-white/5 font-medium">
+                <tbody className="font-medium" style={{ borderBottomColor: "var(--border-color)" }}>
                   {billingHistory.map((invoice, idx) => (
-                    <tr key={idx} className="hover:bg-white/5 transition-colors group cursor-pointer">
-                      <td className="p-5 pl-8 font-mono text-gray-400">{new Date(invoice.created_at).toLocaleDateString()}</td>
-                      <td className="p-5 font-bold text-white uppercase">{invoice.plan_name}</td>
+                    <tr key={idx} className="transition-colors group cursor-pointer" style={{ borderBottom: "1px solid var(--border-color)" }} onMouseEnter={e => e.currentTarget.style.backgroundColor = "rgba(128,128,128,0.05)"} onMouseLeave={e => e.currentTarget.style.backgroundColor = "transparent"}>
+                      <td className="p-5 pl-8 font-mono" style={{ color: "var(--text-muted)" }}>{new Date(invoice.created_at).toLocaleDateString()}</td>
+                      <td className="p-5 font-bold uppercase">{invoice.plan_name}</td>
                       <td className="p-5">
                         {invoice.amount} {invoice.currency}
                       </td>
                       <td className="p-5">
-                        <span className="bg-green-500/10 border border-green-500/20 text-green-400 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider">
+                        <span className="bg-green-500/10 border border-green-500/20 text-green-500 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider">
                           {invoice.status}
                         </span>
                       </td>
@@ -1432,7 +1515,10 @@ export default function Dashboard() {
                           onClick={() => handleDownloadInvoice(invoice)}
                           aria-label={`Download Invoice for ${invoice.plan_name}`}
                           title="Download PDF Invoice"
-                          className={`text-gray-500 hover:text-white flex items-center justify-end gap-2 ml-auto text-xs font-bold uppercase tracking-widest ${btn}`}
+                          className={`flex items-center justify-end gap-2 ml-auto text-xs font-bold uppercase tracking-widest transition-colors ${btn}`}
+                          style={{ color: "var(--text-muted)" }}
+                          onMouseEnter={e => e.currentTarget.style.color = "var(--text-main)"} 
+                          onMouseLeave={e => e.currentTarget.style.color = "var(--text-muted)"}
                         >
                           <Download className="w-4 h-4" /> PDF
                         </button>
@@ -1459,11 +1545,11 @@ export default function Dashboard() {
         .pricing-suffix {
           font-size: 13px;
           font-weight: 400;
-          color: #888;
+          color: var(--text-muted);
         }
         .pricing-card {
-          background: var(--pricing-bg, rgba(255,255,255,0.02));
-          border: 1px solid var(--pricing-border, rgba(255,255,255,0.07));
+          background: var(--pricing-bg, rgba(128,128,128,0.02));
+          border: 1px solid var(--pricing-border, rgba(128,128,128,0.1));
           box-shadow: var(--pricing-shadow, none);
         }
         .pricing-card[style*="--pricing-active: 1"] {
@@ -1471,14 +1557,6 @@ export default function Dashboard() {
         }
         .pricing-badge {
           background: var(--badge-color);
-        }
-        .webhook-box[data-channel="whatsapp"] {
-          background: rgba(0,0,0,0.3);
-          border: 1px dashed rgba(37,211,102,0.3);
-        }
-        .webhook-box[data-channel="instagram"] {
-          background: rgba(0,0,0,0.3);
-          border: 1px dashed rgba(236,72,153,0.3);
         }
       `
       }} />
