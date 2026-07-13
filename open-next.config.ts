@@ -1,6 +1,6 @@
 export default {
   default: {
-    buildCommand: "npx next build", 
+    buildCommand: "npx next build",
     override: {
       wrapper: "cloudflare-node",
       converter: "edge",
@@ -13,6 +13,7 @@ export default {
   edgeExternals: ["node:crypto"],
   middleware: {
     external: true,
+    buildCommand: "npx next build",
     override: {
       wrapper: "cloudflare-edge",
       converter: "edge",
