@@ -1,26 +1,27 @@
-export default {
+const config = {
   default: {
     buildCommand: "npx next build",
     override: {
       wrapper: "cloudflare-node",
       converter: "edge",
       proxyExternalRequest: "fetch",
-      incrementalCache: async () => {},
-      tagCache: () => {},
-      queue: "direct"
+      incrementalCache: "dummy",
+      tagCache: "dummy",
+      queue: "dummy"
     }
   },
   edgeExternals: ["node:crypto"],
   middleware: {
     external: true,
-    buildCommand: "npx next build",
     override: {
       wrapper: "cloudflare-edge",
       converter: "edge",
       proxyExternalRequest: "fetch",
-      incrementalCache: async () => {},
-      tagCache: () => {},
-      queue: "direct"
+      incrementalCache: "dummy",
+      tagCache: "dummy",
+      queue: "dummy"
     }
   }
 };
+
+export default config;
