@@ -12,6 +12,7 @@
  * 🚀 FIXED: Floating promise and exhaustive-deps warnings resolved securely via scoped async execution.
  * 🚀 FIXED: TypeScript Location assignment constraints strictly resolved via .href evaluation.
  * 🚀 SECURED: Advanced Anti-debugging, anti-clickjacking, and payload tampering defenses deployed natively.
+ * 🌟 ADDED: 1-Click Meta Login Hybrid UI for ultra-fast deployments.
  * * ALL RIGHTS RESERVED. CLAWLINK INC.
  * ==============================================================================================
  */
@@ -20,6 +21,7 @@ import { signIn, signOut, useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
+import Script from "next/script"; // 🔥 INJECTED: FOR META SDK
 import {
   Globe, Database, Mic, Zap, MessageSquare, Activity,
   LogOut, Shield, ExternalLink, CheckCircle2, Copy,
@@ -316,6 +318,9 @@ export default function Home() {
   const [isSupportModalOpen, setIsSupportModalOpen] = useState(false);
 
   const [hasDeployedBefore, setHasDeployedBefore] = useState(false);
+  
+  // 🔥 INJECTED STATE FOR HYBRID 1-CLICK META LOGIN
+  const [metaAuthTab, setMetaAuthTab] = useState<"1click" | "manual">("1click");
 
   useEffect(() => {
     // 1. Defers state hydration safely to microtask queue avoiding synchronous render locks
@@ -723,6 +728,9 @@ export default function Home() {
   return (
     // 🔥 Updated to use CSS Variables for background and text colors
     <div className="min-h-screen font-sans selection:bg-orange-500/30 overflow-x-hidden transition-colors duration-300" style={{ backgroundColor: "var(--bg-main)", color: "var(--text-main)" }}>
+
+      {/* 🔥 INJECTED: META SDK SCRIPT */}
+      <Script src="https://connect.facebook.net/en_US/sdk.js" strategy="lazyOnload" />
 
       <style dangerouslySetInnerHTML={{__html:`
         *{box-sizing:border-box;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
@@ -1397,77 +1405,115 @@ export default function Home() {
                     </div>
                   </>
                 ) : (
-                  <>
-                    <ol className="space-y-3.5 text-[14px] text-gray-400 list-decimal pl-6 mb-8 leading-[1.8] font-medium">
-                      <li>Log in to <strong className="text-white">Meta Developer Console</strong></li>
-                      <li>Create <strong className="text-white">Business App</strong> → activate <strong className="text-white">{activeChannel === "whatsapp" ? "WhatsApp" : "Messenger"} Module</strong></li>
-                      <li>Register & verify account in <strong className="text-white">API Setup</strong></li>
-                      <li><strong className="text-white">System Users</strong> → generate <strong className="text-white">Permanent Access Token</strong></li>
-                      <li>Set Webhook URL under <strong className="text-white">Configuration</strong></li>
-                      <li>Enter Callback URL + Verify Token below</li>
-                    </ol>
-                    <div className="flex gap-4 mb-8">
-                      <a href="https://developers.facebook.com/apps/" target="_blank" rel="noopener noreferrer"
-                        className={`inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl text-[13px] font-black uppercase tracking-widest w-fit hover:-translate-y-1 hover:shadow-lg transition-transform duration-150 ${activeChannel==="whatsapp"?"text-[#25D366]":"text-[#e6683c]"}`}
-                        style={{background:activeChannel==="whatsapp"?"rgba(37,211,102,0.08)":"rgba(230,104,60,0.08)",border:`1px solid ${activeChannel==="whatsapp"?"rgba(37,211,102,0.25)":"rgba(230,104,60,0.25)"}`,boxShadow:activeChannel==="whatsapp"?"0 0 20px rgba(37,211,102,0.1)":"0 0 20px rgba(230,104,60,0.1)"}}>
-                        <ExternalLink className="w-4 h-4"/> Open Meta Developer
-                      </a>
+                  <div className="flex flex-col h-full w-full">
+                    {/* THE TAB TOGGLE */}
+                    <div className="flex border-b border-white/10 mb-6 w-full shrink-0">
+                        <button
+                            onClick={() => setMetaAuthTab("1click")}
+                            className={`flex-1 py-3 text-[12px] font-bold uppercase tracking-widest transition-all ${metaAuthTab === "1click" ? (activeChannel === "whatsapp" ? "text-[#25D366] border-b-2 border-[#25D366]" : "text-[#e6683c] border-b-2 border-[#e6683c]") : "text-gray-500 hover:text-gray-300"}`}
+                        >
+                            🚀 1-Click Auto
+                        </button>
+                        <button
+                            onClick={() => setMetaAuthTab("manual")}
+                            className={`flex-1 py-3 text-[12px] font-bold uppercase tracking-widest transition-all ${metaAuthTab === "manual" ? "text-white border-b-2 border-white" : "text-gray-500 hover:text-gray-300"}`}
+                        >
+                            ⚙️ Manual Setup
+                        </button>
                     </div>
-                    <div className="p-6 rounded-2xl" style={{background:"rgba(255,255,255,0.02)",border:"1px solid rgba(255,255,255,0.06)"}}>
-                      
-                      <div className="mb-8 p-5 rounded-xl" style={{background:"rgba(0,0,0,0.4)", border:`1px dashed ${activeChannel==="whatsapp"?"rgba(37,211,102,0.4)":"rgba(230,104,60,0.4)"}`}}>
-                        <p className={`text-[12px] font-black uppercase tracking-widest mb-4 flex items-center gap-2 ${activeChannel==="whatsapp"?"text-[#25D366]":"text-[#e6683c]"}`}>
-                          🔗 Step 1: Copy to Meta Webhook
-                        </p>
-                        
-                        <div className="mb-4">
-                          <label htmlFor="webhook-url" className="block text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-2">Webhook URL</label>
-                          <div className="flex items-center gap-2">
-                            <input id="webhook-url" aria-label="Webhook URL" title="Webhook URL Display" readOnly value={`https://www.clawlinkai.com/api/webhook/${activeChannel}`} className="w-full bg-black/60 text-gray-300 p-3.5 rounded-lg text-[12px] border border-white/10 outline-none font-mono" />
-                            <button aria-label="Copy Webhook URL" title="Copy URL" type="button" onClick={() => copyToClipboard(`https://www.clawlinkai.com/api/webhook/${activeChannel}`)} className="bg-white/10 hover:bg-white/20 text-white px-5 py-3.5 rounded-lg text-[12px] font-bold transition-all border border-white/10">Copy</button>
-                          </div>
-                        </div>
 
-                        <div>
-                          <label htmlFor="verify-token" className="block text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-2">Verify Token</label>
-                          <div className="flex items-center gap-2">
-                            <input id="verify-token" aria-label="Verify Token" title="Verify Token Display" readOnly value="clawlinkmeta2026" className="w-full bg-black/60 text-gray-300 p-3.5 rounded-lg text-[12px] border border-white/10 outline-none font-mono" />
-                            <button aria-label="Copy Verify Token" title="Copy Token" type="button" onClick={() => copyToClipboard("clawlinkmeta2026")} className="bg-white/10 hover:bg-white/20 text-white px-5 py-3.5 rounded-lg text-[12px] font-bold transition-all border border-white/10">Copy</button>
-                          </div>
+                    {/* TAB 1: 1-CLICK AUTOMATION */}
+                    {metaAuthTab === "1click" ? (
+                        <div className="flex flex-col items-center justify-center h-full text-center py-6 px-4">
+                            <div className={`w-20 h-20 rounded-full mb-6 flex items-center justify-center bg-opacity-10 ${activeChannel === "whatsapp" ? "bg-[#25D366] text-[#25D366]" : "bg-[#e6683c] text-[#e6683c]"}`} style={{border: `1px solid ${activeChannel==="whatsapp"?"rgba(37,211,102,0.2)":"rgba(230,104,60,0.2)"}`}}>
+                                <Zap className="w-10 h-10" />
+                            </div>
+                            <h3 className="text-2xl font-black text-white mb-3">Deploy in 30 Seconds</h3>
+                            <p className="text-[13px] text-gray-400 mb-10 max-w-sm leading-relaxed">Skip the complex Meta Developer setup. Connect securely via official Facebook login and our Omni-Fallback engine will handle the rest.</p>
+                            
+                            <button
+                                onClick={handleEmbeddedFacebookLogin}
+                                disabled={isVerifying}
+                                className="w-full bg-[#1877F2] hover:bg-[#166FE5] text-white font-black py-4 rounded-xl text-[14px] uppercase tracking-widest shadow-[0_4px_20px_rgba(24,119,242,0.4)] hover:-translate-y-1 transition-all disabled:opacity-50 flex items-center justify-center gap-3"
+                            >
+                                {isVerifying ? "Authenticating via Meta..." : "Continue with Facebook"}
+                            </button>
                         </div>
-                      </div>
+                    ) : (
+                        /* TAB 2: EXISTING MANUAL SETUP (FOR DEVS) */
+                        <div className="overflow-y-auto custom-scrollbar pr-2 pb-4">
+                            <ol className="space-y-3.5 text-[14px] text-gray-400 list-decimal pl-6 mb-8 leading-[1.8] font-medium">
+                              <li>Log in to <strong className="text-white">Meta Developer Console</strong></li>
+                              <li>Create <strong className="text-white">Business App</strong> → activate <strong className="text-white">{activeChannel === "whatsapp" ? "WhatsApp" : "Messenger"} Module</strong></li>
+                              <li>Register & verify account in <strong className="text-white">API Setup</strong></li>
+                              <li><strong className="text-white">System Users</strong> → generate <strong className="text-white">Permanent Access Token</strong></li>
+                              <li>Set Webhook URL under <strong className="text-white">Configuration</strong></li>
+                              <li>Enter Callback URL + Verify Token below</li>
+                            </ol>
+                            <div className="flex gap-4 mb-8">
+                              <a href="https://developers.facebook.com/apps/" target="_blank" rel="noopener noreferrer"
+                                className={`inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl text-[13px] font-black uppercase tracking-widest w-fit hover:-translate-y-1 hover:shadow-lg transition-transform duration-150 ${activeChannel==="whatsapp"?"text-[#25D366]":"text-[#e6683c]"}`}
+                                style={{background:activeChannel==="whatsapp"?"rgba(37,211,102,0.08)":"rgba(230,104,60,0.08)",border:`1px solid ${activeChannel==="whatsapp"?"rgba(37,211,102,0.25)":"rgba(230,104,60,0.25)"}`,boxShadow:activeChannel==="whatsapp"?"0 0 20px rgba(37,211,102,0.1)":"0 0 20px rgba(230,104,60,0.1)"}}>
+                                <ExternalLink className="w-4 h-4"/> Open Meta Developer
+                              </a>
+                            </div>
+                            <div className="p-6 rounded-2xl" style={{background:"rgba(255,255,255,0.02)",border:"1px solid rgba(255,255,255,0.06)"}}>
+                              
+                              <div className="mb-8 p-5 rounded-xl" style={{background:"rgba(0,0,0,0.4)", border:`1px dashed ${activeChannel==="whatsapp"?"rgba(37,211,102,0.4)":"rgba(230,104,60,0.4)"}`}}>
+                                <p className={`text-[12px] font-black uppercase tracking-widest mb-4 flex items-center gap-2 ${activeChannel==="whatsapp"?"text-[#25D366]":"text-[#e6683c]"}`}>
+                                  🔗 Step 1: Copy to Meta Webhook
+                                </p>
+                                
+                                <div className="mb-4">
+                                  <label htmlFor="webhook-url" className="block text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-2">Webhook URL</label>
+                                  <div className="flex items-center gap-2">
+                                    <input id="webhook-url" aria-label="Webhook URL" title="Webhook URL Display" readOnly value={`https://www.clawlinkai.com/api/webhook/${activeChannel}`} className="w-full bg-black/60 text-gray-300 p-3.5 rounded-lg text-[12px] border border-white/10 outline-none font-mono" />
+                                    <button aria-label="Copy Webhook URL" title="Copy URL" type="button" onClick={() => copyToClipboard(`https://www.clawlinkai.com/api/webhook/${activeChannel}`)} className="bg-white/10 hover:bg-white/20 text-white px-5 py-3.5 rounded-lg text-[12px] font-bold transition-all border border-white/10">Copy</button>
+                                  </div>
+                                </div>
 
-                      <label htmlFor="wa-phone-id" className="block text-[10px] font-black uppercase tracking-[.2em] text-gray-500 mb-3">{activeChannel==="whatsapp"?"Phone Number ID":"Instagram Account ID"}</label>
-                      <input id="wa-phone-id" aria-label="Phone or Account ID" title="Account ID Input" type="text" value={waPhoneId} onChange={e=>setWaPhoneId(e.target.value)} placeholder="e.g. 1044727838716942"
-                        className="w-full px-5 py-4 rounded-xl text-[14px] text-white font-mono mb-5 outline-none transition-colors duration-200 placeholder-gray-600"
-                        style={{background:"#07070A",border:"1px solid rgba(255,255,255,0.09)"}}
-                        onFocus={e=>(e.target.style.borderColor=activeChannel==="whatsapp"?"rgba(37,211,102,0.5)":"rgba(230,104,60,0.5)")}
-                        onBlur={e =>(e.target.style.borderColor="rgba(255,255,255,0.09)")}/>
-                      
-                      {activeChannel === "whatsapp" && (
-                          <>
-                              <label htmlFor="wa-phone-number" className="block text-[10px] font-black uppercase tracking-[.2em] text-gray-500 mb-3">WhatsApp Number (For Direct Open)</label>
-                              <input id="wa-phone-number" aria-label="WhatsApp Number" title="WhatsApp Number Input" type="text" value={waPhoneNumber} onChange={e=>setWaPhoneNumber(e.target.value)} placeholder="+1 234 567 890"
+                                <div>
+                                  <label htmlFor="verify-token" className="block text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-2">Verify Token</label>
+                                  <div className="flex items-center gap-2">
+                                    <input id="verify-token" aria-label="Verify Token" title="Verify Token Display" readOnly value="clawlinkmeta2026" className="w-full bg-black/60 text-gray-300 p-3.5 rounded-lg text-[12px] border border-white/10 outline-none font-mono" />
+                                    <button aria-label="Copy Verify Token" title="Copy Token" type="button" onClick={() => copyToClipboard("clawlinkmeta2026")} className="bg-white/10 hover:bg-white/20 text-white px-5 py-3.5 rounded-lg text-[12px] font-bold transition-all border border-white/10">Copy</button>
+                                  </div>
+                                </div>
+                              </div>
+
+                              <label htmlFor="wa-phone-id" className="block text-[10px] font-black uppercase tracking-[.2em] text-gray-500 mb-3">{activeChannel==="whatsapp"?"Phone Number ID":"Instagram Account ID"}</label>
+                              <input id="wa-phone-id" aria-label="Phone or Account ID" title="Account ID Input" type="text" value={waPhoneId} onChange={e=>setWaPhoneId(e.target.value)} placeholder="e.g. 1044727838716942"
                                 className="w-full px-5 py-4 rounded-xl text-[14px] text-white font-mono mb-5 outline-none transition-colors duration-200 placeholder-gray-600"
                                 style={{background:"#07070A",border:"1px solid rgba(255,255,255,0.09)"}}
-                                onFocus={e=>(e.target.style.borderColor="rgba(37,211,102,0.5)")}
+                                onFocus={e=>(e.target.style.borderColor=activeChannel==="whatsapp"?"rgba(37,211,102,0.5)":"rgba(230,104,60,0.5)")}
                                 onBlur={e =>(e.target.style.borderColor="rgba(255,255,255,0.09)")}/>
-                          </>
-                      )}
+                              
+                              {activeChannel === "whatsapp" && (
+                                  <>
+                                      <label htmlFor="wa-phone-number" className="block text-[10px] font-black uppercase tracking-[.2em] text-gray-500 mb-3">WhatsApp Number (For Direct Open)</label>
+                                      <input id="wa-phone-number" aria-label="WhatsApp Number" title="WhatsApp Number Input" type="text" value={waPhoneNumber} onChange={e=>setWaPhoneNumber(e.target.value)} placeholder="+1 234 567 890"
+                                        className="w-full px-5 py-4 rounded-xl text-[14px] text-white font-mono mb-5 outline-none transition-colors duration-200 placeholder-gray-600"
+                                        style={{background:"#07070A",border:"1px solid rgba(255,255,255,0.09)"}}
+                                        onFocus={e=>(e.target.style.borderColor="rgba(37,211,102,0.5)")}
+                                        onBlur={e =>(e.target.style.borderColor="rgba(255,255,255,0.09)")}/>
+                                  </>
+                              )}
 
-                      <label htmlFor="api-access-token" className="block text-[10px] font-black uppercase tracking-[.2em] text-gray-500 mb-3">Permanent API Token</label>
-                      <input id="api-access-token" aria-label="API Access Token" title="API Access Token Input" type="password" value={telegramToken} onChange={e=>setTelegramToken(e.target.value)} placeholder="EAABwzL…"
-                        className="w-full px-5 py-4 rounded-xl text-[14px] text-white font-mono mb-6 outline-none transition-colors duration-200 placeholder-gray-600"
-                        style={{background:"#07070A",border:"1px solid rgba(255,255,255,0.09)"}}
-                        onFocus={e=>(e.target.style.borderColor=activeChannel==="whatsapp"?"rgba(37,211,102,0.5)":"rgba(230,104,60,0.5)")}
-                        onBlur={e =>(e.target.style.borderColor="rgba(255,255,255,0.09)")}/>
-                      <button aria-label="Verify and Save API Token" title="Verify and Save" data-ripple data-spring onClick={handleSaveToken} disabled={isVerifying}
-                        className={`relative overflow-hidden w-full font-black py-4 rounded-xl text-[14px] uppercase tracking-widest hover:-translate-y-1 hover:shadow-lg transition-transform duration-150 disabled:opacity-50 disabled:pointer-events-none shadow-[0_4px_15px_rgba(255,255,255,0.15)]`}
-                        style={{background:isVerifying?"rgba(255,255,255,0.1)":"#fff",color:isVerifying?"#666":"#000"}}>
-                        {isVerifying?"Verifying API Status…":"Verify & Save Configuration"}
-                      </button>
-                    </div>
-                  </>
+                              <label htmlFor="api-access-token" className="block text-[10px] font-black uppercase tracking-[.2em] text-gray-500 mb-3">Permanent API Token</label>
+                              <input id="api-access-token" aria-label="API Access Token" title="API Access Token Input" type="password" value={telegramToken} onChange={e=>setTelegramToken(e.target.value)} placeholder="EAABwzL…"
+                                className="w-full px-5 py-4 rounded-xl text-[14px] text-white font-mono mb-6 outline-none transition-colors duration-200 placeholder-gray-600"
+                                style={{background:"#07070A",border:"1px solid rgba(255,255,255,0.09)"}}
+                                onFocus={e=>(e.target.style.borderColor=activeChannel==="whatsapp"?"rgba(37,211,102,0.5)":"rgba(230,104,60,0.5)")}
+                                onBlur={e =>(e.target.style.borderColor="rgba(255,255,255,0.09)")}/>
+                              <button aria-label="Verify and Save API Token" title="Verify and Save" data-ripple data-spring onClick={handleSaveToken} disabled={isVerifying}
+                                className={`relative overflow-hidden w-full font-black py-4 rounded-xl text-[14px] uppercase tracking-widest hover:-translate-y-1 hover:shadow-lg transition-transform duration-150 disabled:opacity-50 disabled:pointer-events-none shadow-[0_4px_15px_rgba(255,255,255,0.15)]`}
+                                style={{background:isVerifying?"rgba(255,255,255,0.1)":"#fff",color:isVerifying?"#666":"#000"}}>
+                                {isVerifying?"Verifying API Status…":"Verify & Save Configuration"}
+                              </button>
+                            </div>
+                        </div>
+                    )}
+                  </div>
                 )}
               </div>
 
