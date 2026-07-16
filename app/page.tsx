@@ -949,7 +949,7 @@ export default function Home() {
         </div>
 
         <h1 className="anim-h1 text-[clamp(2.5rem,5vw,5.5rem)] font-black leading-[1.1] tracking-[-0.04em] w-full px-4 mb-2" style={{ color: "var(--text-main)" }}>
-          Deploy <span className="color-flow-text">OpenClaw AI Assistance</span>
+          Deploy <span className="color-flow-text">ClawLink Multi-AI Workspace</span>
         </h1>
         
         <p className="anim-sub font-black text-[22px] md:text-[28px] mb-8 uppercase tracking-wide" style={{ color: "var(--text-main)" }}>
