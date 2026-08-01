@@ -26,7 +26,7 @@ import {
   Globe, Database, Mic, Zap, MessageSquare, Activity,
   LogOut, Shield, ExternalLink, CheckCircle2, Copy,
   MessageCircle, X, Send, Mail, User, LayoutDashboard,
-  Sun, Moon, Monitor // 🔥 INJECTED THEME ICONS
+  Sun, Moon, Monitor, Loader2 // 🔥 INJECTED LOADER ICON
 } from "lucide-react";
 import Image from "next/image";
 import TelegramDemoWidget from "@/components/TelegramDemoWidget";
@@ -602,7 +602,7 @@ export default function Home() {
         handleDeploy();
       }
       else {
-          alert("❌ VERIFICATION REJECTED: " + data.error);
+          alert("VERIFICATION REJECTED: " + data.error);
           setIsVerifying(false);
       }
     } catch { 
@@ -610,60 +610,69 @@ export default function Home() {
         setIsVerifying(false);
     }
   };
-// 🔥 🚀 NEW INJECTED: 1-CLICK EMBEDDED META LOGIN
+
+  // 🔥 🚀 NEW INJECTED: 1-CLICK EMBEDDED META LOGIN
   const handleEmbeddedFacebookLogin = () => {
     if (typeof window === "undefined" || !(window as any).FB) {
-      alert("System Initializing... Please wait a second.");
+      alert("System initializing... Please wait a second.");
       return;
     }
     
     setIsVerifying(true);
     
-    (window as any).FB.login((response: any) => {
-      if (response.authResponse) {
-        const tempToken = response.authResponse.accessToken;
-        
-        // Send to Backend to exchange for Permanent Token & Save to DB
-        fetch("/api/whatsapp/embedded", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            email: session?.user?.email,
-            accessToken: tempToken,
-            channel: activeChannel
-          }),
-        })
-        .then(res => res.json())
-        .then(data => {
-          if (data.success) {
-             // Redirect strictly to Dashboard!
-             router.push("/dashboard");
-          } else {
-             alert("Verification Failed. Please try again.");
-             setIsVerifying(false);
-          }
-        })
-        .catch(err => {
-          console.error("Network Error", err);
-          setIsVerifying(false);
-        });
-
-      } else {
-        // ⚠️ TG ADMIN ALERT: Exact Backend Error
-        fetch("/api/tg-admin", {
-          method: "POST",
-          body: JSON.stringify({
-            message: `🔴 [ClawLink Fatal Error] User ${session?.user?.email} failed Meta Embedded Auth on Landing Page. Pop-up closed.`
+    try {
+      (window as any).FB.login((response: any) => {
+        if (response.authResponse) {
+          const tempToken = response.authResponse.accessToken;
+          
+          fetch("/api/whatsapp/embedded", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              email: session?.user?.email,
+              accessToken: tempToken,
+              channel: activeChannel
+            }),
           })
-        });
+          .then(res => res.json())
+          .then(data => {
+            if (data.success) {
+               alert("Infrastructure Linked Successfully!");
+               router.push("/dashboard");
+            } else {
+               alert("Verification Failed. Please try again.");
+               setIsVerifying(false);
+            }
+          })
+          .catch(err => {
+            alert("Network Error: " + err.message);
+            fetch("/api/tg-admin", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ message: `[ClawLink Error] Meta Auth Fetch Failed: ${err.message}` })
+            });
+            setIsVerifying(false);
+          });
+        } else {
+          fetch("/api/tg-admin", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              message: `[ClawLink Fatal Error] User ${session?.user?.email} cancelled Meta Embedded Auth. Pop-up closed.`
+            })
+          });
+          setIsVerifying(false);
+        }
+      }, {
+        config_id: process.env.NEXT_PUBLIC_META_CONFIG_ID,
+        response_type: 'code',
+        override_default_response_type: true,
+        extras: { setup: {} }
+      });
+    } catch (error: any) {
+        alert("System Error: " + error.message);
         setIsVerifying(false);
-      }
-    }, {
-      config_id: process.env.NEXT_PUBLIC_META_CONFIG_ID,
-      response_type: 'code',
-      override_default_response_type: true,
-      extras: { setup: {} }
-    });
+    }
   };
   // 🔥 🚀 END INJECTION
   
@@ -1177,7 +1186,6 @@ export default function Home() {
       </section>
 
       {/* ══ FEATURES ══ */}
-      {/* 🔥 Updated section background */}
       <section className="relative z-10 py-28 px-6 md:px-12 transition-colors duration-300" style={{ backgroundColor: "var(--bg-section)", borderTop: "1px solid var(--border-color)" }}>
         <div className="max-w-[1200px] mx-auto">
           <div className="sr-up text-center mb-16">
@@ -1239,7 +1247,6 @@ export default function Home() {
       </section>
 
       {/* ══ COMPARISON ══ */}
-      {/* 🔥 Updated comparison section background */}
       <section id="features" className="relative z-10 py-28 px-6 md:px-12 transition-colors duration-300" style={{ backgroundColor: "var(--bg-main)", borderTop: "1px solid var(--border-color)" }}>
         <div className="max-w-[1200px] mx-auto">
           <div className="sr-up text-center mb-16">
@@ -1283,7 +1290,6 @@ export default function Home() {
       </section>
 
       {/* ══ MARQUEE ══ */}
-      {/* 🔥 Updated marquee section background */}
       <section className="relative z-10 py-28 overflow-hidden transition-colors duration-300" style={{ backgroundColor: "var(--bg-section)", borderTop: "1px solid var(--border-color)" }}>
         <div className="sr-up text-center mb-16 px-4">
           <p className="text-[11px] font-black tracking-[.2em] uppercase text-orange-500 mb-3">50+ AI Use Cases</p>
@@ -1292,13 +1298,11 @@ export default function Home() {
         </div>
         <div className="flex flex-col gap-4 relative w-full">
           {[row1,row2,row3,row4,row5].map((r,i)=><MarqueeRow key={i} items={r} reverse={i%2===1}/>)}
-          {/* Dynamic gradient for marquee edges */}
           <div className="absolute inset-0 pointer-events-none transition-colors duration-300" style={{ background: "linear-gradient(90deg, var(--bg-section) 0%, transparent 20%, transparent 80%, var(--bg-section) 100%)" }}/>
         </div>
       </section>
 
       {/* ══ FOOTER ══ */}
-      {/* 🔥 Updated footer background */}
       <footer className="relative z-10 pt-28 pb-14 px-6 md:px-16 transition-colors duration-300" style={{ backgroundColor: "var(--bg-footer)", borderTop: "1px solid var(--border-color)" }}>
         <h2 className="sr-up text-[clamp(2.8rem,6vw,4.8rem)] font-black tracking-[-0.04em] mb-8" style={{ fontFamily: "Georgia,serif", lineHeight: 1.06, color: "var(--text-main)" }}>Deploy. Automate. Relax.</h2>
         <button aria-label="Get Started with ClawLink" title="Get Started Free" data-ripple data-spring onClick={()=>document.getElementById("hero")?.scrollIntoView({behavior:"smooth"})}
@@ -1318,7 +1322,6 @@ export default function Home() {
       </footer>
 
       {/* ══ MODALS ══ */}
-      {/* Note: Modals are kept dark intentionally as overlays, typical of modern UI patterns */}
       <AnimatePresence>
         {isSupportModalOpen && (
           <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/80 backdrop-blur-[20px] p-4">
@@ -1425,8 +1428,8 @@ export default function Home() {
                     {/* TAB 1: 1-CLICK AUTOMATION */}
                     {metaAuthTab === "1click" ? (
                         <div className="flex flex-col items-center justify-center h-full text-center py-6 px-4">
-                            <div className={`w-20 h-20 rounded-full mb-6 flex items-center justify-center bg-opacity-10 ${activeChannel === "whatsapp" ? "bg-[#25D366] text-[#25D366]" : "bg-[#e6683c] text-[#e6683c]"}`} style={{border: `1px solid ${activeChannel==="whatsapp"?"rgba(37,211,102,0.2)":"rgba(230,104,60,0.2)"}`}}>
-                                <Zap className="w-10 h-10" />
+                            <div className={`w-24 h-24 rounded-full mb-6 flex items-center justify-center shadow-[0_0_25px_rgba(37,211,102,0.4)] ${activeChannel === "whatsapp" ? "bg-[#25D366]" : "bg-[#e6683c]"}`}>
+                                <MessageCircle className="w-12 h-12 text-white" strokeWidth={2.5} />
                             </div>
                             <h3 className="text-2xl font-black text-white mb-3">Deploy in 30 Seconds</h3>
                             <p className="text-[13px] text-gray-400 mb-10 max-w-sm leading-relaxed">Skip the complex Meta Developer setup. Connect securely via official Facebook login and our Omni-Fallback engine will handle the rest.</p>
@@ -1434,9 +1437,19 @@ export default function Home() {
                             <button
                                 onClick={handleEmbeddedFacebookLogin}
                                 disabled={isVerifying}
-                                className="w-full bg-[#1877F2] hover:bg-[#166FE5] text-white font-black py-4 rounded-xl text-[14px] uppercase tracking-widest shadow-[0_4px_20px_rgba(24,119,242,0.4)] hover:-translate-y-1 transition-all disabled:opacity-50 flex items-center justify-center gap-3"
+                                className={`w-full font-black py-4 rounded-xl text-[14px] uppercase tracking-widest transition-all flex items-center justify-center gap-3 ${
+                                    isVerifying 
+                                    ? 'bg-blue-900 text-gray-400 cursor-not-allowed' 
+                                    : 'bg-[#1877F2] hover:bg-[#166FE5] text-white hover:-translate-y-1 shadow-[0_4px_20px_rgba(24,119,242,0.4)]'
+                                }`}
                             >
-                                {isVerifying ? "Authenticating via Meta..." : "Continue with Facebook"}
+                                {isVerifying ? (
+                                    <>
+                                        <Loader2 className="animate-spin w-5 h-5" /> AUTHENTICATING...
+                                    </>
+                                ) : (
+                                    "Continue with Facebook"
+                                )}
                             </button>
                         </div>
                     ) : (
