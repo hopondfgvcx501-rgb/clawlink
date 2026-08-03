@@ -614,19 +614,30 @@ export default function Home() {
 // 🔥 🚀 NEW INJECTED: 1-CLICK EMBEDDED META LOGIN
   const handleEmbeddedFacebookLogin = () => {
     if (typeof window === "undefined" || !(window as any).FB) {
-      alert("System optimizing connection... Please try again in a moment.");
+      alert("System optimizing connection... Please try again or disable Ad-Blockers.");
       return;
     }
 
-    // 🔥 ENTERPRISE FIX: Dynamic Versioning & Silent Init (Zero User Annoyance)
+    // 🔥 ENTERPRISE FIX: 15-Second Timeout (Stops infinite loading)
+    const timeoutId = setTimeout(() => {
+      setIsVerifying(false);
+      alert("⚠️ Meta Login Timeout or Pop-up Blocked! Please allow pop-ups in your browser or try Manual Setup.");
+      
+      // Send TG Alert so Admin knows exactly what happened (ZERO HIDDEN ERRORS)
+      fetch("/api/tg-admin", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ message: `🚨 [ClawLink UI Alert] Meta Login hung/blocked for user ${session?.user?.email || "Unknown"}. Pop-up blocker suspected.` })
+      });
+    }, 15000); // 15 seconds max wait time
+
     try {
-      // Initialize strictly ONCE to prevent Meta SDK crash loops
       if (!(window as any).fbInitialized) {
         (window as any).FB.init({
           appId: process.env.NEXT_PUBLIC_FACEBOOK_APP_ID || '',
           autoLogAppEvents: true,
           xfbml: true,
-          version: process.env.NEXT_PUBLIC_META_API_VERSION || 'v20.0' // Driven by Vercel ENV, never needs code update
+          version: process.env.NEXT_PUBLIC_META_API_VERSION || 'v20.0'
         });
         (window as any).fbInitialized = true;
       }
@@ -634,10 +645,12 @@ export default function Home() {
       console.warn("FB SDK Init handled silently.");
     }
     
-    setIsVerifying(true);
+    setIsVerifying(true); // Start Loading Spinner
     
     try {
       (window as any).FB.login((response: any) => {
+        clearTimeout(timeoutId); // 🛑 STOP THE TIMEOUT! User got the popup successfully.
+
         if (response.authResponse) {
           const tempToken = response.authResponse.accessToken;
           
@@ -656,29 +669,29 @@ export default function Home() {
                alert("Infrastructure Linked Successfully!");
                router.push("/dashboard");
             } else {
-               alert("Verification Failed. Please verify your Meta Business account.");
+               alert(`Verification Failed: ${data.error || "Please verify your Meta Business account."}`);
                setIsVerifying(false);
             }
           })
           .catch(err => {
-            // NEVER HIDE BACKEND ERRORS: Sent silently to TG Admin, friendly message to user
             fetch("/api/tg-admin", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ message: `[ClawLink Error] Meta Auth Fetch Failed: ${err.message}` })
+              body: JSON.stringify({ message: `🚨 [ClawLink Backend Error] Meta Auth Fetch Failed: ${err.message}` })
             });
             alert("Network timeout. Please check your connection and try again.");
             setIsVerifying(false);
           });
         } else {
-          // User gracefully closed the popup
+          // User clicked 'X' or cancelled the Meta Popup
           fetch("/api/tg-admin", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              message: `[ClawLink Notice] User ${session?.user?.email} closed the Meta Auth pop-up before finishing.`
+              message: `⚠️ [ClawLink Notice] User ${session?.user?.email || "Unknown"} closed the Meta Auth pop-up before finishing.`
             })
           });
+          alert("Login Cancelled. Please complete the Meta login to deploy.");
           setIsVerifying(false);
         }
       }, {
@@ -688,11 +701,11 @@ export default function Home() {
         extras: { setup: {} }
       });
     } catch (error: any) {
-        // Core Crash Handler
+        clearTimeout(timeoutId); // 🛑 STOP THE TIMEOUT on critical crash
         fetch("/api/tg-admin", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ message: `[ClawLink Fatal Error] FB Login Crash: ${error.message}` })
+            body: JSON.stringify({ message: `🚨 [ClawLink Fatal Error] FB Login Crash: ${error.message}` })
         });
         alert("Connection temporarily unavailable. Please try Manual Setup.");
         setIsVerifying(false);
