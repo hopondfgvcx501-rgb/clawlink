@@ -611,11 +611,27 @@ export default function Home() {
     }
   };
 
-  // 🔥 🚀 NEW INJECTED: 1-CLICK EMBEDDED META LOGIN
+// 🔥 🚀 NEW INJECTED: 1-CLICK EMBEDDED META LOGIN
   const handleEmbeddedFacebookLogin = () => {
     if (typeof window === "undefined" || !(window as any).FB) {
-      alert("System initializing... Please wait a second.");
+      alert("System optimizing connection... Please try again in a moment.");
       return;
+    }
+
+    // 🔥 ENTERPRISE FIX: Dynamic Versioning & Silent Init (Zero User Annoyance)
+    try {
+      // Initialize strictly ONCE to prevent Meta SDK crash loops
+      if (!(window as any).fbInitialized) {
+        (window as any).FB.init({
+          appId: process.env.NEXT_PUBLIC_FACEBOOK_APP_ID || '',
+          autoLogAppEvents: true,
+          xfbml: true,
+          version: process.env.NEXT_PUBLIC_META_API_VERSION || 'v20.0' // Driven by Vercel ENV, never needs code update
+        });
+        (window as any).fbInitialized = true;
+      }
+    } catch (initError) {
+      console.warn("FB SDK Init handled silently.");
     }
     
     setIsVerifying(true);
@@ -640,25 +656,27 @@ export default function Home() {
                alert("Infrastructure Linked Successfully!");
                router.push("/dashboard");
             } else {
-               alert("Verification Failed. Please try again.");
+               alert("Verification Failed. Please verify your Meta Business account.");
                setIsVerifying(false);
             }
           })
           .catch(err => {
-            alert("Network Error: " + err.message);
+            // NEVER HIDE BACKEND ERRORS: Sent silently to TG Admin, friendly message to user
             fetch("/api/tg-admin", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ message: `[ClawLink Error] Meta Auth Fetch Failed: ${err.message}` })
             });
+            alert("Network timeout. Please check your connection and try again.");
             setIsVerifying(false);
           });
         } else {
+          // User gracefully closed the popup
           fetch("/api/tg-admin", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              message: `[ClawLink Fatal Error] User ${session?.user?.email} cancelled Meta Embedded Auth. Pop-up closed.`
+              message: `[ClawLink Notice] User ${session?.user?.email} closed the Meta Auth pop-up before finishing.`
             })
           });
           setIsVerifying(false);
@@ -670,7 +688,13 @@ export default function Home() {
         extras: { setup: {} }
       });
     } catch (error: any) {
-        alert("System Error: " + error.message);
+        // Core Crash Handler
+        fetch("/api/tg-admin", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ message: `[ClawLink Fatal Error] FB Login Crash: ${error.message}` })
+        });
+        alert("Connection temporarily unavailable. Please try Manual Setup.");
         setIsVerifying(false);
     }
   };
