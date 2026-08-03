@@ -719,13 +719,13 @@ export default function Dashboard() {
         <body>
           <div class="container">
             <div class="header">
-              <svg width="150" height="26" viewBox="0 0 152 26" fill="none">
+              <svg width="150" height="26" viewBox="0 0 176 26" fill="none">
                 <path d="M22 3C18 .5 10 .5 7 4.5S3.5 18 7 22.5 18 26 22 23" stroke="#fff" stroke-width="4.5" stroke-linecap="round" fill="none"/>
                 <line x1="7.5" y1="3" x2="14.5" y2="11.5" stroke="#f97316" stroke-width="2.2" stroke-linecap="round"/>
                 <line x1="12.5" y1="1.5" x2="19.5" y2="10" stroke="#f97316" stroke-width="2.2" stroke-linecap="round"/>
                 <line x1="17.5" y1="2.5" x2="24" y2="10.5" stroke="#f97316" stroke-width="2" stroke-linecap="round"/>
-                <text x="30" y="18" font-family="sans-serif" font-size="14.5" font-weight="800" letter-spacing="1.4" fill="#fff">LAWLINK</text>
-                <text x="116" y="18" font-family="sans-serif" font-size="9.5" font-weight="700" letter-spacing=".7" fill="#f97316">.COM</text>
+                <text x="30" y="18" font-family="sans-serif" font-size="14.5" font-weight="800" letter-spacing="1.4" fill="#fff">LAWLINK Ai</text>
+                <text x="134" y="18" font-family="sans-serif" font-size="9.5" font-weight="700" letter-spacing=".7" fill="#f97316">.COM</text>
               </svg>
               <div style="text-align:right">
                 <h2 style="margin:0;font-size:26px;font-weight:900;color:#fff;letter-spacing:1px;">INVOICE</h2>
@@ -988,7 +988,7 @@ export default function Dashboard() {
       {/* ─── HEADER ─── */}
       <header className="flex items-center justify-between p-6 md:p-8 border-b backdrop-blur-xl sticky top-0 z-30 transition-all duration-300" style={{ backgroundColor: "var(--bg-main)", borderColor: "var(--border-color)", opacity: 0.95 }}>
         <div className="flex items-center gap-6">
-          <svg width="130" height="22" viewBox="0 0 152 26" fill="none" className="shrink-0 cursor-pointer transition-transform hover:scale-105" onClick={() => router.push("/")}>
+          <svg width="150" height="22" viewBox="0 0 176 26" fill="none" className="shrink-0 cursor-pointer transition-transform hover:scale-105" onClick={() => router.push("/")}>
             <defs>
               <linearGradient id="cgh" x1="0" y1="0" x2="0" y2="26" gradientUnits="userSpaceOnUse">
                 <stop stopColor="currentColor" />
@@ -999,8 +999,8 @@ export default function Dashboard() {
             <line x1="7.5" y1="3" x2="14.5" y2="11.5" stroke="#f97316" strokeWidth="2.2" strokeLinecap="round" />
             <line x1="12.5" y1="1.5" x2="19.5" y2="10" stroke="#f97316" strokeWidth="2.2" strokeLinecap="round" />
             <line x1="17.5" y1="2.5" x2="24" y2="10.5" stroke="#f97316" strokeWidth="2" strokeLinecap="round" />
-            <text x="30" y="18" fontFamily="-apple-system,BlinkMacSystemFont,sans-serif" fontSize="14.5" fontWeight="800" letterSpacing="1.4" fill="currentColor">LAWLINK</text>
-            <text x="116" y="18" fontFamily="-apple-system,BlinkMacSystemFont,sans-serif" fontSize="9.5" fontWeight="700" letterSpacing=".7" fill="#f97316">.COM</text>
+            <text x="30" y="18" fontFamily="-apple-system,BlinkMacSystemFont,sans-serif" fontSize="14.5" fontWeight="800" letterSpacing="1.4" fill="currentColor">LAWLINK Ai</text>
+            <text x="134" y="18" fontFamily="-apple-system,BlinkMacSystemFont,sans-serif" fontSize="9.5" fontWeight="700" letterSpacing=".7" fill="#f97316">.COM</text>
           </svg>
 
           <div className="hidden md:block border-l pl-6" style={{ borderColor: "var(--border-color)" }}>
