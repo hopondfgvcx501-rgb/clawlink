@@ -928,7 +928,7 @@ export default function Home() {
         style={{backdropFilter:"blur(12px)",WebkitBackdropFilter:"blur(12px)",
                 background:"var(--bg-main)", borderBottom:"1px solid var(--border-color)"}}>
 
-        <svg aria-label="ClawLink Home" width="175" height="24" viewBox="0 0 190 26" fill="none" className="shrink-0 cursor-pointer transition-transform hover:scale-105" onClick={() => router.push("/")}>
+        <svg aria-label="ClawLink Home" width="168" height="24" viewBox="0 0 176 26" fill="none" className="shrink-0 cursor-pointer transition-transform hover:scale-105" onClick={() => router.push("/")}>
           <defs>
             <linearGradient id="cg" x1="0" y1="0" x2="0" y2="26" gradientUnits="userSpaceOnUse">
               <stop stopColor="#fff"/><stop offset="1" stopColor="rgba(255,255,255,.65)"/>
@@ -940,7 +940,7 @@ export default function Home() {
           <line x1="12.5" y1="1.5" x2="19.5" y2="10" stroke="#f97316" strokeWidth="2.2" strokeLinecap="round"/>
           <line x1="17.5" y1="2.5" x2="24" y2="10.5" stroke="#f97316" strokeWidth="2" strokeLinecap="round"/>
           <text x="30" y="18" fontFamily="-apple-system,BlinkMacSystemFont,sans-serif" fontSize="14.5" fontWeight="800" letterSpacing="1.4" fill="currentColor">LAWLINK Ai</text>
-          <text x="146" y="18" fontFamily="-apple-system,BlinkMacSystemFont,sans-serif" fontSize="9.5" fontWeight="700" letterSpacing=".7" fill="#f97316">.COM</text>
+          <text x="139" y="18" fontFamily="-apple-system,BlinkMacSystemFont,sans-serif" fontSize="9.5" fontWeight="700" letterSpacing=".7" fill="#f97316">.COM</text>
         </svg>
 
         <div className="flex items-center gap-4 md:gap-6">
