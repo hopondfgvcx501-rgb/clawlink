@@ -8,7 +8,7 @@
  * FIXED: Upgraded Anthropic Claude logic to strictly alternate user/assistant roles.
  * FIXED: Replaced dots (.) with hyphens (-) in Anthropic 2026 API IDs to prevent 404 errors.
  * FIXED: Connected to the dynamic enterprise prompt compiler.
- * FIXED: Integrated Telegram Admin Error Reporting & Vercel Execution Guard.
+ * FIXED: Added aggressive error logging to catch silent Supabase & Meta failures.
  * * ALL RIGHTS RESERVED. CLAWLINK INC.
  * ==============================================================================================
  */
@@ -17,17 +17,17 @@ import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { compileEnterprisePrompt } from "@/app/lib/ai/prompt-compiler";
 
-// Using standard Node serverless to prevent background task termination.
+// 🚀 Using standard Node serverless to prevent background task termination.
 export const dynamic = "force-dynamic";
 
-// INITIALIZE SUPABASE
+// 🚀 INITIALIZE SUPABASE
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
 const supabase = createClient(supabaseUrl, supabaseKey, {
     auth: { persistSession: false, autoRefreshToken: false }
 });
 
-// CORS HEADERS FOR META
+// 🛡️ CORS HEADERS FOR META
 const corsHeaders = {
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
@@ -64,7 +64,7 @@ async function sendTelegramAlert(context: string, errorMessage: string) {
 }
 
 // =========================================================================
-// DIRECT AI MODEL CALLERS (WITH ROLE ENFORCEMENTS)
+// 🧠 DIRECT AI MODEL CALLERS (WITH ROLE ENFORCEMENTS)
 // =========================================================================
 
 async function generateEmbedding(text: string) {
@@ -122,6 +122,7 @@ async function callOpenAI(model: string, systemPrompt: string, history: any[], u
     return data.choices[0].message.content;
 }
 
+// CRITICAL UPGRADE: Enforced strict alternating roles to prevent Anthropic 400 crashes
 async function callClaude(modelId: string, systemPrompt: string, history: any[], userText: string) {
     const apiKey = process.env.ANTHROPIC_API_KEY;
     if (!apiKey) throw new Error("API_KEY missing");
@@ -160,7 +161,7 @@ async function callClaude(modelId: string, systemPrompt: string, history: any[],
 }
 
 // =========================================================================
-// 1. GET REQUEST: META WEBHOOK VERIFICATION
+// 1. 🌐 GET REQUEST: META WEBHOOK VERIFICATION
 // =========================================================================
 export async function GET(req: Request) {
     const { searchParams } = new URL(req.url);
@@ -176,7 +177,7 @@ export async function GET(req: Request) {
 }
 
 // =========================================================================
-// 2. POST REQUEST: INCOMING MESSAGES
+// 2. 🤖 POST REQUEST: INCOMING MESSAGES
 // =========================================================================
 export async function POST(req: Request) {
     try {
@@ -217,14 +218,14 @@ export async function POST(req: Request) {
         }
 
         return NextResponse.json({ success: true }, { status: 200 });
-    } catch (error: any) {
-        await sendTelegramAlert("Webhook POST Handler Fatal Crash", error.message || String(error));
+    } catch (error) {
+        console.error("[IG_WEBHOOK_FATAL] Error in POST handler:", error);
         return NextResponse.json({ success: true }, { status: 200 }); 
     }
 }
 
 // =========================================================================
-// PROCESSOR: DYNAMIC AI ROUTING (OMNI-ENGINE + RAG + TRIGGERS)
+// 🧠 PROCESSOR: DYNAMIC AI ROUTING (OMNI-ENGINE + RAG + TRIGGERS)
 // =========================================================================
 async function processDynamicAI(senderId: string, accountId: string, text: string, type: "dm" | "comment", commentId?: string) {
     const { data: config, error: dbError } = await supabase
@@ -234,14 +235,16 @@ async function processDynamicAI(senderId: string, accountId: string, text: strin
         .single();
 
     if (dbError || !config || !config.instagram_token) {
-        await sendTelegramAlert("Account Validation Failed", `Missing DB record or token for IG Account ID: ${accountId}`);
+        console.warn(`[IG_PROCESSOR_REJECTED] Unauthorized account or missing token for ID: ${accountId}.`);
         return;
     }
 
     const metaApiToken = config.instagram_token.trim();
     const promptText = sanitizeInput(text);
 
-    // AUTO-DM TRIGGER CHECK (For Comments Only)
+    // ==========================================
+    // 🎯 AUTO-DM TRIGGER CHECK (For Comments Only)
+    // ==========================================
     if (type === "comment") {
         const triggers = (config.ig_auto_dm_triggers || "link,demo,price,send").toLowerCase().split(",");
         const commentLower = promptText.toLowerCase();
@@ -249,15 +252,20 @@ async function processDynamicAI(senderId: string, accountId: string, text: strin
         const matchedTrigger = triggers.find((t: string) => commentLower.includes(t.trim()));
         
         if (!matchedTrigger) {
+            console.log(`[IG_COMMENT_IGNORED] No trigger word found in: "${promptText}"`);
             return; 
         }
+        console.log(`[IG_AUTO_DM_TRIGGERED] Word matched: ${matchedTrigger}`);
     }
 
-    // THE GATEKEEPER (Plan, Expiry & Limits Check) 
+    // ==========================================
+    // 🛑 THE GATEKEEPER (Plan, Expiry & Limits Check) 
+    // ==========================================
     const currentPlan = (config.plan_tier || config.plan || "free").toLowerCase();
 
     if (currentPlan === "free" || currentPlan === "starter" || config.plan_status !== "Active") {
-        const sleepMsg = "System Note: This AI agent is currently offline. The administrator needs to activate the plan.";
+        console.warn(`[IG_GATEKEEPER] Unpaid or inactive account for ${config.email}. Blocking AI.`);
+        const sleepMsg = "🤖 *ClawLink AI:* This agent is currently sleeping. The owner needs to activate their plan in the dashboard to enable 24/7 autonomous replies.";
 
         if (type === "dm") {
             await fetch(`https://graph.facebook.com/v18.0/me/messages?access_token=${metaApiToken}`, {
@@ -275,7 +283,8 @@ async function processDynamicAI(senderId: string, accountId: string, text: strin
     const isExpired = config.plan_expiry_date ? (new Date() > expiryDate) : false;
 
     if (isExpired || (!isUnlimited && tokensUsed >= tokensAllocated)) {
-        const maintenanceMsg = "System Note: The AI assistant for this account is currently offline due to account limits.";
+        console.warn(`[IG_LIMITS] Account limits exhausted for ${config.email}. Dropping request.`);
+        const maintenanceMsg = "System Note: The AI assistant for this account is currently offline due to account limits. Please contact the administrator.";
         
         if (type === "dm") {
             await fetch(`https://graph.facebook.com/v18.0/me/messages?access_token=${metaApiToken}`, {
@@ -286,7 +295,9 @@ async function processDynamicAI(senderId: string, accountId: string, text: strin
         return; 
     }
 
-    // FETCH COMPANY KNOWLEDGE (RAG)
+    // ==========================================
+    // 📚 FETCH COMPANY KNOWLEDGE (RAG)
+    // ==========================================
     let customKnowledge = "";
     try {
         const queryVector = await generateEmbedding(promptText);
@@ -300,7 +311,9 @@ async function processDynamicAI(senderId: string, accountId: string, text: strin
         }
     } catch (e) { console.error("[IG_RAG_ERROR]", e); }
 
-    // INITIATE OMNI-ENGINE AI RESPONSE
+    // ==========================================
+    // 🚀 INITIATE OMNI-ENGINE AI RESPONSE
+    // ==========================================
     let rawProvider = (config.ai_provider || config.selected_model || "openai").toLowerCase();
     let provider = "openai"; 
     
@@ -308,6 +321,7 @@ async function processDynamicAI(senderId: string, accountId: string, text: strin
     else if (rawProvider.includes("claude") || rawProvider.includes("anthropic") || rawProvider.includes("opus")) provider = "anthropic";
     else if (rawProvider.includes("gemini") || rawProvider.includes("google")) provider = "google";
 
+    // 🚀 THE TITANIUM BRAIN INJECTION: Dynamically compiled from DB settings
     const fullSystemContext = compileEnterprisePrompt(config, customKnowledge);
 
     const { data: pastChats } = await supabase
@@ -323,9 +337,13 @@ async function processDynamicAI(senderId: string, accountId: string, text: strin
         content: c.message ? c.message.trim() : " "
     }));
 
-    await supabase.from("chat_history").insert({ 
+    // 🚨 FIX: Explicitly catching and logging Supabase INSERT error for User Message
+    const { error: insertUserError } = await supabase.from("chat_history").insert({ 
         email: config.email, platform: "instagram", platform_chat_id: senderId, customer_name: "Instagram User", sender_type: "user", message: promptText 
     });
+    if (insertUserError) {
+        console.error("🚨 [SUPABASE USER INSERT ERROR]", JSON.stringify(insertUserError));
+    }
 
     let aiResponse = "System is undergoing scheduled maintenance. Please try again later.";
     let wasSuccessful = false;
@@ -333,7 +351,9 @@ async function processDynamicAI(senderId: string, accountId: string, text: strin
     const words = promptText.split(/\s+/).length;
     const usageRatio = isUnlimited ? 0 : (tokensUsed / tokensAllocated) * 100;
     
-    // UPGRADED API IDENTIFIERS (COST SAVER MAPPINGS)
+    // ==========================================
+    // 🔥 2026 UPGRADED API IDENTIFIERS (COST SAVER MAPPINGS)
+    // ==========================================
     const GEMINI_NANO = "gemini-3.1-flash-lite"; const GEMINI_MID = "gemini-3.1-flash"; const GEMINI_PREMIUM = "gemini-3.1-pro";     
     const GEMINI_FALLBACKS = [GEMINI_PREMIUM, GEMINI_MID, GEMINI_NANO];
     
@@ -355,7 +375,9 @@ async function processDynamicAI(senderId: string, accountId: string, text: strin
         }
     }
 
-    // THE SMART ROUTER ALGORITHM (MILLISECOND FALLBACK)
+    // ==========================================
+    // 🧠 THE SMART ROUTER ALGORITHM (MILLISECOND FALLBACK & COST SAVER)
+    // ==========================================
     if (provider === "omni") {
         if (words <= 10 || usageRatio >= 90) { 
             wasSuccessful = await attemptFetch(GPT_NANO, "openai");
@@ -432,7 +454,9 @@ async function processDynamicAI(senderId: string, accountId: string, text: strin
         await supabase.from("user_configs").update(updatePayload).eq("id", config.id);
     }
 
-    // DISPATCH RESPONSE TO META GRAPH API
+    // ==========================================
+    // 📤 DISPATCH RESPONSE TO META GRAPH API
+    // ==========================================
     let finalDbMessage = aiResponse;
 
     if (type === "dm") {
@@ -440,30 +464,41 @@ async function processDynamicAI(senderId: string, accountId: string, text: strin
             method: "POST", headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ recipient: { id: senderId }, message: { text: aiResponse } })
         });
+        
         const metaResponseData = await metaRes.json();
+        console.log("🔥 [META DM RESPONSE]:", JSON.stringify(metaResponseData)); // 🚨 FIX: Logging exact Meta JSON
+
         if (metaResponseData.error) {
             finalDbMessage = `[META_ERROR] ${metaResponseData.error.message}`;
             await sendTelegramAlert("Meta Graph API Rejected DM", `Reason: ${metaResponseData.error.message}\nSender ID: ${senderId}`);
         }
 
     } else if (type === "comment") {
+        // Reply to comment first, then send DM
         await fetch(`https://graph.facebook.com/v18.0/${commentId}/replies?access_token=${metaApiToken}`, {
             method: "POST", headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ message: "We have sent you a direct message with more details." })
+            body: JSON.stringify({ message: "I've sent you a direct message with more details! 🚀" })
         });
         
         const dmRes = await fetch(`https://graph.facebook.com/v18.0/me/messages?access_token=${metaApiToken}`, {
             method: "POST", headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ recipient: { id: senderId }, message: { text: aiResponse } })
         });
+        
         const dmResponseData = await dmRes.json();
+        console.log("🔥 [META COMMENT DM RESPONSE]:", JSON.stringify(dmResponseData)); // 🚨 FIX: Logging exact Meta JSON
+
         if (dmResponseData.error) {
             finalDbMessage = `[META_ERROR] ${dmResponseData.error.message}`;
             await sendTelegramAlert("Meta Graph API Rejected Comment DM", `Reason: ${dmResponseData.error.message}\nSender ID: ${senderId}`);
         }
     }
 
-    await supabase.from("chat_history").insert({ 
+    // 🚨 FIX: Explicitly catching and logging Supabase INSERT error for Bot Message
+    const { error: insertBotError } = await supabase.from("chat_history").insert({ 
         email: config.email, platform: "instagram", platform_chat_id: senderId, customer_name: "Instagram User", sender_type: "bot", message: finalDbMessage 
     });
+    if (insertBotError) {
+        console.error("🚨 [SUPABASE BOT INSERT ERROR]", JSON.stringify(insertBotError));
+    }
 }
