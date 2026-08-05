@@ -5,10 +5,7 @@
  * @file app/api/webhook/instagram/route.ts
  * @description Handles Meta Graph API webhooks for Instagram DMs and Comments.
  * Features the "ManyChat-Killer" Auto-DM trigger system.
- * FIXED: Upgraded Anthropic Claude logic to strictly alternate user/assistant roles.
- * FIXED: Replaced dots (.) with hyphens (-) in Anthropic 2026 API IDs to prevent 404 errors.
- * FIXED: Connected to the dynamic enterprise prompt compiler.
- * FIXED: Added aggressive error logging to catch silent Supabase & Meta failures.
+ * FIXED: Maintained 100% Original Omni-Engine Logic. Added Handover Protocol & Error Tracing.
  * * ALL RIGHTS RESERVED. CLAWLINK INC.
  * ==============================================================================================
  */
@@ -192,8 +189,11 @@ export async function POST(req: Request) {
 
         const accountId = entry.id; 
 
-        if (entry.messaging && entry.messaging[0]) {
-            const webhookEvent = entry.messaging[0];
+        // 🔥 THE MASTER FIX: Support for Facebook Handover Protocol
+        const messagingEvents = entry.messaging || entry.standby;
+
+        if (messagingEvents && messagingEvents[0]) {
+            const webhookEvent = messagingEvents[0];
             const senderId = webhookEvent.sender?.id;
             const userText = webhookEvent.message?.text;
             
@@ -337,13 +337,11 @@ async function processDynamicAI(senderId: string, accountId: string, text: strin
         content: c.message ? c.message.trim() : " "
     }));
 
-    // 🚨 FIX: Explicitly catching and logging Supabase INSERT error for User Message
+    // 🚨 DEBUG FIX: Capture DB Insert Errors
     const { error: insertUserError } = await supabase.from("chat_history").insert({ 
         email: config.email, platform: "instagram", platform_chat_id: senderId, customer_name: "Instagram User", sender_type: "user", message: promptText 
     });
-    if (insertUserError) {
-        console.error("🚨 [SUPABASE USER INSERT ERROR]", JSON.stringify(insertUserError));
-    }
+    if (insertUserError) console.error("🚨 DB INSERT ERROR (USER MSG):", JSON.stringify(insertUserError));
 
     let aiResponse = "System is undergoing scheduled maintenance. Please try again later.";
     let wasSuccessful = false;
@@ -376,7 +374,7 @@ async function processDynamicAI(senderId: string, accountId: string, text: strin
     }
 
     // ==========================================
-    // 🧠 THE SMART ROUTER ALGORITHM (MILLISECOND FALLBACK & COST SAVER)
+    // 🧠 THE SMART ROUTER ALGORITHM (MAINTAINED 100%)
     // ==========================================
     if (provider === "omni") {
         if (words <= 10 || usageRatio >= 90) { 
@@ -466,15 +464,15 @@ async function processDynamicAI(senderId: string, accountId: string, text: strin
         });
         
         const metaResponseData = await metaRes.json();
-        console.log("🔥 [META DM RESPONSE]:", JSON.stringify(metaResponseData)); // 🚨 FIX: Logging exact Meta JSON
-
+        
+        // 🚨 DEBUG FIX: Log Meta Errors to Vercel Console
         if (metaResponseData.error) {
+            console.error("🔥 META REJECTION:", JSON.stringify(metaResponseData.error));
             finalDbMessage = `[META_ERROR] ${metaResponseData.error.message}`;
             await sendTelegramAlert("Meta Graph API Rejected DM", `Reason: ${metaResponseData.error.message}\nSender ID: ${senderId}`);
         }
 
     } else if (type === "comment") {
-        // Reply to comment first, then send DM
         await fetch(`https://graph.facebook.com/v18.0/${commentId}/replies?access_token=${metaApiToken}`, {
             method: "POST", headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ message: "I've sent you a direct message with more details! 🚀" })
@@ -486,19 +484,17 @@ async function processDynamicAI(senderId: string, accountId: string, text: strin
         });
         
         const dmResponseData = await dmRes.json();
-        console.log("🔥 [META COMMENT DM RESPONSE]:", JSON.stringify(dmResponseData)); // 🚨 FIX: Logging exact Meta JSON
-
+        
         if (dmResponseData.error) {
+            console.error("🔥 META REJECTION (COMMENT DM):", JSON.stringify(dmResponseData.error));
             finalDbMessage = `[META_ERROR] ${dmResponseData.error.message}`;
             await sendTelegramAlert("Meta Graph API Rejected Comment DM", `Reason: ${dmResponseData.error.message}\nSender ID: ${senderId}`);
         }
     }
 
-    // 🚨 FIX: Explicitly catching and logging Supabase INSERT error for Bot Message
+    // 🚨 DEBUG FIX: Capture DB Insert Errors for Bot Message
     const { error: insertBotError } = await supabase.from("chat_history").insert({ 
         email: config.email, platform: "instagram", platform_chat_id: senderId, customer_name: "Instagram User", sender_type: "bot", message: finalDbMessage 
     });
-    if (insertBotError) {
-        console.error("🚨 [SUPABASE BOT INSERT ERROR]", JSON.stringify(insertBotError));
-    }
+    if (insertBotError) console.error("🚨 DB INSERT ERROR (BOT MSG):", JSON.stringify(insertBotError));
 }
