@@ -1,11 +1,12 @@
 /**
  * ==============================================================================================
- * CLAWLINK ENTERPRISE INSTAGRAM WEBHOOK (OMNI ENGINE + AUTO-DM)
+ * CLAWLINK ENTERPRISE INSTAGRAM WEBHOOK (OMNI ENGINE + AUTO-DM + DDOS SHIELD)
  * ==============================================================================================
  * @file app/api/webhook/instagram/route.ts
  * @description Handles Meta Graph API webhooks for Instagram DMs and Comments.
  * Features the "ManyChat-Killer" Auto-DM trigger system.
  * FIXED: Maintained 100% Original Omni-Engine Logic. Added Handover Protocol & Error Tracing.
+ * UPGRADED: Injected Upstash Redis Rate Limiting (DDoS Armor) to prevent API spam.
  * * ALL RIGHTS RESERVED. CLAWLINK INC.
  * ==============================================================================================
  */
@@ -14,8 +15,20 @@ import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { compileEnterprisePrompt } from "@/app/lib/ai/prompt-compiler";
 
+// 🔥 NAYA INJECTION: Upstash Redis & Rate Limiter (DDoS Armor)
+import { Redis } from "@upstash/redis";
+import { Ratelimit } from "@upstash/ratelimit";
+
 // 🚀 Using standard Node serverless to prevent background task termination.
 export const dynamic = "force-dynamic";
+
+// 🛡️ INITIALIZE REDIS BOUNCER (3 msgs per 10 seconds)
+const redis = Redis.fromEnv();
+const ratelimit = new Ratelimit({
+    redis: redis,
+    limiter: Ratelimit.slidingWindow(3, "10 s"),
+    analytics: true,
+});
 
 // 🚀 INITIALIZE SUPABASE
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
@@ -198,6 +211,14 @@ export async function POST(req: Request) {
             const userText = webhookEvent.message?.text;
             
             if (userText && !webhookEvent.message?.is_echo && senderId !== accountId) {
+                
+                // 🛑 REDIS RATE LIMIT CHECK FOR DMs
+                const { success, reset } = await ratelimit.limit(`ratelimit_ig_dm_${senderId}`);
+                if (!success) {
+                    console.error(`🚨 [RATE LIMIT EXCEEDED] DM Spammer Blocked! User: ${senderId}. Retry at: ${new Date(reset).toLocaleTimeString()}`);
+                    return NextResponse.json({ success: true, message: "Rate limited" }, { status: 200 });
+                }
+
                 // Awaiting process prevents Vercel from killing the function early
                 await processDynamicAI(senderId, accountId, userText, "dm");
             }
@@ -212,6 +233,14 @@ export async function POST(req: Request) {
                 const commentId = commentValue?.id;
 
                 if (senderId && userText && senderId !== accountId) {
+                    
+                    // 🛑 REDIS RATE LIMIT CHECK FOR COMMENTS
+                    const { success, reset } = await ratelimit.limit(`ratelimit_ig_comment_${senderId}`);
+                    if (!success) {
+                        console.error(`🚨 [RATE LIMIT EXCEEDED] Comment Spammer Blocked! User: ${senderId}. Retry at: ${new Date(reset).toLocaleTimeString()}`);
+                        return NextResponse.json({ success: true, message: "Rate limited" }, { status: 200 });
+                    }
+
                     await processDynamicAI(senderId, accountId, userText, "comment", commentId);
                 }
             }
