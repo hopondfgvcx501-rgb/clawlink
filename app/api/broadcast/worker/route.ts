@@ -8,9 +8,9 @@ import { createClient } from "@supabase/supabase-js";
  * ==============================================================================================
  * @file app/api/broadcast/worker/route.ts
  * @description Secure background worker triggered exclusively by Upstash QStash.
- * Integrates real Meta WhatsApp Cloud API execution, token billing, and Telegram Admin alerting.
+ * Integrates real Meta WhatsApp & Instagram API execution, token billing, and Telegram Admin alerting.
  * 🚀 FIXED: Implemented strict TypeScript interfaces to eliminate 'any' type errors.
- * 🚀 ADDED: Live Meta Graph API execution payload for WhatsApp.
+ * 🚀 ADDED: Live Meta Graph API execution payload for WhatsApp & Instagram.
  * 🚀 SECURED: Cryptographic signature verification ensures zero external triggering.
  * * ALL RIGHTS RESERVED. CLAWLINK INC.
  * ==============================================================================================
@@ -66,9 +66,10 @@ async function handler(req: NextRequest) {
     // ==============================================================================
     // 1. BILLING & CREDENTIAL RETRIEVAL
     // ==============================================================================
+    // 🔥 ADDED: instagram_token to the select query
     const { data: config, error: configError } = await supabase
       .from("user_configs")
-      .select("is_unlimited, available_tokens, whatsapp_phone_id, whatsapp_token")
+      .select("is_unlimited, available_tokens, whatsapp_phone_id, whatsapp_token, instagram_token")
       .eq("email", email)
       .single();
 
@@ -113,17 +114,40 @@ async function handler(req: NextRequest) {
       const metaResult = await metaResponse.json();
 
       if (!metaResponse.ok) {
-        throw new Error(`Meta API Exception: ${metaResult.error?.message || "Unknown Meta Error"}`);
+        throw new Error(`Meta WA API Exception: ${metaResult.error?.message || "Unknown Meta Error"}`);
       }
       
       console.log(`[WORKER] WhatsApp delivery successful to ${to}`);
       
+    } else if (platform === "instagram") {
+      
+      // 🔥 ADDED: Live Execution for Instagram Graph API v18.0
+      if (!config.instagram_token) {
+         throw new Error(`Instagram credentials missing for user: ${email}`);
+      }
+
+      const metaResponse = await fetch(`https://graph.facebook.com/v18.0/me/messages?access_token=${config.instagram_token.trim()}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          recipient: { id: to },
+          message: { text: message },
+        }),
+      });
+
+      const metaResult = await metaResponse.json();
+
+      if (metaResult.error) {
+        throw new Error(`Meta IG API Exception: ${metaResult.error.message}`);
+      }
+      
+      console.log(`[WORKER] Instagram delivery successful to ${to}`);
+
     } else if (platform === "telegram") {
       // Future Telegram Bot API implementation goes here
       console.log("[WORKER] Telegram delivery queued...");
-    } else if (platform === "instagram") {
-      // Future Instagram Graph API implementation goes here
-      console.log("[WORKER] Instagram delivery queued...");
     }
 
     // ==============================================================================
