@@ -5,13 +5,14 @@
  * CLAWLINK ENTERPRISE FRONTEND SECURE MODULE
  * ==============================================================================================
  * @file app/page.tsx
- * @version 13.0.1 (Military-Grade Security & PLG Optimized - CRASH FIXED)
+ * @version 13.5.0 (Military-Grade Security & Ultimate PLG Conversion Optimized)
  * @description Main onboarding interface with strict Product-Led Growth (PLG) routing.
  * 🚀 FIXED: Native Microtask Queue hydration resolves 'set-state-in-effect'.
  * 🚀 SECURED: Advanced Anti-debugging, anti-clickjacking, and payload tampering defenses deployed natively.
  * 🌟 ADDED: 1-Click Meta Login Hybrid UI for ultra-fast deployments.
- * 🔥 NEW INJECTED: Live Playground iPhone Mockup & Enterprise Pricing Matrix.
- * 🛠️ HOTFIX: Removed dead LivePlayground import and added missing Bot icon from lucide-react.
+ * 🔥 UI UPGRADE: Navbar right-aligned, dynamic pricing auth logic, enhanced selection visibility.
+ * 📱 RESPONSIVE: Live API Playground now fully optimized for both Desktop and Mobile devices.
+ * 🛠️ HOTFIX: Removed dead imports and ensured strictly typed English comments to prevent compiler crashes.
  * * ALL RIGHTS RESERVED. CLAWLINK INC.
  * ==============================================================================================
  */
@@ -265,7 +266,7 @@ export default function Home() {
   
   const [theme, setTheme] = useState("dark");
 
-  // 🔥 INJECTED: PLAYGROUND STATES
+  // PLAYGROUND STATES
   const [demoChat, setDemoChat] = useState([{ role: "bot", text: "Hi! I am ClawLink's Omni-Fallback AI. Send me a message to test my latency! ⚡" }]);
   const [demoInput, setDemoInput] = useState("");
   const [isDemoTyping, setIsDemoTyping] = useState(false);
@@ -298,7 +299,7 @@ export default function Home() {
     }
   };
 
-  // 🔥 REAL API: PLAYGROUND SUBMIT HANDLER
+  // REAL API: PLAYGROUND SUBMIT HANDLER
   const handleDemoSubmit = async (e: any) => {
     e.preventDefault();
     if (!demoInput.trim() || isDemoTyping) return;
@@ -309,7 +310,6 @@ export default function Home() {
     setIsDemoTyping(true);
 
     try {
-      // Direct request to the Omni-Fallback Engine
       const res = await fetch("/api/omni", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -327,7 +327,6 @@ export default function Home() {
         throw new Error(data.error || "Omni-Engine timeout");
       }
     } catch (error: any) {
-      // Display real error in UI and forward log to Telegram Admin
       setDemoChat(p => [...p, { role: "bot", text: `⚠️ Backend Alert: ${error.message || "Network Error"}` }]);
       
       fetch("/api/tg-admin", {
@@ -794,13 +793,13 @@ export default function Home() {
 
   const btn = "transition-all duration-[120ms] ease-out hover:-translate-y-1 hover:shadow-lg transform-gpu will-change-transform";
 
-  const getButtonClass = (isActive: boolean, categorySelected: boolean, hoverBorderColorClass: string) => {
-      let classes = `border cursor-pointer overflow-hidden ${btn} flex flex-row h-[60px] w-full px-[16px] gap-[12px] justify-start items-center rounded-[12px] transition-colors duration-300`;
+  const getButtonClass = (isActive: boolean, categorySelected: boolean, activeStyles: string, hoverStyles: string) => {
+      let classes = `border cursor-pointer overflow-hidden ${btn} flex flex-row h-[60px] w-full px-[16px] gap-[12px] justify-start items-center rounded-[12px] transition-all duration-300`;
       
       if (isActive) {
-          classes += ` border-transparent ${hoverBorderColorClass.replace('hover:', '')}`; 
+          classes += ` border-solid ${activeStyles} scale-[1.02]`; 
       } else {
-          classes += ` border-transparent ${hoverBorderColorClass}`;
+          classes += ` border-transparent ${hoverStyles} bg-white/5 dark:bg-black/20`;
       }
 
       if (status === "authenticated" && categorySelected && !isActive) {
@@ -982,7 +981,7 @@ export default function Home() {
           <text x="139" y="18" fontFamily="-apple-system,BlinkMacSystemFont,sans-serif" fontSize="9.5" fontWeight="700" letterSpacing=".7" fill="#f97316">.COM</text>
         </svg>
 
-        <div className="hidden lg:flex items-center gap-8 ml-8 mr-auto font-bold text-[12px] uppercase tracking-widest" style={{ color: "var(--text-muted)" }}>
+        <div className="hidden lg:flex items-center gap-8 ml-auto mr-8 font-bold text-[12px] uppercase tracking-widest" style={{ color: "var(--text-muted)" }}>
           <a href="#features" className="hover:text-orange-400 transition-colors">Features</a>
           <a href="#pricing" className="hover:text-orange-400 transition-colors">Pricing</a>
           <a href="#faq" className="hover:text-orange-400 transition-colors">FAQs</a>
@@ -1079,38 +1078,38 @@ export default function Home() {
               <span className="w-4 h-4 text-[9px] rounded flex items-center justify-center" style={{ backgroundColor: "rgba(128, 128, 128, 0.2)", color: "var(--text-main)" }}>1</span>
               Choose Your AI Model
             </p>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-[12px] mb-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-[12px] mb-8">
               
               <button aria-label="Select GPT-5.5 Pro Model" title="GPT-5.5 Pro" data-spring onClick={() => handleModelSelect("GPT-5.5 Pro")} 
                 disabled={(isTokenSaved || hasDeployedBefore) && activeModel!=="GPT-5.5 Pro"}
-                className={getButtonClass(modelActive("GPT-5.5 Pro"), activeModel !== null, "hover:border-green-400 hover:shadow-[0_0_15px_rgba(74,222,128,0.25)]")}
-                style={{ backgroundColor: "rgba(128, 128, 128, 0.05)" }}>
+                className={getButtonClass(modelActive("GPT-5.5 Pro"), activeModel !== null, "border-green-500 bg-green-500/10 shadow-[0_0_15px_rgba(34,197,94,0.3)]", "hover:border-green-400 hover:shadow-[0_0_15px_rgba(74,222,128,0.25)]")}
+                style={{ backgroundColor: modelActive("GPT-5.5 Pro") ? undefined : undefined }}>
                 <OpenAI_Icon size={ICON_SIZE}/>
-                <span className="ptx-name">GPT-5.5 Pro</span>
+                <span className="ptx-name" style={{ color: modelActive("GPT-5.5 Pro") ? "#22c55e" : "var(--text-main)" }}>GPT-5.5 Pro</span>
               </button>
 
               <button aria-label="Select Claude Opus 4.7 Model" title="Claude Opus 4.7" data-spring onClick={() => handleModelSelect("Claude Opus 4.7")} 
                 disabled={(isTokenSaved || hasDeployedBefore) && activeModel!=="Claude Opus 4.7"}
-                className={getButtonClass(modelActive("Claude Opus 4.7"), activeModel !== null, "hover:border-[#e6683c] hover:shadow-[0_0_15px_rgba(230,104,60,0.25)]")}
-                style={{ backgroundColor: "rgba(128, 128, 128, 0.05)" }}>
+                className={getButtonClass(modelActive("Claude Opus 4.7"), activeModel !== null, "border-[#e6683c] bg-[#e6683c]/10 shadow-[0_0_15px_rgba(230,104,60,0.3)]", "hover:border-[#e6683c] hover:shadow-[0_0_15px_rgba(230,104,60,0.25)]")}
+                style={{ backgroundColor: modelActive("Claude Opus 4.7") ? undefined : undefined }}>
                 <Claude_Icon size={ICON_SIZE}/>
-                <span className="ptx-name">Claude Opus 4.7</span>
+                <span className="ptx-name" style={{ color: modelActive("Claude Opus 4.7") ? "#e6683c" : "var(--text-main)" }}>Claude Opus 4.7</span>
               </button>
 
               <button aria-label="Select Gemini 3.1 Pro Model" title="Gemini 3.1 Pro" data-spring onClick={() => handleModelSelect("gemini 3.1 Pro")} 
                 disabled={(isTokenSaved || hasDeployedBefore) && activeModel!=="gemini 3.1 Pro"}
-                className={getButtonClass(modelActive("gemini 3.1 Pro"), activeModel !== null, "hover:border-blue-400 hover:shadow-[0_0_15px_rgba(96,165,250,0.25)]")}
-                style={{ backgroundColor: "rgba(128, 128, 128, 0.05)" }}>
+                className={getButtonClass(modelActive("gemini 3.1 Pro"), activeModel !== null, "border-blue-400 bg-blue-400/10 shadow-[0_0_15px_rgba(96,165,250,0.3)]", "hover:border-blue-400 hover:shadow-[0_0_15px_rgba(96,165,250,0.25)]")}
+                style={{ backgroundColor: modelActive("gemini 3.1 Pro") ? undefined : undefined }}>
                 <Gemini_Icon size={ICON_SIZE}/>
-                <span className="ptx-name">Gemini 3.1 Pro</span>
+                <span className="ptx-name" style={{ color: modelActive("gemini 3.1 Pro") ? "#60a5fa" : "var(--text-main)" }}>Gemini 3.1 Pro</span>
               </button>
 
               <button aria-label="Select Omni 3 Nexus Fallback Model" title="Omni 3 Nexus Fallback" data-spring onClick={() => handleModelSelect("omni 3 nexus")} 
                 disabled={(isTokenSaved || hasDeployedBefore) && activeModel!=="omni 3 nexus"}
-                className={getButtonClass(modelActive("omni 3 nexus"), activeModel !== null, "hover:border-[#00BFFF] hover:shadow-[0_0_15px_rgba(0,191,255,0.25)]")}
-                style={{ backgroundColor: "rgba(128, 128, 128, 0.05)" }}>
+                className={getButtonClass(modelActive("omni 3 nexus"), activeModel !== null, "border-[#00BFFF] bg-[#00BFFF]/10 shadow-[0_0_15px_rgba(0,191,255,0.3)]", "hover:border-[#00BFFF] hover:shadow-[0_0_15px_rgba(0,191,255,0.25)]")}
+                style={{ backgroundColor: modelActive("omni 3 nexus") ? undefined : undefined }}>
                 <Omni_Icon size={ICON_SIZE}/>
-                <span className="ptx-name">Omni 3 Nexus</span>
+                <span className="ptx-name" style={{ color: modelActive("omni 3 nexus") ? "#00BFFF" : "var(--text-main)" }}>Omni 3 Nexus</span>
               </button>
             </div>
 
@@ -1118,30 +1117,30 @@ export default function Home() {
               <span className="w-4 h-4 text-[9px] rounded flex items-center justify-center" style={{ backgroundColor: "rgba(128, 128, 128, 0.2)", color: "var(--text-main)" }}>2</span>
               Select Your Channel
             </p>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-[12px] mb-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-[12px] mb-8">
               
               <button aria-label="Connect Telegram Channel" title="Telegram Channel" data-spring onClick={()=>handleChannelSelect("telegram")} 
                 disabled={(isTokenSaved || hasDeployedBefore) && activeChannel!=="telegram"}
-                className={getButtonClass(chanActive("telegram"), activeChannel !== null, "hover:border-[#2AABEE] hover:shadow-[0_0_15px_rgba(42,171,238,0.25)]")}
-                style={{ backgroundColor: "rgba(128, 128, 128, 0.05)" }}>
+                className={getButtonClass(chanActive("telegram"), activeChannel !== null, "border-[#2AABEE] bg-[#2AABEE]/10 shadow-[0_0_15px_rgba(42,171,238,0.3)]", "hover:border-[#2AABEE] hover:shadow-[0_0_15px_rgba(42,171,238,0.25)]")}
+                style={{ backgroundColor: chanActive("telegram") ? undefined : undefined }}>
                 <Telegram_Icon size={ICON_SIZE}/>
-                <span className="ptx-name">Telegram</span>
+                <span className="ptx-name" style={{ color: chanActive("telegram") ? "#2AABEE" : "var(--text-main)" }}>Telegram</span>
               </button>
 
               <button aria-label="Connect WhatsApp Channel" title="WhatsApp Channel" data-spring onClick={()=>handleChannelSelect("whatsapp")} 
                 disabled={(isTokenSaved || hasDeployedBefore) && activeChannel!=="whatsapp"}
-                className={getButtonClass(chanActive("whatsapp"), activeChannel !== null, "hover:border-[#25D366] hover:shadow-[0_0_15px_rgba(37,211,102,0.25)]")}
-                style={{ backgroundColor: "rgba(128, 128, 128, 0.05)" }}>
+                className={getButtonClass(chanActive("whatsapp"), activeChannel !== null, "border-[#25D366] bg-[#25D366]/10 shadow-[0_0_15px_rgba(37,211,102,0.3)]", "hover:border-[#25D366] hover:shadow-[0_0_15px_rgba(37,211,102,0.25)]")}
+                style={{ backgroundColor: chanActive("whatsapp") ? undefined : undefined }}>
                 <WhatsApp_Icon size={ICON_SIZE}/>
-                <span className="ptx-name">WhatsApp</span>
+                <span className="ptx-name" style={{ color: chanActive("whatsapp") ? "#25D366" : "var(--text-main)" }}>WhatsApp</span>
               </button>
               
               <button aria-label="Connect Instagram Channel" title="Instagram Channel" data-spring onClick={()=>handleChannelSelect("instagram")} 
                 disabled={(isTokenSaved || hasDeployedBefore) && activeChannel!=="instagram"}
-                className={getButtonClass(chanActive("instagram"), activeChannel !== null, "hover:border-pink-500 hover:shadow-[0_0_15px_rgba(236,72,153,0.25)]")}
-                style={{ backgroundColor: "rgba(128, 128, 128, 0.05)" }}>
+                className={getButtonClass(chanActive("instagram"), activeChannel !== null, "border-pink-500 bg-pink-500/10 shadow-[0_0_15px_rgba(236,72,153,0.3)]", "hover:border-pink-500 hover:shadow-[0_0_15px_rgba(236,72,153,0.25)]")}
+                style={{ backgroundColor: chanActive("instagram") ? undefined : undefined }}>
                 <Instagram_Icon size={ICON_SIZE}/>
-                <span className="ptx-name">Instagram</span>
+                <span className="ptx-name" style={{ color: chanActive("instagram") ? "#ec4899" : "var(--text-main)" }}>Instagram</span>
               </button>
 
               <div aria-label="Discord Bot Coming Soon" title="Discord (Coming Soon)" className="overflow-hidden opacity-40 cursor-not-allowed pointer-events-none flex flex-row h-[60px] w-full px-[16px] gap-[12px] justify-start items-center rounded-[12px]"
@@ -1152,7 +1151,21 @@ export default function Home() {
               </div>
             </div>
           
-            <div className="mt-8 pt-6 flex justify-center w-full" style={{ borderTop: "1px solid var(--border-color)" }}>
+            <div className="mt-8 pt-6 flex flex-col items-center w-full" style={{ borderTop: "1px solid var(--border-color)" }}>
+              {/* Selected Config Display */}
+              <div className="w-full flex flex-col items-center justify-center mb-6">
+                  <div className="px-6 py-3 rounded-xl border transition-all duration-300 flex flex-col items-center shadow-lg w-full max-w-[600px]"
+                       style={{ 
+                           backgroundColor: "var(--bg-section)", 
+                           borderColor: (activeModel && activeChannel) ? "rgba(249,115,22,0.5)" : "var(--border-color)" 
+                       }}>
+                       <span className="text-[10px] font-black uppercase tracking-widest text-orange-500 mb-1">Current Configuration</span>
+                       <p className="text-[14px] md:text-[16px] font-medium" style={{ color: "var(--text-main)" }}>
+                           Deploying <strong className="font-black" style={{ color: "var(--text-main)" }}>{activeModel ? PRICING_DATA[activeModel]?.name : "GPT-5.5 Pro"}</strong> to <strong className="capitalize font-black" style={{ color: "var(--text-main)" }}>{activeChannel || "Telegram"}</strong>
+                       </p>
+                  </div>
+              </div>
+
               <AnimatePresence mode="wait">
                 {botLink ? (
                   <motion.div key="success" initial={{opacity:0,scale:0.95}} animate={{opacity:1,scale:1}} exit={{opacity:0}} transition={{duration:.12,ease:"easeOut"}}
@@ -1201,21 +1214,14 @@ export default function Home() {
                           )}
                         </button>
                     )}
-                    
-                    {!hasDeployedBefore && (
-                        <p className="mt-5 text-[13px] text-center leading-relaxed" style={{ color: "var(--text-muted)" }}>
-                          Deploying <strong style={{ color: "var(--text-main)" }}>{activeModel ? PRICING_DATA[activeModel].name : "GPT-5.5 Pro"}</strong> to <strong className="capitalize" style={{ color: "var(--text-main)" }}>{activeChannel || "Telegram"}</strong>.{" "}
-                          <span className="text-[#34A853] font-semibold text-[13px]">Limited enterprise servers available.</span>
-                        </p>
-                    )}
                   </motion.div>
                 )}
               </AnimatePresence>
             </div>
           </div>
 
-          {/* 🔥 INJECTED: PLAYGROUND IPHONE MOCKUP */}
-          <div className="anim-card hidden lg:flex flex-col w-[35%] rounded-[24px] overflow-hidden shadow-[0_30px_80px_rgba(0,0,0,0.6)] relative transition-colors duration-300 border"
+          {/* 🔥 PLAYGROUND IPHONE MOCKUP (Now Mobile Responsive) */}
+          <div className="anim-card flex flex-col w-full lg:w-[35%] h-[500px] lg:h-auto mt-8 lg:mt-0 rounded-[24px] overflow-hidden shadow-[0_30px_80px_rgba(0,0,0,0.6)] relative transition-colors duration-300 border"
                style={{ backgroundColor: "#000", borderColor: "var(--border-color)" }}>
              {/* iPhone Notch */}
              <div className="absolute top-0 inset-x-0 h-6 flex justify-center z-20 pointer-events-none">
@@ -1311,7 +1317,19 @@ export default function Home() {
                      ))}
                   </ul>
                </div>
-               <button onClick={()=>document.getElementById("hero")?.scrollIntoView({behavior:"smooth"})} className="w-full py-4 rounded-xl font-black uppercase tracking-widest text-[12px] bg-blue-500/10 text-blue-500 hover:bg-blue-500 hover:text-white transition-all border border-blue-500/20">Select Pro Engine</button>
+               <button 
+                onClick={() => {
+                    if (status !== "authenticated") {
+                        signIn("google");
+                    } else {
+                        handleModelSelect("GPT-5.5 Pro");
+                        document.getElementById("hero")?.scrollIntoView({behavior:"smooth"});
+                    }
+                }} 
+                className="w-full py-4 rounded-xl font-black uppercase tracking-widest text-[12px] bg-blue-500/10 text-blue-500 hover:bg-blue-500 hover:text-white transition-all border border-blue-500/20"
+               >
+                {status === "authenticated" ? "Select & Deploy Pro Engine" : "Login to Deploy Pro"}
+               </button>
             </div>
 
             {/* Nexus Tier Highlight */}
@@ -1332,7 +1350,19 @@ export default function Home() {
                      ))}
                   </ul>
                </div>
-               <button onClick={()=>document.getElementById("hero")?.scrollIntoView({behavior:"smooth"})} className="w-full py-4 rounded-xl font-black uppercase tracking-widest text-[12px] bg-gradient-to-r from-orange-500 to-amber-500 text-white hover:shadow-[0_0_20px_rgba(249,115,22,0.4)] hover:-translate-y-1 transition-all">Deploy Omni Nexus</button>
+               <button 
+                onClick={() => {
+                    if (status !== "authenticated") {
+                        signIn("google");
+                    } else {
+                        handleModelSelect("omni 3 nexus");
+                        document.getElementById("hero")?.scrollIntoView({behavior:"smooth"});
+                    }
+                }} 
+                className="w-full py-4 rounded-xl font-black uppercase tracking-widest text-[12px] bg-gradient-to-r from-orange-500 to-amber-500 text-white hover:shadow-[0_0_20px_rgba(249,115,22,0.4)] hover:-translate-y-1 transition-all"
+               >
+                {status === "authenticated" ? "Deploy Omni Nexus" : "Login to Deploy Nexus"}
+               </button>
             </div>
           </div>
         </div>
