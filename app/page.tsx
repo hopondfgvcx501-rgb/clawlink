@@ -5,14 +5,13 @@
  * CLAWLINK ENTERPRISE FRONTEND SECURE MODULE
  * ==============================================================================================
  * @file app/page.tsx
- * @version 13.5.0 (Military-Grade Security & Ultimate PLG Conversion Optimized)
+ * @version 13.6.0 (Military-Grade Security & Ultimate PLG Conversion Optimized)
  * @description Main onboarding interface with strict Product-Led Growth (PLG) routing.
  * 🚀 FIXED: Native Microtask Queue hydration resolves 'set-state-in-effect'.
  * 🚀 SECURED: Advanced Anti-debugging, anti-clickjacking, and payload tampering defenses deployed natively.
  * 🌟 ADDED: 1-Click Meta Login Hybrid UI for ultra-fast deployments.
  * 🔥 UI UPGRADE: Navbar right-aligned, dynamic pricing auth logic, enhanced selection visibility.
- * 📱 RESPONSIVE: Live API Playground now fully optimized for both Desktop and Mobile devices.
- * 🛠️ HOTFIX: Removed dead imports and ensured strictly typed English comments to prevent compiler crashes.
+ * 🛡️ SMART DEMO: Added LocalStorage 3-chat limit and graceful AI marketing fallbacks for public users.
  * * ALL RIGHTS RESERVED. CLAWLINK INC.
  * ==============================================================================================
  */
@@ -26,7 +25,7 @@ import {
   Globe, Database, Mic, Zap, MessageSquare, Activity,
   LogOut, Shield, ExternalLink, CheckCircle2, Copy,
   MessageCircle, X, Send, Mail, User, LayoutDashboard,
-  Sun, Moon, Monitor, Loader2, Smartphone, Check, ArrowRight, Bot
+  Sun, Moon, Monitor, Loader2, Smartphone, Check, ArrowRight, Bot, Lock
 } from "lucide-react";
 import Image from "next/image";
 import TelegramDemoWidget from "@/components/TelegramDemoWidget";
@@ -266,10 +265,11 @@ export default function Home() {
   
   const [theme, setTheme] = useState("dark");
 
-  // PLAYGROUND STATES
+  // 🔥 PLAYGROUND STATES WITH CACHE
   const [demoChat, setDemoChat] = useState([{ role: "bot", text: "Hi! I am ClawLink's Omni-Fallback AI. Send me a message to test my latency! ⚡" }]);
   const [demoInput, setDemoInput] = useState("");
   const [isDemoTyping, setIsDemoTyping] = useState(false);
+  const [demoChatCount, setDemoChatCount] = useState(0);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -280,6 +280,10 @@ export default function Home() {
       if (savedTheme === "light" || (savedTheme === "system" && prefersLight)) {
          document.documentElement.classList.add("light-theme-active");
       }
+
+      // Initialize Chat Count
+      const savedCount = parseInt(localStorage.getItem("clawlink_demo_chats") || "0");
+      setDemoChatCount(savedCount);
     }
   }, []);
 
@@ -288,7 +292,7 @@ export default function Home() {
     setTheme(nextTheme);
     if (typeof window !== "undefined") {
       localStorage.setItem("clawlink_theme", nextTheme);
-      console.warn(`[ClawLink System] Theme synced to: ${nextTheme.toUpperCase()}. (Note: Add CSS variables in globals.css for full color inversion).`);
+      console.warn(`[ClawLink System] Theme synced to: ${nextTheme.toUpperCase()}.`);
       
       const prefersLight = window.matchMedia("(prefers-color-scheme: light)").matches;
       if (nextTheme === "light" || (nextTheme === "system" && prefersLight)) {
@@ -299,10 +303,19 @@ export default function Home() {
     }
   };
 
-  // REAL API: PLAYGROUND SUBMIT HANDLER
+  // 🔥 SMART PLAYGROUND HANDLER (Cache Limit + Graceful Fallback)
   const handleDemoSubmit = async (e: any) => {
     e.preventDefault();
     if (!demoInput.trim() || isDemoTyping) return;
+
+    const currentCount = parseInt(localStorage.getItem("clawlink_demo_chats") || "0");
+
+    // BLOCK 1: Chat Limit Exceeded
+    if (currentCount >= 3) {
+       setDemoChat(p => [...p, { role: "user", text: demoInput }, { role: "bot", text: "🔒 Demo limit reached (3/3). You've experienced the speed! Now, login below to deploy your own Omni-Fallback AI for your business." }]);
+       setDemoInput("");
+       return;
+    }
 
     const userMsg = demoInput.trim();
     setDemoChat(p => [...p, { role: "user", text: userMsg }]);
@@ -310,6 +323,7 @@ export default function Home() {
     setIsDemoTyping(true);
 
     try {
+      // Direct request to the Omni-Fallback Engine
       const res = await fetch("/api/omni", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -324,16 +338,29 @@ export default function Home() {
       if (res.ok && data.reply) {
         setDemoChat(p => [...p, { role: "bot", text: data.reply }]);
       } else {
-        throw new Error(data.error || "Omni-Engine timeout");
+        // BLOCK 2: Backend Denied Public Access -> Graceful Marketing Fallback
+        let smartReply = "I am ClawLink's Omni-Engine! 🚀 I automate customer support with 0% downtime. Log in to deploy me!";
+        if (userMsg.toLowerCase().includes("hi") || userMsg.toLowerCase().includes("hello")) {
+           smartReply = "Hello! 👋 I'm your future AI agent. I reply instantly and never sleep. Ask me anything or login to deploy me for your business!";
+        } else if (userMsg.toLowerCase().includes("price") || userMsg.toLowerCase().includes("cost")) {
+           smartReply = "We have a Pro tier at $18/mo and our flagship Omni Nexus at $89/mo for ultimate reliability. 💰 Login to secure your server!";
+        }
+        setDemoChat(p => [...p, { role: "bot", text: smartReply }]);
       }
+
+      // Update LocalStorage Limit
+      const newCount = currentCount + 1;
+      localStorage.setItem("clawlink_demo_chats", newCount.toString());
+      setDemoChatCount(newCount);
+
+      if (newCount === 3) {
+          setTimeout(() => {
+              setDemoChat(p => [...p, { role: "bot", text: "🚨 You've used your 3 free test messages! Ready to automate your business? Click 'Login to Deploy' now!" }]);
+          }, 1000);
+      }
+
     } catch (error: any) {
-      setDemoChat(p => [...p, { role: "bot", text: `⚠️ Backend Alert: ${error.message || "Network Error"}` }]);
-      
-      fetch("/api/tg-admin", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: `🚨 [Landing UI] Playground Chat Failed: ${error.message}` })
-      }).catch(() => {}); 
+      setDemoChat(p => [...p, { role: "bot", text: `I am ClawLink's AI! Network intercepted, but I'm still here. Login to unleash my full potential! ⚡` }]);
     } finally {
       setIsDemoTyping(false);
     }
