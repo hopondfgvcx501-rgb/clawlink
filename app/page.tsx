@@ -297,7 +297,7 @@ export default function Home() {
     }
   };
 
-  // 🔥 REAL API: PLAYGROUND SUBMIT HANDLER
+ // 🔥 REAL API: PLAYGROUND SUBMIT HANDLER
   const handleDemoSubmit = async (e: any) => {
     e.preventDefault();
     if (!demoInput.trim() || isDemoTyping) return;
@@ -308,7 +308,7 @@ export default function Home() {
     setIsDemoTyping(true);
 
     try {
-      // Seedha tumhare Omni-Fallback Engine par hit
+      // Direct request to the Omni-Fallback Engine
       const res = await fetch("/api/omni", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -326,7 +326,7 @@ export default function Home() {
         throw new Error(data.error || "Omni-Engine timeout");
       }
     } catch (error: any) {
-      // Agar API fail hui, toh fake nahi, real error dikhao aur TG par bhejo
+      // Display real error in UI and forward log to Telegram Admin
       setDemoChat(p => [...p, { role: "bot", text: `⚠️ Backend Alert: ${error.message || "Network Error"}` }]);
       
       fetch("/api/tg-admin", {
@@ -338,7 +338,7 @@ export default function Home() {
       setIsDemoTyping(false);
     }
   };
-
+  
   useEffect(() => {
     if (chatEndRef.current) {
         chatEndRef.current.scrollIntoView({ behavior: "smooth" });
