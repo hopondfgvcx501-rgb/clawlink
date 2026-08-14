@@ -5,12 +5,13 @@
  * CLAWLINK ENTERPRISE FRONTEND SECURE MODULE
  * ==============================================================================================
  * @file app/page.tsx
- * @version 13.6.0 (Military-Grade Security & Ultimate PLG Conversion Optimized)
+ * @version 14.0.0 (Ultimate PLG Conversion & 10x Competitor UI Overhaul)
  * @description Main onboarding interface with strict Product-Led Growth (PLG) routing.
  * 🚀 FIXED: Native Microtask Queue hydration resolves 'set-state-in-effect'.
  * 🚀 SECURED: Advanced Anti-debugging, anti-clickjacking, and payload tampering defenses deployed natively.
  * 🌟 ADDED: 1-Click Meta Login Hybrid UI for ultra-fast deployments.
- * 🔥 UI UPGRADE: Navbar right-aligned, dynamic pricing auth logic, enhanced selection visibility.
+ * 🔥 UI UPGRADE: Perfected 55/45 layout split, premium device mockups, dynamic selection glows.
+ * 🐛 BUGFIX: Navbar Logo now dynamically adapts to Light/Dark mode using currentColor.
  * 🛡️ SMART DEMO: Added LocalStorage 3-chat limit and graceful AI marketing fallbacks for public users.
  * * ALL RIGHTS RESERVED. CLAWLINK INC.
  * ==============================================================================================
@@ -213,9 +214,8 @@ const ChatBubble = ({ text, delay, isUser }: { text: string; delay: number; isUs
     initial={{ opacity: 0, y: 8 }} 
     animate={{ opacity: 1, y: 0 }} 
     transition={{ delay, duration: 0.12, ease: "easeOut" }}
-    className={`p-3 rounded-2xl max-w-[85%] text-[11px] shadow-md leading-relaxed transform-gpu
-      ${isUser ? "bg-[#2AABEE] text-white self-end rounded-tr-sm" : "bg-black/40 border border-white/5 self-start rounded-tl-sm"}`}
-      style={{ color: "var(--text-main)" }}
+    className={`p-3 rounded-2xl max-w-[85%] text-[12px] md:text-[13px] shadow-md leading-relaxed transform-gpu
+      ${isUser ? "bg-orange-500 text-white self-end rounded-br-sm" : "bg-[#1A1A1A] text-gray-200 border border-white/10 self-start rounded-bl-sm"}`}
   >
     {text}
   </motion.div>
@@ -821,16 +821,17 @@ export default function Home() {
   const btn = "transition-all duration-[120ms] ease-out hover:-translate-y-1 hover:shadow-lg transform-gpu will-change-transform";
 
   const getButtonClass = (isActive: boolean, categorySelected: boolean, activeStyles: string, hoverStyles: string) => {
-      let classes = `border cursor-pointer overflow-hidden ${btn} flex flex-row h-[60px] w-full px-[16px] gap-[12px] justify-start items-center rounded-[12px] transition-all duration-300`;
+      // Made borders solid and highly visible with dynamic colors for active state
+      let classes = `border-2 cursor-pointer overflow-hidden ${btn} flex flex-row h-[60px] w-full px-[16px] gap-[12px] justify-start items-center rounded-[14px] transition-all duration-300`;
       
       if (isActive) {
-          classes += ` border-solid ${activeStyles} scale-[1.02]`; 
+          classes += ` border-solid ${activeStyles} scale-[1.02] bg-opacity-10`; 
       } else {
-          classes += ` border-transparent ${hoverStyles} bg-white/5 dark:bg-black/20`;
+          classes += ` border-transparent ${hoverStyles} bg-gray-500/5 dark:bg-white/5`;
       }
 
       if (status === "authenticated" && categorySelected && !isActive) {
-          classes += " opacity-50 grayscale transition-opacity duration-300";
+          classes += " opacity-40 grayscale transition-opacity duration-300";
       }
       return classes;
   };
@@ -996,10 +997,10 @@ export default function Home() {
         <svg aria-label="ClawLink Home" width="168" height="24" viewBox="0 0 176 26" fill="none" className="shrink-0 cursor-pointer transition-transform hover:scale-105" onClick={() => router.push("/")}>
           <defs>
             <linearGradient id="cg" x1="0" y1="0" x2="0" y2="26" gradientUnits="userSpaceOnUse">
-              <stop stopColor="#fff"/><stop offset="1" stopColor="rgba(255,255,255,.65)"/>
+              <stop stopColor="currentColor"/><stop offset="1" stopColor="currentColor" stopOpacity="0.65"/>
             </linearGradient>
           </defs>
-          <path d="M22 3C18 .5 10 .5 7 4.5S3.5 18 7 22.5 18 26 22 23" stroke="rgba(255,255,255,.1)" strokeWidth="8" strokeLinecap="round" fill="none"/>
+          <path d="M22 3C18 .5 10 .5 7 4.5S3.5 18 7 22.5 18 26 22 23" stroke="currentColor" strokeOpacity="0.1" strokeWidth="8" strokeLinecap="round" fill="none"/>
           <path d="M22 3C18 .5 10 .5 7 4.5S3.5 18 7 22.5 18 26 22 23" stroke="url(#cg)" strokeWidth="4.5" strokeLinecap="round" fill="none"/>
           <line x1="7.5" y1="3" x2="14.5" y2="11.5" stroke="#f97316" strokeWidth="2.2" strokeLinecap="round"/>
           <line x1="12.5" y1="1.5" x2="19.5" y2="10" stroke="#f97316" strokeWidth="2.2" strokeLinecap="round"/>
@@ -1075,37 +1076,43 @@ export default function Home() {
         </div>
       </nav>
 
-      {/* 🔥 INJECTED: HERO WITH PLAYGROUND SPLIT */}
-      <section id="hero" className="relative z-10 min-h-screen flex flex-col items-center justify-center pt-24 pb-16 px-4 text-center">
-        <div className="anim-badge inline-flex items-center gap-2 mb-6 px-6 py-2.5 rounded-full text-[11px] font-black tracking-[.15em] text-orange-400 shadow-[0_0_20px_rgba(249,115,22,0.2)]"
-          style={{background:"rgba(249,115,22,0.09)",border:"1px solid rgba(249,115,22,0.26)"}}>
+      {/* 🔥 INJECTED: HERO WITH PERFECT 55/45 SPLIT AND PREMIUM MOCKUPS */}
+      <section id="hero" className="relative z-10 min-h-screen flex flex-col items-center justify-center pt-28 pb-16 px-4 md:px-8 text-center overflow-hidden">
+        <motion.div initial={{opacity:0, y:-20}} animate={{opacity:1, y:0}} transition={{duration:0.6}} 
+             className="anim-badge inline-flex items-center gap-2 mb-6 px-6 py-2.5 rounded-full text-[11px] font-black tracking-[.15em] text-orange-400 shadow-[0_0_20px_rgba(249,115,22,0.2)]"
+             style={{background:"rgba(249,115,22,0.09)",border:"1px solid rgba(249,115,22,0.26)"}}>
           <span className="w-2 h-2 rounded-full bg-orange-400 bpulse pulse-ring"/>
           LIVE NOW &nbsp;·&nbsp; 30-SECOND DEPLOY
-        </div>
+        </motion.div>
 
-        <h1 className="anim-h1 text-[clamp(2.5rem,5vw,5.5rem)] font-black leading-[1.1] tracking-[-0.04em] w-full px-4 mb-2" style={{ color: "var(--text-main)" }}>
+        <motion.h1 initial={{opacity:0, scale:0.95}} animate={{opacity:1, scale:1}} transition={{duration:0.6, delay:0.1}} 
+             className="anim-h1 text-[clamp(2.5rem,5vw,5.5rem)] font-black leading-[1.1] tracking-[-0.04em] w-full px-4 mb-2" style={{ color: "var(--text-main)" }}>
           Deploy <span className="color-flow-text">ClawLink Multi-AI Workspace</span>
-        </h1>
+        </motion.h1>
         
-        <p className="anim-sub font-black text-[22px] md:text-[28px] mb-8 uppercase tracking-wide" style={{ color: "var(--text-main)" }}>
+        <motion.p initial={{opacity:0}} animate={{opacity:1}} transition={{duration:0.6, delay:0.2}} 
+             className="anim-sub font-black text-[20px] md:text-[28px] mb-8 uppercase tracking-wide" style={{ color: "var(--text-main)" }}>
           FASTEST SERVER 1-CLICK DEPLOY
-        </p>
+        </motion.p>
 
-        <p className="anim-sub font-medium text-[16px] md:text-[18px] max-w-[600px] mb-12 leading-[1.8]" style={{ color: "var(--text-muted)" }}>
+        <motion.p initial={{opacity:0}} animate={{opacity:1}} transition={{duration:0.6, delay:0.3}} 
+             className="anim-sub font-medium text-[15px] md:text-[18px] max-w-[650px] mb-14 leading-[1.8]" style={{ color: "var(--text-muted)" }}>
           Avoid all technical complexity — one-click deploy your own 24/7 active Personal AI Assistant for WhatsApp, Telegram & Instagram. No code. No servers. Just results.
-        </p>
+        </motion.p>
 
-        <div className="w-full max-w-[1200px] flex flex-col lg:flex-row items-stretch justify-center gap-6 mb-8">
+        {/* PROPORTIONAL 55/45 LAYOUT WRAPPER */}
+        <div className="w-full max-w-[1250px] flex flex-col lg:flex-row items-center justify-center gap-8 lg:gap-12 mb-12">
           
-          {/* DEPLOYMENT CARD */}
-          <div className="anim-card tilt-el relative w-full lg:w-[65%] rounded-[24px] p-6 md:p-8 overflow-hidden transition-colors duration-300 shadow-[0_30px_80px_rgba(0,0,0,0.6)]"
-               style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border-color)" }}>
+          {/* LEFT: DEPLOYMENT CARD (55%) */}
+          <motion.div initial={{opacity:0, x:-30}} animate={{opacity:1, x:0}} transition={{duration:0.6, delay:0.4}}
+               className="relative w-full lg:w-[55%] xl:w-[60%] max-w-[700px] rounded-[24px] p-6 md:p-10 transition-all duration-300 shadow-[0_20px_50px_rgba(0,0,0,0.2)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.6)] hover:shadow-[0_30px_60px_rgba(249,115,22,0.15)]"
+               style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border-color)", backdropFilter: "blur(20px)" }}>
             
-            <p className="text-[10px] font-black tracking-[.2em] uppercase text-left flex items-center gap-2 pb-3 mb-4" style={{ color: "var(--text-muted)", borderBottom: "1px solid var(--border-color)" }}>
-              <span className="w-4 h-4 text-[9px] rounded flex items-center justify-center" style={{ backgroundColor: "rgba(128, 128, 128, 0.2)", color: "var(--text-main)" }}>1</span>
+            <p className="text-[11px] font-black tracking-[.2em] uppercase text-left flex items-center gap-3 pb-4 mb-6" style={{ color: "var(--text-muted)", borderBottom: "1px solid var(--border-color)" }}>
+              <span className="w-5 h-5 text-[10px] rounded flex items-center justify-center" style={{ backgroundColor: "rgba(128, 128, 128, 0.2)", color: "var(--text-main)" }}>1</span>
               Choose Your AI Model
             </p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-[12px] mb-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-[12px] mb-10">
               
               <button aria-label="Select GPT-5.5 Pro Model" title="GPT-5.5 Pro" data-spring onClick={() => handleModelSelect("GPT-5.5 Pro")} 
                 disabled={(isTokenSaved || hasDeployedBefore) && activeModel!=="GPT-5.5 Pro"}
@@ -1140,11 +1147,11 @@ export default function Home() {
               </button>
             </div>
 
-            <p className="text-[10px] font-black tracking-[.2em] uppercase text-left flex items-center gap-2 pb-3 mb-4" style={{ color: "var(--text-muted)", borderBottom: "1px solid var(--border-color)" }}>
-              <span className="w-4 h-4 text-[9px] rounded flex items-center justify-center" style={{ backgroundColor: "rgba(128, 128, 128, 0.2)", color: "var(--text-main)" }}>2</span>
+            <p className="text-[11px] font-black tracking-[.2em] uppercase text-left flex items-center gap-3 pb-4 mb-6" style={{ color: "var(--text-muted)", borderBottom: "1px solid var(--border-color)" }}>
+              <span className="w-5 h-5 text-[10px] rounded flex items-center justify-center" style={{ backgroundColor: "rgba(128, 128, 128, 0.2)", color: "var(--text-main)" }}>2</span>
               Select Your Channel
             </p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-[12px] mb-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-[12px] mb-10">
               
               <button aria-label="Connect Telegram Channel" title="Telegram Channel" data-spring onClick={()=>handleChannelSelect("telegram")} 
                 disabled={(isTokenSaved || hasDeployedBefore) && activeChannel!=="telegram"}
@@ -1170,7 +1177,7 @@ export default function Home() {
                 <span className="ptx-name" style={{ color: chanActive("instagram") ? "#ec4899" : "var(--text-main)" }}>Instagram</span>
               </button>
 
-              <div aria-label="Discord Bot Coming Soon" title="Discord (Coming Soon)" className="overflow-hidden opacity-40 cursor-not-allowed pointer-events-none flex flex-row h-[60px] w-full px-[16px] gap-[12px] justify-start items-center rounded-[12px]"
+              <div aria-label="Discord Bot Coming Soon" title="Discord (Coming Soon)" className="overflow-hidden opacity-40 cursor-not-allowed pointer-events-none flex flex-row h-[60px] w-full px-[16px] gap-[12px] justify-start items-center rounded-[14px]"
                    style={{ backgroundColor: "rgba(128, 128, 128, 0.05)", border: "1px solid var(--border-color)" }}>
                 <Discord_Icon size={ICON_SIZE}/>
                 <span className="ptx-name" style={{ color: "var(--text-muted)" }}>Discord</span>
@@ -1178,17 +1185,17 @@ export default function Home() {
               </div>
             </div>
           
-            <div className="mt-8 pt-6 flex flex-col items-center w-full" style={{ borderTop: "1px solid var(--border-color)" }}>
-              {/* Selected Config Display */}
-              <div className="w-full flex flex-col items-center justify-center mb-6">
-                  <div className="px-6 py-3 rounded-xl border transition-all duration-300 flex flex-col items-center shadow-lg w-full max-w-[600px]"
+            <div className="pt-6 flex flex-col items-center w-full" style={{ borderTop: "1px solid var(--border-color)" }}>
+              {/* Selected Config Display (Highly Visible) */}
+              <div className="w-full flex flex-col items-center justify-center mb-8">
+                  <div className="px-6 py-4 rounded-xl border-2 transition-all duration-300 flex flex-col items-center shadow-lg w-full max-w-[600px]"
                        style={{ 
                            backgroundColor: "var(--bg-section)", 
-                           borderColor: (activeModel && activeChannel) ? "rgba(249,115,22,0.5)" : "var(--border-color)" 
+                           borderColor: (activeModel && activeChannel) ? "rgba(249,115,22,0.5)" : "transparent" 
                        }}>
-                       <span className="text-[10px] font-black uppercase tracking-widest text-orange-500 mb-1">Current Configuration</span>
-                       <p className="text-[14px] md:text-[16px] font-medium" style={{ color: "var(--text-main)" }}>
-                           Deploying <strong className="font-black" style={{ color: "var(--text-main)" }}>{activeModel ? PRICING_DATA[activeModel]?.name : "GPT-5.5 Pro"}</strong> to <strong className="capitalize font-black" style={{ color: "var(--text-main)" }}>{activeChannel || "Telegram"}</strong>
+                       <span className="text-[10px] font-black uppercase tracking-[0.2em] text-orange-500 mb-2">Current Configuration</span>
+                       <p className="text-[15px] md:text-[17px] font-medium" style={{ color: "var(--text-main)" }}>
+                           Deploying <strong className="font-black tracking-wide" style={{ color: "var(--text-main)" }}>{activeModel ? PRICING_DATA[activeModel]?.name : "GPT-5.5 Pro"}</strong> to <strong className="capitalize font-black tracking-wide" style={{ color: "var(--text-main)" }}>{activeChannel || "Telegram"}</strong>
                        </p>
                   </div>
               </div>
@@ -1196,16 +1203,16 @@ export default function Home() {
               <AnimatePresence mode="wait">
                 {botLink ? (
                   <motion.div key="success" initial={{opacity:0,scale:0.95}} animate={{opacity:1,scale:1}} exit={{opacity:0}} transition={{duration:.12,ease:"easeOut"}}
-                    className="rounded-[20px] p-6 text-center w-full"
+                    className="rounded-[20px] p-8 text-center w-full"
                     style={{background:"rgba(34,197,94,0.06)",border:"1px solid rgba(34,197,94,0.2)"}}>
-                    <p className="text-[16px] font-bold mb-5" style={{ color: "var(--text-main)" }}>🚀 Your Bot is Live!</p>
+                    <p className="text-[18px] font-bold mb-6" style={{ color: "var(--text-main)" }}>🚀 Your Bot is Live!</p>
                     <div className="flex flex-col sm:flex-row justify-center gap-4">
                       <button aria-label="Open Live Bot Interface" title="Open Live Bot" data-ripple data-spring onClick={openLiveBotHandler}
-                        className={`relative overflow-hidden bg-white text-black font-black uppercase tracking-widest px-8 py-3.5 rounded-xl text-[13px] hover:-translate-y-1 hover:shadow-lg transition-transform duration-150`}>
+                        className={`relative overflow-hidden bg-white text-black font-black uppercase tracking-widest px-8 py-4 rounded-xl text-[14px] hover:-translate-y-1 hover:shadow-lg transition-transform duration-150`}>
                         <span className="mt">Open Live Bot</span>
                       </button>
                       <button aria-label="Navigate to Command Center Dashboard" title="Go to Dashboard" data-spring onClick={()=>router.push("/dashboard")}
-                        className={`flex items-center justify-center gap-2 font-bold px-8 py-3.5 rounded-xl text-[13px] hover:-translate-y-1 hover:shadow-lg transition-transform duration-150`}
+                        className={`flex items-center justify-center gap-2 font-bold px-8 py-4 rounded-xl text-[14px] hover:-translate-y-1 hover:shadow-lg transition-transform duration-150`}
                         style={{ color: "var(--text-main)", background:"rgba(128, 128, 128, 0.1)", border:"1px solid var(--border-color)"}}>
                         <Activity className="w-5 h-5"/> Live Dashboard
                       </button>
@@ -1215,23 +1222,23 @@ export default function Home() {
                 ) : (
                   <motion.div key="login" id="login-section" initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} transition={{duration:.12}} className="w-full flex flex-col items-center">
                     {status === "authenticated" && session?.user?.email && (
-                      <motion.div initial={{opacity: 0, y: 10}} animate={{opacity: 1, y: 0}} className="mb-4 flex items-center gap-2 px-4 py-1.5 rounded-full" style={{ backgroundColor: "rgba(128, 128, 128, 0.1)", border: "1px solid var(--border-color)" }}>
-                        <User className="w-3 h-3" style={{ color: "var(--text-muted)" }} />
-                        <span className="text-xs font-mono tracking-wide" style={{ color: "var(--text-muted)" }}>Logged in as: <span className="font-bold" style={{ color: "var(--text-main)" }}>{session.user.email}</span></span>
+                      <motion.div initial={{opacity: 0, y: 10}} animate={{opacity: 1, y: 0}} className="mb-5 flex items-center gap-2 px-5 py-2 rounded-full" style={{ backgroundColor: "rgba(128, 128, 128, 0.1)", border: "1px solid var(--border-color)" }}>
+                        <User className="w-4 h-4" style={{ color: "var(--text-muted)" }} />
+                        <span className="text-[13px] font-mono tracking-wide" style={{ color: "var(--text-muted)" }}>Logged in as: <span className="font-bold" style={{ color: "var(--text-main)" }}>{session.user.email}</span></span>
                       </motion.div>
                     )}
                     
                     {hasDeployedBefore ? (
                         <button aria-label="Open Command Center Dashboard" title="Open Command Center" data-ripple data-spring onClick={() => router.push("/dashboard")}
-                          className={`relative overflow-hidden w-full max-w-[600px] bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-[0_0_30px_rgba(249,115,22,0.4)] hover:scale-[1.02] hover:-translate-y-1 py-4 md:py-5 rounded-[12px] flex items-center justify-center gap-3 text-[15px] md:text-[17px] font-black tracking-[0.1em] transition-all duration-150 uppercase`}>
+                          className={`relative overflow-hidden w-full max-w-[600px] bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-[0_0_40px_rgba(249,115,22,0.4)] hover:scale-[1.02] hover:-translate-y-1 py-5 md:py-6 rounded-[16px] flex items-center justify-center gap-3 text-[16px] md:text-[18px] font-black tracking-[0.1em] transition-all duration-150 uppercase`}>
                           <LayoutDashboard className="w-5 h-5" /> OPEN COMMAND CENTER
                         </button>
                     ) : (
                         <button aria-label="Login with Google to Deploy Bot" title="Login & Deploy" data-ripple data-spring onClick={handleLoginOrDeploy} disabled={isDeploying}
-                          className={`relative overflow-hidden w-full max-w-[600px] ${isDeploying ? 'cursor-not-allowed' : 'bg-white text-black hover:scale-[1.02] hover:-translate-y-1 hover:shadow-[0_10px_30px_rgba(255,255,255,0.2)] active:bg-gray-200'} py-4 md:py-5 rounded-[12px] flex items-center justify-center gap-3 text-[15px] md:text-[17px] font-black tracking-[0.05em] transition-all duration-150`}
+                          className={`relative overflow-hidden w-full max-w-[600px] ${isDeploying ? 'cursor-not-allowed' : 'bg-white text-black hover:scale-[1.02] hover:-translate-y-1 hover:shadow-[0_15px_40px_rgba(255,255,255,0.2)] active:bg-gray-200'} py-5 md:py-6 rounded-[16px] flex items-center justify-center gap-3 text-[16px] md:text-[18px] font-black tracking-[0.05em] transition-all duration-150`}
                           style={isDeploying ? { backgroundColor: "rgba(128, 128, 128, 0.1)", color: "var(--text-main)", border: "1px solid var(--border-color)" } : {}}>
                           {isDeploying ? (
-                            <span className="flex items-center gap-3 font-mono tracking-widest text-[13px] uppercase">
+                            <span className="flex items-center gap-3 font-mono tracking-widest text-[14px] uppercase">
                                <div className="bouncing-dots"><span/><span/><span/></div> DEPLOYING TO SECURE SERVER
                             </span>
                           ) : (
@@ -1245,46 +1252,48 @@ export default function Home() {
                 )}
               </AnimatePresence>
             </div>
-          </div>
+          </motion.div>
 
-          {/* 🔥 PLAYGROUND IPHONE MOCKUP (Now Mobile Responsive) */}
-          <div className="anim-card flex flex-col w-full lg:w-[35%] h-[500px] lg:h-auto mt-8 lg:mt-0 rounded-[24px] overflow-hidden shadow-[0_30px_80px_rgba(0,0,0,0.6)] relative transition-colors duration-300 border"
-               style={{ backgroundColor: "#000", borderColor: "var(--border-color)" }}>
+          {/* RIGHT: PREMIUM PLAYGROUND MOCKUP (45%) */}
+          <motion.div initial={{opacity:0, x:30}} animate={{opacity:1, x:0}} transition={{duration:0.6, delay:0.5}}
+               className="flex flex-col w-full lg:w-[45%] xl:w-[40%] max-w-[450px] h-[550px] md:h-[650px] mt-8 lg:mt-0 rounded-[32px] overflow-hidden shadow-[0_30px_80px_rgba(0,0,0,0.6)] relative transition-all duration-300 border-[8px] bg-[#000]"
+               style={{ borderColor: "#1A1A1A" }}>
+             
              {/* iPhone Notch */}
-             <div className="absolute top-0 inset-x-0 h-6 flex justify-center z-20 pointer-events-none">
-                <div className="w-32 h-full bg-[#111] rounded-b-xl border-b border-x border-white/10 shadow-sm flex items-center justify-center gap-2">
-                   <div className="w-12 h-1.5 rounded-full bg-black/80"></div>
-                   <div className="w-2 h-2 rounded-full bg-blue-900/40"></div>
+             <div className="absolute top-0 inset-x-0 h-7 flex justify-center z-20 pointer-events-none">
+                <div className="w-36 h-full bg-[#1A1A1A] rounded-b-[16px] shadow-sm flex items-center justify-center gap-3 pb-1">
+                   <div className="w-14 h-1.5 rounded-full bg-black"></div>
+                   <div className="w-2.5 h-2.5 rounded-full bg-blue-900/40"></div>
                 </div>
              </div>
              
              {/* Playground Header */}
-             <div className="h-16 pt-5 px-5 flex items-center gap-3 border-b border-white/10 bg-gradient-to-r from-[#111] to-[#000] z-10 shrink-0">
-                <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-orange-500 to-pink-500 flex items-center justify-center p-[1px]">
-                   <div className="w-full h-full bg-black rounded-full flex items-center justify-center"><Bot className="w-4 h-4 text-white"/></div>
+             <div className="h-20 pt-6 px-6 flex items-center gap-4 border-b border-white/10 bg-gradient-to-r from-[#111] to-[#050505] z-10 shrink-0">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-orange-500 to-pink-500 flex items-center justify-center p-[2px] shadow-[0_0_15px_rgba(249,115,22,0.4)]">
+                   <div className="w-full h-full bg-black rounded-full flex items-center justify-center"><Bot className="w-5 h-5 text-white"/></div>
                 </div>
                 <div>
-                   <h3 className="text-white text-[13px] font-bold">ClawLink Live Test</h3>
-                   <div className="flex items-center gap-1.5 text-[10px] text-green-400 font-mono"><span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></span>Online</div>
+                   <h3 className="text-white text-[15px] font-black tracking-wide">ClawLink Live Test</h3>
+                   <div className="flex items-center gap-2 text-[11px] text-green-400 font-mono font-bold mt-0.5"><span className="w-2 h-2 bg-green-500 rounded-full animate-pulse shadow-[0_0_8px_#22c55e]"></span>Online</div>
                 </div>
              </div>
 
              {/* Playground Chat Area */}
-             <div className="flex-1 overflow-y-auto custom-scrollbar p-5 flex flex-col gap-4 relative bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] bg-opacity-5">
+             <div className="flex-1 overflow-y-auto custom-scrollbar p-6 flex flex-col gap-5 relative bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] bg-opacity-5">
                 <AnimatePresence>
                   {demoChat.map((msg, idx) => (
                      <motion.div key={idx} initial={{opacity:0, y:10}} animate={{opacity:1, y:0}} className={`flex ${msg.role==="user"?"justify-end":"justify-start"}`}>
-                        <div className={`p-3 rounded-2xl max-w-[85%] text-[12px] leading-relaxed shadow-lg ${msg.role==="user" ? "bg-orange-500 text-white rounded-br-sm" : "bg-[#1A1A1A] text-gray-200 border border-white/10 rounded-bl-sm"}`}>
+                        <div className={`p-3.5 rounded-2xl max-w-[85%] text-[13px] md:text-[14px] leading-relaxed shadow-lg ${msg.role==="user" ? "bg-gradient-to-br from-orange-500 to-orange-600 text-white rounded-br-sm font-medium" : "bg-[#1A1A1A] text-gray-200 border border-white/10 rounded-bl-sm"}`}>
                            {msg.text}
                         </div>
                      </motion.div>
                   ))}
                   {isDemoTyping && (
                      <motion.div initial={{opacity:0}} animate={{opacity:1}} className="flex justify-start">
-                        <div className="p-3 bg-[#1A1A1A] border border-white/10 rounded-2xl rounded-bl-sm flex items-center gap-1">
-                           <div className="w-1.5 h-1.5 bg-gray-500 rounded-full animate-bounce"></div>
-                           <div className="w-1.5 h-1.5 bg-gray-500 rounded-full animate-bounce" style={{animationDelay:"0.2s"}}></div>
-                           <div className="w-1.5 h-1.5 bg-gray-500 rounded-full animate-bounce" style={{animationDelay:"0.4s"}}></div>
+                        <div className="p-4 bg-[#1A1A1A] border border-white/10 rounded-2xl rounded-bl-sm flex items-center gap-1.5">
+                           <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce"></div>
+                           <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce" style={{animationDelay:"0.2s"}}></div>
+                           <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce" style={{animationDelay:"0.4s"}}></div>
                         </div>
                      </motion.div>
                   )}
@@ -1293,19 +1302,20 @@ export default function Home() {
              </div>
 
              {/* Playground Input Area */}
-             <div className="p-4 border-t border-white/10 bg-[#0A0A0A] shrink-0">
+             <div className="p-5 border-t border-white/10 bg-[#0A0A0A] shrink-0">
                 <form onSubmit={handleDemoSubmit} className="relative flex items-center">
                    <input type="text" value={demoInput} onChange={e=>setDemoInput(e.target.value)} placeholder="Test the speed..." 
-                          className="w-full bg-[#1A1A1A] border border-white/10 text-white text-[13px] rounded-full pl-4 pr-12 py-3 outline-none focus:border-orange-500/50 transition-colors" />
-                   <button type="submit" disabled={!demoInput.trim() || isDemoTyping} className="absolute right-1.5 w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center text-white disabled:opacity-50 disabled:bg-gray-700 transition-colors">
-                      <ArrowRight className="w-4 h-4" />
+                          className="w-full bg-[#1A1A1A] border border-white/10 text-white text-[14px] rounded-full pl-5 pr-14 py-4 outline-none focus:border-orange-500/80 transition-colors shadow-inner" />
+                   <button type="submit" disabled={!demoInput.trim() || isDemoTyping} className="absolute right-2 w-10 h-10 bg-orange-500 rounded-full flex items-center justify-center text-white disabled:opacity-50 disabled:bg-gray-700 transition-colors shadow-lg hover:bg-orange-400">
+                      <ArrowRight className="w-5 h-5" />
                    </button>
                 </form>
              </div>
-          </div>
+          </motion.div>
         </div>
 
-        <div className="anim-stats grid grid-cols-3 w-full max-w-[700px] rounded-[24px] overflow-hidden backdrop-blur-md shadow-2xl transition-colors duration-300"
+        <motion.div initial={{opacity:0, y:20}} animate={{opacity:1, y:0}} transition={{duration:0.6, delay:0.6}} 
+             className="anim-stats grid grid-cols-3 w-full max-w-[700px] rounded-[24px] overflow-hidden backdrop-blur-md shadow-2xl transition-colors duration-300"
              style={{ backgroundColor: "var(--bg-section)", border: "1px solid var(--border-color)" }}>
           {[["30s","Deploy time"],["5+","AI models"],["24/7","Always active"]].map(([n,l], i) => (
             <div key={n} className="stat-hover flex flex-col items-center py-8 px-4 transition-colors duration-150 hover:bg-black/5"
@@ -1314,7 +1324,7 @@ export default function Home() {
               <span className="text-[11px] lg:text-[12px] font-bold tracking-[0.2em] uppercase mt-3 text-center" style={{ color: "var(--text-muted)" }}>{l}</span>
             </div>
           ))}
-        </div>
+        </motion.div>
       </section>
 
       {/* 🔥 INJECTED: PRICING SECTION */}
