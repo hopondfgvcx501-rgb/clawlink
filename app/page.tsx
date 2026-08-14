@@ -5,31 +5,30 @@
  * CLAWLINK ENTERPRISE FRONTEND SECURE MODULE
  * ==============================================================================================
  * @file app/page.tsx
- * @version 12.8.0 (Military-Grade Security & 180FPS Hyper-Optimized UI)
+ * @version 13.0.0 (Military-Grade Security & PLG Optimized)
  * @description Main onboarding interface with strict Product-Led Growth (PLG) routing.
- * Integrates KNOX Level-10 Military-grade security protocol against AI spiders and reverse-engineering.
- * 🚀 FIXED: Native Microtask Queue hydration resolves 'set-state-in-effect' eliminating cascading renders.
- * 🚀 FIXED: Floating promise and exhaustive-deps warnings resolved securely via scoped async execution.
- * 🚀 FIXED: TypeScript Location assignment constraints strictly resolved via .href evaluation.
+ * 🚀 FIXED: Native Microtask Queue hydration resolves 'set-state-in-effect'.
  * 🚀 SECURED: Advanced Anti-debugging, anti-clickjacking, and payload tampering defenses deployed natively.
  * 🌟 ADDED: 1-Click Meta Login Hybrid UI for ultra-fast deployments.
+ * 🔥 NEW INJECTED: Live Playground iPhone Mockup & Enterprise Pricing Matrix.
  * * ALL RIGHTS RESERVED. CLAWLINK INC.
  * ==============================================================================================
  */
 
 import { signIn, signOut, useSession } from "next-auth/react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
-import Script from "next/script"; // 🔥 INJECTED: FOR META SDK
+import Script from "next/script";
 import {
   Globe, Database, Mic, Zap, MessageSquare, Activity,
   LogOut, Shield, ExternalLink, CheckCircle2, Copy,
   MessageCircle, X, Send, Mail, User, LayoutDashboard,
-  Sun, Moon, Monitor, Loader2 // 🔥 INJECTED LOADER ICON
+  Sun, Moon, Monitor, Loader2, Smartphone, Check, ArrowRight
 } from "lucide-react";
 import Image from "next/image";
 import TelegramDemoWidget from "@/components/TelegramDemoWidget";
+import LivePlayground from "@/components/LivePlayground";
 
 class KnoxSecurityProtocol {
   private static isInitialized = false;
@@ -135,8 +134,8 @@ const PRICING_DATA: Record<string, any> = {
   "omni 3 nexus": {
     name: "Omni 3 Nexus",
     plans: [
-      { id: "monthly", name: "Pro Bundle", usd: 249, inr: 20916, msgs: "Smart Matrix", desc: "Elite multi-persona integration. 3x Fallback.", accent: "#00BFFF", color: "text-[#00BFFF]" },
-      { id: "yearly", name: "Adv Premium", usd: 1799, inr: 149999, msgs: "Zero Downtime", desc: "Ultimate auto-routing & global priority access.", accent: "#BA7517", color: "text-[#BA7517]", badge: "Yearly ⭐", isYearly: true }
+      { id: "monthly", name: "Pro Bundle", usd: 89, inr: 7499, msgs: "Smart Matrix", desc: "Elite multi-persona integration. 4x Cross-provider Fallback. Priority Webhook Sync.", accent: "#00BFFF", color: "text-[#00BFFF]" },
+      { id: "yearly", name: "Adv Premium", usd: 890, inr: 74999, msgs: "Zero Downtime", desc: "Ultimate auto-routing, Razorpay integration & global priority access.", accent: "#BA7517", color: "text-[#BA7517]", badge: "Yearly ⭐", isYearly: true }
     ]
   }
 };
@@ -263,14 +262,18 @@ export default function Home() {
   const [isMounted, setIsMounted] = useState(false);
   const [isTelegramModalOpen, setIsTelegramModalOpen] = useState(false);
   
-// 🔥 🚀 INJECTED: PREMIUM THEME ENGINE STATE
   const [theme, setTheme] = useState("dark");
+
+  // 🔥 INJECTED: PLAYGROUND STATES
+  const [demoChat, setDemoChat] = useState([{ role: "bot", text: "Hi! I am ClawLink's Omni-Fallback AI. Send me a message to test my latency! ⚡" }]);
+  const [demoInput, setDemoInput] = useState("");
+  const [isDemoTyping, setIsDemoTyping] = useState(false);
+  const chatEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
       const savedTheme = localStorage.getItem("clawlink_theme") || "dark";
       setTheme(savedTheme);
-      // System match check
       const prefersLight = window.matchMedia("(prefers-color-scheme: light)").matches;
       if (savedTheme === "light" || (savedTheme === "system" && prefersLight)) {
          document.documentElement.classList.add("light-theme-active");
@@ -285,7 +288,6 @@ export default function Home() {
       localStorage.setItem("clawlink_theme", nextTheme);
       console.warn(`[ClawLink System] Theme synced to: ${nextTheme.toUpperCase()}. (Note: Add CSS variables in globals.css for full color inversion).`);
       
-      // Toggle logic for root class
       const prefersLight = window.matchMedia("(prefers-color-scheme: light)").matches;
       if (nextTheme === "light" || (nextTheme === "system" && prefersLight)) {
         document.documentElement.classList.add("light-theme-active");
@@ -294,7 +296,55 @@ export default function Home() {
       }
     }
   };
-  // 🔥 🚀 END THEME ENGINE
+
+  // 🔥 REAL API: PLAYGROUND SUBMIT HANDLER
+  const handleDemoSubmit = async (e: any) => {
+    e.preventDefault();
+    if (!demoInput.trim() || isDemoTyping) return;
+
+    const userMsg = demoInput.trim();
+    setDemoChat(p => [...p, { role: "user", text: userMsg }]);
+    setDemoInput("");
+    setIsDemoTyping(true);
+
+    try {
+      // Seedha tumhare Omni-Fallback Engine par hit
+      const res = await fetch("/api/omni", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ 
+            message: userMsg, 
+            source: "landing_playground" 
+        }),
+      });
+
+      const data = await res.json();
+
+      if (res.ok && data.reply) {
+        setDemoChat(p => [...p, { role: "bot", text: data.reply }]);
+      } else {
+        throw new Error(data.error || "Omni-Engine timeout");
+      }
+    } catch (error: any) {
+      // Agar API fail hui, toh fake nahi, real error dikhao aur TG par bhejo
+      setDemoChat(p => [...p, { role: "bot", text: `⚠️ Backend Alert: ${error.message || "Network Error"}` }]);
+      
+      fetch("/api/tg-admin", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: `🚨 [Landing UI] Playground Chat Failed: ${error.message}` })
+      }).catch(() => {}); 
+    } finally {
+      setIsDemoTyping(false);
+    }
+  };
+
+  useEffect(() => {
+    if (chatEndRef.current) {
+        chatEndRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [demoChat, isDemoTyping]);
+
 
   const [telegramToken, setTelegramToken] = useState("");
   const [waPhoneId, setWaPhoneId] = useState("");
@@ -319,11 +369,9 @@ export default function Home() {
 
   const [hasDeployedBefore, setHasDeployedBefore] = useState(false);
   
-  // 🔥 INJECTED STATE FOR HYBRID 1-CLICK META LOGIN
   const [metaAuthTab, setMetaAuthTab] = useState<"1click" | "manual">("1click");
 
   useEffect(() => {
-    // 1. Defers state hydration safely to microtask queue avoiding synchronous render locks
     Promise.resolve().then(() => {
       setIsMounted(true);
       
@@ -351,10 +399,8 @@ export default function Home() {
       }
     });
     
-    // 2. Initialize Core Knox Protocols
     KnoxSecurityProtocol.initialize();
 
-    // 3. Status Check Scoped locally to ensure proper cleanup and zero unawaited promises
     const verifyDeployment = async () => {
       if (status !== "authenticated" || !session?.user?.email) return;
       try {
@@ -407,7 +453,6 @@ export default function Home() {
 
     const handleScroll = () => {
       const nav = document.getElementById('clnav');
-      // 🔥 Updated to use CSS variable for sticky nav background
       if (nav) nav.style.backgroundColor = window.scrollY > 30 ? 'var(--bg-main)' : 'transparent';
       if (nav) nav.style.opacity = window.scrollY > 30 ? '0.95' : '1';
     };
@@ -611,25 +656,22 @@ export default function Home() {
     }
   };
 
-// 🔥 🚀 NEW INJECTED: 1-CLICK EMBEDDED META LOGIN
   const handleEmbeddedFacebookLogin = () => {
     if (typeof window === "undefined" || !(window as any).FB) {
       alert("System optimizing connection... Please try again or disable Ad-Blockers.");
       return;
     }
 
-    // 🔥 ENTERPRISE FIX: 15-Second Timeout (Stops infinite loading)
     const timeoutId = setTimeout(() => {
       setIsVerifying(false);
       alert("⚠️ Meta Login Timeout or Pop-up Blocked! Please allow pop-ups in your browser or try Manual Setup.");
       
-      // Send TG Alert so Admin knows exactly what happened (ZERO HIDDEN ERRORS)
       fetch("/api/tg-admin", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ message: `🚨 [ClawLink UI Alert] Meta Login hung/blocked for user ${session?.user?.email || "Unknown"}. Pop-up blocker suspected.` })
       });
-    }, 15000); // 15 seconds max wait time
+    }, 15000); 
 
     try {
       if (!(window as any).fbInitialized) {
@@ -645,11 +687,11 @@ export default function Home() {
       console.warn("FB SDK Init handled silently.");
     }
     
-    setIsVerifying(true); // Start Loading Spinner
+    setIsVerifying(true); 
     
     try {
       (window as any).FB.login((response: any) => {
-        clearTimeout(timeoutId); // 🛑 STOP THE TIMEOUT! User got the popup successfully.
+        clearTimeout(timeoutId); 
 
         if (response.authResponse) {
           const tempToken = response.authResponse.accessToken;
@@ -683,7 +725,6 @@ export default function Home() {
             setIsVerifying(false);
           });
         } else {
-          // User clicked 'X' or cancelled the Meta Popup
           fetch("/api/tg-admin", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -701,7 +742,7 @@ export default function Home() {
         extras: { setup: {} }
       });
     } catch (error: any) {
-        clearTimeout(timeoutId); // 🛑 STOP THE TIMEOUT on critical crash
+        clearTimeout(timeoutId);
         fetch("/api/tg-admin", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -711,7 +752,6 @@ export default function Home() {
         setIsVerifying(false);
     }
   };
-  // 🔥 🚀 END INJECTION
   
   const handleSendHelpRequest = () => {
     if (!helpEmail.trim() || !helpMessage.trim()) { alert("Please complete all necessary input fields."); return; }
@@ -772,10 +812,8 @@ export default function Home() {
   const chanActive  = (id: string) => activeChannel === id && !(isTokenSaved && activeChannel !== id);
 
   return (
-    // 🔥 Updated to use CSS Variables for background and text colors
     <div className="min-h-screen font-sans selection:bg-orange-500/30 overflow-x-hidden transition-colors duration-300" style={{ backgroundColor: "var(--bg-main)", color: "var(--text-main)" }}>
 
-      {/* 🔥 INJECTED: META SDK SCRIPT */}
       <Script src="https://connect.facebook.net/en_US/sdk.js" strategy="lazyOnload" />
 
       <style dangerouslySetInnerHTML={{__html:`
@@ -922,7 +960,7 @@ export default function Home() {
       <div className="fixed top-[30%] left-[40%] w-[600px] h-[600px] rounded-full pointer-events-none z-0 float-c"
            style={{background:"radial-gradient(circle,rgba(168,85,247,0.10) 0%,transparent 70%)"}}/>
 
-      {/* 🔥 Updated to use CSS Variable for background */}
+      {/* 🔥 INJECTED: HEADER NAVIGATION LINKS & LIVE STATUS */}
       <nav id="clnav" aria-label="Main Navigation"
         className="fixed top-0 left-0 right-0 z-[100] h-[64px] flex items-center justify-between px-6 md:px-12 transition-colors duration-300"
         style={{backdropFilter:"blur(12px)",WebkitBackdropFilter:"blur(12px)",
@@ -943,8 +981,17 @@ export default function Home() {
           <text x="139" y="18" fontFamily="-apple-system,BlinkMacSystemFont,sans-serif" fontSize="9.5" fontWeight="700" letterSpacing=".7" fill="#f97316">.COM</text>
         </svg>
 
+        <div className="hidden lg:flex items-center gap-8 ml-8 mr-auto font-bold text-[12px] uppercase tracking-widest" style={{ color: "var(--text-muted)" }}>
+          <a href="#features" className="hover:text-orange-400 transition-colors">Features</a>
+          <a href="#pricing" className="hover:text-orange-400 transition-colors">Pricing</a>
+          <a href="#faq" className="hover:text-orange-400 transition-colors">FAQs</a>
+          <div className="flex items-center gap-2 text-green-500 bg-green-500/10 px-3 py-1 rounded-full border border-green-500/20">
+             <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
+             Systems Operational
+          </div>
+        </div>
+
         <div className="flex items-center gap-4 md:gap-6">
-          {/* 🔥 🚀 INJECTED: PREMIUM THEME TOGGLE BUTTON */}
           <button
             onClick={cycleTheme}
             aria-label="Toggle System Theme"
@@ -970,9 +1017,8 @@ export default function Home() {
               )}
             </AnimatePresence>
           </button>
-          {/* 🔥 🚀 END INJECTION */}
           
-          {status === "authenticated" && (
+          {status === "authenticated" ? (
             <div className="hidden md:flex items-center gap-3">
               <img src={session?.user?.image || "https://ui-avatars.com/api/?name=User&background=random"} className="w-8 h-8 rounded-full border border-white/20 ring-1 ring-white/10" alt="User Avatar"/>
               <button aria-label="Sign out of ClawLink" title="Sign out of ClawLink" onClick={()=>signOut()}
@@ -980,12 +1026,19 @@ export default function Home() {
                 <LogOut className="w-4 h-4"/> Logout
               </button>
               {hasDeployedBefore && (
-                  <button aria-label="Go to Dashboard" title="Go to Dashboard" onClick={() => router.push("/dashboard")} className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-widest text-orange-500 hover:text-orange-400 bg-orange-500/10 px-3 py-1.5 rounded-lg border border-orange-500/20 transition-all ml-2">
+                  <button aria-label="Go to Dashboard" title="Go to Dashboard" onClick={() => router.push("/dashboard")} className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-widest text-orange-500 hover:text-orange-400 bg-orange-500/10 px-4 py-2 rounded-xl border border-orange-500/20 transition-all ml-2 shadow-[0_0_15px_rgba(249,115,22,0.2)]">
                       <LayoutDashboard className="w-4 h-4"/> Dashboard
                   </button>
               )}
             </div>
+          ) : (
+            <button aria-label="Login with Google" title="Login" data-spring onClick={() => signIn("google")}
+              className={`hidden md:flex items-center gap-2 text-[11px] font-bold uppercase tracking-widest px-4 py-2 rounded-xl border hover:border-orange-500 transition-all shadow-[0_0_15px_rgba(255,255,255,0.05)]`}
+              style={{ color: "var(--text-main)", borderColor: "var(--border-color)", backgroundColor: "rgba(128, 128, 128, 0.1)" }}>
+              <Google_Icon/> Login
+            </button>
           )}
+
           <button aria-label="Contact ClawLink Support" title="Contact Support" data-spring onClick={()=>setIsSupportModalOpen(true)}
             className={`flex items-center gap-2 text-[11px] font-bold uppercase tracking-widest px-4 py-2 rounded-full border hover:border-orange-500 transition-all hover:-translate-y-1 hover:shadow-lg`}
             style={{ color: "var(--text-muted)", borderColor: "var(--border-color)", backgroundColor: "rgba(128, 128, 128, 0.05)" }}>
@@ -995,6 +1048,7 @@ export default function Home() {
         </div>
       </nav>
 
+      {/* 🔥 INJECTED: HERO WITH PLAYGROUND SPLIT */}
       <section id="hero" className="relative z-10 min-h-screen flex flex-col items-center justify-center pt-24 pb-16 px-4 text-center">
         <div className="anim-badge inline-flex items-center gap-2 mb-6 px-6 py-2.5 rounded-full text-[11px] font-black tracking-[.15em] text-orange-400 shadow-[0_0_20px_rgba(249,115,22,0.2)]"
           style={{background:"rgba(249,115,22,0.09)",border:"1px solid rgba(249,115,22,0.26)"}}>
@@ -1014,17 +1068,17 @@ export default function Home() {
           Avoid all technical complexity — one-click deploy your own 24/7 active Personal AI Assistant for WhatsApp, Telegram & Instagram. No code. No servers. Just results.
         </p>
 
-        <div className="anim-card tilt-el relative w-full max-w-[1100px] rounded-[24px] p-6 md:p-8 mb-8 overflow-hidden transition-colors duration-300 shadow-[0_30px_80px_rgba(0,0,0,0.6)]"
-             style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border-color)" }}>
+        <div className="w-full max-w-[1200px] flex flex-col lg:flex-row items-stretch justify-center gap-6 mb-8">
           
-            {/* ============================================================== */}
-            {/* 1 CHOOSE YOUR AI MODEL */}
-            {/* ============================================================== */}
+          {/* DEPLOYMENT CARD */}
+          <div className="anim-card tilt-el relative w-full lg:w-[65%] rounded-[24px] p-6 md:p-8 overflow-hidden transition-colors duration-300 shadow-[0_30px_80px_rgba(0,0,0,0.6)]"
+               style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border-color)" }}>
+            
             <p className="text-[10px] font-black tracking-[.2em] uppercase text-left flex items-center gap-2 pb-3 mb-4" style={{ color: "var(--text-muted)", borderBottom: "1px solid var(--border-color)" }}>
               <span className="w-4 h-4 text-[9px] rounded flex items-center justify-center" style={{ backgroundColor: "rgba(128, 128, 128, 0.2)", color: "var(--text-main)" }}>1</span>
               Choose Your AI Model
             </p>
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-[12px] mb-8">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-[12px] mb-8">
               
               <button aria-label="Select GPT-5.5 Pro Model" title="GPT-5.5 Pro" data-spring onClick={() => handleModelSelect("GPT-5.5 Pro")} 
                 disabled={(isTokenSaved || hasDeployedBefore) && activeModel!=="GPT-5.5 Pro"}
@@ -1057,23 +1111,13 @@ export default function Home() {
                 <Omni_Icon size={ICON_SIZE}/>
                 <span className="ptx-name">Omni 3 Nexus</span>
               </button>
-
-              <div aria-label="Llama 4 coming soon" title="Llama 4 (Coming Soon)" className="overflow-hidden opacity-40 cursor-not-allowed pointer-events-none flex flex-row h-[60px] w-full px-[16px] gap-[12px] justify-start items-center rounded-[12px] col-span-2 md:col-span-1"
-                   style={{ backgroundColor: "rgba(128, 128, 128, 0.05)", border: "1px solid var(--border-color)" }}>
-                <Llama_Icon size={ICON_SIZE}/>
-                <span className="ptx-name" style={{ color: "var(--text-muted)" }}>Llama 4</span>
-                <span className="ptx-soon">SOON</span>
-              </div>
             </div>
 
-            {/* ============================================================== */}
-            {/* 2 SELECT YOUR CHANNEL */}
-            {/* ============================================================== */}
             <p className="text-[10px] font-black tracking-[.2em] uppercase text-left flex items-center gap-2 pb-3 mb-4" style={{ color: "var(--text-muted)", borderBottom: "1px solid var(--border-color)" }}>
               <span className="w-4 h-4 text-[9px] rounded flex items-center justify-center" style={{ backgroundColor: "rgba(128, 128, 128, 0.2)", color: "var(--text-main)" }}>2</span>
               Select Your Channel
             </p>
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-[12px] mb-8">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-[12px] mb-8">
               
               <button aria-label="Connect Telegram Channel" title="Telegram Channel" data-spring onClick={()=>handleChannelSelect("telegram")} 
                 disabled={(isTokenSaved || hasDeployedBefore) && activeChannel!=="telegram"}
@@ -1105,76 +1149,125 @@ export default function Home() {
                 <span className="ptx-name" style={{ color: "var(--text-muted)" }}>Discord</span>
                 <span className="ptx-soon">SOON</span>
               </div>
-
-              <div aria-label="Slack Bot Coming Soon" title="Slack (Coming Soon)" className="overflow-hidden opacity-40 cursor-not-allowed pointer-events-none flex flex-row h-[60px] w-full px-[16px] gap-[12px] justify-start items-center rounded-[12px] col-span-2 md:col-span-1"
-                   style={{ backgroundColor: "rgba(128, 128, 128, 0.05)", border: "1px solid var(--border-color)" }}>
-                <div className="w-[20px] h-[20px] rounded-full flex items-center justify-center shrink-0 bg-[#4a154b]">
-                  <svg viewBox="0 0 24 24" width="12" height="12" fill="white" aria-hidden="true"><path d="M5.04 15.44a2.52 2.52 0 01-5.04 0 2.52 2.52 0 012.52-2.52h2.52v2.52zm1.26 0a2.52 2.52 0 015.04 0v6.3a2.52 2.52 0 01-5.04 0v-6.3zM8.56 5.04a2.52 2.52 0 010-5.04 2.52 2.52 0 012.52 2.52v2.52H8.56zm0 1.26a2.52 2.52 0 010 5.04H2.26a2.52 2.52 0 010-5.04h6.3z"/></svg>
-                </div>
-                <span className="ptx-name" style={{ color: "var(--text-muted)" }}>Slack</span>
-                <span className="ptx-soon">SOON</span>
-              </div>
             </div>
           
-          <div className="mt-8 pt-6 flex justify-center w-full" style={{ borderTop: "1px solid var(--border-color)" }}>
-            <AnimatePresence mode="wait">
-              {botLink ? (
-                <motion.div key="success" initial={{opacity:0,scale:0.95}} animate={{opacity:1,scale:1}} exit={{opacity:0}} transition={{duration:.12,ease:"easeOut"}}
-                  className="rounded-[20px] p-6 text-center w-full"
-                  style={{background:"rgba(34,197,94,0.06)",border:"1px solid rgba(34,197,94,0.2)"}}>
-                  <p className="text-[16px] font-bold mb-5" style={{ color: "var(--text-main)" }}>🚀 Your Bot is Live!</p>
-                  <div className="flex flex-col sm:flex-row justify-center gap-4">
-                    <button aria-label="Open Live Bot Interface" title="Open Live Bot" data-ripple data-spring onClick={openLiveBotHandler}
-                      className={`relative overflow-hidden bg-white text-black font-black uppercase tracking-widest px-8 py-3.5 rounded-xl text-[13px] hover:-translate-y-1 hover:shadow-lg transition-transform duration-150`}>
-                      <span className="mt">Open Live Bot</span>
-                    </button>
-                    <button aria-label="Navigate to Command Center Dashboard" title="Go to Dashboard" data-spring onClick={()=>router.push("/dashboard")}
-                      className={`flex items-center justify-center gap-2 font-bold px-8 py-3.5 rounded-xl text-[13px] hover:-translate-y-1 hover:shadow-lg transition-transform duration-150`}
-                      style={{ color: "var(--text-main)", background:"rgba(128, 128, 128, 0.1)", border:"1px solid var(--border-color)"}}>
-                      <Activity className="w-5 h-5"/> Live Dashboard
-                    </button>
-                  </div>
-                </motion.div>
+            <div className="mt-8 pt-6 flex justify-center w-full" style={{ borderTop: "1px solid var(--border-color)" }}>
+              <AnimatePresence mode="wait">
+                {botLink ? (
+                  <motion.div key="success" initial={{opacity:0,scale:0.95}} animate={{opacity:1,scale:1}} exit={{opacity:0}} transition={{duration:.12,ease:"easeOut"}}
+                    className="rounded-[20px] p-6 text-center w-full"
+                    style={{background:"rgba(34,197,94,0.06)",border:"1px solid rgba(34,197,94,0.2)"}}>
+                    <p className="text-[16px] font-bold mb-5" style={{ color: "var(--text-main)" }}>🚀 Your Bot is Live!</p>
+                    <div className="flex flex-col sm:flex-row justify-center gap-4">
+                      <button aria-label="Open Live Bot Interface" title="Open Live Bot" data-ripple data-spring onClick={openLiveBotHandler}
+                        className={`relative overflow-hidden bg-white text-black font-black uppercase tracking-widest px-8 py-3.5 rounded-xl text-[13px] hover:-translate-y-1 hover:shadow-lg transition-transform duration-150`}>
+                        <span className="mt">Open Live Bot</span>
+                      </button>
+                      <button aria-label="Navigate to Command Center Dashboard" title="Go to Dashboard" data-spring onClick={()=>router.push("/dashboard")}
+                        className={`flex items-center justify-center gap-2 font-bold px-8 py-3.5 rounded-xl text-[13px] hover:-translate-y-1 hover:shadow-lg transition-transform duration-150`}
+                        style={{ color: "var(--text-main)", background:"rgba(128, 128, 128, 0.1)", border:"1px solid var(--border-color)"}}>
+                        <Activity className="w-5 h-5"/> Live Dashboard
+                      </button>
+                    </div>
+                  </motion.div>
 
-              ) : (
-                <motion.div key="login" id="login-section" initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} transition={{duration:.12}} className="w-full flex flex-col items-center">
-                  {status === "authenticated" && session?.user?.email && (
-                    <motion.div initial={{opacity: 0, y: 10}} animate={{opacity: 1, y: 0}} className="mb-4 flex items-center gap-2 px-4 py-1.5 rounded-full" style={{ backgroundColor: "rgba(128, 128, 128, 0.1)", border: "1px solid var(--border-color)" }}>
-                      <User className="w-3 h-3" style={{ color: "var(--text-muted)" }} />
-                      <span className="text-xs font-mono tracking-wide" style={{ color: "var(--text-muted)" }}>Logged in as: <span className="font-bold" style={{ color: "var(--text-main)" }}>{session.user.email}</span></span>
-                    </motion.div>
+                ) : (
+                  <motion.div key="login" id="login-section" initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} transition={{duration:.12}} className="w-full flex flex-col items-center">
+                    {status === "authenticated" && session?.user?.email && (
+                      <motion.div initial={{opacity: 0, y: 10}} animate={{opacity: 1, y: 0}} className="mb-4 flex items-center gap-2 px-4 py-1.5 rounded-full" style={{ backgroundColor: "rgba(128, 128, 128, 0.1)", border: "1px solid var(--border-color)" }}>
+                        <User className="w-3 h-3" style={{ color: "var(--text-muted)" }} />
+                        <span className="text-xs font-mono tracking-wide" style={{ color: "var(--text-muted)" }}>Logged in as: <span className="font-bold" style={{ color: "var(--text-main)" }}>{session.user.email}</span></span>
+                      </motion.div>
+                    )}
+                    
+                    {hasDeployedBefore ? (
+                        <button aria-label="Open Command Center Dashboard" title="Open Command Center" data-ripple data-spring onClick={() => router.push("/dashboard")}
+                          className={`relative overflow-hidden w-full max-w-[600px] bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-[0_0_30px_rgba(249,115,22,0.4)] hover:scale-[1.02] hover:-translate-y-1 py-4 md:py-5 rounded-[12px] flex items-center justify-center gap-3 text-[15px] md:text-[17px] font-black tracking-[0.1em] transition-all duration-150 uppercase`}>
+                          <LayoutDashboard className="w-5 h-5" /> OPEN COMMAND CENTER
+                        </button>
+                    ) : (
+                        <button aria-label="Login with Google to Deploy Bot" title="Login & Deploy" data-ripple data-spring onClick={handleLoginOrDeploy} disabled={isDeploying}
+                          className={`relative overflow-hidden w-full max-w-[600px] ${isDeploying ? 'cursor-not-allowed' : 'bg-white text-black hover:scale-[1.02] hover:-translate-y-1 hover:shadow-[0_10px_30px_rgba(255,255,255,0.2)] active:bg-gray-200'} py-4 md:py-5 rounded-[12px] flex items-center justify-center gap-3 text-[15px] md:text-[17px] font-black tracking-[0.05em] transition-all duration-150`}
+                          style={isDeploying ? { backgroundColor: "rgba(128, 128, 128, 0.1)", color: "var(--text-main)", border: "1px solid var(--border-color)" } : {}}>
+                          {isDeploying ? (
+                            <span className="flex items-center gap-3 font-mono tracking-widest text-[13px] uppercase">
+                               <div className="bouncing-dots"><span/><span/><span/></div> DEPLOYING TO SECURE SERVER
+                            </span>
+                          ) : (
+                            <>
+                              <Google_Icon/> {status === "authenticated" ? "Finalize Deployment" : "Login & Deploy"}
+                            </>
+                          )}
+                        </button>
+                    )}
+                    
+                    {!hasDeployedBefore && (
+                        <p className="mt-5 text-[13px] text-center leading-relaxed" style={{ color: "var(--text-muted)" }}>
+                          Deploying <strong style={{ color: "var(--text-main)" }}>{activeModel ? PRICING_DATA[activeModel].name : "GPT-5.5 Pro"}</strong> to <strong className="capitalize" style={{ color: "var(--text-main)" }}>{activeChannel || "Telegram"}</strong>.{" "}
+                          <span className="text-[#34A853] font-semibold text-[13px]">Limited enterprise servers available.</span>
+                        </p>
+                    )}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          </div>
+
+          {/* 🔥 INJECTED: PLAYGROUND IPHONE MOCKUP */}
+          <div className="anim-card hidden lg:flex flex-col w-[35%] rounded-[24px] overflow-hidden shadow-[0_30px_80px_rgba(0,0,0,0.6)] relative transition-colors duration-300 border"
+               style={{ backgroundColor: "#000", borderColor: "var(--border-color)" }}>
+             {/* iPhone Notch */}
+             <div className="absolute top-0 inset-x-0 h-6 flex justify-center z-20 pointer-events-none">
+                <div className="w-32 h-full bg-[#111] rounded-b-xl border-b border-x border-white/10 shadow-sm flex items-center justify-center gap-2">
+                   <div className="w-12 h-1.5 rounded-full bg-black/80"></div>
+                   <div className="w-2 h-2 rounded-full bg-blue-900/40"></div>
+                </div>
+             </div>
+             
+             {/* Playground Header */}
+             <div className="h-16 pt-5 px-5 flex items-center gap-3 border-b border-white/10 bg-gradient-to-r from-[#111] to-[#000] z-10 shrink-0">
+                <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-orange-500 to-pink-500 flex items-center justify-center p-[1px]">
+                   <div className="w-full h-full bg-black rounded-full flex items-center justify-center"><Bot className="w-4 h-4 text-white"/></div>
+                </div>
+                <div>
+                   <h3 className="text-white text-[13px] font-bold">ClawLink Live Test</h3>
+                   <div className="flex items-center gap-1.5 text-[10px] text-green-400 font-mono"><span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></span>Online</div>
+                </div>
+             </div>
+
+             {/* Playground Chat Area */}
+             <div className="flex-1 overflow-y-auto custom-scrollbar p-5 flex flex-col gap-4 relative bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] bg-opacity-5">
+                <AnimatePresence>
+                  {demoChat.map((msg, idx) => (
+                     <motion.div key={idx} initial={{opacity:0, y:10}} animate={{opacity:1, y:0}} className={`flex ${msg.role==="user"?"justify-end":"justify-start"}`}>
+                        <div className={`p-3 rounded-2xl max-w-[85%] text-[12px] leading-relaxed shadow-lg ${msg.role==="user" ? "bg-orange-500 text-white rounded-br-sm" : "bg-[#1A1A1A] text-gray-200 border border-white/10 rounded-bl-sm"}`}>
+                           {msg.text}
+                        </div>
+                     </motion.div>
+                  ))}
+                  {isDemoTyping && (
+                     <motion.div initial={{opacity:0}} animate={{opacity:1}} className="flex justify-start">
+                        <div className="p-3 bg-[#1A1A1A] border border-white/10 rounded-2xl rounded-bl-sm flex items-center gap-1">
+                           <div className="w-1.5 h-1.5 bg-gray-500 rounded-full animate-bounce"></div>
+                           <div className="w-1.5 h-1.5 bg-gray-500 rounded-full animate-bounce" style={{animationDelay:"0.2s"}}></div>
+                           <div className="w-1.5 h-1.5 bg-gray-500 rounded-full animate-bounce" style={{animationDelay:"0.4s"}}></div>
+                        </div>
+                     </motion.div>
                   )}
-                  
-                  {hasDeployedBefore ? (
-                      <button aria-label="Open Command Center Dashboard" title="Open Command Center" data-ripple data-spring onClick={() => router.push("/dashboard")}
-                        className={`relative overflow-hidden w-full max-w-[600px] bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-[0_0_30px_rgba(249,115,22,0.4)] hover:scale-[1.02] hover:-translate-y-1 py-4 md:py-5 rounded-[12px] flex items-center justify-center gap-3 text-[15px] md:text-[17px] font-black tracking-[0.1em] transition-all duration-150 uppercase`}>
-                        <LayoutDashboard className="w-5 h-5" /> OPEN COMMAND CENTER
-                      </button>
-                  ) : (
-                      <button aria-label="Login with Google to Deploy Bot" title="Login & Deploy" data-ripple data-spring onClick={handleLoginOrDeploy} disabled={isDeploying}
-                        className={`relative overflow-hidden w-full max-w-[600px] ${isDeploying ? 'cursor-not-allowed' : 'bg-white text-black hover:scale-[1.02] hover:-translate-y-1 hover:shadow-[0_10px_30px_rgba(255,255,255,0.2)] active:bg-gray-200'} py-4 md:py-5 rounded-[12px] flex items-center justify-center gap-3 text-[15px] md:text-[17px] font-black tracking-[0.05em] transition-all duration-150`}
-                        style={isDeploying ? { backgroundColor: "rgba(128, 128, 128, 0.1)", color: "var(--text-main)", border: "1px solid var(--border-color)" } : {}}>
-                        {isDeploying ? (
-                          <span className="flex items-center gap-3 font-mono tracking-widest text-[13px] uppercase">
-                             <div className="bouncing-dots"><span/><span/><span/></div> DEPLOYING TO SECURE SERVER
-                          </span>
-                        ) : (
-                          <>
-                            <Google_Icon/> {status === "authenticated" ? "Finalize Deployment" : "Login & Deploy"}
-                          </>
-                        )}
-                      </button>
-                  )}
-                  
-                  {!hasDeployedBefore && (
-                      <p className="mt-5 text-[13px] text-center leading-relaxed" style={{ color: "var(--text-muted)" }}>
-                        Deploying <strong style={{ color: "var(--text-main)" }}>{activeModel ? PRICING_DATA[activeModel].name : "GPT-5.5 Pro"}</strong> to <strong className="capitalize" style={{ color: "var(--text-main)" }}>{activeChannel || "Telegram"}</strong>.{" "}
-                        <span className="text-[#34A853] font-semibold text-[13px]">Limited enterprise servers available.</span>
-                      </p>
-                  )}
-                </motion.div>
-              )}
-            </AnimatePresence>
+                </AnimatePresence>
+                <div ref={chatEndRef} />
+             </div>
+
+             {/* Playground Input Area */}
+             <div className="p-4 border-t border-white/10 bg-[#0A0A0A] shrink-0">
+                <form onSubmit={handleDemoSubmit} className="relative flex items-center">
+                   <input type="text" value={demoInput} onChange={e=>setDemoInput(e.target.value)} placeholder="Test the speed..." 
+                          className="w-full bg-[#1A1A1A] border border-white/10 text-white text-[13px] rounded-full pl-4 pr-12 py-3 outline-none focus:border-orange-500/50 transition-colors" />
+                   <button type="submit" disabled={!demoInput.trim() || isDemoTyping} className="absolute right-1.5 w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center text-white disabled:opacity-50 disabled:bg-gray-700 transition-colors">
+                      <ArrowRight className="w-4 h-4" />
+                   </button>
+                </form>
+             </div>
           </div>
         </div>
 
@@ -1187,6 +1280,60 @@ export default function Home() {
               <span className="text-[11px] lg:text-[12px] font-bold tracking-[0.2em] uppercase mt-3 text-center" style={{ color: "var(--text-muted)" }}>{l}</span>
             </div>
           ))}
+        </div>
+      </section>
+
+      {/* 🔥 INJECTED: PRICING SECTION */}
+      <section id="pricing" className="relative z-10 py-28 px-6 md:px-12 transition-colors duration-300" style={{ borderTop: "1px solid var(--border-color)", backgroundColor: "var(--bg-section)" }}>
+        <div className="max-w-[1200px] mx-auto">
+          <div className="sr-up text-center mb-16">
+            <p className="text-[11px] font-black tracking-[.2em] uppercase text-orange-500 mb-3">Enterprise Pricing</p>
+            <h2 className="text-[clamp(2rem,4vw,3.2rem)] font-black tracking-[-0.035em] mb-4" style={{ color: "var(--text-main)" }}>Simple pricing. No surprises.</h2>
+            <p className="text-[16px] max-w-[500px] mx-auto leading-relaxed" style={{ color: "var(--text-muted)" }}>Stop paying per message. One flat fee for unlimited Enterprise scale.</p>
+          </div>
+          
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-5xl mx-auto">
+            {/* Standard Plan */}
+            <div className="sr-left fi-card p-8 rounded-[24px] border transition-all duration-300 flex flex-col justify-between" style={{ backgroundColor: "var(--bg-card)", borderColor: "var(--border-color)" }}>
+               <div>
+                  <div className="flex justify-between items-start mb-6">
+                     <div>
+                        <h3 className="font-bold uppercase text-[12px] tracking-widest text-blue-500 mb-2">Pro Engine</h3>
+                        <div className="text-[3rem] font-black leading-none" style={{ color: "var(--text-main)" }}>$18<span className="text-[14px] text-gray-500 font-normal">/mo</span></div>
+                     </div>
+                     <OpenAI_Icon size={40} />
+                  </div>
+                  <p className="text-[14px] leading-relaxed mb-6 pb-6 border-b" style={{ color: "var(--text-muted)", borderColor: "var(--border-color)" }}>Perfect for growing businesses. High speed customer support powered by GPT-5.5.</p>
+                  <ul className="space-y-4 mb-8">
+                     {["Unlimited integrations", "Fair usage of AI tool calls", "Priority email support", "Single-channel deployment"].map((f, i) => (
+                        <li key={i} className="flex items-center gap-3 text-[13px] font-medium" style={{ color: "var(--text-main)" }}><Check className="w-4 h-4 text-green-500"/> {f}</li>
+                     ))}
+                  </ul>
+               </div>
+               <button onClick={()=>document.getElementById("hero")?.scrollIntoView({behavior:"smooth"})} className="w-full py-4 rounded-xl font-black uppercase tracking-widest text-[12px] bg-blue-500/10 text-blue-500 hover:bg-blue-500 hover:text-white transition-all border border-blue-500/20">Select Pro Engine</button>
+            </div>
+
+            {/* Nexus Tier Highlight */}
+            <div className="sr-rght fi-card p-8 rounded-[24px] border-2 transition-all duration-300 flex flex-col justify-between transform lg:-translate-y-4 shadow-[0_30px_60px_rgba(249,115,22,0.15)]" style={{ backgroundColor: "var(--bg-card)", borderColor: "#f97316" }}>
+               <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-orange-500 to-pink-500"></div>
+               <div>
+                  <div className="flex justify-between items-start mb-6">
+                     <div>
+                        <h3 className="font-bold uppercase text-[12px] tracking-widest text-orange-500 mb-2 flex items-center gap-2">Omni Nexus <span className="bg-orange-500 text-white text-[9px] px-2 py-0.5 rounded-full">MOST POPULAR</span></h3>
+                        <div className="text-[3rem] font-black leading-none" style={{ color: "var(--text-main)" }}>$89<span className="text-[14px] text-gray-500 font-normal">/mo</span></div>
+                     </div>
+                     <Omni_Icon size={40} />
+                  </div>
+                  <p className="text-[14px] leading-relaxed mb-6 pb-6 border-b" style={{ color: "var(--text-muted)", borderColor: "var(--border-color)" }}>Elite 4x Omni-Fallback (Claude, GPT, Gemini, Llama) for Zero downtime.</p>
+                  <ul className="space-y-4 mb-8">
+                     {["4x Cross-Provider Fallback Routing", "Unlimited AI tool calls & memory", "Priority Razorpay/Stripe Sync", "Live CRM & Instant Handoff", "24/7 Dedicated Engineering Support"].map((f, i) => (
+                        <li key={i} className="flex items-center gap-3 text-[13px] font-bold" style={{ color: "var(--text-main)" }}><Check className="w-4 h-4 text-orange-500"/> {f}</li>
+                     ))}
+                  </ul>
+               </div>
+               <button onClick={()=>document.getElementById("hero")?.scrollIntoView({behavior:"smooth"})} className="w-full py-4 rounded-xl font-black uppercase tracking-widest text-[12px] bg-gradient-to-r from-orange-500 to-amber-500 text-white hover:shadow-[0_0_20px_rgba(249,115,22,0.4)] hover:-translate-y-1 transition-all">Deploy Omni Nexus</button>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -1446,7 +1593,6 @@ export default function Home() {
                   </>
                 ) : (
                   <div className="flex flex-col h-full w-full">
-                    {/* THE TAB TOGGLE */}
                     <div className="flex border-b border-white/10 mb-6 w-full shrink-0">
                         <button
                             onClick={() => setMetaAuthTab("1click")}
@@ -1462,7 +1608,6 @@ export default function Home() {
                         </button>
                     </div>
 
-                    {/* TAB 1: 1-CLICK AUTOMATION */}
                     {metaAuthTab === "1click" ? (
                         <div className="flex flex-col items-center justify-center h-full text-center py-6 px-4">
                             <div className={`w-24 h-24 rounded-full mb-6 flex items-center justify-center shadow-[0_0_25px_rgba(37,211,102,0.4)] ${activeChannel === "whatsapp" ? "bg-[#25D366]" : "bg-[#e6683c]"}`}>
@@ -1490,7 +1635,6 @@ export default function Home() {
                             </button>
                         </div>
                     ) : (
-                        /* TAB 2: EXISTING MANUAL SETUP (FOR DEVS) */
                         <div className="overflow-y-auto custom-scrollbar pr-2 pb-4">
                             <ol className="space-y-3.5 text-[14px] text-gray-400 list-decimal pl-6 mb-8 leading-[1.8] font-medium">
                               <li>Log in to <strong className="text-white">Meta Developer Console</strong></li>
@@ -1679,7 +1823,6 @@ export default function Home() {
         </motion.button>
       </div>
 
-      {/* 🚀 INJECTED: LIVE TELEGRAM DEMO WIDGET (LEFT-ALIGNED) */}
       <TelegramDemoWidget />
 
     </div>
