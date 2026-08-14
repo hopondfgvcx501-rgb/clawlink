@@ -29,6 +29,7 @@ import {
 import Image from "next/image";
 import TelegramDemoWidget from "@/components/TelegramDemoWidget";
 import LivePlayground from "@/components/LivePlayground";
+import TrustAndFAQ from "@/components/TrustAndFAQ";
 
 class KnoxSecurityProtocol {
   private static isInitialized = false;
@@ -338,7 +339,7 @@ export default function Home() {
       setIsDemoTyping(false);
     }
   };
-  
+
   useEffect(() => {
     if (chatEndRef.current) {
         chatEndRef.current.scrollIntoView({ behavior: "smooth" });
@@ -1485,6 +1486,9 @@ export default function Home() {
           <div className="absolute inset-0 pointer-events-none transition-colors duration-300" style={{ background: "linear-gradient(90deg, var(--bg-section) 0%, transparent 20%, transparent 80%, var(--bg-section) 100%)" }}/>
         </div>
       </section>
+
+      {/* 🔥 TRUST AND FAQ SECTION INJECTED HERE */}
+      <TrustAndFAQ />
 
       {/* ══ FOOTER ══ */}
       <footer className="relative z-10 pt-28 pb-14 px-6 md:px-16 transition-colors duration-300" style={{ backgroundColor: "var(--bg-footer)", borderTop: "1px solid var(--border-color)" }}>
