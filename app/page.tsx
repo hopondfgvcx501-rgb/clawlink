@@ -5,12 +5,13 @@
  * CLAWLINK ENTERPRISE FRONTEND SECURE MODULE
  * ==============================================================================================
  * @file app/page.tsx
- * @version 13.0.0 (Military-Grade Security & PLG Optimized)
+ * @version 13.0.1 (Military-Grade Security & PLG Optimized - CRASH FIXED)
  * @description Main onboarding interface with strict Product-Led Growth (PLG) routing.
  * 🚀 FIXED: Native Microtask Queue hydration resolves 'set-state-in-effect'.
  * 🚀 SECURED: Advanced Anti-debugging, anti-clickjacking, and payload tampering defenses deployed natively.
  * 🌟 ADDED: 1-Click Meta Login Hybrid UI for ultra-fast deployments.
  * 🔥 NEW INJECTED: Live Playground iPhone Mockup & Enterprise Pricing Matrix.
+ * 🛠️ HOTFIX: Removed dead LivePlayground import and added missing Bot icon from lucide-react.
  * * ALL RIGHTS RESERVED. CLAWLINK INC.
  * ==============================================================================================
  */
@@ -24,11 +25,10 @@ import {
   Globe, Database, Mic, Zap, MessageSquare, Activity,
   LogOut, Shield, ExternalLink, CheckCircle2, Copy,
   MessageCircle, X, Send, Mail, User, LayoutDashboard,
-  Sun, Moon, Monitor, Loader2, Smartphone, Check, ArrowRight
+  Sun, Moon, Monitor, Loader2, Smartphone, Check, ArrowRight, Bot
 } from "lucide-react";
 import Image from "next/image";
 import TelegramDemoWidget from "@/components/TelegramDemoWidget";
-import LivePlayground from "@/components/LivePlayground";
 import TrustAndFAQ from "@/components/TrustAndFAQ";
 
 class KnoxSecurityProtocol {
@@ -298,7 +298,7 @@ export default function Home() {
     }
   };
 
- // 🔥 REAL API: PLAYGROUND SUBMIT HANDLER
+  // 🔥 REAL API: PLAYGROUND SUBMIT HANDLER
   const handleDemoSubmit = async (e: any) => {
     e.preventDefault();
     if (!demoInput.trim() || isDemoTyping) return;
