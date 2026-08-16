@@ -27,7 +27,6 @@ async function callOpenAI(models: string[], systemPrompt: string, history: any[]
     { role: "user", content: prompt }
   ];
 
-  // 🔥 LOOP: Agar pehla model fail hua, toh usi provider ka sasta model try karega!
   for (const model of models) {
     try {
       console.log(`🟡 [OMNI-NEXUS] Trying OpenAI Model: ${model}`);
@@ -140,10 +139,10 @@ export async function POST(req: Request) {
   try {
     const body = await req.json();
     
-    // 🔥 NEW: Check if request is from the public landing page
+    // 🔥 1. Check if request is from the public landing page demo
     const isPublicDemo = body.source === "landing_playground";
 
-    // 🛡️ APPLE-LEVEL SECURITY: Strict Auth (Except for Public Demo)
+    // 🛡️ 2. APPLE-LEVEL SECURITY: Strict Auth (Bypassed ONLY for Public Demo)
     if (!isPublicDemo) {
       const authHeader = req.headers.get("authorization");
       if (authHeader !== `Bearer ${process.env.CLAWLINK_MASTER_SECRET}`) {
@@ -157,13 +156,20 @@ export async function POST(req: Request) {
 
     if (!userPrompt) return NextResponse.json({ error: "Prompt payload is missing" }, { status: 400 });
 
-    // 🚀 CHECK TRAFFIC SPEED (DDoS / Rate Limiter Integration)
-    const trafficStatus = await checkTrafficSpeed(isPublicDemo ? `demo_user_${user}` : email);
+    // 🚀 3. CHECK TRAFFIC SPEED (DDoS / Rate Limiter Integration)
+    // Wrapped in try/catch so if Redis isn't setup yet, the demo won't crash!
+    let trafficStatus = "OK";
+    try {
+        trafficStatus = await checkTrafficSpeed(isPublicDemo ? `demo_user_${user}` : email);
+    } catch (redisError) {
+        console.warn("⚠️ Redis Rate Limiter not connected or failed. Proceeding without it.");
+    }
+
     if (trafficStatus === "BLOCK") {
        return NextResponse.json({ error: "Too Many Requests. Please wait." }, { status: 429 });
     }
     
-    // 🔥 If it's a public demo, FORCE cost saver mode to prevent API abuse
+    // 🔥 4. If it's a public demo, FORCE cost saver mode to prevent API abuse
     const isCostSaverMode = (trafficStatus === "DOWNGRADE") || forceCheap || isPublicDemo;
 
     // 🔥 REAL TECHNICAL API IDs (Strictly mapped to avoid 404 crashes)
