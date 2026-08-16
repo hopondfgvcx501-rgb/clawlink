@@ -138,26 +138,35 @@ async function callAnthropic(models: string[], history: any[], systemPrompt: str
 // ==========================================
 export async function POST(req: Request) {
   try {
-    const authHeader = req.headers.get("authorization");
-    if (authHeader !== `Bearer ${process.env.CLAWLINK_MASTER_SECRET}`) {
-      return NextResponse.json({ error: "Access Denied." }, { status: 401 });
+    const body = await req.json();
+    
+    // 🔥 NEW: Check if request is from the public landing page
+    const isPublicDemo = body.source === "landing_playground";
+
+    // 🛡️ APPLE-LEVEL SECURITY: Strict Auth (Except for Public Demo)
+    if (!isPublicDemo) {
+      const authHeader = req.headers.get("authorization");
+      if (authHeader !== `Bearer ${process.env.CLAWLINK_MASTER_SECRET}`) {
+        return NextResponse.json({ error: "Access Denied." }, { status: 401 });
+      }
     }
 
-    const body = await req.json();
-    // Added email fallback so redis can track even if frontend missed passing it
-    const { prompt, systemPrompt, history = [], apiKey = null, forceCheap = false, userWords = 0, email = "omni_user" } = body;
+    // 🚀 BUGFIX: Accept BOTH 'message' (from landing page) AND 'prompt' (from dashboard)
+    const userPrompt = body.prompt || body.message;
+    const { systemPrompt, history = [], apiKey = null, forceCheap = false, userWords = 0, email = "omni_user", user = "Guest" } = body;
 
-    if (!prompt) return NextResponse.json({ error: "Prompt payload is missing" }, { status: 400 });
+    if (!userPrompt) return NextResponse.json({ error: "Prompt payload is missing" }, { status: 400 });
 
     // 🚀 CHECK TRAFFIC SPEED (DDoS / Rate Limiter Integration)
-    const trafficStatus = await checkTrafficSpeed(email);
+    const trafficStatus = await checkTrafficSpeed(isPublicDemo ? `demo_user_${user}` : email);
     if (trafficStatus === "BLOCK") {
-       return NextResponse.json({ error: "Too Many Requests" }, { status: 429 });
+       return NextResponse.json({ error: "Too Many Requests. Please wait." }, { status: 429 });
     }
-    const isCostSaverMode = (trafficStatus === "DOWNGRADE") || forceCheap;
+    
+    // 🔥 If it's a public demo, FORCE cost saver mode to prevent API abuse
+    const isCostSaverMode = (trafficStatus === "DOWNGRADE") || forceCheap || isPublicDemo;
 
     // 🔥 REAL TECHNICAL API IDs (Strictly mapped to avoid 404 crashes)
-    // Arranged from Expensive -> Cheap for Premium, and Cheap -> Cheapest for Budget
     const geminiModelsCheap = ["gemini-1.5-flash"]; 
     const geminiModelsPremium = ["gemini-1.5-pro", "gemini-1.5-flash"]; 
     
@@ -169,28 +178,28 @@ export async function POST(req: Request) {
 
     const isComplexQuery = userWords > 150;
 
-    // 🧠 SMART COST-SAVING ROUTE
+    // 🧠 SMART COST-SAVING ROUTE (Always used for Public Demo)
     if (isCostSaverMode || (!isComplexQuery && !forceCheap)) {
       console.log(`[OMNI] Routing to BUDGET Tier (Speed/Cost priority)`);
-      const geminiResult = await callGemini(geminiModelsCheap, systemPrompt, history, prompt, apiKey);
+      const geminiResult = await callGemini(geminiModelsCheap, systemPrompt, history, userPrompt, apiKey);
       if (geminiResult.success) return NextResponse.json(geminiResult);
 
-      const gptResult = await callOpenAI(openAIModelsCheap, systemPrompt, history, prompt, apiKey);
+      const gptResult = await callOpenAI(openAIModelsCheap, systemPrompt, history, userPrompt, apiKey);
       if (gptResult.success) return NextResponse.json(gptResult);
       
-      const claudeResult = await callAnthropic(claudeModelsCheap, history, systemPrompt, prompt, apiKey);
+      const claudeResult = await callAnthropic(claudeModelsCheap, history, systemPrompt, userPrompt, apiKey);
       if (claudeResult.success) return NextResponse.json(claudeResult);
     } 
-    // 💎 PREMIUM ROUTE (Deep Fallback)
+    // 💎 PREMIUM ROUTE (Deep Fallback - For Authenticated Enterprise Users)
     else {
       console.log(`[OMNI] Routing to PREMIUM Tier`);
-      const openAIResult = await callOpenAI(openAIModelsPremium, systemPrompt, history, prompt, apiKey);
+      const openAIResult = await callOpenAI(openAIModelsPremium, systemPrompt, history, userPrompt, apiKey);
       if (openAIResult.success) return NextResponse.json(openAIResult);
 
-      const claudeResult = await callAnthropic(claudeModelsPremium, history, systemPrompt, prompt, apiKey);
+      const claudeResult = await callAnthropic(claudeModelsPremium, history, systemPrompt, userPrompt, apiKey);
       if (claudeResult.success) return NextResponse.json(claudeResult);
 
-      const geminiResult = await callGemini(geminiModelsPremium, systemPrompt, history, prompt, apiKey);
+      const geminiResult = await callGemini(geminiModelsPremium, systemPrompt, history, userPrompt, apiKey);
       if (geminiResult.success) return NextResponse.json(geminiResult);
     }
 
@@ -199,7 +208,7 @@ export async function POST(req: Request) {
       reply: "System is undergoing scheduled maintenance. Please try again." 
     }, { status: 503 });
 
-  } catch (error) {
-    return NextResponse.json({ error: "OmniAgent Engine Error" }, { status: 500 });
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message || "OmniAgent Engine Error" }, { status: 500 });
   } 
 }
