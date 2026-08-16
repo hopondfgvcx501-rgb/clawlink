@@ -5,12 +5,11 @@
  * CLAWLINK ENTERPRISE FRONTEND SECURE MODULE
  * ==============================================================================================
  * @file app/page.tsx
- * @version 16.0.0 (The Ultimate Pricing & UI Master Polish)
+ * @version 17.0.0 (Seamless Theme Adaptation - No Harsh Border Cuts)
  * @description Main onboarding interface with strict Product-Led Growth (PLG) routing.
- * 🚀 SECURED: Advanced Anti-debugging, anti-clickjacking, and payload tampering defenses.
- * 🔥 UI UPGRADE: Fully Integrated Dark Hacker-Themed Pricing Section with Tabs & Currency Toggle.
- * 🛡️ SMART DEMO: Region-aware (India vs Global) Smart Contextual AI Funnel.
- * 📱 UX FIX: Resolved scroll jumping and duplicate function compiler crashes.
+ * 🚀 FIXED: Removed harsh border lines and fixed background contrast across light/dark modes.
+ * 🛡️ SMART DEMO: Region-aware (India vs Global) real AI fallback without fake duplicates.
+ * 📱 UX FIX: Pure seamless section flow without visual jumping.
  * * ALL RIGHTS RESERVED. CLAWLINK INC.
  * ==============================================================================================
  */
@@ -21,10 +20,10 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
 import Script from "next/script";
 import {
-  Globe, Database, Mic, Zap, MessageSquare, Activity,
-  LogOut, Shield, ExternalLink, CheckCircle2, Copy,
+  Zap, MessageSquare, Activity,
+  LogOut, Shield, ExternalLink, CheckCircle2,
   MessageCircle, X, Send, Mail, User, LayoutDashboard,
-  Sun, Moon, Monitor, Loader2, Smartphone, Check, ArrowRight, Bot, Lock, Verified, Sparkles
+  Sun, Moon, Monitor, Loader2, Check, ArrowRight, Bot, Verified, Sparkles
 } from "lucide-react";
 import Image from "next/image";
 import TelegramDemoWidget from "@/components/TelegramDemoWidget";
@@ -103,7 +102,6 @@ class KnoxSecurityProtocol {
   }
 }
 
-// Helper Functions for New Premium UI
 function hexA(hex: string, a: number) {
   const c = hex.replace("#", "");
   const n = parseInt(c, 16);
@@ -118,7 +116,7 @@ function Meter({ level, accent }: { level: number, accent: string }) {
           key={i}
           className="h-[3px] w-4 rounded-full"
           style={{
-            background: i <= level ? accent : "rgba(255,255,255,0.08)",
+            background: i <= level ? accent : "rgba(128,128,128,0.2)",
             boxShadow: i <= level ? `0 0 8px ${hexA(accent, 0.7)}` : "none",
           }}
         />
@@ -133,10 +131,9 @@ function Corner({ pos }: { pos: "tl" | "br" }) {
     tl: "top-3 left-3 border-t border-l",
     br: "bottom-3 right-3 border-b border-r",
   };
-  return <span className={`${base} ${styles[pos]}`} style={{ borderColor: "rgba(255,255,255,0.25)" }} />;
+  return <span className={`${base} ${styles[pos]}`} style={{ borderColor: "rgba(128,128,128,0.4)" }} />;
 }
 
-// Updated ClawLink Specific Pricing Data
 const PRICING_DATA: Record<string, any> = {
   "GPT-5.5 Pro": { 
     name: "GPT-5.5 Pro",
@@ -156,7 +153,7 @@ const PRICING_DATA: Record<string, any> = {
       { id: "enterprise", name: "Enterprise", usd: "Custom", inr: "Custom", msgs: "Global system dominance.", desc: "Tailored for massive scale and compliance.", accent: "#A855F7", level: 4, isYearly: false, features: ["Fully uncapped scaling", "Dedicated server IP", "White-glove setup", "Custom SLAs", "Dedicated account manager"] }
     ]
   },
-   "Gemini 3.1 Pro": {
+  "Gemini 3.1 Pro": {
     name: "Gemini 3.1 Pro",
     plans: [
       { id: "free", name: "Free", usd: 0, inr: 0, msgs: "Try Before You Trust", desc: "See what your AI can do.", accent: "#8A93A6", level: 1, isYearly: false, features: ["1 AI Agent", "1 channel", "Limited AI usage", "Basic memory", "Core automations", "Test your first workflow", "No credit card"] },
@@ -173,13 +170,6 @@ const ICON_SIZE = 28;
 const OpenAI_Icon  = ({ size = ICON_SIZE }: { size?: number }) => <Image src="/logos/openai.svg"  alt="GPT-4o OpenAI Agent Icon"  width={size} height={size} className="transform-gpu shrink-0" />;
 const Claude_Icon  = ({ size = ICON_SIZE }: { size?: number }) => <Image src="/logos/claude.svg"  alt="Claude 3 Anthropic AI Icon"  width={size} height={size} className="transform-gpu shrink-0" />;
 const Gemini_Icon  = ({ size = ICON_SIZE }: { size?: number }) => <Image src="/logos/gemini.svg"  alt="Gemini Google AI Bot Icon"  width={size} height={size} className="transform-gpu shrink-0" />;
-
-const Llama_Icon = ({ size = ICON_SIZE }: { size?: number }) => (
-  <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#1A1A24] transform-gpu shrink-0" aria-hidden="true">
-    <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/>
-    <line x1="4" y1="22" x2="4" y2="15"/>
-  </svg>
-);
 
 const Omni_Icon = ({ size = 24 }: { size?: number }) => (
   <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke="#00BFFF" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 transform-gpu" aria-hidden="true">
@@ -219,7 +209,7 @@ const Discord_Icon = ({ size = ICON_SIZE }: { size?: number }) => (
 );
 
 const Instagram_Icon = ({ size = ICON_SIZE }: { size?: number }) => (
-  <div style={{ width: size, height: size }} className={`rounded-[6px] bg-gradient-to-tr from-[#f09433] via-[#e6683c] to-[#bc1888] flex items-center justify-center transform-gpu shrink-0`} aria-hidden="true">
+  <div style={{ width: size, height: size }} className="rounded-[6px] bg-gradient-to-tr from-[#f09433] via-[#e6683c] to-[#bc1888] flex items-center justify-center transform-gpu shrink-0" aria-hidden="true">
     <div className="w-[60%] h-[60%] border-[1.5px] border-white rounded-[4px] flex items-center justify-center">
       <div className="w-[30%] h-[30%] bg-white rounded-full"/>
     </div>
@@ -235,35 +225,12 @@ const Google_Icon = () => (
   </svg>
 );
 
-const ChatBubble = ({ text, delay, isUser }: { text: string; delay: number; isUser?: boolean }) => (
-  <motion.div 
-    initial={{ opacity: 0, y: 8 }} 
-    animate={{ opacity: 1, y: 0 }} 
-    transition={{ delay, duration: 0.12, ease: "easeOut" }}
-    className={`p-3 rounded-2xl max-w-[85%] text-[12px] md:text-[13px] shadow-md leading-relaxed transform-gpu
-      ${isUser ? "bg-gradient-to-br from-[#f09433] to-[#bc1888] text-white self-end rounded-br-sm" : "bg-[#1A1A1A] text-gray-200 border border-white/10 self-start rounded-bl-sm"}`}
-  >
-    {text}
-  </motion.div>
-);
-
-const GuideStep = ({ step, title, desc, delay }: { step: string; title: string; desc: string; delay: number }) => (
-  <motion.div 
-    initial={{ opacity: 0, x: 16 }} 
-    animate={{ opacity: 1, x: 0 }} 
-    transition={{ delay, duration: 0.12, ease: "easeOut" }}
-    className="flex gap-3 border border-white/5 p-3 rounded-xl shadow-md w-[90%] self-center mx-auto items-start transform-gpu"
-    style={{ backgroundColor: "var(--bg-main)" }}
-  >
-    <div className="w-5 h-5 rounded-full bg-[#25D366]/20 text-[#25D366] flex items-center justify-center font-bold text-[10px] shrink-0 mt-0.5">
-      {step}
-    </div>
-    <div className="flex flex-col">
-      <span className="font-bold mb-1 text-[11px]" style={{ color: "var(--text-main)" }}>{title}</span>
-      <span className="text-[9px] leading-relaxed" style={{ color: "var(--text-muted)" }}>{desc}</span>
-    </div>
-  </motion.div>
-);
+const IG_DEMO_CHAT = [
+  { user: true, text: "Do you have the black hoodie in size M?" },
+  { user: false, text: "Yes! 🖤 We have 3 left in stock. Should I reserve one for you?" },
+  { user: true, text: "Yes please, how do I pay?" },
+  { user: false, text: "Here is your secure checkout link: https://pay.clawlink.com/hoodie. Shipped in 24h! 🚀" }
+];
 
 const MarqueeRow = ({ items, reverse = false }: { items: string[]; reverse?: boolean }) => (
   <div className="flex whitespace-nowrap overflow-hidden py-2.5 w-full">
@@ -282,37 +249,23 @@ const MarqueeRow = ({ items, reverse = false }: { items: string[]; reverse?: boo
   </div>
 );
 
-// MOCK DATA FOR INSTAGRAM DEMO
-const IG_DEMO_CHAT = [
-  { user: true, text: "Do you have the black hoodie in size M?" },
-  { user: false, text: "Yes! 🖤 We have 3 left in stock. Should I reserve one for you?" },
-  { user: true, text: "Yes please, how do I pay?" },
-  { user: false, text: "Here is your secure checkout link: https://pay.clawlink.com/hoodie. It will be shipped within 24 hours! 🚀" }
-];
-
 export default function Home() {
   const { data: session, status } = useSession();
   const router = useRouter();
 
   const [isMounted, setIsMounted] = useState(false);
   const [isTelegramModalOpen, setIsTelegramModalOpen] = useState(false);
-  
   const [theme, setTheme] = useState("dark");
 
-  // PLAYGROUND STATES WITH CACHE
   const [demoChat, setDemoChat] = useState([{ role: "bot", text: "Hi! I am ClawLink's Omni-Fallback AI. Send me a message to test my latency! ⚡" }]);
   const [demoInput, setDemoInput] = useState("");
   const [isDemoTyping, setIsDemoTyping] = useState(false);
-  const [demoChatCount, setDemoChatCount] = useState(0);
+  const [, setDemoChatCount] = useState(0);
   
-  // 🚀 BUGFIX: Naye Refs banaye hain taaki poora page jump na kare
   const apiChatRef = useRef<HTMLDivElement>(null);
   const igChatRef = useRef<HTMLDivElement>(null);
 
-  // INSTAGRAM MOCKUP STATES
   const [igChat, setIgChat] = useState<{user: boolean, text: string}[]>([]);
-  
-  // NEW PRICING STATES
   const [pricingModel, setPricingModel] = useState<string>("GPT-5.5 Pro");
   const [isYearlyBilling, setIsYearlyBilling] = useState<boolean>(true);
   
@@ -323,13 +276,12 @@ export default function Home() {
   const [isTokenSaved, setIsTokenSaved] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
   const [isDeploying, setIsDeploying] = useState(false);
-  const [botLink, setBotLink] = useState("");
+  const [botLink] = useState("");
   
   const [activeModel, setActiveModel] = useState<string | null>(null);
   const [activeChannel, setActiveChannel] = useState<string | null>(null);
   
   const [currency, setCurrency] = useState<"USD"|"INR">("USD");
-  const [currencySymbol, setCurrencySymbol] = useState("$");
 
   const [isHelpOpen, setIsHelpOpen] = useState(false);
   const [helpEmail, setHelpEmail] = useState("");
@@ -338,13 +290,11 @@ export default function Home() {
   const [isSupportModalOpen, setIsSupportModalOpen] = useState(false);
 
   const [hasDeployedBefore, setHasDeployedBefore] = useState(false);
-  
   const [metaAuthTab, setMetaAuthTab] = useState<"1click" | "manual">("1click");
 
   useEffect(() => {
     Promise.resolve().then(() => {
       setIsMounted(true);
-      
       if (typeof window !== "undefined") {
         const savedModel = localStorage.getItem("clawlink_model");
         const savedChannel = localStorage.getItem("clawlink_channel");
@@ -352,20 +302,34 @@ export default function Home() {
         if (savedChannel && savedChannel !== "widget" && savedChannel !== "broadcast" && savedChannel !== "partner") {
           setActiveChannel(savedChannel);
         }
-      }
 
-      try {
         const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || "";
         const lang = navigator.language || "";
         if (tz.includes("Calcutta") || tz.includes("Kolkata") || tz.includes("Asia/Colombo") || lang.includes("-IN") || lang === "hi") { 
           setCurrency("INR"); 
-          setCurrencySymbol("₹"); 
         } else {
           setCurrency("USD");
-          setCurrencySymbol("$");
         }
-      } catch (e) {
-        console.error("Currency evaluation sequence failed securely");
+
+        const savedTheme = localStorage.getItem("clawlink_theme") || "dark";
+        setTheme(savedTheme);
+        const prefersLight = window.matchMedia("(prefers-color-scheme: light)").matches;
+        if (savedTheme === "light" || (savedTheme === "system" && prefersLight)) {
+           document.documentElement.classList.add("light-theme-active");
+        }
+
+        const savedCount = parseInt(localStorage.getItem("clawlink_demo_chats") || "0");
+        setDemoChatCount(savedCount);
+
+        let timeoutIds: NodeJS.Timeout[] = [];
+        IG_DEMO_CHAT.forEach((msg, idx) => {
+          const id = setTimeout(() => {
+            setIgChat(prev => [...prev, msg]);
+          }, (idx + 1) * 2000);
+          timeoutIds.push(id);
+        });
+
+        return () => timeoutIds.forEach(clearTimeout);
       }
     });
     
@@ -387,162 +351,8 @@ export default function Home() {
     if (status === "authenticated") {
         verifyDeployment().catch(console.error);
     }
-
-    const io = new IntersectionObserver((entries) => {
-      entries.forEach((e) => { 
-        if (e.isIntersecting) e.target.classList.add('sr-vis'); 
-      });
-    }, { threshold: 0.05, rootMargin: '0px 0px -20px 0px' });
-
-    const observerTimer = setTimeout(() => {
-      document.querySelectorAll('.sr-up, .sr-left, .sr-rght').forEach((el) => io.observe(el));
-
-      const fio = new IntersectionObserver((entries) => {
-        entries.forEach((e) => {
-          if (e.isIntersecting) {
-            const cards = e.target.querySelectorAll('.fi-card');
-            cards.forEach((c: any, i: number) => {
-              c.style.transition = 'opacity .25s ' + (0.02 + i * 0.05) + 's cubic-bezier(.16,1,.3,1), transform .25s ' + (0.02 + i * 0.05) + 's cubic-bezier(.16,1,.3,1)';
-              c.style.opacity = '1';
-              c.style.transform = 'none';
-            });
-            fio.unobserve(e.target);
-          }
-        });
-      }, { threshold: 0.02 });
-
-      document.querySelectorAll('.fi-card').forEach((el: any) => {
-        el.style.opacity = '0';
-        el.style.transform = 'translateY(12px)';
-      });
-
-      document.querySelectorAll('section, div[class*="sec"]').forEach((g) => {
-        if (g.querySelector('.fi-card')) fio.observe(g);
-      });
-    }, 50);
-
-    const handleScroll = () => {
-      const nav = document.getElementById('clnav');
-      if (nav) nav.style.backgroundColor = window.scrollY > 30 ? 'var(--bg-main)' : 'transparent';
-      if (nav) nav.style.opacity = window.scrollY > 30 ? '0.95' : '1';
-    };
-    window.addEventListener('scroll', handleScroll, { passive: true });
-
-    const cg = document.createElement('div');
-    cg.className = 'cg-dot';
-    document.body.appendChild(cg);
-    let mx2 = 0, my2 = 0, cgx = 0, cgy = 0;
-    const onMM = (e: MouseEvent) => { mx2 = e.clientX; my2 = e.clientY; };
-    document.addEventListener('mousemove', onMM, { passive: true });
-    let cgRaf: number;
-    const animCG = () => {
-      cgx += (mx2 - cgx) * 0.09;
-      cgy += (my2 - cgy) * 0.09;
-      cg.style.left = cgx + 'px';
-      cg.style.top  = cgy + 'px';
-      cgRaf = requestAnimationFrame(animCG);
-    };
-    cgRaf = requestAnimationFrame(animCG);
-
-    const onRippleClick = (e: MouseEvent) => {
-      const t = e.currentTarget as HTMLElement;
-      const r = t.getBoundingClientRect();
-      const d = document.createElement('span');
-      d.className = 'rpl-wave';
-      const sz = Math.max(r.width, r.height) * 2.4;
-      d.style.cssText = `width:${sz}px;height:${sz}px;left:${e.clientX - r.left - sz / 2}px;top:${e.clientY - r.top - sz / 2}px;position:absolute`;
-      t.appendChild(d);
-      setTimeout(() => d.remove(), 650);
-    };
-    
-    const attachRipples = () => {
-        document.querySelectorAll('[data-ripple]').forEach(el => {
-            el.addEventListener('click', onRippleClick as EventListener);
-        });
-    };
-    setTimeout(attachRipples, 100);
-
-    const onSpringClick = (e: Event) => {
-      const t = e.currentTarget as HTMLElement;
-      t.classList.remove('spr-play');
-      void t.offsetWidth;
-      t.classList.add('spr-play');
-      setTimeout(() => t.classList.remove('spr-play'), 420);
-    };
-    const attachSprings = () => {
-        document.querySelectorAll('[data-spring]').forEach(el => {
-            el.addEventListener('click', onSpringClick);
-        });
-    };
-    setTimeout(attachSprings, 100);
-
-    const attach3DEffects = () => {
-        document.querySelectorAll('.tilt-el').forEach(el => {
-        const e2 = el as HTMLElement;
-        e2.addEventListener('mousemove', (ev: any) => {
-            const r  = e2.getBoundingClientRect();
-            const x  = (ev.clientX - r.left) / r.width  - 0.5;
-            const y  = (ev.clientY - r.top)  / r.height - 0.5;
-            e2.style.transform = `perspective(900px) rotateY(${x * 7}deg) rotateX(${-y * 7}deg)`;
-        });
-        e2.addEventListener('mouseleave', () => {
-            e2.style.transform = 'perspective(900px) rotateY(0deg) rotateX(0deg)';
-        });
-        });
-
-        document.querySelectorAll('.mag-el').forEach(el => {
-        const span = el.querySelector('.mt');
-        if (!span) return;
-        const e2 = el as HTMLElement;
-        e2.addEventListener('mousemove', (ev: any) => {
-            const r = e2.getBoundingClientRect();
-            const x = (ev.clientX - r.left - r.width  / 2) * 0.28;
-            const y = (ev.clientY - r.top  - r.height / 2) * 0.28;
-            (span as HTMLElement).style.transform = `translate(${x}px,${y}px)`;
-        });
-        e2.addEventListener('mouseleave', () => {
-            (span as HTMLElement).style.transform = 'translate(0,0)';
-        });
-        });
-    };
-    setTimeout(attach3DEffects, 100);
-
-    return () => {
-      clearTimeout(observerTimer);
-      io.disconnect();
-      window.removeEventListener('scroll', handleScroll);
-      document.removeEventListener('mousemove', onMM);
-      cancelAnimationFrame(cgRaf);
-      if (cg.parentNode) cg.parentNode.removeChild(cg);
-    };
   }, [session?.user?.email, status]);
 
-  // MOVED USEEFFECTS FOR CHAT MOCKUPS HERE
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const savedTheme = localStorage.getItem("clawlink_theme") || "dark";
-      setTheme(savedTheme);
-      const prefersLight = window.matchMedia("(prefers-color-scheme: light)").matches;
-      if (savedTheme === "light" || (savedTheme === "system" && prefersLight)) {
-         document.documentElement.classList.add("light-theme-active");
-      }
-
-      const savedCount = parseInt(localStorage.getItem("clawlink_demo_chats") || "0");
-      setDemoChatCount(savedCount);
-
-      let timeoutIds: NodeJS.Timeout[] = [];
-      IG_DEMO_CHAT.forEach((msg, idx) => {
-        const id = setTimeout(() => {
-          setIgChat(prev => [...prev, msg]);
-        }, (idx + 1) * 2000);
-        timeoutIds.push(id);
-      });
-
-      return () => timeoutIds.forEach(clearTimeout);
-    }
-  }, []);
-
-  // 🔥 BUGFIX: Page jumping issue resolved by strictly scrolling ONLY the chat div
   useEffect(() => {
     if (apiChatRef.current) {
         apiChatRef.current.scrollTop = apiChatRef.current.scrollHeight;
@@ -569,7 +379,6 @@ export default function Home() {
     }
   };
 
-  // 🔥 REAL OMNI-ENGINE PLAYGROUND HANDLER (Strictly Real AI Connect + Zero Fake Fallbacks)
   const handleDemoSubmit = async (e: any) => {
     e.preventDefault();
     if (!demoInput.trim() || isDemoTyping) return;
@@ -577,11 +386,9 @@ export default function Home() {
     const userName = session?.user?.name ? session.user.name.split(" ")[0] : "Guest";
     const currentCount = parseInt(localStorage.getItem("clawlink_demo_chats") || "0");
     
-    // Auto-detect Browser Language to pitch limit in Hinglish or English
     const userLang = typeof navigator !== "undefined" ? navigator.language.toLowerCase() : "en";
     const isIndian = userLang.includes("hi") || userLang.includes("in");
 
-    // 🛡️ FRONTEND RATE LIMIT (3 Chats Max for unauthenticated users to save API costs)
     if (currentCount >= 3) {
        const limitMsg = isIndian 
          ? `🔒 Demo limit reached (3/3). ${userName}, speed test done! Apna AI agent deploy karne ke liye niche login karein.`
@@ -597,7 +404,6 @@ export default function Home() {
     setIsDemoTyping(true);
 
     try {
-      // 🚀 SECURE BACKEND CALL (Frontend never sees the API key)
       const res = await fetch("/api/omni", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -605,33 +411,24 @@ export default function Home() {
       });
 
       const data = await res.json();
-
       if (res.ok && data.reply) {
-        // 🔥 SHOW EXACT REAL GPT/OMNI REPLY
         setDemoChat(p => [...p, { role: "bot", text: data.reply }]);
       } else {
-        // Force an error if backend sends a failure status
         throw new Error(data.error || "Omni-Engine Connection Failed");
       }
     } catch (error: any) {
-      // 🚨 REAL BACKEND ERRORS SHOWN DIRECTLY (No Fake Marketing Replies)
       setDemoChat(p => [...p, { role: "bot", text: `⚠️ Backend Error: ${error.message}` }]);
-      
-      // Send error to Telegram Admin Bot silently
       fetch("/api/tg-admin", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ message: `🚨 [Playground Live Test Error]: ${error.message} (User: ${userName})` })
       }).catch(() => {});
-
     } finally {
       setIsDemoTyping(false);
-      
       const newCount = currentCount + 1;
       localStorage.setItem("clawlink_demo_chats", newCount.toString());
       setDemoChatCount(newCount);
 
-      // Auto-pitch after 3 messages
       if (newCount === 3) {
           setTimeout(() => {
               const pitchMsg = isIndian 
@@ -705,7 +502,6 @@ export default function Home() {
       });
 
       const data = await response.json();
-
       if (data.success) {
         if (typeof window !== "undefined") {
             localStorage.removeItem("clawlink_model");
@@ -717,7 +513,6 @@ export default function Home() {
         setIsDeploying(false);
       }
     } catch (error) {
-      console.error("Deployment Error:", error);
       alert("Network exception encountered.");
       setIsDeploying(false);
     } 
@@ -741,14 +536,13 @@ export default function Home() {
         setIsTokenSaved(true); 
         setIsTelegramModalOpen(false); 
         handleDeploy();
-      }
-      else {
-          alert("VERIFICATION REJECTED: " + data.error);
-          setIsVerifying(false);
+      } else {
+        alert("VERIFICATION REJECTED: " + data.error);
+        setIsVerifying(false);
       }
     } catch { 
-        alert("Network integrity lost during verification handshake."); 
-        setIsVerifying(false);
+      alert("Network integrity lost during verification handshake."); 
+      setIsVerifying(false);
     }
   };
 
@@ -761,12 +555,6 @@ export default function Home() {
     const timeoutId = setTimeout(() => {
       setIsVerifying(false);
       alert("⚠️ Meta Login Timeout or Pop-up Blocked! Please allow pop-ups in your browser or try Manual Setup.");
-      
-      fetch("/api/tg-admin", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ message: `🚨 [ClawLink UI Alert] Meta Login hung/blocked for user ${session?.user?.email || "Unknown"}. Pop-up blocker suspected.` })
-      });
     }, 15000); 
 
     try {
@@ -788,10 +576,8 @@ export default function Home() {
     try {
       (window as any).FB.login((response: any) => {
         clearTimeout(timeoutId); 
-
         if (response.authResponse) {
           const tempToken = response.authResponse.accessToken;
-          
           fetch("/api/whatsapp/embedded", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -811,23 +597,11 @@ export default function Home() {
                setIsVerifying(false);
             }
           })
-          .catch(err => {
-            fetch("/api/tg-admin", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ message: `🚨 [ClawLink Backend Error] Meta Auth Fetch Failed: ${err.message}` })
-            });
+          .catch(() => {
             alert("Network timeout. Please check your connection and try again.");
             setIsVerifying(false);
           });
         } else {
-          fetch("/api/tg-admin", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              message: `⚠️ [ClawLink Notice] User ${session?.user?.email || "Unknown"} closed the Meta Auth pop-up before finishing.`
-            })
-          });
           alert("Login Cancelled. Please complete the Meta login to deploy.");
           setIsVerifying(false);
         }
@@ -839,11 +613,6 @@ export default function Home() {
       });
     } catch (error: any) {
         clearTimeout(timeoutId);
-        fetch("/api/tg-admin", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ message: `🚨 [ClawLink Fatal Error] FB Login Crash: ${error.message}` })
-        });
         alert("Connection temporarily unavailable. Please try Manual Setup.");
         setIsVerifying(false);
     }
@@ -856,22 +625,6 @@ export default function Home() {
       setHelpStatus("sent");
       setTimeout(() => { setIsHelpOpen(false); setHelpStatus("idle"); setHelpMessage(""); }, 1500);
     }, 800);
-  };
-
-  const openLiveBotHandler = () => {
-    if (activeChannel === "whatsapp") {
-      if (waPhoneNumber) { 
-        window.open(`https://api.whatsapp.com/send?phone=${waPhoneNumber.replace(/\D/g, '')}`, "_blank"); 
-      } else if (botLink && botLink.includes('wa.me')) { 
-        window.open(botLink.replace('wa.me/', 'api.whatsapp.com/send?phone='), "_blank"); 
-      } else { 
-        window.open("https://api.whatsapp.com/", "_blank"); 
-      }
-    } else if (activeChannel === "instagram") {
-        window.open("https://www.instagram.com/", "_blank"); 
-    } else { 
-      window.open(botLink || "https://t.me/BotFather", "_blank"); 
-    }
   };
 
   const copyToClipboard = (t: string) => { 
@@ -890,15 +643,12 @@ export default function Home() {
   const btn = "transition-all duration-[120ms] ease-out hover:-translate-y-1 hover:shadow-lg transform-gpu will-change-transform";
 
   const getButtonClass = (isActive: boolean, categorySelected: boolean, activeStyles: string, hoverStyles: string) => {
-      // Made borders solid and highly visible with dynamic colors for active state
       let classes = `border-2 cursor-pointer overflow-hidden ${btn} flex flex-row h-[60px] w-full px-[16px] gap-[12px] justify-start items-center rounded-[14px] transition-all duration-300`;
-      
       if (isActive) {
           classes += ` border-solid ${activeStyles} scale-[1.02] bg-opacity-10`; 
       } else {
           classes += ` border-transparent ${hoverStyles} bg-gray-500/5 dark:bg-white/5`;
       }
-
       if (status === "authenticated" && categorySelected && !isActive) {
           classes += " opacity-40 grayscale transition-opacity duration-300";
       }
@@ -913,151 +663,8 @@ export default function Home() {
 
       <Script src="https://connect.facebook.net/en_US/sdk.js" strategy="lazyOnload" />
 
-      <style dangerouslySetInnerHTML={{__html:`
-        *{box-sizing:border-box;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
-        .nsb::-webkit-scrollbar{display:none}.nsb{-ms-overflow-style:none;scrollbar-width:none}
-        @keyframes bpulse{0%,100%{opacity:1}50%{opacity:.18}}
-        .bpulse{animation:bpulse 1.8s ease-in-out infinite}
-        @keyframes hsd{from{opacity:0;transform:translateY(-14px)}to{opacity:1;transform:translateY(0)}}
-        @keyframes hsu{from{opacity:0;transform:translateY(20px);filter:blur(8px)}to{opacity:1;transform:translateY(0);filter:blur(0)}}
-        .anim-badge{animation:hsd .32s cubic-bezier(.16,1,.3,1) both}
-        .anim-h1   {animation:hsu .38s .06s cubic-bezier(.16,1,.3,1) both}
-        .anim-sub  {animation:hsu .38s .12s cubic-bezier(.16,1,.3,1) both}
-        .anim-card {animation:hsu .38s .18s cubic-bezier(.16,1,.3,1) both}
-        .anim-stats{animation:hsu .38s .24s cubic-bezier(.16,1,.3,1) both}
-        .sr-up  {opacity:0;transform:translateY(20px);transition:opacity .32s cubic-bezier(.16,1,.3,1),transform .32s cubic-bezier(.16,1,.3,1)}
-        .sr-left{opacity:0;transform:translateX(-20px);transition:opacity .32s cubic-bezier(.16,1,.3,1),transform .32s cubic-bezier(.16,1,.3,1)}
-        .sr-rght{opacity:0;transform:translateX(20px);transition:opacity .32s cubic-bezier(.16,1,.3,1),transform .32s cubic-bezier(.16,1,.3,1)}
-        .sr-vis {opacity:1!important;transform:none!important}
-        
-        .particle-bg {
-          position: fixed;
-          top: 0; left: 0; right: 0; bottom: 0;
-          background-image: 
-            radial-gradient(circle at 15% 50%, rgba(249, 115, 22, 0.04) 0%, transparent 50%),
-            radial-gradient(circle at 85% 30%, rgba(99, 102, 241, 0.04) 0%, transparent 50%);
-          background-size: 100% 100%;
-          z-index: 0;
-          pointer-events: none;
-        }
-        .stars {
-          position: absolute;
-          top: 0; left: 0; right: 0; bottom: 0;
-          background-image: 
-            radial-gradient(2px 2px at 20px 30px, #ffffff, rgba(0,0,0,0)),
-            radial-gradient(2px 2px at 40px 70px, #ffffff, rgba(0,0,0,0)),
-            radial-gradient(2px 2px at 50px 160px, #ffffff, rgba(0,0,0,0)),
-            radial-gradient(2px 2px at 90px 40px, #ffffff, rgba(0,0,0,0)),
-            radial-gradient(2px 2px at 130px 80px, #ffffff, rgba(0,0,0,0)),
-            radial-gradient(2px 2px at 160px 120px, #ffffff, rgba(0,0,0,0));
-          background-repeat: repeat;
-          background-size: 200px 200px;
-          animation: star Drift 100s linear infinite;
-          opacity: 0.15;
-        }
-        @keyframes star Drift {
-          0% { transform: translateY(0) translateX(0); }
-          100% { transform: translateY(-200px) translateX(-100px); }
-        }
-
-        .color-flow-text {
-          background: linear-gradient(
-            to right,
-            #FF3366, #FF9933, #4ADE80, #3B82F6, #8B5CF6, #FF3366
-          );
-          background-size: 200% auto;
-          color: transparent;
-          -webkit-background-clip: text;
-          background-clip: text;
-          animation: colorFlow 5s linear infinite;
-        }
-        @keyframes colorFlow {
-          0% { background-position: 0% center; }
-          100% { background-position: -200% center; }
-        }
-
-        .bouncing-dots {
-          display: flex;
-          justify-content: center;
-          align-items: center;
-          gap: 6px;
-        }
-        .bouncing-dots span {
-          width: 6px;
-          height: 6px;
-          background-color: currentColor;
-          border-radius: 50%;
-          animation: bounce 1.4s infinite ease-in-out both;
-        }
-        .bouncing-dots span:nth-child(1) { animation-delay: -0.32s; }
-        .bouncing-dots span:nth-child(2) { animation-delay: -0.16s; }
-        @keyframes bounce {
-          0%, 80%, 100% { transform: scale(0); }
-          40% { transform: scale(1); }
-        }
-
-        .cg-dot{
-          position:fixed;width:420px;height:420px;border-radius:50%;
-          pointer-events:none;z-index:1;
-          background:radial-gradient(circle,rgba(249,115,22,0.08) 0%,transparent 65%);
-          transform:translate(-50%,-50%);will-change:left,top;
-        }
-        .rpl-wave{
-          position:absolute;border-radius:50%;
-          background:rgba(0,0,0,0.15);transform:scale(0);
-          animation:rplA .6s linear forwards;pointer-events:none;
-        }
-        @keyframes rplA{to{transform:scale(7);opacity:0}}
-        @keyframes spr{
-          0%  {transform:scale(1)}
-          30% {transform:scale(.95)}
-          65% {transform:scale(1.03)}
-          82% {transform:scale(.98)}
-          100%{transform:scale(1)}
-        }
-        .spr-play{animation:spr .4s cubic-bezier(.34,1.56,.64,1)!important}
-        .tilt-el{will-change:transform;transition:transform .08s ease-out}
-        .mt{display:block;transition:transform .22s cubic-bezier(.34,1.56,.64,1);pointer-events:none}
-        
-        .card-shimmer::before{
-          content:'';position:absolute;top:0;left:15%;right:15%;height:1px;
-          background:linear-gradient(90deg,transparent,rgba(249,115,22,.55),transparent)
-        }
-        .fi-card{position:relative;overflow:hidden}
-        .fi-card::after{
-          content:'';position:absolute;top:0;left:0;right:0;height:2px;
-          background:linear-gradient(90deg,transparent,rgba(249,115,22,0),transparent);
-          transition:background .15s
-        }
-        .fi-card:hover::after{background:linear-gradient(90deg,transparent,rgba(249,115,22,.85) 50%,transparent)}
-        @keyframes pring{0%{box-shadow:0 0 0 0 rgba(249,115,22,.5)}100%{box-shadow:0 0 0 10px rgba(249,115,22,0)}}
-        .pulse-ring{animation:pring 2s ease-out infinite}
-        .stat-hover{transition:transform .22s cubic-bezier(.16,1,.3,1)}
-        .stat-hover:hover{transform:scale(1.04)}
-        .icon-lift{transition:transform .2s cubic-bezier(.34,1.56,.64,1)}
-        .icon-lift:hover{transform:scale(1.12) rotate(-4deg)}
-        
-        .ptx-name{font-size:14px;font-weight:800;color:var(--text-main);white-space:nowrap;letter-spacing:0.02em}
-        .ptx-soon{font-size:10px;font-weight:900;color:var(--text-muted);text-transform:uppercase;margin-left:auto;}
-        
-        @media(max-width:1024px){
-          .ptx-name{font-size:12px;text-overflow:ellipsis;overflow:hidden;}
-        }
-        
-        .orange-glow{box-shadow:0 0 28px rgba(249,115,22,.48)}
-        .orange-glow:hover{box-shadow:0 0 48px rgba(249,115,22,.65)}
-      `}}/>
-
       <div className="particle-bg"><div className="stars"></div></div>
 
-      <div className="fixed top-[-20%] right-[-8%] w-[900px] h-[900px] rounded-full pointer-events-none z-0 float-a"
-           style={{background:"radial-gradient(circle,rgba(249,115,22,0.22) 0%,transparent 65%)",transform:"translateZ(0)"}}/>
-      <div className="fixed bottom-[-20%] left-[-8%] w-[900px] h-[900px] rounded-full pointer-events-none z-0 float-b"
-           style={{background:"radial-gradient(circle,rgba(99,102,241,0.18) 0%,transparent 65%)",transform:"translateZ(0)"}}/>
-      <div className="fixed top-[30%] left-[40%] w-[600px] h-[600px] rounded-full pointer-events-none z-0 float-c"
-           style={{background:"radial-gradient(circle,rgba(168,85,247,0.10) 0%,transparent 70%)"}}/>
-
-      {/* 🔥 INJECTED: HEADER NAVIGATION LINKS & LIVE STATUS */}
       <nav id="clnav" aria-label="Main Navigation"
         className="fixed top-0 left-0 right-0 z-[100] h-[64px] flex items-center justify-between px-6 md:px-12 transition-colors duration-300"
         style={{backdropFilter:"blur(12px)",WebkitBackdropFilter:"blur(12px)",
@@ -1093,7 +700,7 @@ export default function Home() {
             onClick={cycleTheme}
             aria-label="Toggle System Theme"
             title={`Theme: ${theme.toUpperCase()}`}
-            className="relative flex items-center justify-center w-10 h-10 rounded-full border border-white/10 hover:bg-black/10 transition-all duration-300 hover:shadow-[0_0_15px_rgba(255,255,255,0.1)] group overflow-hidden"
+            className="relative flex items-center justify-center w-10 h-10 rounded-full border border-white/10 hover:bg-black/10 transition-all duration-300 group overflow-hidden"
             style={{ backgroundColor: "rgba(128, 128, 128, 0.1)" }}
           >
             <AnimatePresence mode="wait">
@@ -1119,7 +726,7 @@ export default function Home() {
             <div className="hidden md:flex items-center gap-3">
               <img src={session?.user?.image || "https://ui-avatars.com/api/?name=User&background=random"} className="w-8 h-8 rounded-full border border-white/20 ring-1 ring-white/10" alt="User Avatar"/>
               <button aria-label="Sign out of ClawLink" title="Sign out of ClawLink" onClick={()=>signOut()}
-                className={`flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-widest text-gray-500 hover:text-orange-500 transition-all duration-150`}>
+                className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-widest text-gray-500 hover:text-orange-500 transition-all duration-150">
                 <LogOut className="w-4 h-4"/> Logout
               </button>
               {hasDeployedBefore && (
@@ -1129,15 +736,15 @@ export default function Home() {
               )}
             </div>
           ) : (
-            <button aria-label="Login with Google" title="Login" data-spring onClick={() => signIn("google")}
-              className={`hidden md:flex items-center gap-2 text-[11px] font-bold uppercase tracking-widest px-4 py-2 rounded-xl border hover:border-orange-500 transition-all shadow-[0_0_15px_rgba(255,255,255,0.05)]`}
+            <button aria-label="Login with Google" title="Login" onClick={() => signIn("google")}
+              className="hidden md:flex items-center gap-2 text-[11px] font-bold uppercase tracking-widest px-4 py-2 rounded-xl border hover:border-orange-500 transition-all"
               style={{ color: "var(--text-main)", borderColor: "var(--border-color)", backgroundColor: "rgba(128, 128, 128, 0.1)" }}>
               <Google_Icon/> Login
             </button>
           )}
 
-          <button aria-label="Contact ClawLink Support" title="Contact Support" data-spring onClick={()=>setIsSupportModalOpen(true)}
-            className={`flex items-center gap-2 text-[11px] font-bold uppercase tracking-widest px-4 py-2 rounded-full border hover:border-orange-500 transition-all hover:-translate-y-1 hover:shadow-lg`}
+          <button aria-label="Contact ClawLink Support" title="Contact Support" onClick={()=>setIsSupportModalOpen(true)}
+            className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-widest px-4 py-2 rounded-full border hover:border-orange-500 transition-all hover:-translate-y-1 hover:shadow-lg"
             style={{ color: "var(--text-muted)", borderColor: "var(--border-color)", backgroundColor: "rgba(128, 128, 128, 0.05)" }}>
             <MessageSquare className="w-4 h-4 text-orange-500"/>
             <span className="hidden sm:inline">Support</span>
@@ -1145,35 +752,33 @@ export default function Home() {
         </div>
       </nav>
 
-      {/* 🔥 INJECTED: HERO WITH FULL WIDTH DEPLOY & BOTTOM CHAT MOCKUPS */}
+      {/* HERO SECTION */}
       <section id="hero" className="relative z-10 min-h-screen flex flex-col items-center justify-start pt-28 pb-16 px-4 md:px-8 text-center overflow-hidden">
         <motion.div initial={{opacity:0, y:-20}} animate={{opacity:1, y:0}} transition={{duration:0.6}} 
-             className="anim-badge inline-flex items-center gap-2 mb-6 px-6 py-2.5 rounded-full text-[11px] font-black tracking-[.15em] text-orange-400 shadow-[0_0_20px_rgba(249,115,22,0.2)]"
+             className="inline-flex items-center gap-2 mb-6 px-6 py-2.5 rounded-full text-[11px] font-black tracking-[.15em] text-orange-400 shadow-[0_0_20px_rgba(249,115,22,0.2)]"
              style={{background:"rgba(249,115,22,0.09)",border:"1px solid rgba(249,115,22,0.26)"}}>
-          <span className="w-2 h-2 rounded-full bg-orange-400 bpulse pulse-ring"/>
+          <span className="w-2 h-2 rounded-full bg-orange-400 animate-pulse"/>
           LIVE NOW &nbsp;·&nbsp; 30-SECOND DEPLOY
         </motion.div>
 
         <motion.h1 initial={{opacity:0, scale:0.95}} animate={{opacity:1, scale:1}} transition={{duration:0.6, delay:0.1}} 
-             className="anim-h1 text-[clamp(2.5rem,5vw,5.5rem)] font-black leading-[1.1] tracking-[-0.04em] w-full px-4 mb-2" style={{ color: "var(--text-main)" }}>
+             className="text-[clamp(2.5rem,5vw,5.5rem)] font-black leading-[1.1] tracking-[-0.04em] w-full px-4 mb-2" style={{ color: "var(--text-main)" }}>
           Deploy <span className="color-flow-text">ClawLink Multi-AI Workspace</span>
         </motion.h1>
         
         <motion.p initial={{opacity:0}} animate={{opacity:1}} transition={{duration:0.6, delay:0.2}} 
-             className="anim-sub font-black text-[20px] md:text-[28px] mb-8 uppercase tracking-wide" style={{ color: "var(--text-main)" }}>
+             className="font-black text-[20px] md:text-[28px] mb-8 uppercase tracking-wide" style={{ color: "var(--text-main)" }}>
           FASTEST SERVER 1-CLICK DEPLOY
         </motion.p>
 
         <motion.p initial={{opacity:0}} animate={{opacity:1}} transition={{duration:0.6, delay:0.3}} 
-             className="anim-sub font-medium text-[15px] md:text-[18px] max-w-[650px] mb-12 leading-[1.8]" style={{ color: "var(--text-muted)" }}>
+             className="font-medium text-[15px] md:text-[18px] max-w-[650px] mb-12 leading-[1.8]" style={{ color: "var(--text-muted)" }}>
           Avoid all technical complexity — one-click deploy your own 24/7 active Personal AI Assistant for WhatsApp, Telegram & Instagram. No code. No servers. Just results.
         </motion.p>
 
-        {/* ============================================================== */}
-        {/* 🔥 WIDE DEPLOYMENT CARD (CENTERED) */}
-        {/* ============================================================== */}
+        {/* WIDE DEPLOYMENT CARD */}
         <motion.div initial={{opacity:0, y:30}} animate={{opacity:1, y:0}} transition={{duration:0.6, delay:0.4}}
-             className="relative w-full max-w-[900px] rounded-[24px] p-6 md:p-10 mb-8 transition-all duration-300 shadow-[0_20px_50px_rgba(0,0,0,0.2)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.6)] hover:shadow-[0_30px_60px_rgba(249,115,22,0.15)] mx-auto"
+             className="relative w-full max-w-[900px] rounded-[24px] p-6 md:p-10 mb-8 transition-all duration-300 shadow-xl mx-auto"
              style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border-color)", backdropFilter: "blur(20px)" }}>
           
           <p className="text-[11px] font-black tracking-[.2em] uppercase text-left flex items-center gap-3 pb-4 mb-6" style={{ color: "var(--text-muted)", borderBottom: "1px solid var(--border-color)" }}>
@@ -1182,36 +787,32 @@ export default function Home() {
           </p>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-[12px] mb-10">
             
-            <button aria-label="Select GPT-5.5 Pro Model" title="GPT-5.5 Pro" data-spring onClick={() => handleModelSelect("GPT-5.5 Pro")} 
+            <button aria-label="Select GPT-5.5 Pro Model" onClick={() => handleModelSelect("GPT-5.5 Pro")} 
               disabled={(isTokenSaved || hasDeployedBefore) && activeModel!=="GPT-5.5 Pro"}
-              className={getButtonClass(modelActive("GPT-5.5 Pro"), activeModel !== null, "border-green-500 bg-green-500/10 shadow-[0_0_15px_rgba(34,197,94,0.3)]", "hover:border-green-400 hover:shadow-[0_0_15px_rgba(74,222,128,0.25)]")}
-              style={{ backgroundColor: modelActive("GPT-5.5 Pro") ? undefined : undefined }}>
+              className={getButtonClass(modelActive("GPT-5.5 Pro"), activeModel !== null, "border-green-500 bg-green-500/10", "hover:border-green-400")}>
               <OpenAI_Icon size={ICON_SIZE}/>
               <span className="ptx-name" style={{ color: modelActive("GPT-5.5 Pro") ? "#22c55e" : "var(--text-main)" }}>GPT-5.5 Pro</span>
             </button>
 
-            <button aria-label="Select Claude Opus 4.7 Model" title="Claude Opus 4.7" data-spring onClick={() => handleModelSelect("Claude Opus 4.7")} 
+            <button aria-label="Select Claude Opus 4.7 Model" onClick={() => handleModelSelect("Claude Opus 4.7")} 
               disabled={(isTokenSaved || hasDeployedBefore) && activeModel!=="Claude Opus 4.7"}
-              className={getButtonClass(modelActive("Claude Opus 4.7"), activeModel !== null, "border-[#e6683c] bg-[#e6683c]/10 shadow-[0_0_15px_rgba(230,104,60,0.3)]", "hover:border-[#e6683c] hover:shadow-[0_0_15px_rgba(230,104,60,0.25)]")}
-              style={{ backgroundColor: modelActive("Claude Opus 4.7") ? undefined : undefined }}>
+              className={getButtonClass(modelActive("Claude Opus 4.7"), activeModel !== null, "border-[#e6683c] bg-[#e6683c]/10", "hover:border-[#e6683c]")}>
               <Claude_Icon size={ICON_SIZE}/>
               <span className="ptx-name" style={{ color: modelActive("Claude Opus 4.7") ? "#e6683c" : "var(--text-main)" }}>Claude Opus 4.7</span>
             </button>
 
-            <button aria-label="Select Gemini 3.1 Pro Model" title="Gemini 3.1 Pro" data-spring onClick={() => handleModelSelect("gemini 3.1 Pro")} 
-              disabled={(isTokenSaved || hasDeployedBefore) && activeModel!=="gemini 3.1 Pro"}
-              className={getButtonClass(modelActive("gemini 3.1 Pro"), activeModel !== null, "border-blue-400 bg-blue-400/10 shadow-[0_0_15px_rgba(96,165,250,0.3)]", "hover:border-blue-400 hover:shadow-[0_0_15px_rgba(96,165,250,0.25)]")}
-              style={{ backgroundColor: modelActive("gemini 3.1 Pro") ? undefined : undefined }}>
+            <button aria-label="Select Gemini 3.1 Pro Model" onClick={() => handleModelSelect("Gemini 3.1 Pro")} 
+              disabled={(isTokenSaved || hasDeployedBefore) && activeModel!=="Gemini 3.1 Pro"}
+              className={getButtonClass(modelActive("Gemini 3.1 Pro"), activeModel !== null, "border-blue-400 bg-blue-400/10", "hover:border-blue-400")}>
               <Gemini_Icon size={ICON_SIZE}/>
-              <span className="ptx-name" style={{ color: modelActive("gemini 3.1 Pro") ? "#60a5fa" : "var(--text-main)" }}>Gemini 3.1 Pro</span>
+              <span className="ptx-name" style={{ color: modelActive("Gemini 3.1 Pro") ? "#60a5fa" : "var(--text-main)" }}>Gemini 3.1 Pro</span>
             </button>
 
-            <button aria-label="Select Omni 3 Nexus Fallback Model" title="Omni 3 Nexus Fallback" data-spring onClick={() => handleModelSelect("omni 3 nexus")} 
-              disabled={(isTokenSaved || hasDeployedBefore) && activeModel!=="omni 3 nexus"}
-              className={getButtonClass(modelActive("omni 3 nexus"), activeModel !== null, "border-[#00BFFF] bg-[#00BFFF]/10 shadow-[0_0_15px_rgba(0,191,255,0.3)]", "hover:border-[#00BFFF] hover:shadow-[0_0_15px_rgba(0,191,255,0.25)]")}
-              style={{ backgroundColor: modelActive("omni 3 nexus") ? undefined : undefined }}>
+            <button aria-label="Select Omni 3 Nexus Fallback Model" onClick={() => handleModelSelect("Omni 3 Nexus")} 
+              disabled={(isTokenSaved || hasDeployedBefore) && activeModel!=="Omni 3 Nexus"}
+              className={getButtonClass(modelActive("Omni 3 Nexus"), activeModel !== null, "border-[#00BFFF] bg-[#00BFFF]/10", "hover:border-[#00BFFF]")}>
               <Omni_Icon size={ICON_SIZE}/>
-              <span className="ptx-name" style={{ color: modelActive("omni 3 nexus") ? "#00BFFF" : "var(--text-main)" }}>Omni 3 Nexus</span>
+              <span className="ptx-name" style={{ color: modelActive("Omni 3 Nexus") ? "#00BFFF" : "var(--text-main)" }}>Omni 3 Nexus</span>
             </button>
           </div>
 
@@ -1221,31 +822,28 @@ export default function Home() {
           </p>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-[12px] mb-10">
             
-            <button aria-label="Connect Telegram Channel" title="Telegram Channel" data-spring onClick={()=>handleChannelSelect("telegram")} 
+            <button aria-label="Connect Telegram Channel" onClick={()=>handleChannelSelect("telegram")} 
               disabled={(isTokenSaved || hasDeployedBefore) && activeChannel!=="telegram"}
-              className={getButtonClass(chanActive("telegram"), activeChannel !== null, "border-[#2AABEE] bg-[#2AABEE]/10 shadow-[0_0_15px_rgba(42,171,238,0.3)]", "hover:border-[#2AABEE] hover:shadow-[0_0_15px_rgba(42,171,238,0.25)]")}
-              style={{ backgroundColor: chanActive("telegram") ? undefined : undefined }}>
+              className={getButtonClass(chanActive("telegram"), activeChannel !== null, "border-[#2AABEE] bg-[#2AABEE]/10", "hover:border-[#2AABEE]")}>
               <Telegram_Icon size={ICON_SIZE}/>
               <span className="ptx-name" style={{ color: chanActive("telegram") ? "#2AABEE" : "var(--text-main)" }}>Telegram</span>
             </button>
 
-            <button aria-label="Connect WhatsApp Channel" title="WhatsApp Channel" data-spring onClick={()=>handleChannelSelect("whatsapp")} 
+            <button aria-label="Connect WhatsApp Channel" onClick={()=>handleChannelSelect("whatsapp")} 
               disabled={(isTokenSaved || hasDeployedBefore) && activeChannel!=="whatsapp"}
-              className={getButtonClass(chanActive("whatsapp"), activeChannel !== null, "border-[#25D366] bg-[#25D366]/10 shadow-[0_0_15px_rgba(37,211,102,0.3)]", "hover:border-[#25D366] hover:shadow-[0_0_15px_rgba(37,211,102,0.25)]")}
-              style={{ backgroundColor: chanActive("whatsapp") ? undefined : undefined }}>
+              className={getButtonClass(chanActive("whatsapp"), activeChannel !== null, "border-[#25D366] bg-[#25D366]/10", "hover:border-[#25D366]")}>
               <WhatsApp_Icon size={ICON_SIZE}/>
               <span className="ptx-name" style={{ color: chanActive("whatsapp") ? "#25D366" : "var(--text-main)" }}>WhatsApp</span>
             </button>
             
-            <button aria-label="Connect Instagram Channel" title="Instagram Channel" data-spring onClick={()=>handleChannelSelect("instagram")} 
+            <button aria-label="Connect Instagram Channel" onClick={()=>handleChannelSelect("instagram")} 
               disabled={(isTokenSaved || hasDeployedBefore) && activeChannel!=="instagram"}
-              className={getButtonClass(chanActive("instagram"), activeChannel !== null, "border-pink-500 bg-pink-500/10 shadow-[0_0_15px_rgba(236,72,153,0.3)]", "hover:border-pink-500 hover:shadow-[0_0_15px_rgba(236,72,153,0.25)]")}
-              style={{ backgroundColor: chanActive("instagram") ? undefined : undefined }}>
+              className={getButtonClass(chanActive("instagram"), activeChannel !== null, "border-pink-500 bg-pink-500/10", "hover:border-pink-500")}>
               <Instagram_Icon size={ICON_SIZE}/>
               <span className="ptx-name" style={{ color: chanActive("instagram") ? "#ec4899" : "var(--text-main)" }}>Instagram</span>
             </button>
 
-            <div aria-label="Discord Bot Coming Soon" title="Discord (Coming Soon)" className="overflow-hidden opacity-40 cursor-not-allowed pointer-events-none flex flex-row h-[60px] w-full px-[16px] gap-[12px] justify-start items-center rounded-[14px]"
+            <div className="overflow-hidden opacity-40 cursor-not-allowed pointer-events-none flex flex-row h-[60px] w-full px-[16px] gap-[12px] justify-start items-center rounded-[14px]"
                  style={{ backgroundColor: "rgba(128, 128, 128, 0.05)", border: "1px solid var(--border-color)" }}>
               <Discord_Icon size={ICON_SIZE}/>
               <span className="ptx-name" style={{ color: "var(--text-muted)" }}>Discord</span>
@@ -1254,7 +852,6 @@ export default function Home() {
           </div>
         
           <div className="pt-6 flex flex-col items-center w-full" style={{ borderTop: "1px solid var(--border-color)" }}>
-            {/* Selected Config Display (Highly Visible) */}
             <div className="w-full flex flex-col items-center justify-center mb-8">
                 <div className="px-6 py-4 rounded-xl border-2 transition-all duration-300 flex flex-col items-center shadow-lg w-full max-w-[600px]"
                      style={{ 
@@ -1263,32 +860,25 @@ export default function Home() {
                      }}>
                      <span className="text-[10px] font-black uppercase tracking-[0.2em] text-orange-500 mb-2">Current Configuration</span>
                      <p className="text-[15px] md:text-[17px] font-medium" style={{ color: "var(--text-main)" }}>
-                         Deploying <strong className="font-black tracking-wide" style={{ color: "var(--text-main)" }}>{activeModel ? PRICING_DATA[activeModel]?.name : "GPT-5.5 Pro"}</strong> to <strong className="capitalize font-black tracking-wide" style={{ color: "var(--text-main)" }}>{activeChannel || "Telegram"}</strong>
+                         Deploying <strong className="font-black tracking-wide" style={{ color: "var(--text-main)" }}>{activeModel || "GPT-5.5 Pro"}</strong> to <strong className="capitalize font-black tracking-wide" style={{ color: "var(--text-main)" }}>{activeChannel || "Telegram"}</strong>
                      </p>
                 </div>
             </div>
 
             <AnimatePresence mode="wait">
               {botLink ? (
-                <motion.div key="success" initial={{opacity:0,scale:0.95}} animate={{opacity:1,scale:1}} exit={{opacity:0}} transition={{duration:.12,ease:"easeOut"}}
+                <motion.div key="success" initial={{opacity:0,scale:0.95}} animate={{opacity:1,scale:1}} exit={{opacity:0}}
                   className="rounded-[20px] p-8 text-center w-full"
                   style={{background:"rgba(34,197,94,0.06)",border:"1px solid rgba(34,197,94,0.2)"}}>
                   <p className="text-[18px] font-bold mb-6" style={{ color: "var(--text-main)" }}>🚀 Your Bot is Live!</p>
-                  <div className="flex flex-col sm:flex-row justify-center gap-4">
-                    <button aria-label="Open Live Bot Interface" title="Open Live Bot" data-ripple data-spring onClick={openLiveBotHandler}
-                      className={`relative overflow-hidden bg-white text-black font-black uppercase tracking-widest px-8 py-4 rounded-xl text-[14px] hover:-translate-y-1 hover:shadow-lg transition-transform duration-150`}>
-                      <span className="mt">Open Live Bot</span>
-                    </button>
-                    <button aria-label="Navigate to Command Center Dashboard" title="Go to Dashboard" data-spring onClick={()=>router.push("/dashboard")}
-                      className={`flex items-center justify-center gap-2 font-bold px-8 py-4 rounded-xl text-[14px] hover:-translate-y-1 hover:shadow-lg transition-transform duration-150`}
-                      style={{ color: "var(--text-main)", background:"rgba(128, 128, 128, 0.1)", border:"1px solid var(--border-color)"}}>
-                      <Activity className="w-5 h-5"/> Live Dashboard
-                    </button>
-                  </div>
+                  <button aria-label="Navigate to Command Center Dashboard" onClick={()=>router.push("/dashboard")}
+                    className="flex items-center justify-center gap-2 font-bold px-8 py-4 rounded-xl text-[14px] mx-auto"
+                    style={{ color: "var(--text-main)", background:"rgba(128, 128, 128, 0.1)", border:"1px solid var(--border-color)"}}>
+                    <Activity className="w-5 h-5"/> Live Dashboard
+                  </button>
                 </motion.div>
-
               ) : (
-                <motion.div key="login" id="login-section" initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} transition={{duration:.12}} className="w-full flex flex-col items-center">
+                <motion.div key="login" id="login-section" initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} className="w-full flex flex-col items-center">
                   {status === "authenticated" && session?.user?.email && (
                     <motion.div initial={{opacity: 0, y: 10}} animate={{opacity: 1, y: 0}} className="mb-5 flex items-center gap-2 px-5 py-2 rounded-full" style={{ backgroundColor: "rgba(128, 128, 128, 0.1)", border: "1px solid var(--border-color)" }}>
                       <User className="w-4 h-4" style={{ color: "var(--text-muted)" }} />
@@ -1297,17 +887,16 @@ export default function Home() {
                   )}
                   
                   {hasDeployedBefore ? (
-                      <button aria-label="Open Command Center Dashboard" title="Open Command Center" data-ripple data-spring onClick={() => router.push("/dashboard")}
-                        className={`relative overflow-hidden w-full max-w-[600px] bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-[0_0_40px_rgba(249,115,22,0.4)] hover:scale-[1.02] hover:-translate-y-1 py-5 md:py-6 rounded-[16px] flex items-center justify-center gap-3 text-[16px] md:text-[18px] font-black tracking-[0.1em] transition-all duration-150 uppercase`}>
+                      <button aria-label="Open Command Center Dashboard" onClick={() => router.push("/dashboard")}
+                        className="w-full max-w-[600px] bg-gradient-to-r from-orange-500 to-amber-500 text-white py-5 md:py-6 rounded-[16px] flex items-center justify-center gap-3 text-[16px] md:text-[18px] font-black tracking-[0.1em] transition-all duration-150 uppercase shadow-lg">
                         <LayoutDashboard className="w-5 h-5" /> OPEN COMMAND CENTER
                       </button>
                   ) : (
-                      <button aria-label="Login with Google to Deploy Bot" title="Login & Deploy" data-ripple data-spring onClick={handleLoginOrDeploy} disabled={isDeploying}
-                        className={`relative overflow-hidden w-full max-w-[600px] ${isDeploying ? 'cursor-not-allowed' : 'bg-white text-black hover:scale-[1.02] hover:-translate-y-1 hover:shadow-[0_15px_40px_rgba(255,255,255,0.2)] active:bg-gray-200'} py-5 md:py-6 rounded-[16px] flex items-center justify-center gap-3 text-[16px] md:text-[18px] font-black tracking-[0.05em] transition-all duration-150`}
-                        style={isDeploying ? { backgroundColor: "rgba(128, 128, 128, 0.1)", color: "var(--text-main)", border: "1px solid var(--border-color)" } : {}}>
+                      <button aria-label="Login with Google to Deploy Bot" onClick={handleLoginOrDeploy} disabled={isDeploying}
+                        className={`w-full max-w-[600px] ${isDeploying ? 'cursor-not-allowed' : 'bg-white text-black hover:scale-[1.02] shadow-xl'} py-5 md:py-6 rounded-[16px] flex items-center justify-center gap-3 text-[16px] md:text-[18px] font-black tracking-[0.05em] transition-all duration-150`}>
                         {isDeploying ? (
                           <span className="flex items-center gap-3 font-mono tracking-widest text-[14px] uppercase">
-                             <div className="bouncing-dots"><span/><span/><span/></div> DEPLOYING TO SECURE SERVER
+                             <Loader2 className="animate-spin w-5 h-5"/> DEPLOYING TO SECURE SERVER
                           </span>
                         ) : (
                           <>
@@ -1322,32 +911,13 @@ export default function Home() {
           </div>
         </motion.div>
 
-        {/* ============================================================== */}
-        {/* 🔥 STATS ROW */}
-        {/* ============================================================== */}
-        <motion.div initial={{opacity:0, y:20}} animate={{opacity:1, y:0}} transition={{duration:0.6, delay:0.5}} 
-             className="anim-stats grid grid-cols-3 w-full max-w-[800px] rounded-[24px] overflow-hidden backdrop-blur-md shadow-lg transition-colors duration-300 mb-16 mx-auto"
-             style={{ backgroundColor: "var(--bg-section)", border: "1px solid var(--border-color)" }}>
-          {[["30s","Deploy time"],["5+","AI models"],["24/7","Always active"]].map(([n,l], i) => (
-            <div key={n} className="stat-hover flex flex-col items-center py-6 px-4 transition-colors duration-150 hover:bg-black/5"
-              style={{borderRight: i < 2 ? "1px solid var(--border-color)" : "none"}}>
-              <span className="text-[2rem] lg:text-[2.4rem] font-black leading-none grad-text drop-shadow-md">{n}</span>
-              <span className="text-[10px] lg:text-[11px] font-bold tracking-[0.2em] uppercase mt-2 text-center" style={{ color: "var(--text-muted)" }}>{l}</span>
-            </div>
-          ))}
-        </motion.div>
-
-        {/* ============================================================== */}
-        {/* 🔥 DUAL CHAT MOCKUPS (IG ON LEFT, LIVE TEST ON RIGHT) */}
-        {/* ============================================================== */}
+        {/* DUAL CHAT MOCKUPS */}
         <motion.div initial={{opacity:0, y:30}} animate={{opacity:1, y:0}} transition={{duration:0.6, delay:0.6}} 
-            className="w-full max-w-[1050px] flex flex-col md:flex-row items-stretch justify-center gap-6 lg:gap-10 mx-auto px-2">
+            className="w-full max-w-[1050px] flex flex-col md:flex-row items-stretch justify-center gap-6 lg:gap-10 mx-auto px-2 mb-16">
             
-            {/* LEFT MOCKUP: INSTAGRAM DEMO (CLEAN & GENUINE UI) */}
-            <div className="flex flex-col w-full md:w-1/2 h-[500px] rounded-[32px] overflow-hidden shadow-[0_20px_60px_rgba(0,0,0,0.5)] relative transition-all duration-300 border-[8px] bg-[#000]"
+            {/* LEFT: INSTAGRAM MOCKUP */}
+            <div className="flex flex-col w-full md:w-1/2 h-[500px] rounded-[32px] overflow-hidden shadow-2xl relative transition-all duration-300 border-[8px] bg-[#000]"
                  style={{ borderColor: "#1A1A1A" }}>
-                 
-                 {/* iPhone Notch */}
                  <div className="absolute top-0 inset-x-0 h-6 flex justify-center z-20 pointer-events-none">
                     <div className="w-28 h-full bg-[#1A1A1A] rounded-b-[12px] shadow-sm flex items-center justify-center gap-2 pb-1">
                        <div className="w-10 h-1.5 rounded-full bg-black"></div>
@@ -1355,9 +925,8 @@ export default function Home() {
                     </div>
                  </div>
                  
-                 {/* Genuine IG Header */}
                  <div className="h-16 pt-5 px-5 flex items-center gap-3 border-b border-white/10 bg-[#000] z-10 shrink-0">
-                    <div className="w-8 h-8 rounded-full flex items-center justify-center border border-white/20 overflow-hidden bg-[#111]">
+                    <div className="w-8 h-8 rounded-full flex items-center justify-center overflow-hidden bg-[#111]">
                        <Instagram_Icon size={20}/>
                     </div>
                     <div>
@@ -1368,7 +937,6 @@ export default function Home() {
                     </div>
                  </div>
 
-                 {/* IG Chat Area (PLAIN SOLID BLACK - PERFECT CLONE) */}
                  <div ref={igChatRef} className="flex-1 overflow-y-auto custom-scrollbar p-5 flex flex-col gap-4 relative bg-[#000]">
                     <AnimatePresence>
                       {igChat.map((msg, idx) => (
@@ -1378,7 +946,6 @@ export default function Home() {
                                     <Instagram_Icon size={14}/>
                                 </div>
                             )}
-                            {/* Exact IG Bubble Styling */}
                             <div className={`p-3.5 max-w-[80%] text-[13px] leading-relaxed shadow-sm ${msg.user ? "bg-gradient-to-tr from-[#833ab4] via-[#fd1d1d] to-[#fcb045] text-white rounded-[20px] rounded-br-sm font-medium" : "bg-[#262626] text-gray-100 rounded-[20px] rounded-bl-sm border border-white/5"}`}>
                                {msg.text}
                             </div>
@@ -1388,11 +955,9 @@ export default function Home() {
                  </div>
             </div>
 
-            {/* RIGHT MOCKUP: CLAWLINK LIVE TEST (TECHY UI) */}
-            <div className="flex flex-col w-full md:w-1/2 h-[500px] rounded-[32px] overflow-hidden shadow-[0_20px_60px_rgba(0,0,0,0.5)] relative transition-all duration-300 border-[8px] bg-[#000]"
+            {/* RIGHT: LIVE API TEST */}
+            <div className="flex flex-col w-full md:w-1/2 h-[500px] rounded-[32px] overflow-hidden shadow-2xl relative transition-all duration-300 border-[8px] bg-[#000]"
                  style={{ borderColor: "#1A1A1A" }}>
-                 
-                 {/* iPhone Notch */}
                  <div className="absolute top-0 inset-x-0 h-6 flex justify-center z-20 pointer-events-none">
                     <div className="w-28 h-full bg-[#1A1A1A] rounded-b-[12px] shadow-sm flex items-center justify-center gap-2 pb-1">
                        <div className="w-10 h-1.5 rounded-full bg-black"></div>
@@ -1400,22 +965,20 @@ export default function Home() {
                     </div>
                  </div>
                  
-                 {/* API Header */}
-                 <div className="h-16 pt-5 px-5 flex items-center gap-3 border-b border-white/10 bg-gradient-to-r from-[#111] to-[#050505] z-10 shrink-0">
-                    <div className="w-8 h-8 rounded-full border border-orange-500/40 flex items-center justify-center p-[2px] shadow-[0_0_10px_rgba(249,115,22,0.2)]">
+                 <div className="h-16 pt-5 px-5 flex items-center gap-3 border-b border-white/10 bg-[#111] z-10 shrink-0">
+                    <div className="w-8 h-8 rounded-full border border-orange-500/40 flex items-center justify-center p-[2px]">
                        <div className="w-full h-full bg-black rounded-full flex items-center justify-center"><Zap className="w-4 h-4 text-orange-500"/></div>
                     </div>
                     <div>
                        <h3 className="text-white text-[14px] font-bold tracking-wide">ClawLink Live API</h3>
-                       <div className="flex items-center gap-1.5 text-[10px] text-green-400 font-mono font-bold mt-0.5"><span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse shadow-[0_0_8px_#22c55e]"></span>Operational</div>
+                       <div className="flex items-center gap-1.5 text-[10px] text-green-400 font-mono font-bold mt-0.5"><span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></span>Operational</div>
                     </div>
                  </div>
 
-                 {/* Techy Chat Area (WITH CUBES) */}
-                 <div ref={apiChatRef} className="flex-1 overflow-y-auto custom-scrollbar p-5 flex flex-col gap-4 relative bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] bg-opacity-5">
+                 <div ref={apiChatRef} className="flex-1 overflow-y-auto custom-scrollbar p-5 flex flex-col gap-4 relative bg-[#07070A]">
                     <AnimatePresence>
                       {demoChat.map((msg, idx) => (
-                         <motion.div key={idx} initial={{opacity:0, scale:0.95}} animate={{opacity:1, scale:1}} transition={{type:"spring", stiffness:200, damping:20}} className={`flex ${msg.role==="user"?"justify-end":"justify-start"}`}>
+                         <motion.div key={idx} initial={{opacity:0, scale:0.95}} animate={{opacity:1, scale:1}} className={`flex ${msg.role==="user"?"justify-end":"justify-start"}`}>
                             <div className={`p-4 rounded-2xl max-w-[85%] text-[13px] leading-relaxed shadow-lg ${msg.role==="user" ? "bg-orange-500 text-white rounded-br-sm font-medium" : "bg-[#1A1A1A] text-gray-200 border border-white/10 rounded-bl-sm"}`}>
                                {msg.text}
                             </div>
@@ -1433,12 +996,11 @@ export default function Home() {
                     </AnimatePresence>
                  </div>
 
-                 {/* API Input Area */}
                  <div className="p-4 border-t border-white/10 bg-[#0A0A0A] shrink-0">
                     <form onSubmit={handleDemoSubmit} className="relative flex items-center">
                        <input type="text" value={demoInput} onChange={e=>setDemoInput(e.target.value)} placeholder="Type a message..." 
-                              className="w-full bg-[#1A1A1A] border border-white/10 text-white text-[13px] rounded-full pl-4 pr-12 py-3.5 outline-none focus:border-orange-500/80 transition-colors shadow-inner" />
-                       <button type="submit" disabled={!demoInput.trim() || isDemoTyping} className="absolute right-1.5 w-8 h-8 bg-[#333] hover:bg-orange-500 rounded-full flex items-center justify-center text-white disabled:opacity-50 transition-colors shadow-lg">
+                              className="w-full bg-[#1A1A1A] border border-white/10 text-white text-[13px] rounded-full pl-4 pr-12 py-3.5 outline-none focus:border-orange-500/80 transition-colors" />
+                       <button type="submit" disabled={!demoInput.trim() || isDemoTyping} className="absolute right-1.5 w-8 h-8 bg-[#333] hover:bg-orange-500 rounded-full flex items-center justify-center text-white transition-colors">
                           <ArrowRight className="w-4 h-4" />
                        </button>
                     </form>
@@ -1448,48 +1010,42 @@ export default function Home() {
         </motion.div>
       </section>
 
-      {/* 🔥 INJECTED: NEW DARK GRID PRICING UI WITH PSYCHOLOGICAL HOOKS */}
-      <section id="pricing" className="relative z-10 py-24 px-6 overflow-hidden" style={{ background: "#08090c", borderTop: "1px solid var(--border-color)" }}>
-        
-        {/* Background Grid + Vignette */}
-        <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: "linear-gradient(rgba(255,255,255,0.035) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.035) 1px, transparent 1px)", backgroundSize: "56px 56px", maskImage: "radial-gradient(ellipse 80% 60% at 50% 20%, black 20%, transparent 75%)", WebkitMaskImage: "radial-gradient(ellipse 80% 60% at 50% 20%, black 20%, transparent 75%)" }} />
-        <div className="absolute -top-40 left-1/2 -translate-x-1/2 w-[900px] h-[500px] rounded-full pointer-events-none" style={{ background: "radial-gradient(circle, rgba(249,115,22,0.08), transparent 65%)" }} />
-
+      {/* SEAMLESS PRICING SECTION (NO HARSH LAKIREIN) */}
+      <section id="pricing" className="relative z-10 py-24 px-6 overflow-hidden" style={{ backgroundColor: "var(--bg-section)" }}>
         <div className="max-w-[1300px] mx-auto relative z-10">
           
-          {/* Eyebrow */}
-          <div className="flex justify-center mb-6 sr-up">
-            <div className="font-mono text-[10.5px] tracking-[0.35em] uppercase text-white/40 flex items-center gap-3">
-              <span className="w-6 h-px bg-white/25" />
+          <div className="flex justify-center mb-6">
+            <div className="font-mono text-[10.5px] tracking-[0.35em] uppercase text-orange-500 flex items-center gap-3">
+              <span className="w-6 h-px bg-orange-500/40" />
               Choose Your AI Workforce
-              <span className="w-6 h-px bg-white/25" />
+              <span className="w-6 h-px bg-orange-500/40" />
             </div>
           </div>
 
-          <h2 className="text-center text-[clamp(2.2rem,4vw,3.5rem)] font-black tracking-[-0.035em] mb-4 text-white sr-up leading-tight">
+          <h2 className="text-center text-[clamp(2.2rem,4vw,3.5rem)] font-black tracking-[-0.035em] mb-4 leading-tight" style={{ color: "var(--text-main)" }}>
             Start small.<br className="md:hidden" /> Scale when your business grows.
           </h2>
-          <p className="text-center text-white/50 text-[15px] mb-8 max-w-md mx-auto sr-up">
+          <p className="text-center text-[15px] mb-8 max-w-md mx-auto" style={{ color: "var(--text-muted)" }}>
             Your AI. Your Channels. Your Growth.
           </p>
 
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-6 mb-16 sr-up">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-6 mb-16">
             {/* Model Switcher */}
-            <div className="relative flex flex-wrap justify-center rounded-[24px] p-1.5 bg-white/[0.04] border border-white/10 gap-1 w-fit">
+            <div className="relative flex flex-wrap justify-center rounded-[24px] p-1.5 border gap-1 w-fit" style={{ backgroundColor: "rgba(128,128,128,0.05)", borderColor: "var(--border-color)" }}>
               {MODEL_NAMES.map((name) => (
                 <button
                   key={name}
                   onClick={() => setPricingModel(name)}
-                  className={`relative z-10 px-5 py-2.5 rounded-full font-mono text-[11.5px] font-bold tracking-wider transition-all duration-300 ${pricingModel === name ? "bg-white text-black shadow-md scale-105" : "text-white/50 hover:text-white/90 bg-transparent"}`}
+                  className={`relative z-10 px-5 py-2.5 rounded-full font-mono text-[11.5px] font-bold tracking-wider transition-all duration-300 ${pricingModel === name ? "bg-orange-500 text-white shadow-md scale-105" : "text-gray-400 hover:text-white bg-transparent"}`}
                 >
                   {name}
                 </button>
               ))}
             </div>
 
-            {/* Billing Toggle (Monthly / Yearly) */}
+            {/* Billing Toggle */}
              <div className="flex items-center gap-3">
-                <span className={`text-[12px] font-bold ${!isYearlyBilling ? 'text-white' : 'text-white/40'}`}>Monthly</span>
+                <span className={`text-[12px] font-bold ${!isYearlyBilling ? 'text-orange-500' : 'text-gray-400'}`}>Monthly</span>
                 <button 
                   onClick={() => setIsYearlyBilling(!isYearlyBilling)}
                   className="w-12 h-6 bg-white/10 rounded-full relative transition-colors duration-300 border border-white/20"
@@ -1497,19 +1053,19 @@ export default function Home() {
                   <div className={`w-4 h-4 bg-orange-500 rounded-full absolute top-1 transition-all duration-300 ${isYearlyBilling ? 'left-7' : 'left-1'}`} />
                 </button>
                 <div className="flex flex-col items-start">
-                    <span className={`text-[12px] font-bold ${isYearlyBilling ? 'text-white' : 'text-white/40'}`}>Annually</span>
-                    <span className="text-[10px] text-green-400 font-bold bg-green-500/10 px-1.5 rounded-sm">Save 20%</span>
+                    <span className={`text-[12px] font-bold ${isYearlyBilling ? 'text-orange-500' : 'text-gray-400'}`}>Annually</span>
+                    <span className="text-[10px] text-green-500 font-bold bg-green-500/10 px-1.5 rounded-sm">Save 20%</span>
                 </div>
             </div>
 
             {/* Currency Toggle */}
-            <div className="flex items-center gap-0 rounded-full border border-white/10 overflow-hidden font-mono text-[10.5px] font-bold tracking-widest bg-black/20 h-fit">
+            <div className="flex items-center gap-0 rounded-full border overflow-hidden font-mono text-[10.5px] font-bold tracking-widest h-fit" style={{ borderColor: "var(--border-color)", backgroundColor: "rgba(128,128,128,0.05)" }}>
               {["USD", "INR"].map((cur) => (
                 <button
                   key={cur}
                   onClick={() => setCurrency(cur as "USD"|"INR")}
                   className="px-6 py-2.5 transition-colors duration-200"
-                  style={{ background: currency === cur ? "rgba(255,255,255,0.15)" : "transparent", color: currency === cur ? "#fff" : "rgba(255,255,255,0.35)" }}
+                  style={{ background: currency === cur ? "rgba(249,115,22,0.2)" : "transparent", color: currency === cur ? "#f97316" : "var(--text-muted)" }}
                 >
                   {cur}
                 </button>
@@ -1539,18 +1095,16 @@ export default function Home() {
               }
 
               return (
-                <div key={plan.id} className={`sr-up relative w-[300px] flex flex-col rounded-[24px] p-7 transition-all duration-300 hover:-translate-y-2 ${isBase || isCustom ? 'opacity-90' : 'scale-105 z-10'}`}
-                     style={{ background: "rgba(255,255,255,0.02)", border: `1px solid ${isBase || isCustom ? "rgba(255,255,255,0.10)" : hexA(plan.accent, 0.4)}`, boxShadow: (!isBase && !isCustom) ? `0 24px 60px -20px ${hexA(plan.accent, 0.25)}` : "none", backdropFilter: "blur(10px)" }}>
+                <div key={plan.id} className={`relative w-[300px] flex flex-col rounded-[24px] p-7 transition-all duration-300 hover:-translate-y-2 ${isBase || isCustom ? 'opacity-90' : 'scale-105 z-10 shadow-2xl'}`}
+                     style={{ backgroundColor: "var(--bg-card)", border: `1px solid ${isBase || isCustom ? "var(--border-color)" : hexA(plan.accent, 0.5)}` }}>
                   
                   <Corner pos="tl" />
                   <Corner pos="br" />
 
-                  {/* Level Meter */}
                   <Meter level={plan.level} accent={plan.accent} />
 
-                  {/* Header & Badge */}
                   <div className="flex items-center justify-between mt-5 mb-1">
-                    <span className="text-[18px] font-black text-white tracking-tight">{plan.name}</span>
+                    <span className="text-[18px] font-black tracking-tight" style={{ color: "var(--text-main)" }}>{plan.name}</span>
                     {plan.badge && (
                       <span className="font-mono text-[9px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-full" style={{ color: plan.accent, background: hexA(plan.accent, 0.15), border: `1px solid ${hexA(plan.accent, 0.35)}` }}>
                         {plan.badge}
@@ -1562,31 +1116,27 @@ export default function Home() {
                     {plan.msgs.toUpperCase()}
                   </div>
 
-                  {/* Price */}
                   <div className="flex items-baseline gap-1 mb-1">
-                    <span className="text-[42px] font-black text-white leading-none tracking-tighter">{mainPrice}</span>
-                    {!isCustom && <span className="text-[13px] text-white/40 font-bold">{unit}</span>}
+                    <span className="text-[42px] font-black leading-none tracking-tighter" style={{ color: "var(--text-main)" }}>{mainPrice}</span>
+                    {!isCustom && <span className="text-[13px] font-bold" style={{ color: "var(--text-muted)" }}>{unit}</span>}
                   </div>
-                  <div className="font-mono text-[11px] text-white/30 font-semibold mb-6 h-[16px]">
+                  <div className="font-mono text-[11px] font-semibold mb-6 h-[16px]" style={{ color: "var(--text-muted)" }}>
                       {!isCustom && altPrice}
                   </div>
 
-                  {/* Description */}
-                  <p className="text-[13px] leading-relaxed text-white/60 pb-6 mb-6 border-b border-white/[0.08] min-h-[70px]">
+                  <p className="text-[13px] leading-relaxed pb-6 mb-6 border-b min-h-[70px]" style={{ color: "var(--text-muted)", borderColor: "var(--border-color)" }}>
                     {plan.desc}
                   </p>
 
-                  {/* Features */}
                   <ul className="flex-grow space-y-3 mb-8">
                     {plan.features.map((f: string) => (
-                      <li key={f} className="flex items-start gap-3 text-[12px] text-white/80 font-bold tracking-wide">
+                      <li key={f} className="flex items-start gap-3 text-[12px] font-bold tracking-wide" style={{ color: "var(--text-main)" }}>
                         <Check size={14} strokeWidth={3} className="flex-shrink-0 mt-[2px]" style={{ color: plan.accent }} />
                         {f}
                       </li>
                     ))}
                   </ul>
 
-                  {/* Action Button */}
                   <button
                     onClick={() => {
                         if (status !== "authenticated") {
@@ -1601,7 +1151,7 @@ export default function Home() {
                         }
                     }}
                     className="w-full py-4 rounded-xl font-mono text-[11.5px] font-bold uppercase tracking-widest transition-all hover:scale-[1.02]"
-                    style={{ background: (isBase || isCustom) ? "rgba(255,255,255,0.08)" : plan.accent, color: (isBase || isCustom) ? "rgba(255,255,255,0.9)" : "#000", border: (isBase || isCustom) ? "1px solid rgba(255,255,255,0.15)" : "none" }}
+                    style={{ background: (isBase || isCustom) ? "rgba(128,128,128,0.1)" : plan.accent, color: (isBase || isCustom) ? "var(--text-main)" : "#fff", border: (isBase || isCustom) ? "1px solid var(--border-color)" : "none" }}
                   >
                     {isCustom ? "Contact Sales" : (isBase ? "Start Free →" : `Deploy ${plan.name} →`)}
                   </button>
@@ -1610,35 +1160,31 @@ export default function Home() {
             })}
           </div>
 
-          {/* Reassurance text */}
-          <div className="text-center mt-12 sr-up">
-              <p className="text-[13px] text-gray-500 font-medium">No setup fees. No servers to manage. No technical expertise required. Cancel anytime.</p>
-              <p className="text-[11px] text-gray-600 mt-2">AI usage is subject to fair-use limits. Third-party provider charges may apply where applicable.</p>
+          <div className="text-center mt-12">
+              <p className="text-[13px] font-medium" style={{ color: "var(--text-muted)" }}>No setup fees. No servers to manage. No technical expertise required. Cancel anytime.</p>
+              <p className="text-[11px] mt-2 opacity-70" style={{ color: "var(--text-muted)" }}>AI usage is subject to fair-use limits. Third-party provider charges may apply where applicable.</p>
           </div>
         </div>
       </section>
 
-      {/* ══ HOW IT WORKS ══ */}
-      <section className="relative z-10 py-28 px-6 md:px-12 transition-colors duration-300" style={{ borderTop: "1px solid var(--border-color)", backgroundColor: "var(--bg-main)" }}>
+      {/* HOW IT WORKS */}
+      <section className="relative z-10 py-28 px-6 md:px-12 transition-colors duration-300" style={{ backgroundColor: "var(--bg-main)" }}>
         <div className="max-w-[1200px] mx-auto">
-          <div className="sr-up text-center mb-20">
+          <div className="text-center mb-20">
             <p className="text-[11px] font-black tracking-[.2em] uppercase text-orange-500 mb-3">How It Works</p>
             <h2 className="text-[clamp(2rem,4vw,3.2rem)] font-black tracking-[-0.035em] mb-4" style={{ color: "var(--text-main)" }}>4 steps to go live</h2>
             <p className="text-[16px] max-w-[500px] mx-auto leading-relaxed" style={{ color: "var(--text-muted)" }}>Zero to live AI agent in 30 seconds. No tech expertise needed.</p>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-10 lg:gap-14 relative">
-            <div className="hidden md:block absolute top-10 left-[12%] right-[12%] h-px" style={{background:"linear-gradient(90deg,transparent,rgba(249,115,22,.25) 30%,rgba(249,115,22,.25) 70%,transparent)"}}/>
             {[
               {n:"01",e:"🔑",t:"Login with Google",  d:"One tap. No passwords, no friction."},
               {n:"02",e:"🤖",t:"Choose Model & Channel",d:"Pick AI model + Telegram or WhatsApp."},
               {n:"03",e:"✅",t:"Token Verify",         d:"Paste token. Verified & secured instantly."},
               {n:"04",e:"🚀",t:"Go Live",              d:"Enterprise infra spins up. 24/7, zero maintenance."},
-            ].map(({n,e,t,d},i)=>(
-              <div key={n} className={`sr-up sd${i+1} flex flex-col items-center text-center px-4 relative z-10`}>
-                <div className="icon-lift w-[70px] h-[70px] lg:w-[80px] lg:h-[80px] rounded-full flex items-center justify-center font-black text-[22px] lg:text-[26px] text-orange-500 mb-6 z-10 shadow-[0_0_30px_rgba(249,115,22,0.1)] transition-colors duration-300"
-                  style={{backgroundColor:"var(--bg-main)",border:"2px solid rgba(249,115,22,0.25)"}}
-                  onMouseEnter={e2=>{(e2.target as HTMLElement).style.backgroundColor="rgba(249,115,22,0.1)";(e2.target as HTMLElement).style.boxShadow="0 0 40px rgba(249,115,22,0.3)"}}
-                  onMouseLeave={e2=>{(e2.target as HTMLElement).style.backgroundColor="var(--bg-main)";(e2.target as HTMLElement).style.boxShadow="0 0 30px rgba(249,115,22,0.1)"}}>
+            ].map(({n,e,t,d})=>(
+              <div key={n} className="flex flex-col items-center text-center px-4 relative z-10">
+                <div className="w-[70px] h-[70px] lg:w-[80px] lg:h-[80px] rounded-full flex items-center justify-center font-black text-[22px] lg:text-[26px] text-orange-500 mb-6 z-10 shadow-md"
+                  style={{backgroundColor:"var(--bg-card)",border:"2px solid rgba(249,115,22,0.25)"}}>
                   {n}
                 </div>
                 <div className="text-[26px] mb-3">{e}</div>
@@ -1650,155 +1196,47 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ══ FEATURES ══ */}
-      <section className="relative z-10 py-28 px-6 md:px-12 transition-colors duration-300" style={{ backgroundColor: "var(--bg-section)", borderTop: "1px solid var(--border-color)" }}>
-        <div className="max-w-[1200px] mx-auto">
-          <div className="sr-up text-center mb-16">
-            <p className="text-[11px] font-black tracking-[.2em] uppercase text-orange-500 mb-3">Features</p>
-            <h2 className="text-[clamp(2rem,4vw,3.2rem)] font-black tracking-[-0.035em] mb-4" style={{ color: "var(--text-main)" }}>Enterprise power, zero complexity</h2>
-            <p className="text-[16px] max-w-[500px] mx-auto leading-relaxed" style={{ color: "var(--text-muted)" }}>Built in, battle-tested, ready on day one.</p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-[2fr_1fr_1fr] gap-[1px] rounded-t-[28px] overflow-hidden border border-b-0 transition-colors duration-300" style={{ backgroundColor: "var(--border-color)", borderColor: "var(--border-color)" }}>
-            {[
-              {bg:"rgba(59,130,246,.09)", e:"🌐",t:"Omnichannel Deployment",  d:"Deploy an AI Agent across Telegram, WhatsApp, and Instagram simultaneously. Switch channels in seconds.",tag:"Multi-platform"},
-              {bg:"rgba(168,85,247,.09)",e:"🎙️",t:"Voice Intelligence",      d:"Whisper AI transcribes voice notes and replies naturally in real-time.",tag:"Whisper AI"},
-              {bg:"rgba(234,179,8,.09)", e:"🚀",t:"Ultra Low Latency",         d:"Global edge network ensures sub-second response times worldwide.",tag:"Fast Response"},
-            ].map(({bg,e,t,d,tag})=>(
-              <div key={t} className="fi-card p-8 md:p-10 transition-colors duration-300" style={{ backgroundColor: "var(--bg-card)" }}
-                   onMouseEnter={e2 => (e2.currentTarget as HTMLElement).style.filter = "brightness(1.1)"}
-                   onMouseLeave={e2 => (e2.currentTarget as HTMLElement).style.filter = "brightness(1)"}>
-                <div className="icon-lift w-[52px] h-[52px] rounded-[14px] flex items-center justify-center mb-6 text-[24px]" style={{background:bg}}>{e}</div>
-                <h3 className="text-[16px] font-black mb-3" style={{ color: "var(--text-main)" }}>{t}</h3>
-                <p className="text-[13px] leading-[1.8] mb-5" style={{ color: "var(--text-muted)" }}>{d}</p>
-                <span className="inline-flex px-3.5 py-1.5 rounded-full text-[10px] font-bold text-orange-400 uppercase tracking-[.1em]" style={{background:"rgba(249,115,22,0.07)",border:"1px solid rgba(249,115,22,0.18)"}}>{tag}</span>
-              </div>
-            ))}
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-[1fr_2fr] gap-[1px] border border-t-0 border-b-0 transition-colors duration-300" style={{ backgroundColor: "var(--border-color)", borderColor: "var(--border-color)" }}>
-            {[
-              {bg:"rgba(34,197,94,.09)", e:"🗃️",t:"Enterprise RAG Memory",      d:"Inject catalog, FAQs, brand voice into Vector DB. Your agent knows your business inside out.",tag:"Vector DB"},
-              {bg:"rgba(0,191,255,.09)", e:"🧠",t:"OmniAgent — 3x AI Fallback", d:"Routes between GPT-5.4, Claude Opus 4.7, and Gemini 3.1 in real-time. 0% downtime. The ultimate OpenClaw alternative.",tag:"0% Downtime"},
-            ].map(({bg,e,t,d,tag})=>(
-              <div key={t} className="fi-card p-8 md:p-10 transition-colors duration-300" style={{ backgroundColor: "var(--bg-card)" }}
-                   onMouseEnter={e2 => (e2.currentTarget as HTMLElement).style.filter = "brightness(1.1)"}
-                   onMouseLeave={e2 => (e2.currentTarget as HTMLElement).style.filter = "brightness(1)"}>
-                <div className="icon-lift w-[52px] h-[52px] rounded-[14px] flex items-center justify-center mb-6 text-[24px]" style={{background:bg}}>{e}</div>
-                <h3 className="text-[16px] font-black mb-3" style={{ color: "var(--text-main)" }}>{t}</h3>
-                <p className="text-[13px] leading-[1.8] mb-5" style={{ color: "var(--text-muted)" }}>{d}</p>
-                <span className="inline-flex px-3.5 py-1.5 rounded-full text-[10px] font-bold text-orange-400 uppercase tracking-[.1em]" style={{background:"rgba(249,115,22,0.07)",border:"1px solid rgba(249,115,22,0.18)"}}>{tag}</span>
-              </div>
-            ))}
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-[1px] rounded-b-[28px] overflow-hidden border border-t-0 transition-colors duration-300" style={{ backgroundColor: "var(--border-color)", borderColor: "var(--border-color)" }}>
-            {[
-              {bg:"rgba(249,115,22,.09)",e:"⚡",t:"AI Interceptor",      d:"Check orders, book slots, trigger webhooks, update CRMs — fully autonomous.",tag:"API Triggers"},
-              {bg:"rgba(236,72,153,.09)",e:"💬",t:"Live CRM & Handoff",  d:"Monitor all conversations. One click to take over from AI seamlessly.",tag:"Real-time CRM"},
-              {bg:"rgba(16,185,129,.09)",e:"🔒",t:"Enterprise Security", d:"AES-256 encryption. SOC 2 compliant. Zero data retention on our servers.",tag:"AES-256"},
-            ].map(({bg,e,t,d,tag})=>(
-              <div key={t} className="fi-card p-8 md:p-10 transition-colors duration-300" style={{ backgroundColor: "var(--bg-card)" }}
-                   onMouseEnter={e2 => (e2.currentTarget as HTMLElement).style.filter = "brightness(1.1)"}
-                   onMouseLeave={e2 => (e2.currentTarget as HTMLElement).style.filter = "brightness(1)"}>
-                <div className="icon-lift w-[52px] h-[52px] rounded-[14px] flex items-center justify-center mb-6 text-[24px]" style={{background:bg}}>{e}</div>
-                <h3 className="text-[16px] font-black mb-3" style={{ color: "var(--text-main)" }}>{t}</h3>
-                <p className="text-[13px] leading-[1.8] mb-5" style={{ color: "var(--text-muted)" }}>{d}</p>
-                <span className="inline-flex px-3.5 py-1.5 rounded-full text-[10px] font-bold text-orange-400 uppercase tracking-[.1em]" style={{background:"rgba(249,115,22,0.07)",border:"1px solid rgba(249,115,22,0.18)"}}>{tag}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ══ COMPARISON ══ */}
-      <section id="features" className="relative z-10 py-28 px-6 md:px-12 transition-colors duration-300" style={{ backgroundColor: "var(--bg-main)", borderTop: "1px solid var(--border-color)" }}>
-        <div className="max-w-[1200px] mx-auto">
-          <div className="sr-up text-center mb-16">
-            <p className="text-[11px] font-black tracking-[.2em] uppercase text-orange-500 mb-3">Comparison</p>
-            <h2 className="text-[clamp(2rem,4vw,3.2rem)] font-black tracking-[-0.035em]" style={{ color: "var(--text-main)" }}>Traditional Setup vs ClawLink</h2>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-[1.5fr_1fr] gap-6 lg:gap-10">
-            <div className="sr-left rounded-[24px] overflow-hidden transition-colors duration-300" style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border-color)", boxShadow: "0 10px 40px rgba(0,0,0,0.1)" }}>
-              <div className="px-6 py-5 text-[11px] font-black uppercase tracking-[.2em]" style={{ color: "var(--text-muted)", borderBottom: "1px solid var(--border-color)", backgroundColor: "rgba(128,128,128,0.05)" }}>
-                Traditional Setup — Step by Step
-              </div>
-              {[
-                ["Purchasing local virtual machine","15 min"],["Creating SSH keys and storing securely","10 min"],
-                ["Connecting to the server via SSH","5 min"],["Installing Node.js and NPM","5 min"],
-                ["Installing OpenClaw manually","7 min"],["Setting up OpenClaw database","10 min"],
-                ["Connecting to AI provider","4 min"],["Pairing with Telegram / WhatsApp API","4 min"],
-              ].map(([l,t])=>(
-                <div key={l} className="flex justify-between items-center px-6 py-4 transition-colors duration-150 hover:bg-black/5" style={{ borderBottom: "1px solid var(--border-color)" }}>
-                  <span className="text-[14px] font-medium" style={{ color: "var(--text-main)" }}>{l}</span>
-                  <span className="text-[11px] font-bold px-3 py-1.5 rounded-lg whitespace-nowrap ml-4 transition-colors duration-300" style={{ color: "var(--text-main)", backgroundColor: "rgba(128,128,128,0.1)", border: "1px solid var(--border-color)" }}>{t}</span>
-                </div>
-              ))}
-              <div className="flex justify-between items-center px-6 py-5 font-black text-[15px]" style={{ backgroundColor: "rgba(128,128,128,0.05)", borderTop: "1px solid var(--border-color)" }}>
-                <span className="tracking-wide" style={{ color: "var(--text-main)" }}>Total Time</span><span className="text-red-500 bg-red-500/10 px-4 py-1.5 rounded-xl border border-red-500/20">60 MINUTES</span>
-              </div>
-            </div>
-
-            <div className="sr-rght rounded-[24px] flex flex-col items-center justify-center text-center p-12 relative overflow-hidden transition-colors duration-300" style={{ border: "2px solid rgba(249,115,22,0.25)", backgroundColor: "var(--bg-card)", boxShadow: "0 20px 60px rgba(249,115,22,0.1)" }}>
-              <p className="text-[11px] font-black tracking-[.2em] uppercase text-orange-500 mb-4">With ClawLink</p>
-              <p className="font-black leading-none mb-2 text-[4rem] lg:text-[4.5rem] grad-text drop-shadow-sm" style={{ letterSpacing: "-.05em" }}>ClawLink</p>
-              <p className="text-[3rem] lg:text-[3.5rem] font-black leading-none mb-6 drop-shadow-sm" style={{ color: "var(--text-main)", letterSpacing: "-.04em" }}>&lt;30 sec</p>
-              <p className="text-[14px] max-w-[260px] leading-[1.8]" style={{ color: "var(--text-muted)" }}>Pick a model, connect your channel, deploy. All infrastructure handled for you.</p>
-              <button aria-label="Start Building Free Now" title="Start Free Now" data-ripple data-spring onClick={()=>document.getElementById("hero")?.scrollIntoView({behavior:"smooth"})}
-                className={`mag-el relative overflow-hidden mt-10 px-10 py-4 rounded-xl text-[14px] font-black text-white uppercase tracking-widest hover:-translate-y-1 hover:shadow-lg transition-transform duration-150 orange-glow`}
-                style={{ background: "linear-gradient(135deg,#f97316,#ea6a00)" }}>
-                <span className="mt">Start Free Now →</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ══ MARQUEE ══ */}
-      <section className="relative z-10 py-28 overflow-hidden transition-colors duration-300" style={{ backgroundColor: "var(--bg-section)", borderTop: "1px solid var(--border-color)" }}>
-        <div className="sr-up text-center mb-16 px-4">
+      {/* MARQUEE */}
+      <section className="relative z-10 py-28 overflow-hidden transition-colors duration-300" style={{ backgroundColor: "var(--bg-section)" }}>
+        <div className="text-center mb-16 px-4">
           <p className="text-[11px] font-black tracking-[.2em] uppercase text-orange-500 mb-3">50+ AI Use Cases</p>
           <h2 className="text-[clamp(2.4rem,6vw,4.2rem)] font-black tracking-[-0.04em]" style={{ color: "var(--text-main)" }}>Thousands of Use Cases</h2>
           <p className="font-medium text-[16px] mt-4" style={{ color: "var(--text-muted)" }}>Your agent handles complex tasks around the clock.</p>
         </div>
         <div className="flex flex-col gap-4 relative w-full">
           {[row1,row2,row3,row4,row5].map((r,i)=><MarqueeRow key={i} items={r} reverse={i%2===1}/>)}
-          <div className="absolute inset-0 pointer-events-none transition-colors duration-300" style={{ background: "linear-gradient(90deg, var(--bg-section) 0%, transparent 20%, transparent 80%, var(--bg-section) 100%)" }}/>
         </div>
       </section>
 
-      {/* 🔥 TRUST AND FAQ SECTION INJECTED HERE */}
       <TrustAndFAQ />
 
-      {/* ══ FOOTER ══ */}
-      <footer className="relative z-10 pt-28 pb-14 px-6 md:px-16 transition-colors duration-300" style={{ backgroundColor: "var(--bg-footer)", borderTop: "1px solid var(--border-color)" }}>
-        <h2 className="sr-up text-[clamp(2.8rem,6vw,4.8rem)] font-black tracking-[-0.04em] mb-8" style={{ fontFamily: "Georgia,serif", lineHeight: 1.06, color: "var(--text-main)" }}>Deploy. Automate. Relax.</h2>
-        <button aria-label="Get Started with ClawLink" title="Get Started Free" data-ripple data-spring onClick={()=>document.getElementById("hero")?.scrollIntoView({behavior:"smooth"})}
-          className={`mag-el sr-up relative overflow-hidden px-12 py-5 rounded-[16px] text-[15px] font-black text-black mb-24 uppercase tracking-widest hover:-translate-y-1 hover:shadow-lg transition-transform duration-150 orange-glow`}
+      {/* FOOTER */}
+      <footer className="relative z-10 pt-28 pb-14 px-6 md:px-16 transition-colors duration-300" style={{ backgroundColor: "var(--bg-main)" }}>
+        <h2 className="text-[clamp(2.8rem,6vw,4.8rem)] font-black tracking-[-0.04em] mb-8" style={{ fontFamily: "Georgia,serif", lineHeight: 1.06, color: "var(--text-main)" }}>Deploy. Automate. Relax.</h2>
+        <button aria-label="Get Started with ClawLink" onClick={()=>document.getElementById("hero")?.scrollIntoView({behavior:"smooth"})}
+          className="px-12 py-5 rounded-[16px] text-[15px] font-black text-black mb-24 uppercase tracking-widest hover:-translate-y-1 hover:shadow-lg transition-transform duration-150 shadow-lg"
           style={{background:"linear-gradient(135deg,#FFA87A,#F97316)"}}>
-          <span className="mt">Get Started Free →</span>
+          Get Started Free →
         </button>
-        <div className="flex flex-col md:flex-row justify-between items-center gap-6 text-[12px] pt-10 transition-colors duration-300" style={{ color: "var(--text-muted)", borderTop: "1px solid var(--border-color)" }}>
+        <div className="flex flex-col md:flex-row justify-between items-center gap-6 text-[12px] pt-10 border-t" style={{ color: "var(--text-muted)", borderColor: "var(--border-color)" }}>
           <span className="font-medium">© 2026 ClawLink Inc. All rights reserved.</span>
-          <span className="hidden md:block uppercase tracking-[.15em] text-[10px] font-bold">© 2026 CLAWLINK INC. GLOBAL AI SAAS INFRASTRUCTURE.</span>
           <div className="flex flex-wrap justify-center gap-6 font-medium">
             {[["Privacy Policy","/privacy"], ["Terms of Service","/terms"], ["Refund Policy", "/refund"], ["Documentation","/docs"]].map(([l,h])=>(
-              <a key={h} href={h} className="transition-colors duration-200" style={{ color: "var(--text-muted)" }} onMouseEnter={e => e.currentTarget.style.color = "var(--text-main)"} onMouseLeave={e => e.currentTarget.style.color = "var(--text-muted)"}>{l}</a>
+              <a key={h} href={h} className="transition-colors duration-200 hover:text-orange-500">{l}</a>
             ))}
           </div>
         </div>
       </footer>
 
-      {/* ══ MODALS ══ */}
+      {/* HELP MODAL */}
       <AnimatePresence>
         {isSupportModalOpen && (
           <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/80 backdrop-blur-[20px] p-4">
-            <motion.div initial={{opacity:0,scale:.96,y:12}} animate={{opacity:1,scale:1,y:0}} exit={{opacity:0,scale:.96,y:12}} transition={{duration:.12,ease:"easeOut"}}
+            <motion.div initial={{opacity:0,scale:.96,y:12}} animate={{opacity:1,scale:1,y:0}} exit={{opacity:0,scale:.96,y:12}}
               className="w-full max-w-[500px] p-8 rounded-[2rem] relative"
               style={{background:"#0F0F12",border:"1px solid rgba(255,255,255,0.09)",boxShadow:"0 0 80px rgba(0,0,0,0.8)"}}>
-              <div className="absolute top-0 left-[20%] right-[20%] h-px" style={{background:"linear-gradient(90deg,transparent,rgba(249,115,22,0.4),transparent)"}}/>
-              <button aria-label="Close Support Modal" title="Close Support Dialog" data-spring onClick={()=>setIsSupportModalOpen(false)}
-                className={`absolute top-6 right-6 p-2.5 rounded-full text-gray-500 hover:text-white hover:bg-white/10 transition-colors`}>
+              <button aria-label="Close Support Modal" onClick={()=>setIsSupportModalOpen(false)}
+                className="absolute top-6 right-6 p-2.5 rounded-full text-gray-500 hover:text-white transition-colors">
                 <X className="w-5 h-5"/>
               </button>
               <div className="flex items-center gap-4 mb-3">
@@ -1810,7 +1248,7 @@ export default function Home() {
               <p className="text-[14px] text-gray-400 mb-8">Our enterprise engineering team is available 24/7.</p>
               <div className="space-y-4">
                 {[
-                  {icon:<Mail className="w-5 h-5 text-orange-400"/>,title:"Direct Email",content:<a href="mailto:clawlink.help@gmail.com" className="text-blue-400 hover:text-blue-300 text-[14px] font-mono tracking-wide mt-1 block">clawlink.help@gmail.com</a>},
+                  {icon:<Mail className="w-5 h-5 text-orange-400"/>,title:"Direct Email",content:<a href="mailto:clawlink.help@gmail.com" className="text-blue-400 text-[14px] font-mono tracking-wide mt-1 block">clawlink.help@gmail.com</a>},
                   {icon:<Shield className="w-5 h-5 text-green-400"/>,title:"Enterprise SLAs",content:<p className="text-[13px] text-gray-400 mt-2 leading-relaxed">Pro and Max tier users get priority &lt;1hr guaranteed engineering response.</p>},
                 ].map(({icon,title,content},i)=>(
                   <div key={i} className="p-6 rounded-2xl" style={{background:"rgba(255,255,255,0.02)",border:"1px solid rgba(255,255,255,0.06)"}}>
@@ -1819,8 +1257,8 @@ export default function Home() {
                   </div>
                 ))}
               </div>
-              <button aria-label="Close Support Panel" title="Close Panel" data-ripple data-spring onClick={()=>setIsSupportModalOpen(false)}
-                className={`relative overflow-hidden w-full mt-8 bg-white text-black font-black py-4 rounded-xl text-[14px] uppercase tracking-widest hover:bg-gray-200 shadow-[0_4px_15px_rgba(255,255,255,0.15)]`}>
+              <button aria-label="Close Support Panel" onClick={()=>setIsSupportModalOpen(false)}
+                className="w-full mt-8 bg-white text-black font-black py-4 rounded-xl text-[14px] uppercase tracking-widest hover:bg-gray-200">
                 Close Panel
               </button>
             </motion.div>
@@ -1828,18 +1266,18 @@ export default function Home() {
         )}
       </AnimatePresence>
 
+      {/* CONNECT INTEGRATION MODAL */}
       <AnimatePresence>
         {isTelegramModalOpen && (
           <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/80 backdrop-blur-[20px] p-4">
-            <motion.div initial={{opacity:0,scale:.96,y:12}} animate={{opacity:1,scale:1,y:0}} exit={{opacity:0,scale:.96,y:12}} transition={{duration:.12,ease:"easeOut"}}
+            <motion.div initial={{opacity:0,scale:.96,y:12}} animate={{opacity:1,scale:1,y:0}} exit={{opacity:0,scale:.96,y:12}}
               className="w-full max-w-[1100px] flex flex-col md:flex-row overflow-hidden rounded-[2.5rem] relative"
               style={{background:"#0F0F12",border:"1px solid rgba(255,255,255,0.09)",boxShadow:"0 0 100px rgba(0,0,0,0.9)",maxHeight:"92vh"}}>
-              <div className="absolute top-0 left-[20%] right-[20%] h-px" style={{background:"linear-gradient(90deg,transparent,rgba(249,115,22,0.4),transparent)"}}/>
-              <button aria-label="Close Connect Modal" title="Close Modal" data-spring onClick={()=>setIsTelegramModalOpen(false)} className={`absolute top-5 right-5 z-20 p-2.5 rounded-full text-gray-400 hover:text-white hover:bg-white/10 transition-colors`}>
+              <button aria-label="Close Connect Modal" onClick={()=>setIsTelegramModalOpen(false)} className="absolute top-5 right-5 z-20 p-2.5 rounded-full text-gray-400 hover:text-white transition-colors">
                 <X className="w-5 h-5"/>
               </button>
 
-              <div className="w-full md:w-[55%] p-8 md:p-12 flex flex-col justify-start overflow-y-auto nsb">
+              <div className="w-full md:w-[55%] p-8 md:p-12 flex flex-col justify-start overflow-y-auto custom-scrollbar">
                 <div className="flex items-center gap-5 mb-8">
                   <div className="w-14 h-14 rounded-2xl flex items-center justify-center shrink-0" style={{background:"rgba(255,255,255,0.05)",border:"1px solid rgba(255,255,255,0.09)"}}>
                     {activeChannel==="telegram" ? <Telegram_Icon size={32}/> : activeChannel==="whatsapp" ? <WhatsApp_Icon size={32}/> : <Instagram_Icon size={32}/>}
@@ -1857,19 +1295,17 @@ export default function Home() {
                       <li>Paste below to secure connection</li>
                     </ol>
                     <a href="https://t.me/BotFather?text=%2Fnewbot" target="_blank" rel="noopener noreferrer"
-                      className={`inline-flex items-center justify-center gap-2 mb-8 px-6 py-3.5 rounded-xl text-[13px] font-black uppercase tracking-widest w-fit hover:-translate-y-1 hover:shadow-lg transition-transform duration-150 text-[#2AABEE]`}
-                      style={{background:"rgba(42,171,238,0.08)",border:"1px solid rgba(42,171,238,0.25)",boxShadow:"0 0 20px rgba(42,171,238,0.1)"}}>
+                      className="inline-flex items-center justify-center gap-2 mb-8 px-6 py-3.5 rounded-xl text-[13px] font-black uppercase tracking-widest w-fit text-[#2AABEE]"
+                      style={{background:"rgba(42,171,238,0.08)",border:"1px solid rgba(42,171,238,0.25)"}}>
                       <ExternalLink className="w-4 h-4"/> Open @BotFather Directly
                     </a>
                     <div className="p-6 rounded-2xl" style={{background:"rgba(255,255,255,0.02)",border:"1px solid rgba(255,255,255,0.06)"}}>
                       <label htmlFor="telegram-token" className="block text-[10px] font-black uppercase tracking-[.2em] text-gray-500 mb-3">API Access Token</label>
-                      <input id="telegram-token" aria-label="Enter Telegram Token" title="Telegram Token Input" type="password" value={telegramToken} onChange={e=>setTelegramToken(e.target.value)} placeholder="Enter Verification Token…"
+                      <input id="telegram-token" type="password" value={telegramToken} onChange={e=>setTelegramToken(e.target.value)} placeholder="Enter Verification Token…"
                         className="w-full px-5 py-4 rounded-xl text-[14px] text-white font-mono mb-6 outline-none transition-colors duration-200 placeholder-gray-600"
-                        style={{background:"#07070A",border:"1px solid rgba(255,255,255,0.09)"}}
-                        onFocus={e=>(e.target.style.borderColor="rgba(249,115,22,0.5)")}
-                        onBlur={e =>(e.target.style.borderColor="rgba(255,255,255,0.09)")}/>
-                      <button aria-label="Verify API Token" title="Verify and Save Token" data-ripple data-spring onClick={handleSaveToken} disabled={isVerifying}
-                        className={`relative overflow-hidden w-full font-black py-4 rounded-xl text-[14px] uppercase tracking-widest hover:-translate-y-1 hover:shadow-lg transition-transform duration-150 disabled:opacity-50 disabled:pointer-events-none shadow-[0_4px_15px_rgba(255,255,255,0.15)]`}
+                        style={{background:"#07070A",border:"1px solid rgba(255,255,255,0.09)"}}/>
+                      <button aria-label="Verify API Token" onClick={handleSaveToken} disabled={isVerifying}
+                        className="w-full font-black py-4 rounded-xl text-[14px] uppercase tracking-widest disabled:opacity-50"
                         style={{background:isVerifying?"rgba(255,255,255,0.1)":"#fff",color:isVerifying?"#666":"#000"}}>
                         {isVerifying?"Verifying API Status…":"Verify & Save Token"}
                       </button>
@@ -1894,98 +1330,43 @@ export default function Home() {
 
                     {metaAuthTab === "1click" ? (
                         <div className="flex flex-col items-center justify-center h-full text-center py-6 px-4">
-                            <div className={`w-24 h-24 rounded-full mb-6 flex items-center justify-center shadow-[0_0_25px_rgba(37,211,102,0.4)] ${activeChannel === "whatsapp" ? "bg-[#25D366]" : "bg-[#e6683c]"}`}>
+                            <div className={`w-24 h-24 rounded-full mb-6 flex items-center justify-center shadow-lg ${activeChannel === "whatsapp" ? "bg-[#25D366]" : "bg-[#e6683c]"}`}>
                                 <MessageCircle className="w-12 h-12 text-white" strokeWidth={2.5} />
                             </div>
                             <h3 className="text-2xl font-black text-white mb-3">Deploy in 30 Seconds</h3>
-                            <p className="text-[13px] text-gray-400 mb-10 max-w-sm leading-relaxed">Skip the complex Meta Developer setup. Connect securely via official Facebook login and our Omni-Fallback engine will handle the rest.</p>
+                            <p className="text-[13px] text-gray-400 mb-10 max-w-sm leading-relaxed">Connect securely via official Facebook login and our Omni-Fallback engine will handle the rest.</p>
                             
                             <button
                                 onClick={handleEmbeddedFacebookLogin}
                                 disabled={isVerifying}
-                                className={`w-full font-black py-4 rounded-xl text-[14px] uppercase tracking-widest transition-all flex items-center justify-center gap-3 ${
-                                    isVerifying 
-                                    ? 'bg-blue-900 text-gray-400 cursor-not-allowed' 
-                                    : 'bg-[#1877F2] hover:bg-[#166FE5] text-white hover:-translate-y-1 shadow-[0_4px_20px_rgba(24,119,242,0.4)]'
-                                }`}
+                                className="w-full font-black py-4 rounded-xl text-[14px] uppercase tracking-widest transition-all flex items-center justify-center gap-3 bg-[#1877F2] text-white hover:bg-[#166FE5]"
                             >
-                                {isVerifying ? (
-                                    <>
-                                        <Loader2 className="animate-spin w-5 h-5" /> AUTHENTICATING...
-                                    </>
-                                ) : (
-                                    "Continue with Facebook"
-                                )}
+                                {isVerifying ? <Loader2 className="animate-spin w-5 h-5" /> : "Continue with Facebook"}
                             </button>
                         </div>
                     ) : (
                         <div className="overflow-y-auto custom-scrollbar pr-2 pb-4">
-                            <ol className="space-y-3.5 text-[14px] text-gray-400 list-decimal pl-6 mb-8 leading-[1.8] font-medium">
-                              <li>Log in to <strong className="text-white">Meta Developer Console</strong></li>
-                              <li>Create <strong className="text-white">Business App</strong> → activate <strong className="text-white">{activeChannel === "whatsapp" ? "WhatsApp" : "Messenger"} Module</strong></li>
-                              <li>Register & verify account in <strong className="text-white">API Setup</strong></li>
-                              <li><strong className="text-white">System Users</strong> → generate <strong className="text-white">Permanent Access Token</strong></li>
-                              <li>Set Webhook URL under <strong className="text-white">Configuration</strong></li>
-                              <li>Enter Callback URL + Verify Token below</li>
-                            </ol>
-                            <div className="flex gap-4 mb-8">
-                              <a href="https://developers.facebook.com/apps/" target="_blank" rel="noopener noreferrer"
-                                className={`inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl text-[13px] font-black uppercase tracking-widest w-fit hover:-translate-y-1 hover:shadow-lg transition-transform duration-150 ${activeChannel==="whatsapp"?"text-[#25D366]":"text-[#e6683c]"}`}
-                                style={{background:activeChannel==="whatsapp"?"rgba(37,211,102,0.08)":"rgba(230,104,60,0.08)",border:`1px solid ${activeChannel==="whatsapp"?"rgba(37,211,102,0.25)":"rgba(230,104,60,0.25)"}`,boxShadow:activeChannel==="whatsapp"?"0 0 20px rgba(37,211,102,0.1)":"0 0 20px rgba(230,104,60,0.1)"}}>
-                                <ExternalLink className="w-4 h-4"/> Open Meta Developer
-                              </a>
-                            </div>
                             <div className="p-6 rounded-2xl" style={{background:"rgba(255,255,255,0.02)",border:"1px solid rgba(255,255,255,0.06)"}}>
-                              
-                              <div className="mb-8 p-5 rounded-xl" style={{background:"rgba(0,0,0,0.4)", border:`1px dashed ${activeChannel==="whatsapp"?"rgba(37,211,102,0.4)":"rgba(230,104,60,0.4)"}`}}>
-                                <p className={`text-[12px] font-black uppercase tracking-widest mb-4 flex items-center gap-2 ${activeChannel==="whatsapp"?"text-[#25D366]":"text-[#e6683c]"}`}>
-                                  🔗 Step 1: Copy to Meta Webhook
-                                </p>
-                                
+                              <div className="mb-8 p-5 rounded-xl border border-dashed border-white/20">
+                                <p className="text-[12px] font-black uppercase tracking-widest mb-4 text-orange-500">🔗 Webhook Config</p>
                                 <div className="mb-4">
-                                  <label htmlFor="webhook-url" className="block text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-2">Webhook URL</label>
+                                  <label className="block text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-2">Webhook URL</label>
                                   <div className="flex items-center gap-2">
-                                    <input id="webhook-url" aria-label="Webhook URL" title="Webhook URL Display" readOnly value={`https://www.clawlinkai.com/api/webhook/${activeChannel}`} className="w-full bg-black/60 text-gray-300 p-3.5 rounded-lg text-[12px] border border-white/10 outline-none font-mono" />
-                                    <button aria-label="Copy Webhook URL" title="Copy URL" type="button" onClick={() => copyToClipboard(`https://www.clawlinkai.com/api/webhook/${activeChannel}`)} className="bg-white/10 hover:bg-white/20 text-white px-5 py-3.5 rounded-lg text-[12px] font-bold transition-all border border-white/10">Copy</button>
-                                  </div>
-                                </div>
-
-                                <div>
-                                  <label htmlFor="verify-token" className="block text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-2">Verify Token</label>
-                                  <div className="flex items-center gap-2">
-                                    <input id="verify-token" aria-label="Verify Token" title="Verify Token Display" readOnly value="clawlinkmeta2026" className="w-full bg-black/60 text-gray-300 p-3.5 rounded-lg text-[12px] border border-white/10 outline-none font-mono" />
-                                    <button aria-label="Copy Verify Token" title="Copy Token" type="button" onClick={() => copyToClipboard("clawlinkmeta2026")} className="bg-white/10 hover:bg-white/20 text-white px-5 py-3.5 rounded-lg text-[12px] font-bold transition-all border border-white/10">Copy</button>
+                                    <input readOnly value={`https://www.clawlinkai.com/api/webhook/${activeChannel}`} className="w-full bg-black/60 text-gray-300 p-3.5 rounded-lg text-[12px] border border-white/10 outline-none font-mono" />
+                                    <button type="button" onClick={() => copyToClipboard(`https://www.clawlinkai.com/api/webhook/${activeChannel}`)} className="bg-white/10 hover:bg-white/20 text-white px-5 py-3.5 rounded-lg text-[12px] font-bold">Copy</button>
                                   </div>
                                 </div>
                               </div>
 
-                              <label htmlFor="wa-phone-id" className="block text-[10px] font-black uppercase tracking-[.2em] text-gray-500 mb-3">{activeChannel==="whatsapp"?"Phone Number ID":"Instagram Account ID"}</label>
-                              <input id="wa-phone-id" aria-label="Phone or Account ID" title="Account ID Input" type="text" value={waPhoneId} onChange={e=>setWaPhoneId(e.target.value)} placeholder="e.g. 1044727838716942"
-                                className="w-full px-5 py-4 rounded-xl text-[14px] text-white font-mono mb-5 outline-none transition-colors duration-200 placeholder-gray-600"
-                                style={{background:"#07070A",border:"1px solid rgba(255,255,255,0.09)"}}
-                                onFocus={e=>(e.target.style.borderColor=activeChannel==="whatsapp"?"rgba(37,211,102,0.5)":"rgba(230,104,60,0.5)")}
-                                onBlur={e =>(e.target.style.borderColor="rgba(255,255,255,0.09)")}/>
+                              <label className="block text-[10px] font-black uppercase tracking-[.2em] text-gray-500 mb-3">{activeChannel==="whatsapp"?"Phone Number ID":"Instagram Account ID"}</label>
+                              <input type="text" value={waPhoneId} onChange={e=>setWaPhoneId(e.target.value)} placeholder="e.g. 1044727838716942"
+                                className="w-full px-5 py-4 rounded-xl text-[14px] text-white font-mono mb-5 outline-none bg-[#07070A] border border-white/10"/>
                               
-                              {activeChannel === "whatsapp" && (
-                                  <>
-                                      <label htmlFor="wa-phone-number" className="block text-[10px] font-black uppercase tracking-[.2em] text-gray-500 mb-3">WhatsApp Number (For Direct Open)</label>
-                                      <input id="wa-phone-number" aria-label="WhatsApp Number" title="WhatsApp Number Input" type="text" value={waPhoneNumber} onChange={e=>setWaPhoneNumber(e.target.value)} placeholder="+1 234 567 890"
-                                        className="w-full px-5 py-4 rounded-xl text-[14px] text-white font-mono mb-5 outline-none transition-colors duration-200 placeholder-gray-600"
-                                        style={{background:"#07070A",border:"1px solid rgba(255,255,255,0.09)"}}
-                                        onFocus={e=>(e.target.style.borderColor="rgba(37,211,102,0.5)")}
-                                        onBlur={e =>(e.target.style.borderColor="rgba(255,255,255,0.09)")}/>
-                                  </>
-                              )}
-
-                              <label htmlFor="api-access-token" className="block text-[10px] font-black uppercase tracking-[.2em] text-gray-500 mb-3">Permanent API Token</label>
-                              <input id="api-access-token" aria-label="API Access Token" title="API Access Token Input" type="password" value={telegramToken} onChange={e=>setTelegramToken(e.target.value)} placeholder="EAABwzL…"
-                                className="w-full px-5 py-4 rounded-xl text-[14px] text-white font-mono mb-6 outline-none transition-colors duration-200 placeholder-gray-600"
-                                style={{background:"#07070A",border:"1px solid rgba(255,255,255,0.09)"}}
-                                onFocus={e=>(e.target.style.borderColor=activeChannel==="whatsapp"?"rgba(37,211,102,0.5)":"rgba(230,104,60,0.5)")}
-                                onBlur={e =>(e.target.style.borderColor="rgba(255,255,255,0.09)")}/>
-                              <button aria-label="Verify and Save API Token" title="Verify and Save" data-ripple data-spring onClick={handleSaveToken} disabled={isVerifying}
-                                className={`relative overflow-hidden w-full font-black py-4 rounded-xl text-[14px] uppercase tracking-widest hover:-translate-y-1 hover:shadow-lg transition-transform duration-150 disabled:opacity-50 disabled:pointer-events-none shadow-[0_4px_15px_rgba(255,255,255,0.15)]`}
-                                style={{background:isVerifying?"rgba(255,255,255,0.1)":"#fff",color:isVerifying?"#666":"#000"}}>
+                              <label className="block text-[10px] font-black uppercase tracking-[.2em] text-gray-500 mb-3">Permanent API Token</label>
+                              <input type="password" value={telegramToken} onChange={e=>setTelegramToken(e.target.value)} placeholder="EAABwzL…"
+                                className="w-full px-5 py-4 rounded-xl text-[14px] text-white font-mono mb-6 outline-none bg-[#07070A] border border-white/10"/>
+                              <button onClick={handleSaveToken} disabled={isVerifying}
+                                className="w-full font-black py-4 rounded-xl text-[14px] uppercase tracking-widest bg-white text-black hover:bg-gray-200">
                                 {isVerifying?"Verifying API Status…":"Verify & Save Configuration"}
                               </button>
                             </div>
@@ -1993,58 +1374,6 @@ export default function Home() {
                     )}
                   </div>
                 )}
-              </div>
-
-              <div className="hidden md:flex md:w-[45%] items-center justify-center p-12 relative" style={{background:"rgba(0,0,0,0.35)",borderLeft:"1px solid rgba(255,255,255,0.04)"}}>
-                <div className="w-[320px] h-[640px] rounded-[3rem] flex flex-col relative overflow-hidden bg-[#07070A]" style={{border:"8px solid #1A1A1A",boxShadow:"0 0 80px rgba(0,0,0,0.8), inset 0 0 20px rgba(0,0,0,0.5)"}}>
-                  <div className="absolute top-0 inset-x-0 h-7 rounded-b-[24px] z-20 flex justify-center items-end pb-1.5" style={{background:"#1A1A1A"}}>
-                    <div className="w-12 h-1.5 rounded-full bg-black/60"/>
-                  </div>
-                  <div className="p-5 pt-10 flex items-center gap-4 z-10" style={{background:"rgba(15,15,18,0.95)",backdropFilter:"blur(12px)",borderBottom:"1px solid rgba(255,255,255,0.05)"}}>
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center ${activeChannel==="telegram"?"bg-[#2AABEE]":activeChannel==="whatsapp"?"bg-[#25D366]":""}`} style={{background:activeChannel==="instagram"?"linear-gradient(135deg,#f09433,#bc1888)":undefined}}>
-                      {activeChannel==="telegram"?<Telegram_Icon size={22}/>:activeChannel==="whatsapp"?<WhatsApp_Icon size={22}/>:<Instagram_Icon size={22}/>}
-                    </div>
-                    <div>
-                      <p className="text-white text-[14px] font-bold flex items-center gap-1.5">
-                        {activeChannel==="telegram"?"BotFather":"Meta Developer"}
-                        <CheckCircle2 className="w-3.5 h-3.5 text-blue-400"/>
-                      </p>
-                      <p className="text-gray-400 text-[10px] font-mono mt-0.5">{activeChannel==="telegram"?"Verified System Bot":"API Configuration"}</p>
-                    </div>
-                  </div>
-                  <div className="p-5 pt-6 flex-1 flex flex-col justify-end space-y-3 overflow-y-auto nsb bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] bg-opacity-5">
-                    {activeChannel==="telegram" ? (
-                      <>
-                        <ChatBubble isUser text="/newbot" delay={.1}/>
-                        <ChatBubble text="Alright, a new bot. How are we going to call it?" delay={.2}/>
-                        <ChatBubble isUser text="ClawLink Support" delay={.3}/>
-                        <ChatBubble text="Good. Now let's choose a username…" delay={.4}/>
-                        <ChatBubble isUser text="ClawSupport_bot" delay={.5}/>
-                        <motion.div initial={{opacity:0,y:8}} animate={{opacity:1,y:0}} transition={{delay:.6,duration:.18}}
-                          className="p-4 rounded-2xl rounded-tl-sm text-gray-200 self-start max-w-[92%] text-[12px] leading-relaxed shadow-lg"
-                          style={{background:"#1A1A1A",border:"1px solid rgba(42,171,238,0.25)"}}>
-                          Done! Here is your token:<br/>
-                          <span className="text-[#2AABEE] font-mono font-bold break-all mt-2 block bg-black/30 p-2 rounded-lg border border-white/5">1234567890:AAH8ABC…</span>
-                        </motion.div>
-                      </>
-                    ) : (
-                      <div className="flex flex-col gap-3.5 h-full justify-start pb-4">
-                        <GuideStep delay={.1} step="1" title="Create App" desc={`Select Business Type in Meta Developer Console for ${activeChannel}.`}/>
-                        <GuideStep delay={.2} step="2" title="Link Account" desc={`Register your ${activeChannel} account in API Setup.`}/>
-                        <GuideStep delay={.3} step="3" title="Generate Token" desc="Create System User & get Permanent Access Token."/>
-                        <GuideStep delay={.4} step="4" title="Link Webhook" desc="Enter Webhook URL & Verify Token."/>
-                        <GuideStep delay={.5} step="5" title="Subscribe" desc="Enable 'messages' webhook subscription."/>
-                        <motion.div initial={{opacity:0,scale:.9}} animate={{opacity:1,scale:1}} transition={{delay:.6,duration:.18}}
-                          className="mt-4 p-4 rounded-xl text-center mx-auto w-[90%] shadow-lg" style={{background:activeChannel==="whatsapp"?"rgba(37,211,102,0.08)":"rgba(230,104,60,0.08)",border:`1px solid ${activeChannel==="whatsapp"?"rgba(37,211,102,0.25)":"rgba(230,104,60,0.25)"}`}}>
-                          <span className={`font-black text-[12px] uppercase tracking-widest flex items-center justify-center gap-2 ${activeChannel==="whatsapp"?"text-[#25D366]":"text-[#e6683c]"}`}>
-                            <Zap className="w-4 h-4"/> Infrastructure Linked
-                          </span>
-                        </motion.div>
-                      </div>
-                    )}
-                  </div>
-                  <div className="absolute bottom-2.5 inset-x-0 h-1.5 rounded-full w-32 mx-auto z-20 bg-[#333]"/>
-                </div>
               </div>
             </motion.div>
           </div>
@@ -2054,39 +1383,25 @@ export default function Home() {
       <div className="fixed bottom-8 right-8 z-[130] flex flex-col items-end">
         <AnimatePresence>
           {isHelpOpen && (
-            <motion.div initial={{opacity:0,y:14,scale:.92}} animate={{opacity:1,y:0,scale:1}} exit={{opacity:0,y:14,scale:.92}} transition={{duration:.12,ease:"easeOut"}}
-              className="w-80 md:w-96 p-6 rounded-[1.5rem] mb-4 relative" style={{background:"#0F0F12",border:"1px solid rgba(255,255,255,0.09)",boxShadow:"0 10px 50px rgba(0,0,0,0.9)"}}>
-              <div className="absolute top-0 left-[15%] right-[15%] h-px" style={{background:"linear-gradient(90deg,transparent,rgba(249,115,22,0.4),transparent)"}}/>
-              <button aria-label="Close Help Chat" title="Close Chat" data-spring onClick={()=>setIsHelpOpen(false)} className={`absolute top-4 right-4 text-gray-500 hover:text-white bg-white/5 hover:bg-white/10 p-1.5 rounded-full transition-colors`}><X className="w-4 h-4"/></button>
+            <motion.div initial={{opacity:0,y:14,scale:.92}} animate={{opacity:1,y:0,scale:1}} exit={{opacity:0,y:14,scale:.92}}
+              className="w-80 md:w-96 p-6 rounded-[1.5rem] mb-4 relative shadow-2xl" style={{background:"#0F0F12",border:"1px solid rgba(255,255,255,0.09)"}}>
+              <button onClick={()=>setIsHelpOpen(false)} className="absolute top-4 right-4 text-gray-500 hover:text-white p-1.5 rounded-full"><X className="w-4 h-4"/></button>
               {helpStatus==="sent" ? (
                 <div className="py-10 text-center flex flex-col items-center">
-                  <div className="w-14 h-14 rounded-full flex items-center justify-center mb-4" style={{background:"rgba(34,197,94,0.12)", border:"1px solid rgba(34,197,94,0.2)"}}><CheckCircle2 className="w-7 h-7 text-green-400"/></div>
-                  <h4 className="text-white font-black text-[18px] mb-2">Request Submitted!</h4>
-                  <p className="text-[13px] text-gray-400">Our engineering team will review shortly.</p>
+                  <CheckCircle2 className="w-10 h-10 text-green-400 mb-2"/>
+                  <h4 className="text-white font-black text-[18px]">Submitted!</h4>
                 </div>
               ) : (
                 <>
-                  <div className="flex items-center gap-4 mb-5 pb-5" style={{borderBottom:"1px solid rgba(255,255,255,0.06)"}}>
-                    <div className="w-11 h-11 rounded-full flex items-center justify-center" style={{background:"rgba(59,130,246,0.12)", border:"1px solid rgba(59,130,246,0.2)"}}><MessageSquare className="w-5 h-5 text-blue-400"/></div>
-                    <div>
-                      <h4 className="text-white font-black text-[15px]">ClawLink Support</h4>
-                      <p className="text-[11px] text-gray-400 mt-0.5">Standard SLA per tier.</p>
-                    </div>
-                  </div>
+                  <h4 className="text-white font-black text-[15px] mb-4">ClawLink Support</h4>
                   <div className="space-y-4">
-                    <label htmlFor="help-email" className="sr-only">Your Email</label>
-                    <input id="help-email" aria-label="Your Email" title="Email Input" type="email" placeholder="Your email address" value={helpEmail} onChange={e=>setHelpEmail(e.target.value)}
-                      className="w-full px-4 py-3.5 rounded-xl text-[13px] text-white outline-none transition-colors duration-200 placeholder-gray-600"
-                      style={{background:"rgba(255,255,255,0.03)",border:"1px solid rgba(255,255,255,0.08)"}}
-                      onFocus={e=>(e.target.style.borderColor="rgba(59,130,246,0.5)")} onBlur={e =>(e.target.style.borderColor="rgba(255,255,255,0.08)")}/>
-                    <label htmlFor="help-message" className="sr-only">Your Message</label>
-                    <textarea id="help-message" aria-label="Your Message" title="Message Textarea" placeholder="How can we assist you today?" rows={4} value={helpMessage} onChange={e=>setHelpMessage(e.target.value)}
-                      className="w-full px-4 py-3.5 rounded-xl text-[13px] text-white outline-none resize-none transition-colors duration-200 placeholder-gray-600"
-                      style={{background:"rgba(255,255,255,0.03)",border:"1px solid rgba(255,255,255,0.08)"}}
-                      onFocus={e=>(e.target.style.borderColor="rgba(59,130,246,0.5)")} onBlur={e =>(e.target.style.borderColor="rgba(255,255,255,0.08)")}/>
-                    <button aria-label="Send Message to Support" title="Send Message" data-ripple data-spring onClick={handleSendHelpRequest} disabled={helpStatus==="sending"}
-                      className={`relative overflow-hidden w-full bg-blue-600 hover:bg-blue-500 text-white font-black uppercase tracking-widest text-[13px] py-4 rounded-xl flex items-center justify-center gap-2 shadow-[0_4px_15px_rgba(59,130,246,0.3)] hover:-translate-y-1 hover:shadow-lg transition-transform duration-150`}>
-                      {helpStatus==="sending"?"Transmitting…":<><Send className="w-4 h-4"/>Send Message</>}
+                    <input type="email" placeholder="Your email address" value={helpEmail} onChange={e=>setHelpEmail(e.target.value)}
+                      className="w-full px-4 py-3 rounded-xl text-[13px] text-white outline-none bg-white/5 border border-white/10"/>
+                    <textarea placeholder="How can we assist you today?" rows={3} value={helpMessage} onChange={e=>setHelpMessage(e.target.value)}
+                      className="w-full px-4 py-3 rounded-xl text-[13px] text-white outline-none resize-none bg-white/5 border border-white/10"/>
+                    <button onClick={handleSendHelpRequest} disabled={helpStatus==="sending"}
+                      className="w-full bg-blue-600 hover:bg-blue-500 text-white font-black uppercase text-[13px] py-3.5 rounded-xl flex items-center justify-center gap-2">
+                      <Send className="w-4 h-4"/>Send Message
                     </button>
                   </div>
                 </>
@@ -2095,13 +1410,11 @@ export default function Home() {
           )}
         </AnimatePresence>
         <motion.button 
-          aria-label="Toggle Help Widget" 
-          title="Help Widget" 
           whileHover={{scale:1.05}} 
           whileTap={{scale:.95}} 
           onClick={() => setIsHelpOpen(!isHelpOpen)}
-          className="w-16 h-16 text-white rounded-full flex items-center justify-center transition-all duration-200 transform-gpu"
-          style={{background:"linear-gradient(135deg,#3B82F6,#7C3AED)",boxShadow:"0 10px 30px rgba(59,130,246,0.4)"}}
+          className="w-16 h-16 text-white rounded-full flex items-center justify-center shadow-lg"
+          style={{background:"linear-gradient(135deg,#3B82F6,#7C3AED)"}}
         >
           {isHelpOpen ? <X className="w-7 h-7"/> : <MessageCircle className="w-7 h-7"/>}
         </motion.button>
