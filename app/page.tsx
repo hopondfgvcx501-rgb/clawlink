@@ -5,12 +5,12 @@
  * CLAWLINK ENTERPRISE FRONTEND SECURE MODULE
  * ==============================================================================================
  * @file app/page.tsx
- * @version 15.5.0 (The Competitor Killer Update - Full Polish)
+ * @version 16.0.0 (The Ultimate Pricing & UI Master Polish)
  * @description Main onboarding interface with strict Product-Led Growth (PLG) routing.
  * 🚀 SECURED: Advanced Anti-debugging, anti-clickjacking, and payload tampering defenses.
- * 🔥 UI UPGRADE: Perfected 55/45 layout split, dynamic selection glows, Genuine IG mockup.
- * 🛡️ SMART DEMO: LocalStorage 3-chat limit, Personalized AI Marketing, silent TG error logging.
- * 🛠️ BUGFIX: Removed duplicate handleDemoSubmit functions causing TS compiler errors.
+ * 🔥 UI UPGRADE: Fully Integrated Dark Hacker-Themed Pricing Section with Tabs & Currency Toggle.
+ * 🛡️ SMART DEMO: Region-aware (India vs Global) Smart Contextual AI Funnel.
+ * 📱 UX FIX: Resolved scroll jumping and duplicate function compiler crashes.
  * * ALL RIGHTS RESERVED. CLAWLINK INC.
  * ==============================================================================================
  */
@@ -24,7 +24,7 @@ import {
   Globe, Database, Mic, Zap, MessageSquare, Activity,
   LogOut, Shield, ExternalLink, CheckCircle2, Copy,
   MessageCircle, X, Send, Mail, User, LayoutDashboard,
-  Sun, Moon, Monitor, Loader2, Smartphone, Check, ArrowRight, Bot, Lock, Verified
+  Sun, Moon, Monitor, Loader2, Smartphone, Check, ArrowRight, Bot, Lock, Verified, Sparkles
 } from "lucide-react";
 import Image from "next/image";
 import TelegramDemoWidget from "@/components/TelegramDemoWidget";
@@ -103,42 +103,70 @@ class KnoxSecurityProtocol {
   }
 }
 
+// Helper Functions for New Premium UI
+function hexA(hex: string, a: number) {
+  const c = hex.replace("#", "");
+  const n = parseInt(c, 16);
+  return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${a})`;
+}
+
+function Meter({ level, accent }: { level: number, accent: string }) {
+  return (
+    <div className="flex gap-[3px]">
+      {[1, 2, 3, 4].map((i) => (
+        <span
+          key={i}
+          className="h-[3px] w-4 rounded-full"
+          style={{
+            background: i <= level ? accent : "rgba(255,255,255,0.08)",
+            boxShadow: i <= level ? `0 0 8px ${hexA(accent, 0.7)}` : "none",
+          }}
+        />
+      ))}
+    </div>
+  );
+}
+
+function Corner({ pos }: { pos: "tl" | "br" }) {
+  const base = "absolute w-3 h-3 opacity-40";
+  const styles = {
+    tl: "top-3 left-3 border-t border-l",
+    br: "bottom-3 right-3 border-b border-r",
+  };
+  return <span className={`${base} ${styles[pos]}`} style={{ borderColor: "rgba(255,255,255,0.25)" }} />;
+}
+
+// Updated ClawLink Specific Pricing Data
 const PRICING_DATA: Record<string, any> = {
-  "gemini 3.1 Pro": {
-    name: "Gemini 3.1 Pro",
-    plans: [
-      { id: "plus", name: "Plus", usd: 6, inr: 279, msgs: "Optimized Speed", desc: "Instant customer conversions & rapid response.", accent: "rgba(255,255,255,.35)", color: "text-gray-400" },
-      { id: "pro", name: "Pro", usd: 12, inr: 999, msgs: "Enterprise Scale", desc: "Complex query mastermind & priority routing.", accent: "#3B82F6", color: "text-blue-400", badge: "Popular" },
-      { id: "ultra", name: "Ultra", usd: 24, inr: 1999, msgs: "Peak Execution", desc: "Zero parallel chat limit & max system power.", accent: "#A855F7", color: "text-purple-400" },
-      { id: "adv_max", name: "Adv Max", usd: 599, inr: 49999, msgs: "Unlimited Tier", desc: "Global system dominance & uncapped scaling.", accent: "#F97316", color: "text-orange-400", badge: "Yearly ⭐", isYearly: true }
-    ]
-  },
   "GPT-5.5 Pro": { 
     name: "GPT-5.5 Pro",
     plans: [
-      { id: "plus", name: "Plus", usd: 8, inr: 279, msgs: "Optimized Speed", desc: "Instant customer conversions & rapid response.", accent: "rgba(255,255,255,.35)", color: "text-gray-400" },
-      { id: "pro", name: "Pro", usd: 18, inr: 1499, msgs: "Enterprise Scale", desc: "Complex query mastermind & priority routing.", accent: "#3B82F6", color: "text-blue-400", badge: "Popular" },
-      { id: "ultra", name: "Ultra", usd: 36, inr: 2999, msgs: "Peak Execution", desc: "Zero parallel chat limit & max system power.", accent: "#A855F7", color: "text-purple-400" },
-      { id: "adv_max", name: "Adv Max", usd: 899, inr: 74999, msgs: "Unlimited Tier", desc: "Global system dominance & uncapped scaling.", accent: "#F97316", color: "text-orange-400", badge: "Yearly ⭐", isYearly: true }
+      { id: "free", name: "Free", usd: 0, inr: 0, msgs: "Try Before You Trust", desc: "See what your AI can do.", accent: "#8A93A6", level: 1, isYearly: false, features: ["1 AI Agent", "1 channel", "Limited AI usage", "Basic memory", "Core automations", "Test your first workflow", "No credit card"] },
+      { id: "pro", name: "Pro Engine", usd: 18, inr: 1499, yearlyUsd: 14.40, yearlyInr: 1199, yearlyTotalUsd: 172.80, yearlyTotalInr: 14388, msgs: "Turn AI into a 24/7 employee.", desc: "Automate repetitive customer conversations for less than the cost of one coffee.", accent: "#3B82F6", badge: "BEST VALUE", level: 2, isYearly: false, features: ["WhatsApp, Telegram & IG", "Advanced AI memory", "Voice message automation", "AI tool calling", "CRM integrations", "Automated customer replies", "Webhooks & workflows", "Analytics", "Priority support"] },
+      { id: "nexus", name: "Omni Nexus", usd: 89, inr: 7499, yearlyUsd: 71.20, yearlyInr: 5999, yearlyTotalUsd: 854.40, yearlyTotalInr: 71988, msgs: "Never let one AI failure stop your business.", desc: "4 AI engines. One intelligent system. GPT + Claude + Gemini + Llama.", accent: "#F97316", badge: "MOST POPULAR 🔥", level: 3, isYearly: false, features: ["Omni-Fallback routing", "Multi-channel deployment", "Advanced RAG memory", "Unlimited* AI automation", "Live CRM", "Human handoff", "Payment integrations", "Advanced analytics", "Priority infrastructure", "24/7 engineering support"] },
+      { id: "enterprise", name: "Enterprise", usd: "Custom", inr: "Custom", msgs: "Global system dominance.", desc: "Tailored for massive scale and compliance.", accent: "#A855F7", level: 4, isYearly: false, features: ["Fully uncapped scaling", "Dedicated server IP", "White-glove setup", "Custom SLAs", "Dedicated account manager"] }
     ]
   },
   "Claude Opus 4.7": {
     name: "Claude Opus 4.7",
     plans: [
-      { id: "plus", name: "Plus", usd: 10, inr: 279, msgs: "Optimized Speed", desc: "Instant customer conversions & rapid response.", accent: "rgba(255,255,255,.35)", color: "text-gray-400" },
-      { id: "pro", name: "Pro", usd: 24, inr: 1999, msgs: "Enterprise Scale", desc: "Complex query mastermind & priority routing.", accent: "#3B82F6", color: "text-blue-400", badge: "Popular" },
-      { id: "ultra", name: "Ultra", usd: 48, inr: 3999, msgs: "Peak Execution", desc: "Zero parallel chat limit & max system power.", accent: "#A855F7", color: "text-purple-400" },
-      { id: "adv_max", name: "Adv Max", usd: 1199, inr: 99999, msgs: "Unlimited Tier", desc: "Global system dominance & uncapped scaling.", accent: "#F97316", color: "text-orange-400", badge: "Yearly ⭐", isYearly: true }
+      { id: "free", name: "Free", usd: 0, inr: 0, msgs: "Try Before You Trust", desc: "See what your AI can do.", accent: "#8A93A6", level: 1, isYearly: false, features: ["1 AI Agent", "1 channel", "Limited AI usage", "Basic memory", "Core automations", "Test your first workflow", "No credit card"] },
+      { id: "pro", name: "Pro Engine", usd: 24, inr: 1999, yearlyUsd: 19.20, yearlyInr: 1599, yearlyTotalUsd: 230.40, yearlyTotalInr: 19188, msgs: "Long context window master.", desc: "Automate repetitive customer conversations for less than the cost of one coffee.", accent: "#e6683c", badge: "BEST VALUE", level: 2, isYearly: false, features: ["WhatsApp, Telegram & IG", "Advanced AI memory", "200k Context Window", "AI tool calling", "CRM integrations", "Automated customer replies", "Webhooks & workflows", "Analytics", "Priority support"] },
+      { id: "nexus", name: "Omni Nexus", usd: 119, inr: 9999, yearlyUsd: 95.20, yearlyInr: 7999, yearlyTotalUsd: 1142.40, yearlyTotalInr: 95988, msgs: "Never let one AI failure stop your business.", desc: "4 AI engines. One intelligent system. GPT + Claude + Gemini + Llama.", accent: "#F97316", badge: "MOST POPULAR 🔥", level: 3, isYearly: false, features: ["Omni-Fallback routing", "Multi-channel deployment", "Advanced RAG memory", "Unlimited* AI automation", "Live CRM", "Human handoff", "Payment integrations", "Advanced analytics", "Priority infrastructure", "24/7 engineering support"] },
+      { id: "enterprise", name: "Enterprise", usd: "Custom", inr: "Custom", msgs: "Global system dominance.", desc: "Tailored for massive scale and compliance.", accent: "#A855F7", level: 4, isYearly: false, features: ["Fully uncapped scaling", "Dedicated server IP", "White-glove setup", "Custom SLAs", "Dedicated account manager"] }
     ]
   },
-  "omni 3 nexus": {
-    name: "Omni 3 Nexus",
+   "Gemini 3.1 Pro": {
+    name: "Gemini 3.1 Pro",
     plans: [
-      { id: "monthly", name: "Pro Bundle", usd: 89, inr: 7499, msgs: "Smart Matrix", desc: "Elite multi-persona integration. 4x Cross-provider Fallback. Priority Webhook Sync.", accent: "#00BFFF", color: "text-[#00BFFF]" },
-      { id: "yearly", name: "Adv Premium", usd: 890, inr: 74999, msgs: "Zero Downtime", desc: "Ultimate auto-routing, Razorpay integration & global priority access.", accent: "#BA7517", color: "text-[#BA7517]", badge: "Yearly ⭐", isYearly: true }
+      { id: "free", name: "Free", usd: 0, inr: 0, msgs: "Try Before You Trust", desc: "See what your AI can do.", accent: "#8A93A6", level: 1, isYearly: false, features: ["1 AI Agent", "1 channel", "Limited AI usage", "Basic memory", "Core automations", "Test your first workflow", "No credit card"] },
+      { id: "pro", name: "Pro Engine", usd: 12, inr: 999, yearlyUsd: 9.60, yearlyInr: 799, yearlyTotalUsd: 115.20, yearlyTotalInr: 9588, msgs: "Fast text generation for basic bots.", desc: "Automate repetitive customer conversations for less than the cost of one coffee.", accent: "#60a5fa", badge: "BEST VALUE", level: 2, isYearly: false, features: ["WhatsApp, Telegram & IG", "Advanced AI memory", "Voice message automation", "AI tool calling", "CRM integrations", "Automated customer replies", "Webhooks & workflows", "Analytics", "Priority support"] },
+      { id: "nexus", name: "Omni Nexus", usd: 89, inr: 7499, yearlyUsd: 71.20, yearlyInr: 5999, yearlyTotalUsd: 854.40, yearlyTotalInr: 71988, msgs: "Never let one AI failure stop your business.", desc: "4 AI engines. One intelligent system. GPT + Claude + Gemini + Llama.", accent: "#F97316", badge: "MOST POPULAR 🔥", level: 3, isYearly: false, features: ["Omni-Fallback routing", "Multi-channel deployment", "Advanced RAG memory", "Unlimited* AI automation", "Live CRM", "Human handoff", "Payment integrations", "Advanced analytics", "Priority infrastructure", "24/7 engineering support"] },
+      { id: "enterprise", name: "Enterprise", usd: "Custom", inr: "Custom", msgs: "Global system dominance.", desc: "Tailored for massive scale and compliance.", accent: "#A855F7", level: 4, isYearly: false, features: ["Fully uncapped scaling", "Dedicated server IP", "White-glove setup", "Custom SLAs", "Dedicated account manager"] }
     ]
   }
 };
+const MODEL_NAMES = Object.keys(PRICING_DATA);
 
 const ICON_SIZE = 28;
 
@@ -271,7 +299,7 @@ export default function Home() {
   
   const [theme, setTheme] = useState("dark");
 
-  // 🔥 PLAYGROUND STATES WITH CACHE
+  // PLAYGROUND STATES WITH CACHE
   const [demoChat, setDemoChat] = useState([{ role: "bot", text: "Hi! I am ClawLink's Omni-Fallback AI. Send me a message to test my latency! ⚡" }]);
   const [demoInput, setDemoInput] = useState("");
   const [isDemoTyping, setIsDemoTyping] = useState(false);
@@ -284,150 +312,10 @@ export default function Home() {
   // INSTAGRAM MOCKUP STATES
   const [igChat, setIgChat] = useState<{user: boolean, text: string}[]>([]);
   
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const savedTheme = localStorage.getItem("clawlink_theme") || "dark";
-      setTheme(savedTheme);
-      const prefersLight = window.matchMedia("(prefers-color-scheme: light)").matches;
-      if (savedTheme === "light" || (savedTheme === "system" && prefersLight)) {
-         document.documentElement.classList.add("light-theme-active");
-      }
-
-      const savedCount = parseInt(localStorage.getItem("clawlink_demo_chats") || "0");
-      setDemoChatCount(savedCount);
-
-      let timeoutIds: NodeJS.Timeout[] = [];
-      IG_DEMO_CHAT.forEach((msg, idx) => {
-        const id = setTimeout(() => {
-          setIgChat(prev => [...prev, msg]);
-        }, (idx + 1) * 2000);
-        timeoutIds.push(id);
-      });
-
-      return () => timeoutIds.forEach(clearTimeout);
-    }
-  }, []);
-
-  const cycleTheme = () => {
-    const nextTheme = theme === "dark" ? "light" : theme === "light" ? "system" : "dark";
-    setTheme(nextTheme);
-    if (typeof window !== "undefined") {
-      localStorage.setItem("clawlink_theme", nextTheme);
-      const prefersLight = window.matchMedia("(prefers-color-scheme: light)").matches;
-      if (nextTheme === "light" || (nextTheme === "system" && prefersLight)) {
-        document.documentElement.classList.add("light-theme-active");
-      } else {
-        document.documentElement.classList.remove("light-theme-active");
-      }
-    }
-  };
-
-  // 🔥 SMART PLAYGROUND HANDLER (Global Region Detect + Contextual AI Funnel)
-  const handleDemoSubmit = async (e: any) => {
-    e.preventDefault();
-    if (!demoInput.trim() || isDemoTyping) return;
-
-    const userName = session?.user?.name ? session.user.name.split(" ")[0] : "Guest";
-    const currentCount = parseInt(localStorage.getItem("clawlink_demo_chats") || "0");
-    
-    // Auto-detect Browser Language to pitch in Hinglish or English
-    const userLang = typeof navigator !== "undefined" ? navigator.language.toLowerCase() : "en";
-    const isIndian = userLang.includes("hi") || userLang.includes("in");
-
-    if (currentCount >= 3) {
-       const limitMsg = isIndian 
-         ? `🔒 Demo limit reached (3/3). ${userName}, speed test done! Apna AI agent deploy karne ke liye niche login karein.`
-         : `🔒 Demo limit reached (3/3). ${userName}, you've experienced the speed! Now, login below to deploy your own AI.`;
-       setDemoChat(p => [...p, { role: "user", text: demoInput }, { role: "bot", text: limitMsg }]);
-       setDemoInput("");
-       return;
-    }
-
-    const userMsg = demoInput.trim();
-    setDemoChat(p => [...p, { role: "user", text: userMsg }]);
-    setDemoInput("");
-    setIsDemoTyping(true);
-
-    try {
-      const res = await fetch("/api/omni", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: userMsg, source: "landing_playground" }),
-      });
-
-      const data = await res.json();
-
-      if (res.ok && data.reply) {
-        setDemoChat(p => [...p, { role: "bot", text: data.reply }]);
-      } else {
-        throw new Error(data.error || "Access Denied by limits");
-      }
-    } catch (error: any) {
-      // 🔥 SMART CONTEXTUAL FALLBACK (Feels 100% Real)
-      const msgLower = userMsg.toLowerCase();
-      let smartReply = "";
-
-      if (isIndian) {
-        if (msgLower.includes("price") || msgLower.includes("cost") || msgLower.includes("paisa")) {
-           smartReply = `${userName}, humara Pro plan $18/mo hai aur Omni Nexus $89/mo. 💰 Niche login karke apna server secure karein!`;
-        } else if (msgLower.includes("nahi") || msgLower.includes("no ") || msgLower.includes("bye")) {
-           smartReply = `Koi baat nahi ${userName}! Jab bhi aapko 0% downtime wala AI chahiye ho, ClawLink ready hai. 🚀`;
-        } else if (msgLower.includes("hi") || msgLower.includes("hello")) {
-           smartReply = `Hello ${userName}! 👋 Main ClawLink AI hoon. Aap apni business chat ko 1-click mein automate kar sakte hain.`;
-        } else {
-           smartReply = `Thank you ${userName}! 🚀 Main ClawLink ka AI assistant hoon. Main WhatsApp aur Instagram par aisi hi fast replies deta hoon!`;
-        }
-      } else {
-        if (msgLower.includes("price") || msgLower.includes("cost")) {
-           smartReply = `${userName}, our Pro plan is $18/mo and the flagship Omni Nexus is $89/mo. 💰 Login below to secure your server!`;
-        } else if (msgLower.includes("no ") || msgLower.includes("nothing") || msgLower.includes("bye")) {
-           smartReply = `No problem, ${userName}! Whenever you need a 0% downtime AI agent, ClawLink will be here waiting. 🚀`;
-        } else if (msgLower.includes("hi") || msgLower.includes("hello")) {
-           smartReply = `Hello ${userName}! 👋 I am ClawLink AI. You can deploy me to WhatsApp or IG in 1-click.`;
-        } else {
-           smartReply = `Thank you ${userName}! 🚀 I am ClawLink's Omni-Engine. I automate customer support globally with 0% downtime!`;
-        }
-      }
-      
-      setDemoChat(p => [...p, { role: "bot", text: smartReply }]);
-      
-      fetch("/api/tg-admin", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: `🚨 [Playground Intercept] Error: ${error.message}. User: ${userName}` })
-      }).catch(() => {});
-
-    } finally {
-      setIsDemoTyping(false);
-      const newCount = currentCount + 1;
-      localStorage.setItem("clawlink_demo_chats", newCount.toString());
-      setDemoChatCount(newCount);
-
-      if (newCount === 3) {
-          setTimeout(() => {
-              const pitchMsg = isIndian 
-                ? `🚨 ${userName}, aapke 3 free test messages khatam ho gaye! Apna AI bot live karne ke liye 'Login & Deploy' par click karein.`
-                : `🚨 ${userName}, you've used your 3 free test messages! Click 'Login to Deploy' to automate your business!`;
-              setDemoChat(p => [...p, { role: "bot", text: pitchMsg }]);
-          }, 1500);
-      }
-    }
-  };
-
-  // 🔥 BUGFIX: Page jumping issue resolved by strictly scrolling ONLY the chat div
-  useEffect(() => {
-    if (apiChatRef.current) {
-        apiChatRef.current.scrollTop = apiChatRef.current.scrollHeight;
-    }
-  }, [demoChat, isDemoTyping]);
-
-  useEffect(() => {
-    if (igChatRef.current) {
-        igChatRef.current.scrollTop = igChatRef.current.scrollHeight;
-    }
-  }, [igChat]);
-
-
+  // NEW PRICING STATES
+  const [pricingModel, setPricingModel] = useState<string>("GPT-5.5 Pro");
+  const [isYearlyBilling, setIsYearlyBilling] = useState<boolean>(true);
+  
   const [telegramToken, setTelegramToken] = useState("");
   const [waPhoneId, setWaPhoneId] = useState("");
   const [waPhoneNumber, setWaPhoneNumber] = useState("");
@@ -628,6 +516,150 @@ export default function Home() {
       if (cg.parentNode) cg.parentNode.removeChild(cg);
     };
   }, [session?.user?.email, status]);
+
+  // MOVED USEEFFECTS FOR CHAT MOCKUPS HERE
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const savedTheme = localStorage.getItem("clawlink_theme") || "dark";
+      setTheme(savedTheme);
+      const prefersLight = window.matchMedia("(prefers-color-scheme: light)").matches;
+      if (savedTheme === "light" || (savedTheme === "system" && prefersLight)) {
+         document.documentElement.classList.add("light-theme-active");
+      }
+
+      const savedCount = parseInt(localStorage.getItem("clawlink_demo_chats") || "0");
+      setDemoChatCount(savedCount);
+
+      let timeoutIds: NodeJS.Timeout[] = [];
+      IG_DEMO_CHAT.forEach((msg, idx) => {
+        const id = setTimeout(() => {
+          setIgChat(prev => [...prev, msg]);
+        }, (idx + 1) * 2000);
+        timeoutIds.push(id);
+      });
+
+      return () => timeoutIds.forEach(clearTimeout);
+    }
+  }, []);
+
+  // 🔥 BUGFIX: Page jumping issue resolved by strictly scrolling ONLY the chat div
+  useEffect(() => {
+    if (apiChatRef.current) {
+        apiChatRef.current.scrollTop = apiChatRef.current.scrollHeight;
+    }
+  }, [demoChat, isDemoTyping]);
+
+  useEffect(() => {
+    if (igChatRef.current) {
+        igChatRef.current.scrollTop = igChatRef.current.scrollHeight;
+    }
+  }, [igChat]);
+
+  const cycleTheme = () => {
+    const nextTheme = theme === "dark" ? "light" : theme === "light" ? "system" : "dark";
+    setTheme(nextTheme);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("clawlink_theme", nextTheme);
+      const prefersLight = window.matchMedia("(prefers-color-scheme: light)").matches;
+      if (nextTheme === "light" || (nextTheme === "system" && prefersLight)) {
+        document.documentElement.classList.add("light-theme-active");
+      } else {
+        document.documentElement.classList.remove("light-theme-active");
+      }
+    }
+  };
+
+  // 🔥 SMART PLAYGROUND HANDLER (Global Region Detect + Contextual AI Funnel)
+  const handleDemoSubmit = async (e: any) => {
+    e.preventDefault();
+    if (!demoInput.trim() || isDemoTyping) return;
+
+    const userName = session?.user?.name ? session.user.name.split(" ")[0] : "Guest";
+    const currentCount = parseInt(localStorage.getItem("clawlink_demo_chats") || "0");
+    
+    // Auto-detect Browser Language to pitch in Hinglish or English
+    const userLang = typeof navigator !== "undefined" ? navigator.language.toLowerCase() : "en";
+    const isIndian = userLang.includes("hi") || userLang.includes("in");
+
+    if (currentCount >= 3) {
+       const limitMsg = isIndian 
+         ? `🔒 Demo limit reached (3/3). ${userName}, speed test done! Apna AI agent deploy karne ke liye niche login karein.`
+         : `🔒 Demo limit reached (3/3). ${userName}, you've experienced the speed! Now, login below to deploy your own AI.`;
+       setDemoChat(p => [...p, { role: "user", text: demoInput }, { role: "bot", text: limitMsg }]);
+       setDemoInput("");
+       return;
+    }
+
+    const userMsg = demoInput.trim();
+    setDemoChat(p => [...p, { role: "user", text: userMsg }]);
+    setDemoInput("");
+    setIsDemoTyping(true);
+
+    try {
+      const res = await fetch("/api/omni", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: userMsg, source: "landing_playground" }),
+      });
+
+      const data = await res.json();
+
+      if (res.ok && data.reply) {
+        setDemoChat(p => [...p, { role: "bot", text: data.reply }]);
+      } else {
+        throw new Error(data.error || "Access Denied by limits");
+      }
+    } catch (error: any) {
+      // 🔥 SMART CONTEXTUAL FALLBACK (Feels 100% Real)
+      const msgLower = userMsg.toLowerCase();
+      let smartReply = "";
+
+      if (isIndian) {
+        if (msgLower.includes("price") || msgLower.includes("cost") || msgLower.includes("paisa")) {
+           smartReply = `${userName}, humara Pro plan $18/mo hai aur Omni Nexus $89/mo. 💰 Niche login karke apna server secure karein!`;
+        } else if (msgLower.includes("nahi") || msgLower.includes("no ") || msgLower.includes("bye")) {
+           smartReply = `Koi baat nahi ${userName}! Jab bhi aapko 0% downtime wala AI chahiye ho, ClawLink ready hai. 🚀`;
+        } else if (msgLower.includes("hi") || msgLower.includes("hello")) {
+           smartReply = `Hello ${userName}! 👋 Main ClawLink AI hoon. Aap apni business chat ko 1-click mein automate kar sakte hain.`;
+        } else {
+           smartReply = `Thank you ${userName}! 🚀 Main ClawLink ka AI assistant hoon. Main WhatsApp aur Instagram par aisi hi fast replies deta hoon!`;
+        }
+      } else {
+        if (msgLower.includes("price") || msgLower.includes("cost")) {
+           smartReply = `${userName}, our Pro plan is $18/mo and the flagship Omni Nexus is $89/mo. 💰 Login below to secure your server!`;
+        } else if (msgLower.includes("no ") || msgLower.includes("nothing") || msgLower.includes("bye")) {
+           smartReply = `No problem, ${userName}! Whenever you need a 0% downtime AI agent, ClawLink will be here waiting. 🚀`;
+        } else if (msgLower.includes("hi") || msgLower.includes("hello")) {
+           smartReply = `Hello ${userName}! 👋 I am ClawLink AI. You can deploy me to WhatsApp or IG in 1-click.`;
+        } else {
+           smartReply = `Thank you ${userName}! 🚀 I am ClawLink's Omni-Engine. I automate customer support globally with 0% downtime!`;
+        }
+      }
+      
+      setDemoChat(p => [...p, { role: "bot", text: smartReply }]);
+      
+      fetch("/api/tg-admin", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: `🚨 [Playground Intercept] Error: ${error.message}. User: ${userName}` })
+      }).catch(() => {});
+
+    } finally {
+      setIsDemoTyping(false);
+      const newCount = currentCount + 1;
+      localStorage.setItem("clawlink_demo_chats", newCount.toString());
+      setDemoChatCount(newCount);
+
+      if (newCount === 3) {
+          setTimeout(() => {
+              const pitchMsg = isIndian 
+                ? `🚨 ${userName}, aapke 3 free test messages khatam ho gaye! Apna AI bot live karne ke liye 'Login & Deploy' par click karein.`
+                : `🚨 ${userName}, you've used your 3 free test messages! Click 'Login to Deploy' to automate your business!`;
+              setDemoChat(p => [...p, { role: "bot", text: pitchMsg }]);
+          }, 1500);
+      }
+    }
+  };
 
   const handleModelSelect = (modelId: string) => {
     if (!isTokenSaved && !hasDeployedBefore) {
@@ -1355,7 +1387,6 @@ export default function Home() {
                  </div>
 
                  {/* IG Chat Area (PLAIN SOLID BLACK - PERFECT CLONE) */}
-                 {/* 🚀 BUGFIX: Added ref={igChatRef} */}
                  <div ref={igChatRef} className="flex-1 overflow-y-auto custom-scrollbar p-5 flex flex-col gap-4 relative bg-[#000]">
                     <AnimatePresence>
                       {igChat.map((msg, idx) => (
@@ -1399,7 +1430,6 @@ export default function Home() {
                  </div>
 
                  {/* Techy Chat Area (WITH CUBES) */}
-                 {/* 🚀 BUGFIX: Added ref={apiChatRef} and REMOVED <div ref={chatEndRef} /> */}
                  <div ref={apiChatRef} className="flex-1 overflow-y-auto custom-scrollbar p-5 flex flex-col gap-4 relative bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] bg-opacity-5">
                     <AnimatePresence>
                       {demoChat.map((msg, idx) => (
@@ -1436,80 +1466,172 @@ export default function Home() {
         </motion.div>
       </section>
 
-      {/* 🔥 INJECTED: PRICING SECTION */}
-      <section id="pricing" className="relative z-10 py-28 px-6 md:px-12 transition-colors duration-300" style={{ borderTop: "1px solid var(--border-color)", backgroundColor: "var(--bg-section)" }}>
-        <div className="max-w-[1200px] mx-auto">
-          <div className="sr-up text-center mb-16">
-            <p className="text-[11px] font-black tracking-[.2em] uppercase text-orange-500 mb-3">Enterprise Pricing</p>
-            <h2 className="text-[clamp(2rem,4vw,3.2rem)] font-black tracking-[-0.035em] mb-4" style={{ color: "var(--text-main)" }}>Simple pricing. No surprises.</h2>
-            <p className="text-[16px] max-w-[500px] mx-auto leading-relaxed" style={{ color: "var(--text-muted)" }}>Stop paying per message. One flat fee for unlimited Enterprise scale.</p>
-          </div>
+      {/* 🔥 INJECTED: NEW DARK GRID PRICING UI WITH PSYCHOLOGICAL HOOKS */}
+      <section id="pricing" className="relative z-10 py-24 px-6 overflow-hidden" style={{ background: "#08090c", borderTop: "1px solid var(--border-color)" }}>
+        
+        {/* Background Grid + Vignette */}
+        <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: "linear-gradient(rgba(255,255,255,0.035) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.035) 1px, transparent 1px)", backgroundSize: "56px 56px", maskImage: "radial-gradient(ellipse 80% 60% at 50% 20%, black 20%, transparent 75%)", WebkitMaskImage: "radial-gradient(ellipse 80% 60% at 50% 20%, black 20%, transparent 75%)" }} />
+        <div className="absolute -top-40 left-1/2 -translate-x-1/2 w-[900px] h-[500px] rounded-full pointer-events-none" style={{ background: "radial-gradient(circle, rgba(249,115,22,0.08), transparent 65%)" }} />
+
+        <div className="max-w-[1300px] mx-auto relative z-10">
           
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-5xl mx-auto">
-            {/* Standard Plan */}
-            <div className="sr-left fi-card p-8 rounded-[24px] border transition-all duration-300 flex flex-col justify-between" style={{ backgroundColor: "var(--bg-card)", borderColor: "var(--border-color)" }}>
-               <div>
-                  <div className="flex justify-between items-start mb-6">
-                     <div>
-                        <h3 className="font-bold uppercase text-[12px] tracking-widest text-blue-500 mb-2">Pro Engine</h3>
-                        <div className="text-[3rem] font-black leading-none" style={{ color: "var(--text-main)" }}>$18<span className="text-[14px] text-gray-500 font-normal">/mo</span></div>
-                     </div>
-                     <OpenAI_Icon size={40} />
-                  </div>
-                  <p className="text-[14px] leading-relaxed mb-6 pb-6 border-b" style={{ color: "var(--text-muted)", borderColor: "var(--border-color)" }}>Perfect for growing businesses. High speed customer support powered by GPT-5.5.</p>
-                  <ul className="space-y-4 mb-8">
-                     {["Unlimited integrations", "Fair usage of AI tool calls", "Priority email support", "Single-channel deployment"].map((f, i) => (
-                        <li key={i} className="flex items-center gap-3 text-[13px] font-medium" style={{ color: "var(--text-main)" }}><Check className="w-4 h-4 text-green-500"/> {f}</li>
-                     ))}
-                  </ul>
-               </div>
-               <button 
-                onClick={() => {
-                    if (status !== "authenticated") {
-                        signIn("google");
-                    } else {
-                        handleModelSelect("GPT-5.5 Pro");
-                        document.getElementById("hero")?.scrollIntoView({behavior:"smooth"});
-                    }
-                }} 
-                className="w-full py-4 rounded-xl font-black uppercase tracking-widest text-[12px] bg-blue-500/10 text-blue-500 hover:bg-blue-500 hover:text-white transition-all border border-blue-500/20"
-               >
-                {status === "authenticated" ? "Select & Deploy Pro Engine" : "Login to Deploy Pro"}
-               </button>
+          {/* Eyebrow */}
+          <div className="flex justify-center mb-6 sr-up">
+            <div className="font-mono text-[10.5px] tracking-[0.35em] uppercase text-white/40 flex items-center gap-3">
+              <span className="w-6 h-px bg-white/25" />
+              Choose Your AI Workforce
+              <span className="w-6 h-px bg-white/25" />
+            </div>
+          </div>
+
+          <h2 className="text-center text-[clamp(2.2rem,4vw,3.5rem)] font-black tracking-[-0.035em] mb-4 text-white sr-up leading-tight">
+            Start small.<br className="md:hidden" /> Scale when your business grows.
+          </h2>
+          <p className="text-center text-white/50 text-[15px] mb-8 max-w-md mx-auto sr-up">
+            Your AI. Your Channels. Your Growth.
+          </p>
+
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-6 mb-16 sr-up">
+            {/* Model Switcher */}
+            <div className="relative flex flex-wrap justify-center rounded-[24px] p-1.5 bg-white/[0.04] border border-white/10 gap-1 w-fit">
+              {MODEL_NAMES.map((name) => (
+                <button
+                  key={name}
+                  onClick={() => setPricingModel(name)}
+                  className={`relative z-10 px-5 py-2.5 rounded-full font-mono text-[11.5px] font-bold tracking-wider transition-all duration-300 ${pricingModel === name ? "bg-white text-black shadow-md scale-105" : "text-white/50 hover:text-white/90 bg-transparent"}`}
+                >
+                  {name}
+                </button>
+              ))}
             </div>
 
-            {/* Nexus Tier Highlight */}
-            <div className="sr-rght fi-card p-8 rounded-[24px] border-2 transition-all duration-300 flex flex-col justify-between transform lg:-translate-y-4 shadow-[0_30px_60px_rgba(249,115,22,0.15)]" style={{ backgroundColor: "var(--bg-card)", borderColor: "#f97316" }}>
-               <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-orange-500 to-pink-500"></div>
-               <div>
-                  <div className="flex justify-between items-start mb-6">
-                     <div>
-                        <h3 className="font-bold uppercase text-[12px] tracking-widest text-orange-500 mb-2 flex items-center gap-2">Omni Nexus <span className="bg-orange-500 text-white text-[9px] px-2 py-0.5 rounded-full">MOST POPULAR</span></h3>
-                        <div className="text-[3rem] font-black leading-none" style={{ color: "var(--text-main)" }}>$89<span className="text-[14px] text-gray-500 font-normal">/mo</span></div>
-                     </div>
-                     <Omni_Icon size={40} />
-                  </div>
-                  <p className="text-[14px] leading-relaxed mb-6 pb-6 border-b" style={{ color: "var(--text-muted)", borderColor: "var(--border-color)" }}>Elite 4x Omni-Fallback (Claude, GPT, Gemini, Llama) for Zero downtime.</p>
-                  <ul className="space-y-4 mb-8">
-                     {["4x Cross-Provider Fallback Routing", "Unlimited AI tool calls & memory", "Priority Razorpay/Stripe Sync", "Live CRM & Instant Handoff", "24/7 Dedicated Engineering Support"].map((f, i) => (
-                        <li key={i} className="flex items-center gap-3 text-[13px] font-bold" style={{ color: "var(--text-main)" }}><Check className="w-4 h-4 text-orange-500"/> {f}</li>
-                     ))}
-                  </ul>
-               </div>
-               <button 
-                onClick={() => {
-                    if (status !== "authenticated") {
-                        signIn("google");
-                    } else {
-                        handleModelSelect("omni 3 nexus");
-                        document.getElementById("hero")?.scrollIntoView({behavior:"smooth"});
-                    }
-                }} 
-                className="w-full py-4 rounded-xl font-black uppercase tracking-widest text-[12px] bg-gradient-to-r from-orange-500 to-amber-500 text-white hover:shadow-[0_0_20px_rgba(249,115,22,0.4)] hover:-translate-y-1 transition-all"
-               >
-                {status === "authenticated" ? "Deploy Omni Nexus" : "Login to Deploy Nexus"}
-               </button>
+            {/* Billing Toggle (Monthly / Yearly) */}
+             <div className="flex items-center gap-3">
+                <span className={`text-[12px] font-bold ${!isYearlyBilling ? 'text-white' : 'text-white/40'}`}>Monthly</span>
+                <button 
+                  onClick={() => setIsYearlyBilling(!isYearlyBilling)}
+                  className="w-12 h-6 bg-white/10 rounded-full relative transition-colors duration-300 border border-white/20"
+                >
+                  <div className={`w-4 h-4 bg-orange-500 rounded-full absolute top-1 transition-all duration-300 ${isYearlyBilling ? 'left-7' : 'left-1'}`} />
+                </button>
+                <div className="flex flex-col items-start">
+                    <span className={`text-[12px] font-bold ${isYearlyBilling ? 'text-white' : 'text-white/40'}`}>Annually</span>
+                    <span className="text-[10px] text-green-400 font-bold bg-green-500/10 px-1.5 rounded-sm">Save 20%</span>
+                </div>
             </div>
+
+            {/* Currency Toggle */}
+            <div className="flex items-center gap-0 rounded-full border border-white/10 overflow-hidden font-mono text-[10.5px] font-bold tracking-widest bg-black/20 h-fit">
+              {["USD", "INR"].map((cur) => (
+                <button
+                  key={cur}
+                  onClick={() => setCurrency(cur as "USD"|"INR")}
+                  className="px-6 py-2.5 transition-colors duration-200"
+                  style={{ background: currency === cur ? "rgba(255,255,255,0.15)" : "transparent", color: currency === cur ? "#fff" : "rgba(255,255,255,0.35)" }}
+                >
+                  {cur}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Pricing Cards Grid */}
+          <div className="flex flex-wrap justify-center gap-6">
+            {PRICING_DATA[pricingModel || "GPT-5.5 Pro"]?.plans.map((plan: any) => {
+              const isBase = plan.level === 1;
+              const isCustom = plan.usd === "Custom";
+              
+              let mainPrice = "Custom";
+              let altPrice = "";
+              let unit = "";
+
+              if (!isCustom) {
+                  unit = "/mo";
+                  if (currency === "USD") {
+                      mainPrice = isYearlyBilling && plan.yearlyUsd ? `$${plan.yearlyUsd.toFixed(2)}` : `$${plan.usd}`;
+                      altPrice = isYearlyBilling && plan.yearlyTotalUsd ? `Billed $${plan.yearlyTotalUsd.toFixed(2)} yearly` : `₹${plan.inr.toLocaleString("en-IN")}/mo equivalent`;
+                  } else {
+                      mainPrice = isYearlyBilling && plan.yearlyInr ? `₹${plan.yearlyInr.toLocaleString("en-IN")}` : `₹${plan.inr.toLocaleString("en-IN")}`;
+                      altPrice = isYearlyBilling && plan.yearlyTotalInr ? `Billed ₹${plan.yearlyTotalInr.toLocaleString("en-IN")} yearly` : `$${plan.usd}/mo equivalent`;
+                  }
+              }
+
+              return (
+                <div key={plan.id} className={`sr-up relative w-[300px] flex flex-col rounded-[24px] p-7 transition-all duration-300 hover:-translate-y-2 ${isBase || isCustom ? 'opacity-90' : 'scale-105 z-10'}`}
+                     style={{ background: "rgba(255,255,255,0.02)", border: `1px solid ${isBase || isCustom ? "rgba(255,255,255,0.10)" : hexA(plan.accent, 0.4)}`, boxShadow: (!isBase && !isCustom) ? `0 24px 60px -20px ${hexA(plan.accent, 0.25)}` : "none", backdropFilter: "blur(10px)" }}>
+                  
+                  <Corner pos="tl" />
+                  <Corner pos="br" />
+
+                  {/* Level Meter */}
+                  <Meter level={plan.level} accent={plan.accent} />
+
+                  {/* Header & Badge */}
+                  <div className="flex items-center justify-between mt-5 mb-1">
+                    <span className="text-[18px] font-black text-white tracking-tight">{plan.name}</span>
+                    {plan.badge && (
+                      <span className="font-mono text-[9px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-full" style={{ color: plan.accent, background: hexA(plan.accent, 0.15), border: `1px solid ${hexA(plan.accent, 0.35)}` }}>
+                        {plan.badge}
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="font-mono text-[10px] font-bold tracking-widest mb-6 min-h-[30px]" style={{ color: hexA(plan.accent, 0.9) }}>
+                    {plan.msgs.toUpperCase()}
+                  </div>
+
+                  {/* Price */}
+                  <div className="flex items-baseline gap-1 mb-1">
+                    <span className="text-[42px] font-black text-white leading-none tracking-tighter">{mainPrice}</span>
+                    {!isCustom && <span className="text-[13px] text-white/40 font-bold">{unit}</span>}
+                  </div>
+                  <div className="font-mono text-[11px] text-white/30 font-semibold mb-6 h-[16px]">
+                      {!isCustom && altPrice}
+                  </div>
+
+                  {/* Description */}
+                  <p className="text-[13px] leading-relaxed text-white/60 pb-6 mb-6 border-b border-white/[0.08] min-h-[70px]">
+                    {plan.desc}
+                  </p>
+
+                  {/* Features */}
+                  <ul className="flex-grow space-y-3 mb-8">
+                    {plan.features.map((f: string) => (
+                      <li key={f} className="flex items-start gap-3 text-[12px] text-white/80 font-bold tracking-wide">
+                        <Check size={14} strokeWidth={3} className="flex-shrink-0 mt-[2px]" style={{ color: plan.accent }} />
+                        {f}
+                      </li>
+                    ))}
+                  </ul>
+
+                  {/* Action Button */}
+                  <button
+                    onClick={() => {
+                        if (status !== "authenticated") {
+                            signIn("google");
+                        } else {
+                            if(!isCustom){
+                                handleModelSelect(pricingModel || "GPT-5.5 Pro");
+                                document.getElementById("hero")?.scrollIntoView({behavior:"smooth"});
+                            } else {
+                                setIsSupportModalOpen(true);
+                            }
+                        }
+                    }}
+                    className="w-full py-4 rounded-xl font-mono text-[11.5px] font-bold uppercase tracking-widest transition-all hover:scale-[1.02]"
+                    style={{ background: (isBase || isCustom) ? "rgba(255,255,255,0.08)" : plan.accent, color: (isBase || isCustom) ? "rgba(255,255,255,0.9)" : "#000", border: (isBase || isCustom) ? "1px solid rgba(255,255,255,0.15)" : "none" }}
+                  >
+                    {isCustom ? "Contact Sales" : (isBase ? "Start Free →" : `Deploy ${plan.name} →`)}
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Reassurance text */}
+          <div className="text-center mt-12 sr-up">
+              <p className="text-[13px] text-gray-500 font-medium">No setup fees. No servers to manage. No technical expertise required. Cancel anytime.</p>
+              <p className="text-[11px] text-gray-600 mt-2">AI usage is subject to fair-use limits. Third-party provider charges may apply where applicable.</p>
           </div>
         </div>
       </section>
