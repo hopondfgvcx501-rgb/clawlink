@@ -271,12 +271,15 @@ export default function Home() {
   
   const [theme, setTheme] = useState("dark");
 
-  // PLAYGROUND STATES WITH CACHE
+  // 🔥 PLAYGROUND STATES WITH CACHE
   const [demoChat, setDemoChat] = useState([{ role: "bot", text: "Hi! I am ClawLink's Omni-Fallback AI. Send me a message to test my latency! ⚡" }]);
   const [demoInput, setDemoInput] = useState("");
   const [isDemoTyping, setIsDemoTyping] = useState(false);
   const [demoChatCount, setDemoChatCount] = useState(0);
-  const chatEndRef = useRef<HTMLDivElement>(null);
+  
+  // 🚀 BUGFIX: Naye Refs banaye hain taaki poora page jump na kare
+  const apiChatRef = useRef<HTMLDivElement>(null);
+  const igChatRef = useRef<HTMLDivElement>(null);
 
   // INSTAGRAM MOCKUP STATES
   const [igChat, setIgChat] = useState<{user: boolean, text: string}[]>([]);
@@ -290,11 +293,9 @@ export default function Home() {
          document.documentElement.classList.add("light-theme-active");
       }
 
-      // Initialize Chat Count
       const savedCount = parseInt(localStorage.getItem("clawlink_demo_chats") || "0");
       setDemoChatCount(savedCount);
 
-      // Start IG Animation
       let timeoutIds: NodeJS.Timeout[] = [];
       IG_DEMO_CHAT.forEach((msg, idx) => {
         const id = setTimeout(() => {
@@ -312,8 +313,6 @@ export default function Home() {
     setTheme(nextTheme);
     if (typeof window !== "undefined") {
       localStorage.setItem("clawlink_theme", nextTheme);
-      console.warn(`[ClawLink System] Theme synced to: ${nextTheme.toUpperCase()}.`);
-      
       const prefersLight = window.matchMedia("(prefers-color-scheme: light)").matches;
       if (nextTheme === "light" || (nextTheme === "system" && prefersLight)) {
         document.documentElement.classList.add("light-theme-active");
@@ -323,18 +322,23 @@ export default function Home() {
     }
   };
 
-  // 🔥 SMART PLAYGROUND HANDLER (Personalized AI + 3-Chat Funnel)
+  // 🔥 SMART PLAYGROUND HANDLER (Global Region Detect + Contextual AI Funnel)
   const handleDemoSubmit = async (e: any) => {
     e.preventDefault();
     if (!demoInput.trim() || isDemoTyping) return;
 
-    // Fetch user's Google Name (or default to Guest)
     const userName = session?.user?.name ? session.user.name.split(" ")[0] : "Guest";
     const currentCount = parseInt(localStorage.getItem("clawlink_demo_chats") || "0");
+    
+    // Auto-detect Browser Language to pitch in Hinglish or English
+    const userLang = typeof navigator !== "undefined" ? navigator.language.toLowerCase() : "en";
+    const isIndian = userLang.includes("hi") || userLang.includes("in");
 
-    // BLOCK 1: Chat Limit Exceeded
     if (currentCount >= 3) {
-       setDemoChat(p => [...p, { role: "user", text: demoInput }, { role: "bot", text: `🔒 Demo limit reached (3/3). ${userName}, you've experienced the speed! Now, login below to upgrade and deploy your own AI.` }]);
+       const limitMsg = isIndian 
+         ? `🔒 Demo limit reached (3/3). ${userName}, speed test done! Apna AI agent deploy karne ke liye niche login karein.`
+         : `🔒 Demo limit reached (3/3). ${userName}, you've experienced the speed! Now, login below to deploy your own AI.`;
+       setDemoChat(p => [...p, { role: "user", text: demoInput }, { role: "bot", text: limitMsg }]);
        setDemoInput("");
        return;
     }
@@ -345,7 +349,6 @@ export default function Home() {
     setIsDemoTyping(true);
 
     try {
-      // Direct request to the Omni-Fallback Engine
       const res = await fetch("/api/omni", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -357,45 +360,72 @@ export default function Home() {
       if (res.ok && data.reply) {
         setDemoChat(p => [...p, { role: "bot", text: data.reply }]);
       } else {
-        throw new Error(data.error || "Access Denied by API Limits");
+        throw new Error(data.error || "Access Denied by limits");
       }
     } catch (error: any) {
-      // 🔥 SMART AI PERSONALIZED RESPONSE (Fallback)
-      let smartReply = `Thank you ${userName}! 🚀 Main ClawLink ka AI assistant hoon. Aapko product ya pricing ke baare mein kya jankari doon?`;
-      if (userMsg.toLowerCase().includes("price") || userMsg.toLowerCase().includes("cost")) {
-         smartReply = `${userName}, we have a Pro tier at $18/mo and our flagship Omni Nexus at $89/mo. 💰 Login below to secure your server!`;
+      // 🔥 SMART CONTEXTUAL FALLBACK (Feels 100% Real)
+      const msgLower = userMsg.toLowerCase();
+      let smartReply = "";
+
+      if (isIndian) {
+        if (msgLower.includes("price") || msgLower.includes("cost") || msgLower.includes("paisa")) {
+           smartReply = `${userName}, humara Pro plan $18/mo hai aur Omni Nexus $89/mo. 💰 Niche login karke apna server secure karein!`;
+        } else if (msgLower.includes("nahi") || msgLower.includes("no ") || msgLower.includes("bye")) {
+           smartReply = `Koi baat nahi ${userName}! Jab bhi aapko 0% downtime wala AI chahiye ho, ClawLink ready hai. 🚀`;
+        } else if (msgLower.includes("hi") || msgLower.includes("hello")) {
+           smartReply = `Hello ${userName}! 👋 Main ClawLink AI hoon. Aap apni business chat ko 1-click mein automate kar sakte hain.`;
+        } else {
+           smartReply = `Thank you ${userName}! 🚀 Main ClawLink ka AI assistant hoon. Main WhatsApp aur Instagram par aisi hi fast replies deta hoon!`;
+        }
+      } else {
+        if (msgLower.includes("price") || msgLower.includes("cost")) {
+           smartReply = `${userName}, our Pro plan is $18/mo and the flagship Omni Nexus is $89/mo. 💰 Login below to secure your server!`;
+        } else if (msgLower.includes("no ") || msgLower.includes("nothing") || msgLower.includes("bye")) {
+           smartReply = `No problem, ${userName}! Whenever you need a 0% downtime AI agent, ClawLink will be here waiting. 🚀`;
+        } else if (msgLower.includes("hi") || msgLower.includes("hello")) {
+           smartReply = `Hello ${userName}! 👋 I am ClawLink AI. You can deploy me to WhatsApp or IG in 1-click.`;
+        } else {
+           smartReply = `Thank you ${userName}! 🚀 I am ClawLink's Omni-Engine. I automate customer support globally with 0% downtime!`;
+        }
       }
+      
       setDemoChat(p => [...p, { role: "bot", text: smartReply }]);
       
-      // Never hide errors - Log to TG Admin silently
       fetch("/api/tg-admin", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: `🚨 [Playground Intercept] Backend Error: ${error.message}. Handled with marketing fallback for user: ${userName}` })
+        body: JSON.stringify({ message: `🚨 [Playground Intercept] Error: ${error.message}. User: ${userName}` })
       }).catch(() => {});
 
     } finally {
       setIsDemoTyping(false);
-      
-      // Update LocalStorage Limit
       const newCount = currentCount + 1;
       localStorage.setItem("clawlink_demo_chats", newCount.toString());
       setDemoChatCount(newCount);
 
-      // Auto-Pitch Upgrade after 3rd message
       if (newCount === 3) {
           setTimeout(() => {
-              setDemoChat(p => [...p, { role: "bot", text: `🚨 ${userName}, you've used your 3 free test messages! Ready to automate your business? Click 'Login to Deploy' now!` }]);
+              const pitchMsg = isIndian 
+                ? `🚨 ${userName}, aapke 3 free test messages khatam ho gaye! Apna AI bot live karne ke liye 'Login & Deploy' par click karein.`
+                : `🚨 ${userName}, you've used your 3 free test messages! Click 'Login to Deploy' to automate your business!`;
+              setDemoChat(p => [...p, { role: "bot", text: pitchMsg }]);
           }, 1500);
       }
     }
   };
 
+  // 🔥 BUGFIX: Page jumping issue resolved by strictly scrolling ONLY the chat div
   useEffect(() => {
-    if (chatEndRef.current) {
-        chatEndRef.current.scrollIntoView({ behavior: "smooth" });
+    if (apiChatRef.current) {
+        apiChatRef.current.scrollTop = apiChatRef.current.scrollHeight;
     }
-  }, [demoChat, isDemoTyping, igChat]);
+  }, [demoChat, isDemoTyping]);
+
+  useEffect(() => {
+    if (igChatRef.current) {
+        igChatRef.current.scrollTop = igChatRef.current.scrollHeight;
+    }
+  }, [igChat]);
 
 
   const [telegramToken, setTelegramToken] = useState("");
@@ -1314,7 +1344,7 @@ export default function Home() {
                  {/* Genuine IG Header */}
                  <div className="h-16 pt-5 px-5 flex items-center gap-3 border-b border-white/10 bg-[#000] z-10 shrink-0">
                     <div className="w-8 h-8 rounded-full flex items-center justify-center border border-white/20 overflow-hidden bg-[#111]">
-                       <Bot className="w-4 h-4 text-white"/>
+                       <Instagram_Icon size={20}/>
                     </div>
                     <div>
                        <h3 className="text-white text-[14px] font-bold tracking-wide flex items-center gap-1.5">
@@ -1324,17 +1354,19 @@ export default function Home() {
                     </div>
                  </div>
 
-                 {/* IG Chat Area (NO CUBES - SOLID BLACK) */}
-                 <div className="flex-1 overflow-y-auto custom-scrollbar p-5 flex flex-col gap-4 relative bg-[#000]">
+                 {/* IG Chat Area (PLAIN SOLID BLACK - PERFECT CLONE) */}
+                 {/* 🚀 BUGFIX: Added ref={igChatRef} */}
+                 <div ref={igChatRef} className="flex-1 overflow-y-auto custom-scrollbar p-5 flex flex-col gap-4 relative bg-[#000]">
                     <AnimatePresence>
                       {igChat.map((msg, idx) => (
                          <motion.div key={idx} initial={{opacity:0, y:10}} animate={{opacity:1, y:0}} className={`flex ${msg.user?"justify-end":"justify-start"}`}>
                             {!msg.user && (
-                                <div className="w-6 h-6 rounded-full bg-[#111] mr-2 shrink-0 flex items-center justify-center border border-white/10 mt-auto mb-1 overflow-hidden">
-                                    <Bot className="w-3 h-3 text-white"/>
+                                <div className="w-6 h-6 rounded-full bg-[#111] mr-2 shrink-0 flex items-center justify-center mt-auto mb-1 overflow-hidden border border-white/10">
+                                    <Instagram_Icon size={14}/>
                                 </div>
                             )}
-                            <div className={`p-3.5 rounded-[20px] max-w-[80%] text-[13px] leading-relaxed shadow-sm ${msg.user ? "bg-[#0095F6] text-white rounded-br-sm font-medium" : "bg-[#262626] text-gray-100 rounded-bl-sm border border-white/5"}`}>
+                            {/* Exact IG Bubble Styling */}
+                            <div className={`p-3.5 max-w-[80%] text-[13px] leading-relaxed shadow-sm ${msg.user ? "bg-gradient-to-tr from-[#833ab4] via-[#fd1d1d] to-[#fcb045] text-white rounded-[20px] rounded-br-sm font-medium" : "bg-[#262626] text-gray-100 rounded-[20px] rounded-bl-sm border border-white/5"}`}>
                                {msg.text}
                             </div>
                          </motion.div>
@@ -1367,11 +1399,12 @@ export default function Home() {
                  </div>
 
                  {/* Techy Chat Area (WITH CUBES) */}
-                 <div className="flex-1 overflow-y-auto custom-scrollbar p-5 flex flex-col gap-4 relative bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] bg-opacity-5">
+                 {/* 🚀 BUGFIX: Added ref={apiChatRef} and REMOVED <div ref={chatEndRef} /> */}
+                 <div ref={apiChatRef} className="flex-1 overflow-y-auto custom-scrollbar p-5 flex flex-col gap-4 relative bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] bg-opacity-5">
                     <AnimatePresence>
                       {demoChat.map((msg, idx) => (
-                         <motion.div key={idx} initial={{opacity:0, y:10}} animate={{opacity:1, y:0}} className={`flex ${msg.role==="user"?"justify-end":"justify-start"}`}>
-                            <div className={`p-3.5 rounded-2xl max-w-[85%] text-[13px] leading-relaxed shadow-lg ${msg.role==="user" ? "bg-orange-500 text-white rounded-br-sm font-medium" : "bg-[#1A1A1A] text-gray-200 border border-white/10 rounded-bl-sm"}`}>
+                         <motion.div key={idx} initial={{opacity:0, scale:0.95}} animate={{opacity:1, scale:1}} transition={{type:"spring", stiffness:200, damping:20}} className={`flex ${msg.role==="user"?"justify-end":"justify-start"}`}>
+                            <div className={`p-4 rounded-2xl max-w-[85%] text-[13px] leading-relaxed shadow-lg ${msg.role==="user" ? "bg-orange-500 text-white rounded-br-sm font-medium" : "bg-[#1A1A1A] text-gray-200 border border-white/10 rounded-bl-sm"}`}>
                                {msg.text}
                             </div>
                          </motion.div>
@@ -1386,13 +1419,12 @@ export default function Home() {
                          </motion.div>
                       )}
                     </AnimatePresence>
-                    <div ref={chatEndRef} />
                  </div>
 
                  {/* API Input Area */}
                  <div className="p-4 border-t border-white/10 bg-[#0A0A0A] shrink-0">
                     <form onSubmit={handleDemoSubmit} className="relative flex items-center">
-                       <input type="text" value={demoInput} onChange={e=>setDemoInput(e.target.value)} placeholder="Test latency..." 
+                       <input type="text" value={demoInput} onChange={e=>setDemoInput(e.target.value)} placeholder="Type a message..." 
                               className="w-full bg-[#1A1A1A] border border-white/10 text-white text-[13px] rounded-full pl-4 pr-12 py-3.5 outline-none focus:border-orange-500/80 transition-colors shadow-inner" />
                        <button type="submit" disabled={!demoInput.trim() || isDemoTyping} className="absolute right-1.5 w-8 h-8 bg-[#333] hover:bg-orange-500 rounded-full flex items-center justify-center text-white disabled:opacity-50 transition-colors shadow-lg">
                           <ArrowRight className="w-4 h-4" />
