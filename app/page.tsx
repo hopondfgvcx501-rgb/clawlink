@@ -569,7 +569,7 @@ export default function Home() {
     }
   };
 
-  // 🔥 SMART PLAYGROUND HANDLER (Global Region Detect + Contextual AI Funnel)
+  // 🔥 REAL OMNI-ENGINE PLAYGROUND HANDLER (Strictly Real AI Connect + Zero Fake Fallbacks)
   const handleDemoSubmit = async (e: any) => {
     e.preventDefault();
     if (!demoInput.trim() || isDemoTyping) return;
@@ -577,10 +577,11 @@ export default function Home() {
     const userName = session?.user?.name ? session.user.name.split(" ")[0] : "Guest";
     const currentCount = parseInt(localStorage.getItem("clawlink_demo_chats") || "0");
     
-    // Auto-detect Browser Language to pitch in Hinglish or English
+    // Auto-detect Browser Language to pitch limit in Hinglish or English
     const userLang = typeof navigator !== "undefined" ? navigator.language.toLowerCase() : "en";
     const isIndian = userLang.includes("hi") || userLang.includes("in");
 
+    // 🛡️ FRONTEND RATE LIMIT (3 Chats Max for unauthenticated users to save API costs)
     if (currentCount >= 3) {
        const limitMsg = isIndian 
          ? `🔒 Demo limit reached (3/3). ${userName}, speed test done! Apna AI agent deploy karne ke liye niche login karein.`
@@ -596,60 +597,41 @@ export default function Home() {
     setIsDemoTyping(true);
 
     try {
+      // 🚀 SECURE BACKEND CALL (Frontend never sees the API key)
       const res = await fetch("/api/omni", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: userMsg, source: "landing_playground" }),
+        body: JSON.stringify({ message: userMsg, source: "landing_playground", user: userName }),
       });
 
       const data = await res.json();
 
       if (res.ok && data.reply) {
+        // 🔥 SHOW EXACT REAL GPT/OMNI REPLY
         setDemoChat(p => [...p, { role: "bot", text: data.reply }]);
       } else {
-        throw new Error(data.error || "Access Denied by limits");
+        // Force an error if backend sends a failure status
+        throw new Error(data.error || "Omni-Engine Connection Failed");
       }
     } catch (error: any) {
-      // 🔥 SMART CONTEXTUAL FALLBACK (Feels 100% Real)
-      const msgLower = userMsg.toLowerCase();
-      let smartReply = "";
-
-      if (isIndian) {
-        if (msgLower.includes("price") || msgLower.includes("cost") || msgLower.includes("paisa")) {
-           smartReply = `${userName}, humara Pro plan $18/mo hai aur Omni Nexus $89/mo. 💰 Niche login karke apna server secure karein!`;
-        } else if (msgLower.includes("nahi") || msgLower.includes("no ") || msgLower.includes("bye")) {
-           smartReply = `Koi baat nahi ${userName}! Jab bhi aapko 0% downtime wala AI chahiye ho, ClawLink ready hai. 🚀`;
-        } else if (msgLower.includes("hi") || msgLower.includes("hello")) {
-           smartReply = `Hello ${userName}! 👋 Main ClawLink AI hoon. Aap apni business chat ko 1-click mein automate kar sakte hain.`;
-        } else {
-           smartReply = `Thank you ${userName}! 🚀 Main ClawLink ka AI assistant hoon. Main WhatsApp aur Instagram par aisi hi fast replies deta hoon!`;
-        }
-      } else {
-        if (msgLower.includes("price") || msgLower.includes("cost")) {
-           smartReply = `${userName}, our Pro plan is $18/mo and the flagship Omni Nexus is $89/mo. 💰 Login below to secure your server!`;
-        } else if (msgLower.includes("no ") || msgLower.includes("nothing") || msgLower.includes("bye")) {
-           smartReply = `No problem, ${userName}! Whenever you need a 0% downtime AI agent, ClawLink will be here waiting. 🚀`;
-        } else if (msgLower.includes("hi") || msgLower.includes("hello")) {
-           smartReply = `Hello ${userName}! 👋 I am ClawLink AI. You can deploy me to WhatsApp or IG in 1-click.`;
-        } else {
-           smartReply = `Thank you ${userName}! 🚀 I am ClawLink's Omni-Engine. I automate customer support globally with 0% downtime!`;
-        }
-      }
+      // 🚨 REAL BACKEND ERRORS SHOWN DIRECTLY (No Fake Marketing Replies)
+      setDemoChat(p => [...p, { role: "bot", text: `⚠️ Backend Error: ${error.message}` }]);
       
-      setDemoChat(p => [...p, { role: "bot", text: smartReply }]);
-      
+      // Send error to Telegram Admin Bot silently
       fetch("/api/tg-admin", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: `🚨 [Playground Intercept] Error: ${error.message}. User: ${userName}` })
+        body: JSON.stringify({ message: `🚨 [Playground Live Test Error]: ${error.message} (User: ${userName})` })
       }).catch(() => {});
 
     } finally {
       setIsDemoTyping(false);
+      
       const newCount = currentCount + 1;
       localStorage.setItem("clawlink_demo_chats", newCount.toString());
       setDemoChatCount(newCount);
 
+      // Auto-pitch after 3 messages
       if (newCount === 3) {
           setTimeout(() => {
               const pitchMsg = isIndian 
