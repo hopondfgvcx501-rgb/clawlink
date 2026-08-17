@@ -1406,7 +1406,7 @@ export default function Home() {
                        <div className="w-full h-full bg-black rounded-full flex items-center justify-center"><Zap className="w-4 h-4 text-orange-500"/></div>
                     </div>
                     <div>
-                       <h3 className="text-white text-[14px] font-bold tracking-wide">ClawLink Live API</h3>
+                       <h3 className="text-white text-[14px] font-bold tracking-wide">ClawLinkAI Live </h3>
                        <div className="flex items-center gap-1.5 text-[10px] text-green-400 font-mono font-bold mt-0.5"><span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse shadow-[0_0_8px_#22c55e]"></span>Operational</div>
                     </div>
                  </div>
