@@ -272,19 +272,52 @@ async function processDynamicAI(senderId: string, accountId: string, text: strin
     const promptText = sanitizeInput(text);
 
     // ==========================================
-    // 🎯 AUTO-DM TRIGGER CHECK (For Comments Only)
+    // 🎯 SMART COMMENT-TO-DM FUNNEL (JSONB)
     // ==========================================
     if (type === "comment") {
-        const triggers = (config.ig_auto_dm_triggers || "link,demo,price,send").toLowerCase().split(",");
-        const commentLower = promptText.toLowerCase();
-        
-        const matchedTrigger = triggers.find((t: string) => commentLower.includes(t.trim()));
-        
-        if (!matchedTrigger) {
-            console.log(`[IG_COMMENT_IGNORED] No trigger word found in: "${promptText}"`);
-            return; 
+        // Fetch custom automation rules from the new DB
+        const { data: autoData } = await supabase
+            .from("automations")
+            .select("rules, settings")
+            .eq("email", config.email)
+            .eq("channel", "instagram")
+            .single();
+
+        if (autoData && autoData.rules) {
+            const commentLower = promptText.toLowerCase();
+            
+            // Check if any active rule matches the user's comment
+            const matchedRule = autoData.rules.find((rule: any) => {
+                if (!rule.isActive) return false;
+                const keywords = rule.keyword.split(',').map((k: string) => k.trim().toLowerCase());
+                return keywords.some((k: string) => commentLower.includes(k));
+            });
+
+            if (matchedRule) {
+                console.log(`[IG_FUNNEL_MATCHED] Rule found! Executing Custom Funnel...`);
+                
+                // 1. Send Custom Public Comment Reply (if user set it in UI)
+                if (matchedRule.publicReply && commentId) {
+                    await fetch(`https://graph.facebook.com/v18.0/${commentId}/replies?access_token=${metaApiToken}`, {
+                        method: "POST", headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ message: matchedRule.publicReply })
+                    });
+                }
+                
+                // 2. Send Custom Secret DM
+                await fetch(`https://graph.facebook.com/v18.0/me/messages?access_token=${metaApiToken}`, {
+                    method: "POST", headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ recipient: { id: senderId }, message: { text: matchedRule.dmContent } })
+                });
+
+                // 🚨 LOG TO HISTORY & STOP THE AI! 
+                await supabase.from("chat_history").insert({ 
+                    email: config.email, platform: "instagram", platform_chat_id: senderId, customer_name: "IG Follower", sender_type: "bot", message: `[AUTO-FUNNEL] ${matchedRule.dmContent}` 
+                });
+                
+                return; // 🛑 EXIT FUNCTION: We don't want AI to reply to a funnel trigger!
+            }
         }
-        console.log(`[IG_AUTO_DM_TRIGGERED] Word matched: ${matchedTrigger}`);
     }
 
     // ==========================================
