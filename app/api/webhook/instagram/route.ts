@@ -272,52 +272,64 @@ async function processDynamicAI(senderId: string, accountId: string, text: strin
     const promptText = sanitizeInput(text);
 
     // ==========================================
-    // 🎯 SMART COMMENT-TO-DM FUNNEL (JSONB)
+    // 🎯 SMART COMMENT-TO-DM FUNNEL (AUTOMATION_RULES TABLE)
     // ==========================================
     if (type === "comment") {
-        // Fetch custom automation rules from the new DB
-        const { data: autoData } = await supabase
-            .from("automations")
-            .select("rules, settings")
+        // 1. Fetch rules from the CORRECT table (automation_rules)
+        const { data: activeRules, error: rulesError } = await supabase
+            .from("automation_rules")
+            .select("*")
             .eq("email", config.email)
-            .eq("channel", "instagram")
-            .single();
+            .eq("platform", "instagram");
 
-        if (autoData && autoData.rules) {
+        if (rulesError) {
+            console.error("[IG_FUNNEL_DB_ERROR] Failed to fetch automation rules:", rulesError.message);
+        }
+
+        if (activeRules && activeRules.length > 0) {
             const commentLower = promptText.toLowerCase();
             
-            // Check if any active rule matches the user's comment
-            const matchedRule = autoData.rules.find((rule: any) => {
-                if (!rule.isActive) return false;
+            // 2. Match the keyword with the new table structure
+            const matchedRule = activeRules.find((rule: any) => {
+                if (!rule.keyword) return false;
                 const keywords = rule.keyword.split(',').map((k: string) => k.trim().toLowerCase());
                 return keywords.some((k: string) => commentLower.includes(k));
             });
 
             if (matchedRule) {
-                console.log(`[IG_FUNNEL_MATCHED] Rule found! Executing Custom Funnel...`);
+                console.log(`[IG_FUNNEL_MATCHED] Rule found in DB! Executing Custom Funnel...`);
                 
-                // 1. Send Custom Public Comment Reply (if user set it in UI)
-                if (matchedRule.publicReply && commentId) {
+                // 3. Send Custom Public Comment Reply
+                if (matchedRule.public_reply && commentId) {
                     await fetch(`https://graph.facebook.com/v18.0/${commentId}/replies?access_token=${metaApiToken}`, {
                         method: "POST", headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ message: matchedRule.publicReply })
+                        body: JSON.stringify({ message: matchedRule.public_reply })
+                    }).catch(e => console.error("Public Reply Error:", e));
+                }
+                
+                // 4. Send Custom Secret DM (using 'content' column)
+                const dmRes = await fetch(`https://graph.facebook.com/v18.0/me/messages?access_token=${metaApiToken}`, {
+                    method: "POST", headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ recipient: { id: senderId }, message: { text: matchedRule.content } })
+                });
+
+                const dmResponseData = await dmRes.json();
+                
+                if (dmResponseData.error) {
+                    console.error("🔥 META REJECTION (FUNNEL DM):", JSON.stringify(dmResponseData.error));
+                } else {
+                    // 🚨 LOG TO HISTORY & STOP THE AI! 
+                    await supabase.from("chat_history").insert({ 
+                        email: config.email, platform: "instagram", platform_chat_id: senderId, customer_name: "IG Follower", sender_type: "bot", message: `[AUTO-FUNNEL] ${matchedRule.content}` 
                     });
                 }
                 
-                // 2. Send Custom Secret DM
-                await fetch(`https://graph.facebook.com/v18.0/me/messages?access_token=${metaApiToken}`, {
-                    method: "POST", headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ recipient: { id: senderId }, message: { text: matchedRule.dmContent } })
-                });
-
-                // 🚨 LOG TO HISTORY & STOP THE AI! 
-                await supabase.from("chat_history").insert({ 
-                    email: config.email, platform: "instagram", platform_chat_id: senderId, customer_name: "IG Follower", sender_type: "bot", message: `[AUTO-FUNNEL] ${matchedRule.dmContent}` 
-                });
-                
-                return; // 🛑 EXIT FUNCTION: We don't want AI to reply to a funnel trigger!
+                // 🛑 EXIT FUNCTION: This stops the Omni-Engine AI from replying!
+                return; 
             }
         }
+        
+        console.log(`[IG_COMMENT_NO_FUNNEL] No funnel match for: "${promptText}". Passing to AI...`);
     }
 
     // ==========================================
