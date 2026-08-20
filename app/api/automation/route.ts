@@ -8,12 +8,13 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-// 🚀 1. FETCH RULES & GLOBAL SETTINGS
+// 🚀 GET: FETCH RULES & GLOBAL SETTINGS
 export async function GET(req: Request) {
     try {
         const { searchParams } = new URL(req.url);
-        const email = searchParams.get("email");
-        const channel = searchParams.get("channel") || "telegram";
+        // NOTE: In production, use next-auth getToken here. For now, grabbing from query/defaults.
+        const email = searchParams.get("email") || "ugjay92@gmail.com"; 
+        const channel = searchParams.get("channel") || "instagram";
 
         if (!email) {
             return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
@@ -21,14 +22,14 @@ export async function GET(req: Request) {
 
         const safeEmail = email.toLowerCase();
 
-        // Fetch Global Settings (Welcome Message & AI Fallback)
+        // 1. Fetch Global Settings 
         const { data: config } = await supabase
             .from("user_configs")
             .select("welcome_message_active, ai_fallback_active")
             .eq("email", safeEmail)
             .single();
 
-        // Fetch Automation Rules for this channel
+        // 2. Fetch Automation Rules 
         const { data: rules } = await supabase
             .from("automation_rules")
             .select("*")
@@ -36,19 +37,19 @@ export async function GET(req: Request) {
             .eq("platform", channel)
             .order("created_at", { ascending: true });
 
-        // Map DB flags to UI state (Default to true if null)
         const settings = {
-            welcomeMessage: config?.welcome_message_active ?? true,
-            defaultFallback: config?.ai_fallback_active ?? true,
+            storyMention: config?.welcome_message_active ?? false,
+            autoLike: config?.ai_fallback_active ?? false,
         };
 
-        // Transform DB schema to match UI interface
+        // 3. Map DB schema to New UI Interface
         const formattedRules = (rules || []).map(rule => ({
             id: rule.id,
+            postType: "Any Post or Reel", // Default for UI
             keyword: rule.keyword,
-            matchType: rule.match_type,
-            actionType: rule.action_type,
-            content: rule.content
+            publicReply: rule.public_reply || "",
+            dmContent: rule.content || rule.dm_content,
+            isActive: true
         }));
 
         return NextResponse.json({ 
@@ -63,55 +64,65 @@ export async function GET(req: Request) {
     }
 }
 
-// 🚀 2. SAVE RULES & GLOBAL SETTINGS (Full Sync)
+// 🚀 POST: SAVE/SYNC RULES
 export async function POST(req: Request) {
     try {
-        const { email, channel, rules, settings } = await req.json();
-
-        if (!email || !channel) {
-            return NextResponse.json({ success: false, error: "Missing required parameters" }, { status: 400 });
-        }
-
+        const body = await req.json();
+        const email = body.email || "ugjay92@gmail.com"; // Fallback for testing
+        const channel = "instagram";
         const safeEmail = email.toLowerCase();
 
-        // A. Update Global Settings in user_configs
-        await supabase
-            .from("user_configs")
-            .update({ 
-                welcome_message_active: settings.welcomeMessage,
-                ai_fallback_active: settings.defaultFallback
-            })
-            .eq("email", safeEmail);
+        // MODE 1: Syncing Toggles or Deleting (UI sends { rules, settings })
+        if (body.rules && Array.isArray(body.rules)) {
+            
+            // A. Update Settings
+            if (body.settings) {
+                await supabase.from("user_configs").update({ 
+                    welcome_message_active: body.settings.storyMention,
+                    ai_fallback_active: body.settings.autoLike
+                }).eq("email", safeEmail);
+            }
 
-        // B. Wipe old rules for this channel to perform a clean sync
-        await supabase
-            .from("automation_rules")
-            .delete()
-            .eq("email", safeEmail)
-            .eq("platform", channel);
+            // B. Wipe old and insert new array to sync deletions
+            await supabase.from("automation_rules").delete().eq("email", safeEmail).eq("platform", channel);
 
-        // C. Insert new/updated rules if any exist
-        if (rules && rules.length > 0) {
-            const rulesToInsert = rules.map((rule: any) => ({
+            if (body.rules.length > 0) {
+                const rulesToInsert = body.rules.map((rule: any) => ({
+                    email: safeEmail,
+                    platform: channel,
+                    keyword: rule.keyword,
+                    match_type: "contains", // 🔥 THE MAGIC FIX
+                    action_type: "dm",
+                    content: rule.dmContent,
+                    public_reply: rule.publicReply
+                }));
+                const { error } = await supabase.from("automation_rules").insert(rulesToInsert);
+                if (error) throw error;
+            }
+            
+            return NextResponse.json({ success: true });
+        }
+        
+        // MODE 2: Adding a Single New Funnel (UI sends { keyword, dmContent, ... })
+        if (body.keyword && body.dmContent) {
+            const { error } = await supabase.from("automation_rules").insert([{
                 email: safeEmail,
                 platform: channel,
-                keyword: rule.keyword,
-                match_type: rule.matchType,
-                action_type: rule.actionType,
-                content: rule.content
-            }));
+                keyword: body.keyword,
+                match_type: "contains", // 🔥 THE MAGIC FIX
+                action_type: "dm",
+                content: body.dmContent,
+                public_reply: body.publicReply
+            }]);
 
-            const { error: insertError } = await supabase
-                .from("automation_rules")
-                .insert(rulesToInsert);
-
-            if (insertError) throw insertError;
+            if (error) throw error;
+            return NextResponse.json({ success: true });
         }
 
-        return NextResponse.json({ success: true });
+        return NextResponse.json({ success: false, error: "Invalid Payload" }, { status: 400 });
 
     } catch (error: any) {
         console.error("[AUTOMATION_POST_ERROR]", error.message);
-        return NextResponse.json({ success: false, error: "Server Error" }, { status: 500 });
+        return NextResponse.json({ success: false, error: error.message }, { status: 500 });
     }
 }
