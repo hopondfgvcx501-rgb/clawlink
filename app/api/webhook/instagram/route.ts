@@ -272,65 +272,63 @@ async function processDynamicAI(senderId: string, accountId: string, text: strin
     const promptText = sanitizeInput(text);
 
     // ==========================================
-    // 🎯 SMART COMMENT-TO-DM FUNNEL (AUTOMATION_RULES TABLE)
+    // 🎯 OMNI-TRIGGER FUNNEL (WORKS FOR BOTH COMMENTS & DMs)
     // ==========================================
-    if (type === "comment") {
-        // 1. Fetch rules from the CORRECT table (automation_rules)
-        const { data: activeRules, error: rulesError } = await supabase
-            .from("automation_rules")
-            .select("*")
-            .eq("email", config.email)
-            .eq("platform", "instagram");
+    // 1. Fetch rules from the CORRECT table (automation_rules)
+    const { data: activeRules, error: rulesError } = await supabase
+        .from("automation_rules")
+        .select("*")
+        .eq("email", config.email)
+        .eq("platform", "instagram");
 
-        if (rulesError) {
-            console.error("[IG_FUNNEL_DB_ERROR] Failed to fetch automation rules:", rulesError.message);
-        }
+    if (rulesError) {
+        console.error("[IG_FUNNEL_DB_ERROR] Failed to fetch automation rules:", rulesError.message);
+    }
 
-        if (activeRules && activeRules.length > 0) {
-            const commentLower = promptText.toLowerCase();
+    if (activeRules && activeRules.length > 0) {
+        const commentLower = promptText.toLowerCase();
+        
+        // 2. Match the keyword with the DB structure (NO "if comment" RESTRICTION HERE)
+        const matchedRule = activeRules.find((rule: any) => {
+            if (!rule.keyword) return false;
+            const keywords = rule.keyword.split(',').map((k: string) => k.trim().toLowerCase());
+            return keywords.some((k: string) => commentLower.includes(k));
+        });
+
+        if (matchedRule) {
+            console.log(`[IG_FUNNEL_MATCHED] Rule found in DB! Executing Custom Funnel...`);
             
-            // 2. Match the keyword with the new table structure
-            const matchedRule = activeRules.find((rule: any) => {
-                if (!rule.keyword) return false;
-                const keywords = rule.keyword.split(',').map((k: string) => k.trim().toLowerCase());
-                return keywords.some((k: string) => commentLower.includes(k));
+            // 3. Send Custom Public Comment Reply ONLY if it's a comment
+            if (type === "comment" && matchedRule.public_reply && commentId) {
+                await fetch(`https://graph.facebook.com/v18.0/${commentId}/replies?access_token=${metaApiToken}`, {
+                    method: "POST", headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ message: matchedRule.public_reply })
+                }).catch(e => console.error("Public Reply Error:", e));
+            }
+            
+            // 4. Send Custom Secret DM (using 'content' column) - WORKS FOR BOTH DM AND COMMENT!
+            const dmRes = await fetch(`https://graph.facebook.com/v18.0/me/messages?access_token=${metaApiToken}`, {
+                method: "POST", headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ recipient: { id: senderId }, message: { text: matchedRule.content } })
             });
 
-            if (matchedRule) {
-                console.log(`[IG_FUNNEL_MATCHED] Rule found in DB! Executing Custom Funnel...`);
-                
-                // 3. Send Custom Public Comment Reply
-                if (matchedRule.public_reply && commentId) {
-                    await fetch(`https://graph.facebook.com/v18.0/${commentId}/replies?access_token=${metaApiToken}`, {
-                        method: "POST", headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ message: matchedRule.public_reply })
-                    }).catch(e => console.error("Public Reply Error:", e));
-                }
-                
-                // 4. Send Custom Secret DM (using 'content' column)
-                const dmRes = await fetch(`https://graph.facebook.com/v18.0/me/messages?access_token=${metaApiToken}`, {
-                    method: "POST", headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ recipient: { id: senderId }, message: { text: matchedRule.content } })
+            const dmResponseData = await dmRes.json();
+            
+            if (dmResponseData.error) {
+                console.error("🔥 META REJECTION (FUNNEL DM):", JSON.stringify(dmResponseData.error));
+            } else {
+                // 🚨 LOG TO HISTORY & STOP THE AI! 
+                await supabase.from("chat_history").insert({ 
+                    email: config.email, platform: "instagram", platform_chat_id: senderId, customer_name: "IG Follower", sender_type: "bot", message: `[AUTO-FUNNEL] ${matchedRule.content}` 
                 });
-
-                const dmResponseData = await dmRes.json();
-                
-                if (dmResponseData.error) {
-                    console.error("🔥 META REJECTION (FUNNEL DM):", JSON.stringify(dmResponseData.error));
-                } else {
-                    // 🚨 LOG TO HISTORY & STOP THE AI! 
-                    await supabase.from("chat_history").insert({ 
-                        email: config.email, platform: "instagram", platform_chat_id: senderId, customer_name: "IG Follower", sender_type: "bot", message: `[AUTO-FUNNEL] ${matchedRule.content}` 
-                    });
-                }
-                
-                // 🛑 EXIT FUNCTION: This stops the Omni-Engine AI from replying!
-                return; 
             }
+            
+            // 🛑 EXIT FUNCTION: This stops the Omni-Engine AI from replying!
+            return; 
         }
-        
-        console.log(`[IG_COMMENT_NO_FUNNEL] No funnel match for: "${promptText}". Passing to AI...`);
     }
+    
+    console.log(`[IG_NO_FUNNEL] No funnel match for: "${promptText}". Passing to AI...`);
 
     // ==========================================
     // 🛑 THE GATEKEEPER (Plan, Expiry & Limits Check) 
