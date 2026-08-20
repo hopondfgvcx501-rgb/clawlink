@@ -5,11 +5,9 @@
  * CLAWLINK ENTERPRISE: INSTAGRAM AUTO-DM & COMMENT AUTOMATION
  * ==============================================================================================
  * @file app/dashboard/instagram/automations/page.tsx
- * @description The "ManyChat Killer" module. Maps specific comments on Posts/Reels to 
- * automated Direct Messages (DMs) using Meta's Graph API.
- * 🚀 SECURED: Strict caching prevention and session verification.
- * 🚀 FIXED: Integrated premium SpinnerCounter and exact backend error surfacing.
- * 🚀 FIXED: Enforced strict "Instagram" naming. No shorthand.
+ * @description The "ManyChat Killer" module. 
+ * 🚀 UPGRADE: Next-Gen UI with Smart Keyword Tagging and 100% Backend State Mapping.
+ * 🚀 FIXED: Variables strictly mapped (keyword, dmContent) to match Supabase API.
  * * ALL RIGHTS RESERVED. CLAWLINK INC.
  * ==============================================================================================
  */
@@ -17,21 +15,23 @@
 import React, { useState, useEffect } from 'react';
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { 
   Bot, MessageCircle, Zap, Plus, 
   Trash2, Save, Activity, MessageSquare, 
   Hash, Heart
 } from "lucide-react";
 import TopHeader from "@/components/TopHeader";
-import SpinnerCounter from "@/components/SpinnerCounter"; // 🚀 Premium Loader Imported
+import SpinnerCounter from "@/components/SpinnerCounter";
 
+// 🚀 STRICT TYPE MAPPING (Must match backend route.ts exactly)
 interface AutoDMRule {
   id: string;
-  trigger: string;
-  type: string;
-  reply: string;
-  dmText: string;
+  keyword: string;       // Mapped from 'trigger'
+  postType: string;      // Mapped from 'type'
+  publicReply: string;   // Mapped from 'reply'
+  dmContent: string;     // Mapped from 'dmText'
+  isActive?: boolean;
 }
 
 export default function InstagramAutomations() {
@@ -52,10 +52,10 @@ export default function InstagramAutomations() {
 
   // New Funnel Form State
   const [newRule, setNewRule] = useState({
-    trigger: "",
-    type: "Comment on Any Post",
-    reply: "",
-    dmText: ""
+    keyword: "",
+    postType: "Comment on Any Post",
+    publicReply: "",
+    dmContent: ""
   });
 
   useEffect(() => {
@@ -74,10 +74,10 @@ export default function InstagramAutomations() {
           
           const data = await res.json();
           if (data.success && data.rules) {
-             setAutoDMRules(data.rules);
+              setAutoDMRules(data.rules);
           }
           if (data.success && data.settings) {
-             setGlobalSettings(data.settings);
+              setGlobalSettings(data.settings);
           }
         } catch (error) {
           console.error("[INSTAGRAM_AUTOMATION_ERROR] Failed to load rules safely", error);
@@ -94,20 +94,24 @@ export default function InstagramAutomations() {
   };
 
   const handleAddRule = () => {
-    if (!newRule.trigger || !newRule.dmText) {
+    if (!newRule.keyword.trim() || !newRule.dmContent.trim()) {
       alert("Trigger Keyword and Secret DM Text are required to build a funnel.");
       return;
     }
     const tempId = `temp_insta_${Date.now()}`;
-    setAutoDMRules([{ id: tempId, ...newRule }, ...autoDMRules]);
-    setNewRule({ trigger: "", type: "Comment on Any Post", reply: "", dmText: "" }); // Reset
+    
+    // Add to top of list with smooth animation
+    setAutoDMRules([{ id: tempId, ...newRule, isActive: true }, ...autoDMRules]);
+    
+    // Reset Form
+    setNewRule({ keyword: "", postType: "Comment on Any Post", publicReply: "", dmContent: "" }); 
   };
 
   const handleDeleteRule = (id: string) => {
     setAutoDMRules(autoDMRules.filter(r => r.id !== id));
   };
 
-  // 🚀 SECURE SAVE TO DATABASE WITH STRICT ERROR HANDLING
+  // 🚀 SECURE SAVE TO DATABASE (100% SYNCED)
   const handleSave = async () => {
     if (!session?.user?.email) return;
     setIsSaving(true);
@@ -167,7 +171,7 @@ export default function InstagramAutomations() {
       <div className="flex-1 overflow-y-auto custom-scrollbar p-6 md:p-8">
         <div className="max-w-[1400px] mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8">
           
-          {/* LEFT: GLOBAL TRIGGERS */}
+          {/* ================= LEFT: GLOBAL TRIGGERS ================= */}
           <div className="lg:col-span-1 space-y-6">
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} 
               className="bg-[#0A0A0D] border border-white/5 rounded-[24px] p-6 shadow-[0_10px_40px_rgba(0,0,0,0.5)] flex flex-col relative overflow-hidden">
@@ -214,7 +218,7 @@ export default function InstagramAutomations() {
             </motion.div>
           </div>
 
-          {/* RIGHT: COMMENT TO DM ENGINE */}
+          {/* ================= RIGHT: COMMENT TO DM ENGINE ================= */}
           <div className="lg:col-span-2 space-y-6">
             <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.1 }}
               className="bg-[#0A0A0D] border border-white/5 rounded-[24px] p-6 md:p-8 shadow-[0_10px_40px_rgba(0,0,0,0.5)]">
@@ -235,39 +239,41 @@ export default function InstagramAutomations() {
                 </button>
               </div>
 
-              {/* Add New Funnel Form */}
-              <div className="bg-[#111114] border border-pink-500/20 p-5 rounded-2xl mb-8 flex flex-col gap-4 shadow-inner">
+              {/* 🚀 FORM: Add New Funnel */}
+              <div className="bg-[#111114] border border-pink-500/20 p-5 rounded-2xl mb-8 flex flex-col gap-4 shadow-inner relative overflow-hidden">
+                <div className="absolute top-0 left-0 w-1 h-full bg-pink-500/50"></div>
                 <h4 className="text-[11px] font-black uppercase tracking-widest text-pink-400 flex items-center gap-2">
                   <Plus className="w-4 h-4"/> Create New Viral Funnel
                 </h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2 block">Target Post Type</label>
-                    <select value={newRule.type} onChange={(e)=> setNewRule({...newRule, type: e.target.value})} title="Select rule type" className="w-full bg-[#0A0A0D] border border-white/10 rounded-lg p-2.5 text-sm text-white outline-none focus:border-pink-500/50">
+                    <select value={newRule.postType} onChange={(e)=> setNewRule({...newRule, postType: e.target.value})} className="w-full bg-[#0A0A0D] border border-white/10 rounded-lg p-3 text-sm text-white outline-none focus:border-pink-500/50 transition-colors">
                         <option value="Comment on Any Post">Any Post or Reel</option>
-                        <option value="Comment on Specific Reel">Specific Reel (Select Later)</option>
+                        <option value="Specific Post">Specific Post/Reel</option>
                     </select>
                   </div>
                   <div>
                     <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2 block">Trigger Keyword (comma separated)</label>
-                    <input type="text" placeholder="e.g. link, send, price" value={newRule.trigger} onChange={(e)=> setNewRule({...newRule, trigger: e.target.value})} className="w-full bg-[#0A0A0D] border border-white/10 rounded-lg p-2.5 text-sm text-white outline-none focus:border-pink-500/50" />
+                    <input type="text" placeholder="e.g. link, send, price" value={newRule.keyword} onChange={(e)=> setNewRule({...newRule, keyword: e.target.value})} className="w-full bg-[#0A0A0D] border border-white/10 rounded-lg p-3 text-sm text-white outline-none focus:border-pink-500/50 transition-colors" />
                   </div>
                   <div>
                     <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2 block">Public Comment Reply (Optional)</label>
-                    <input type="text" placeholder="e.g. Sent you a DM! 🚀" value={newRule.reply} onChange={(e)=> setNewRule({...newRule, reply: e.target.value})} className="w-full bg-[#0A0A0D] border border-white/10 rounded-lg p-2.5 text-sm text-white outline-none focus:border-pink-500/50" />
+                    <input type="text" placeholder="e.g. Sent you a DM! 🚀" value={newRule.publicReply} onChange={(e)=> setNewRule({...newRule, publicReply: e.target.value})} className="w-full bg-[#0A0A0D] border border-white/10 rounded-lg p-3 text-sm text-white outline-none focus:border-pink-500/50 transition-colors" />
                   </div>
                   <div>
                     <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2 block">Secret DM Content</label>
-                    <input type="text" placeholder="e.g. Here is the link you requested: https..." value={newRule.dmText} onChange={(e)=> setNewRule({...newRule, dmText: e.target.value})} className="w-full bg-[#0A0A0D] border border-pink-500/30 rounded-lg p-2.5 text-sm text-white outline-none focus:border-pink-500/80" />
+                    <input type="text" placeholder="e.g. Here is the link you requested: https..." value={newRule.dmContent} onChange={(e)=> setNewRule({...newRule, dmContent: e.target.value})} className="w-full bg-[#0A0A0D] border border-pink-500/30 rounded-lg p-3 text-sm text-white outline-none focus:border-pink-500/80 transition-colors shadow-[0_0_10px_rgba(236,72,153,0.1)]" />
                   </div>
                 </div>
                 <div className="flex justify-end mt-2">
-                  <button onClick={handleAddRule} className={`bg-pink-500/10 hover:bg-pink-500/20 text-pink-400 border border-pink-500/20 px-6 py-2.5 rounded-lg text-xs font-black uppercase tracking-widest transition-all ${btnHover}`}>
+                  <button onClick={handleAddRule} className={`bg-pink-500/10 hover:bg-pink-500/20 text-pink-400 border border-pink-500/20 px-8 py-3 rounded-lg text-xs font-black uppercase tracking-widest transition-all ${btnHover}`}>
                     Add Funnel
                   </button>
                 </div>
               </div>
 
+              {/* 🚀 ACTIVE FUNNELS DATABASE */}
               <div className="flex justify-between items-center mb-4">
                 <p className="text-[10px] font-black uppercase tracking-widest text-gray-500">Active Funnels Database</p>
               </div>
@@ -278,43 +284,58 @@ export default function InstagramAutomations() {
                       <Activity className="w-8 h-8 text-gray-600 mx-auto mb-3" />
                       <p className="text-sm text-gray-500">No viral funnels configured yet.</p>
                   </div>
-                ) : autoDMRules.map((rule) => (
-                  <div key={rule.id} className="bg-[#111114] border border-white/5 hover:border-pink-500/30 p-5 rounded-2xl flex flex-col gap-4 group transition-all">
-                    
-                    <div className="flex items-center justify-between border-b border-white/5 pb-3">
-                      <div className="flex items-center gap-2">
-                        <Hash className="w-4 h-4 text-pink-500" />
-                        <span className="text-[13px] font-bold text-gray-300">{rule.type}</span>
-                      </div>
-                      <button title="Delete rule" onClick={() => handleDeleteRule(rule.id)} className="p-2 text-gray-600 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors">
-                        <Trash2 className="w-4 h-4"/>
-                      </button>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div>
-                        <p className="text-[10px] uppercase tracking-widest text-gray-500 mb-1">If user comments:</p>
-                        <div className="bg-black/30 border border-white/5 px-3 py-2 rounded-lg mb-3">
-                          <span className="text-[13px] font-mono text-pink-400">{rule.trigger}</span>
-                        </div>
+                ) : (
+                  <AnimatePresence>
+                    {autoDMRules.map((rule, idx) => (
+                      <motion.div 
+                        key={rule.id || idx} 
+                        initial={{ opacity: 0, height: 0 }} 
+                        animate={{ opacity: 1, height: 'auto' }} 
+                        exit={{ opacity: 0, scale: 0.95 }}
+                        className="bg-[#111114] border border-white/5 hover:border-pink-500/30 p-5 rounded-2xl flex flex-col gap-4 group transition-colors"
+                      >
                         
-                        <p className="text-[10px] uppercase tracking-widest text-gray-500 mb-1">Public Reply:</p>
-                        <div className="bg-black/30 border border-white/5 px-3 py-2 rounded-lg">
-                          <span className="text-[12px] text-gray-300">{rule.reply || "No public reply"}</span>
+                        <div className="flex items-center justify-between border-b border-white/5 pb-3">
+                          <div className="flex items-center gap-2">
+                            <Hash className="w-4 h-4 text-pink-500" />
+                            <span className="text-[13px] font-bold text-gray-300">{rule.postType}</span>
+                          </div>
+                          <button title="Delete rule" onClick={() => handleDeleteRule(rule.id)} className="p-2 text-gray-600 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors">
+                            <Trash2 className="w-4 h-4"/>
+                          </button>
                         </div>
-                      </div>
 
-                      <div>
-                        <p className="text-[10px] uppercase tracking-widest text-gray-500 mb-1">Secretly Send DM:</p>
-                        <div className="bg-black/30 border border-pink-500/20 px-4 py-3 rounded-lg h-full">
-                          <MessageCircle className="w-4 h-4 text-pink-500 mb-2" />
-                          <span className="text-[13px] text-white leading-relaxed">{rule.dmText}</span>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                          <div>
+                            <p className="text-[10px] uppercase tracking-widest text-gray-500 mb-2">If user comments:</p>
+                            <div className="flex flex-wrap gap-2 mb-4">
+                              {/* 🧠 ADVANCED FEATURE: Smart Keyword Tags */}
+                              {rule.keyword ? rule.keyword.split(',').map((kw, i) => (
+                                <span key={i} className="bg-pink-500/10 border border-pink-500/20 text-pink-400 text-[11px] font-mono px-2.5 py-1 rounded-md uppercase tracking-wide">
+                                  {kw.trim()}
+                                </span>
+                              )) : <span className="text-gray-600 text-xs italic">No keyword</span>}
+                            </div>
+                            
+                            <p className="text-[10px] uppercase tracking-widest text-gray-500 mb-1">Public Reply:</p>
+                            <div className="bg-black/30 border border-white/5 px-3 py-2 rounded-lg">
+                              <span className="text-[12px] text-gray-300">{rule.publicReply || "None (Silent DM)"}</span>
+                            </div>
+                          </div>
+
+                          <div>
+                            <p className="text-[10px] uppercase tracking-widest text-gray-500 mb-2">Secretly Send DM:</p>
+                            <div className="bg-black/30 border border-pink-500/20 px-4 py-4 rounded-xl h-[calc(100%-24px)] flex items-start gap-3 shadow-inner">
+                              <MessageCircle className="w-4 h-4 text-pink-500 shrink-0 mt-0.5" />
+                              <span className="text-[13px] text-white leading-relaxed">{rule.dmContent || "No DM content"}</span>
+                            </div>
+                          </div>
                         </div>
-                      </div>
-                    </div>
 
-                  </div>
-                ))}
+                      </motion.div>
+                    ))}
+                  </AnimatePresence>
+                )}
               </div>
 
             </motion.div>
