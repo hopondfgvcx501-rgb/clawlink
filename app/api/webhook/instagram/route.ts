@@ -7,7 +7,7 @@
  * Features the "ManyChat-Killer" Auto-DM trigger system.
  * FIXED: Maintained 100% Original Omni-Engine Logic. Added Handover Protocol & Error Tracing.
  * UPGRADED: Injected Upstash Redis Rate Limiting (DDoS Armor) to prevent API spam.
- * 🚀 ARMOR ADDED: Added Empty Payload Fallback to prevent silent kills.
+ * 🚀 ENTERPRISE UPGRADE: God-Mode Toggles, Story Mentions, Dual-Table Scanner & Fallback Armor.
  * * ALL RIGHTS RESERVED. CLAWLINK INC.
  * ==============================================================================================
  */
@@ -220,18 +220,24 @@ export async function POST(req: Request) {
                     return NextResponse.json({ success: true, message: "Rate limited" }, { status: 200 });
                 }
 
+                // 🚀 STORY MENTION ENGINE DETECTION INJECTION
+                let eventType: "dm" | "comment" | "story" = "dm";
+                if (webhookEvent.message?.reply_to?.story) {
+                    eventType = "story";
+                }
+
                 // Awaiting process prevents Vercel from killing the function early
-                await processDynamicAI(senderId, accountId, userText, "dm");
+                await processDynamicAI(senderId, accountId, userText, eventType);
             }
         }
 
         if (entry.changes && entry.changes[0]) {
             const change = entry.changes[0];
-            if (change.field === "comments") {
+            if (change.field === "comments" || change.field === "feed") {
                 const commentValue = change.value;
-                const userText = commentValue?.text;
-                const senderId = commentValue?.from?.id;
-                const commentId = commentValue?.id;
+                const userText = commentValue?.text || commentValue?.message;
+                const senderId = commentValue?.from?.id || commentValue?.sender_id;
+                const commentId = commentValue?.id || commentValue?.comment_id;
 
                 if (senderId && userText && senderId !== accountId) {
                     
@@ -255,9 +261,9 @@ export async function POST(req: Request) {
 }
 
 // =========================================================================
-// 🧠 PROCESSOR: DYNAMIC AI ROUTING (OMNI-ENGINE + RAG + TRIGGERS)
+// 🧠 PROCESSOR: DYNAMIC AI ROUTING (GOD-MODE + OMNI-ENGINE + RAG)
 // =========================================================================
-async function processDynamicAI(senderId: string, accountId: string, text: string, type: "dm" | "comment", commentId?: string) {
+async function processDynamicAI(senderId: string, accountId: string, text: string, type: "dm" | "comment" | "story", commentId?: string) {
     const { data: config, error: dbError } = await supabase
         .from("user_configs")
         .select("*")
@@ -271,78 +277,122 @@ async function processDynamicAI(senderId: string, accountId: string, text: strin
 
     const metaApiToken = config.instagram_token.trim();
     const promptText = sanitizeInput(text);
+    const safeEmail = (config.email || "").trim();
 
     // ==========================================
-    // 🎯 SMART COMMENT-TO-DM FUNNEL (AUTOMATION_RULES TABLE)
+    // 🌟 MODULE 1: STORY MENTION ENGINE
     // ==========================================
-    if (type === "comment") {
-        // 1. Fetch rules from the CORRECT table (automation_rules)
-        const { data: activeRules, error: rulesError } = await supabase
-            .from("automation_rules")
-            .select("*")
-            .eq("email", config.email)
-            .eq("platform", "instagram");
-
-        if (rulesError) {
-            console.error("[IG_FUNNEL_DB_ERROR] Failed to fetch automation rules:", rulesError.message);
-        }
-
-        if (activeRules && activeRules.length > 0) {
-            const commentLower = promptText.toLowerCase();
-            
-            // 2. Match the keyword with the new table structure
-            const matchedRule = activeRules.find((rule: any) => {
-                if (!rule.keyword) return false;
-                const keywords = rule.keyword.split(',').map((k: string) => k.trim().toLowerCase());
-                return keywords.some((k: string) => commentLower.includes(k));
-            });
-
-            if (matchedRule) {
-                // 🚀 ARMOR: Get text and verify it exists so we don't send a blank payload
-                const funnelText = matchedRule.content || matchedRule.dm_content || matchedRule.dmContent;
-
-                if (funnelText && funnelText.trim() !== "") {
-                    console.log(`[IG_FUNNEL_MATCHED] Rule found in DB! Executing Custom Funnel...`);
-                    
-                    // 3. Send Custom Public Comment Reply
-                    if (matchedRule.public_reply && commentId) {
-                        await fetch(`https://graph.facebook.com/v18.0/${commentId}/replies?access_token=${metaApiToken}`, {
-                            method: "POST", headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({ message: matchedRule.public_reply })
-                        }).catch(e => console.error("Public Reply Error:", e));
-                    }
-                    
-                    // 4. Send Custom Secret DM
-                    const dmRes = await fetch(`https://graph.facebook.com/v18.0/me/messages?access_token=${metaApiToken}`, {
-                        method: "POST", headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ recipient: { id: senderId }, message: { text: funnelText } })
-                    });
-
-                    const dmResponseData = await dmRes.json();
-                    
-                    if (dmResponseData.error) {
-                        console.error("🔥 META REJECTION (FUNNEL DM):", JSON.stringify(dmResponseData.error));
-                    } else {
-                        // 🚨 LOG TO HISTORY & STOP THE AI! 
-                        await supabase.from("chat_history").insert({ 
-                            email: config.email, platform: "instagram", platform_chat_id: senderId, customer_name: "IG Follower", sender_type: "bot", message: `[AUTO-FUNNEL] ${funnelText}` 
-                        });
-                    }
-                    
-                    // 🛑 EXIT FUNCTION: This stops the Omni-Engine AI from replying!
-                    return; 
-                } else {
-                    console.warn(`[IG_FUNNEL_EMPTY] Match found, but payload is empty! Falling back to Omni-Engine AI...`);
-                    // Will naturally fall down to AI below
-                }
-            }
-        }
-        
-        console.log(`[IG_COMMENT_NO_FUNNEL] No funnel match for: "${promptText}". Passing to AI...`);
+    if (type === "story" && config.story_mention_enabled) {
+        const storyReply = config.story_mention_reply || "Thanks for the mention! 🚀";
+        await fetch(`https://graph.facebook.com/v18.0/me/messages?access_token=${metaApiToken}`, {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ recipient: { id: senderId }, message: { text: storyReply } })
+        });
+        await supabase.from("chat_history").insert({ 
+            email: config.email, platform: "instagram", platform_chat_id: senderId, customer_name: "Story Mention", sender_type: "bot", message: `[STORY_AUTO_REPLY] ${storyReply}` 
+        });
+        return; // Halt further processing
     }
 
     // ==========================================
-    // 🛑 THE GATEKEEPER (Plan, Expiry & Limits Check) 
+    // 🎯 MODULE 2: GOD-MODE FUNNEL SCANNER (DUAL-TABLE + TOGGLES)
+    // ==========================================
+    let funnelText = "";
+    let publicReplyText = "";
+    let isFunnelMatched = false;
+    let allowAiHandover = true;
+
+    // CHECK 1: The Modern SQL Table (automation_rules) with Case-Insensitive logic
+    const { data: sqlRules } = await supabase
+        .from("automation_rules")
+        .select("*")
+        .ilike("email", safeEmail)
+        .ilike("platform", "%insta%");
+
+    if (sqlRules && sqlRules.length > 0) {
+        const commentLower = promptText.toLowerCase();
+
+        const matchedSql = sqlRules.find((r: any) => {
+            if (!r.keyword) return false;
+
+            // 🧠 GOD-MODE LOGIC: Checking Toggles
+            const allowComment = r.trigger_on_comment !== false; // Default true behavior
+            const allowDM = r.trigger_on_dm === true;            // Default false behavior
+            
+            if (type === "comment" && !allowComment) return false;
+            if (type === "dm" && !allowDM) return false;
+
+            return r.keyword.split(',').some((k: string) => commentLower.includes(k.trim().toLowerCase()));
+        });
+
+        if (matchedSql) {
+            funnelText = matchedSql.content || matchedSql.dm_content || matchedSql.dmContent || "";
+            publicReplyText = matchedSql.public_reply || "";
+            allowAiHandover = matchedSql.ai_handover !== false; 
+            isFunnelMatched = true;
+        }
+    }
+
+    // CHECK 2: The Legacy JSONB Table (automations) fallback
+    if (!isFunnelMatched) {
+        const { data: jsonbData } = await supabase
+            .from("automations")
+            .select("rules")
+            .ilike("email", safeEmail)
+            .ilike("channel", "%insta%")
+            .single();
+        
+        if (jsonbData && jsonbData.rules) {
+            const commentLower = promptText.toLowerCase();
+            const matchedJsonb = jsonbData.rules.find((r: any) => {
+                if (!r.isActive || !r.keyword) return false;
+                return r.keyword.split(',').some((k: string) => commentLower.includes(k.trim().toLowerCase()));
+            });
+            if (matchedJsonb) {
+                funnelText = matchedJsonb.dmContent || matchedJsonb.content || "";
+                publicReplyText = matchedJsonb.publicReply || "";
+                isFunnelMatched = true;
+            }
+        }
+    }
+
+    // EXECUTE FUNNEL IF FOUND AND TEXT IS VALID
+    if (isFunnelMatched && funnelText.trim() !== "") {
+        console.log(`[IG_FUNNEL_EXEC] God-Mode matched trigger rules. Firing Custom DM...`);
+        
+        // Only send public reply if it's an actual comment on a post
+        if (type === "comment" && publicReplyText && commentId) {
+            await fetch(`https://graph.facebook.com/v18.0/${commentId}/replies?access_token=${metaApiToken}`, {
+                method: "POST", headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ message: publicReplyText })
+            }).catch(e => console.error("Public Reply Error:", e));
+        }
+        
+        const dmRes = await fetch(`https://graph.facebook.com/v18.0/me/messages?access_token=${metaApiToken}`, {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ recipient: { id: senderId }, message: { text: funnelText } })
+        });
+
+        const dmResponseData = await dmRes.json();
+        
+        if (dmResponseData.error) {
+            console.error("🔥 META REJECTION (FUNNEL DM):", JSON.stringify(dmResponseData.error));
+            await sendTelegramAlert("Meta Rejected Funnel DM", `Reason: ${dmResponseData.error.message}\nPayload: ${funnelText}`);
+        } else {
+            await supabase.from("chat_history").insert({ 
+                email: config.email, platform: "instagram", platform_chat_id: senderId, customer_name: "IG Follower", sender_type: "bot", message: `[AUTO-FUNNEL] ${funnelText}` 
+            });
+        }
+        
+        // 🛑 SUCCESS: Exit early so AI doesn't double-reply!
+        return; 
+    } else if (isFunnelMatched && !allowAiHandover) {
+        console.warn(`[IG_FUNNEL_EMPTY] Payload blank & AI Handover OFF. System silenced.`);
+        return; // 🛑 AI is forcibly silenced by user rules
+    }
+
+    // ==========================================
+    // 🛑 MODULE 3: THE GATEKEEPER (Plan, Expiry & Limits Check) 
     // ==========================================
     const currentPlan = (config.plan_tier || config.plan || "free").toLowerCase();
 
@@ -350,7 +400,7 @@ async function processDynamicAI(senderId: string, accountId: string, text: strin
         console.warn(`[IG_GATEKEEPER] Unpaid or inactive account for ${config.email}. Blocking AI.`);
         const sleepMsg = "🤖 *ClawLink AI:* This agent is currently sleeping. The owner needs to activate their plan in the dashboard to enable 24/7 autonomous replies.";
 
-        if (type === "dm") {
+        if (type === "dm" || type === "story") {
             await fetch(`https://graph.facebook.com/v18.0/me/messages?access_token=${metaApiToken}`, {
                 method: "POST", headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ recipient: { id: senderId }, message: { text: sleepMsg } })
@@ -369,7 +419,7 @@ async function processDynamicAI(senderId: string, accountId: string, text: strin
         console.warn(`[IG_LIMITS] Account limits exhausted for ${config.email}. Dropping request.`);
         const maintenanceMsg = "System Note: The AI assistant for this account is currently offline due to account limits. Please contact the administrator.";
         
-        if (type === "dm") {
+        if (type === "dm" || type === "story") {
             await fetch(`https://graph.facebook.com/v18.0/me/messages?access_token=${metaApiToken}`, {
                 method: "POST", headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ recipient: { id: senderId }, message: { text: maintenanceMsg } })
@@ -379,7 +429,7 @@ async function processDynamicAI(senderId: string, accountId: string, text: strin
     }
 
     // ==========================================
-    // 📚 FETCH COMPANY KNOWLEDGE (RAG)
+    // 📚 MODULE 4: FETCH COMPANY KNOWLEDGE (RAG)
     // ==========================================
     let customKnowledge = "";
     try {
@@ -395,7 +445,7 @@ async function processDynamicAI(senderId: string, accountId: string, text: strin
     } catch (e) { console.error("[IG_RAG_ERROR]", e); }
 
     // ==========================================
-    // 🚀 INITIATE OMNI-ENGINE AI RESPONSE
+    // 🚀 MODULE 5: INITIATE OMNI-ENGINE AI RESPONSE
     // ==========================================
     let rawProvider = (config.ai_provider || config.selected_model || "openai").toLowerCase();
     let provider = "openai"; 
@@ -536,11 +586,11 @@ async function processDynamicAI(senderId: string, accountId: string, text: strin
     }
 
     // ==========================================
-    // 📤 DISPATCH RESPONSE TO META GRAPH API
+    // 📤 DISPATCH FINAL AI RESPONSE TO META
     // ==========================================
     let finalDbMessage = aiResponse;
 
-    if (type === "dm") {
+    if (type === "dm" || type === "story") { // Story replies also go to DM
         const metaRes = await fetch(`https://graph.facebook.com/v18.0/me/messages?access_token=${metaApiToken}`, {
             method: "POST", headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ recipient: { id: senderId }, message: { text: aiResponse } })
@@ -552,7 +602,7 @@ async function processDynamicAI(senderId: string, accountId: string, text: strin
         if (metaResponseData.error) {
             console.error("🔥 META REJECTION:", JSON.stringify(metaResponseData.error));
             finalDbMessage = `[META_ERROR] ${metaResponseData.error.message}`;
-            await sendTelegramAlert("Meta Graph API Rejected DM", `Reason: ${metaResponseData.error.message}\nSender ID: ${senderId}`);
+            await sendTelegramAlert("Meta Graph API Rejected AI DM", `Reason: ${metaResponseData.error.message}\nSender ID: ${senderId}`);
         }
 
     } else if (type === "comment") {
@@ -571,7 +621,7 @@ async function processDynamicAI(senderId: string, accountId: string, text: strin
         if (dmResponseData.error) {
             console.error("🔥 META REJECTION (COMMENT DM):", JSON.stringify(dmResponseData.error));
             finalDbMessage = `[META_ERROR] ${dmResponseData.error.message}`;
-            await sendTelegramAlert("Meta Graph API Rejected Comment DM", `Reason: ${dmResponseData.error.message}\nSender ID: ${senderId}`);
+            await sendTelegramAlert("Meta Graph API Rejected AI Comment DM", `Reason: ${dmResponseData.error.message}\nSender ID: ${senderId}`);
         }
     }
 
