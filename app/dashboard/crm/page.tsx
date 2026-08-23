@@ -6,9 +6,8 @@
  * ==============================================================================================
  * @file app/dashboard/crm/page.tsx
  * @description Centralized inbox to monitor bot conversations and take manual human control.
- * 🚀 FIXED: Wired up Media Attachment (Paperclip) to local file picker.
- * 🚀 FIXED: Activated 3-Dot Menu with an animated action dropdown.
- * 🚀 SECURED: Instagram routed to isolated microservice. Telegram & WhatsApp remain strictly locked to legacy API.
+ * 🚀 FIXED: Solved "Invalid Date" and "Empty Bubble" issues with Bulletproof Payload Mapping.
+ * 🚀 SECURED: Instagram routed to isolated microservice. 
  * 🔥 UPGRADED: Added Omni-Payload Translator to seamlessly sync Backend Data with Frontend UI.
  * * ALL RIGHTS RESERVED. CLAWLINK INC.
  * ==============================================================================================
@@ -75,13 +74,12 @@ export default function LiveCRMInbox() {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // 🚀 LIVE WIRE: Real-time listener for incoming messages (WITH DEBUG MODE)
+  // 🚀 LIVE WIRE: Real-time listener for incoming messages
   useEffect(() => {
     if (!session?.user?.email || !activeChatId) return;
 
     const email = session.user.email.toLowerCase();
 
-    // DEBUG: Changed channel name to 'public:chat_history' to match Supabase defaults
     const chatListener = supabase
         .channel('public:chat_history')
         .on(
@@ -93,33 +91,28 @@ export default function LiveCRMInbox() {
                 filter: `email=eq.${email}`
             },
             (payload) => {
-                // DEBUG: This will fire when a new message hits the database
                 console.log("🟢 [LIVE RADAR] Message Event Received:", payload);
-
                 const newMessage = payload.new;
 
-                if (newMessage.chat_id === activeChatId || newMessage.platform_chat_id === activeChatId) {
+                if (newMessage.chat_id === activeChatId || newMessage.platform_chat_id === activeChatId || newMessage.sender_id === activeChatId) {
                     setMessages((prev) => [...prev, {
                         id: newMessage.id,
-                        sender: newMessage.sender_type === 'admin' ? 'admin' : 'user',
-                        text: newMessage.message,
+                        sender: newMessage.sender_type === 'admin' || newMessage.is_admin ? 'admin' : (newMessage.sender_type === 'bot' || newMessage.is_bot ? 'bot' : 'user'),
+                        text: newMessage.message || "[Media/System]",
                         time: 'Just now'
                     }]);
                 }
 
                 setChats((prev) => prev.map(chat => 
-                    (chat.id === newMessage.chat_id || chat.id === newMessage.platform_chat_id)
-                    ? { ...chat, lastMessage: newMessage.message, time: 'Now' }
+                    (chat.id === newMessage.chat_id || chat.id === newMessage.platform_chat_id || chat.id === newMessage.sender_id)
+                    ? { ...chat, lastMessage: newMessage.message || "[Media/System]", time: 'Now' }
                     : chat
                 ));
             }
         )
         .subscribe((status, err) => {
-            // DEBUG: This logs the exact backend connection status to the browser console
             console.log("📡 [SUPABASE STATUS] Realtime Connection:", status);
-            if (err) {
-                console.error("🚨 [SUPABASE FATAL ERROR] Backend rejected connection:", err);
-            }
+            if (err) console.error("🚨 [SUPABASE FATAL ERROR] Backend rejected connection:", err);
         });
 
     return () => {
@@ -166,23 +159,26 @@ export default function LiveCRMInbox() {
         const rawList = data.chats || data.data || data.leads || data.contacts || [];
 
         const formattedChats: ChatSession[] = rawList.map((chat: any) => {
-          const dateObj = new Date(chat.last_message_time || chat.created_at || Date.now());
-          const timeString = dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+          const dateObj = new Date(chat.last_message_time || chat.last_time || chat.created_at || Date.now());
+          const timeString = isNaN(dateObj.getTime()) ? "Unknown Time" : dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
           let chatMessages: ChatMessage[] = [];
-          if (data.groupedChats && data.groupedChats[chat.platform_chat_id || chat.id]) {
-             chatMessages = data.groupedChats[chat.platform_chat_id || chat.id].map((m: any) => ({
+          
+          // 🔥 BULLETPROOF MAPPING: Handles both RAW DB Payload and Pre-Formatted API Payload
+          const chatGroupId = chat.platform_chat_id || chat.id || chat.userId;
+          if (data.groupedChats && data.groupedChats[chatGroupId]) {
+             chatMessages = data.groupedChats[chatGroupId].map((m: any) => ({
                id: m.id || Math.random().toString(),
-               sender: m.sender_type === "bot" ? "bot" : (m.sender_type === "human" || m.sender_type === "admin" ? "admin" : "user"),
-               text: m.message || "",
-               time: new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+               sender: m.sender || (m.sender_type === "bot" || m.is_bot ? "bot" : (m.sender_type === "human" || m.sender_type === "admin" || m.is_admin ? "admin" : "user")),
+               text: m.text || m.message || "[Media/Unsupported]",
+               time: m.time || (m.created_at ? new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "Just now")
              }));
           } else if (chat.messages) {
              chatMessages = chat.messages;
           }
 
           return {
-            id: chat.id || chat.platform_chat_id,
+            id: chatGroupId,
             userId: chat.platform_chat_id || chat.userId || "Unknown",
             name: chat.name || chat.customer_name || "Customer",
             lastMessage: chat.lastMessage || chat.message || "[Media/System]",
@@ -248,7 +244,7 @@ export default function LiveCRMInbox() {
       id: Date.now().toString(),
       sender: 'admin',
       text: replyText,
-      time: 'Just now'
+      time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
     };
     
     setMessages([...messages, newMessage]);
@@ -409,11 +405,11 @@ export default function LiveCRMInbox() {
                             exit={{ opacity: 0, y: 10, scale: 0.95 }}
                             className="absolute right-0 top-full mt-2 w-48 bg-[#111114] border border-white/10 rounded-xl shadow-[0_10px_40px_rgba(0,0,0,0.5)] py-2 z-50 overflow-hidden"
                         >
-                            <button onClick={() => { alert('📥 Chat Export feature coming in Phase 3!'); setIsMenuOpen(false); }} className="w-full text-left px-4 py-2.5 text-[12px] text-gray-300 hover:bg-white/5 hover:text-white transition-colors flex items-center gap-3">
-                            <Download className="w-3.5 h-3.5"/> Export Chat
+                            <button onClick={() => { setIsMenuOpen(false); }} className="w-full text-left px-4 py-2.5 text-[12px] text-gray-300 hover:bg-white/5 hover:text-white transition-colors flex items-center gap-3">
+                            <Download className="w-3.5 h-3.5"/> Export Chat (Soon)
                             </button>
-                            <button onClick={() => { alert('🚫 User blocked successfully!'); setIsMenuOpen(false); }} className="w-full text-left px-4 py-2.5 text-[12px] text-red-400 hover:bg-red-500/10 transition-colors flex items-center gap-3">
-                            <Ban className="w-3.5 h-3.5"/> Block User
+                            <button onClick={() => { setIsMenuOpen(false); }} className="w-full text-left px-4 py-2.5 text-[12px] text-red-400 hover:bg-red-500/10 transition-colors flex items-center gap-3">
+                            <Ban className="w-3.5 h-3.5"/> Block User (Soon)
                             </button>
                         </motion.div>
                         )}
