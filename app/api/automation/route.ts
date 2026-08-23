@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
+export const dynamic = "force-dynamic";
+
 // Initialize Supabase Client
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
@@ -17,18 +19,20 @@ export async function GET(req: Request) {
       return NextResponse.json({ success: false, error: "Email is required" }, { status: 400 });
     }
 
-    // 1. Fetch User Settings (Story Mentions, Auto-Like)
-    const { data: configData, error: configError } = await supabase
+    const safeEmail = email.toLowerCase();
+
+    // 1. Fetch User Settings (Story Mentions)
+    const { data: configData } = await supabase
       .from("user_configs")
       .select("story_mention_enabled")
-      .eq("email", email)
+      .eq("email", safeEmail)
       .single();
 
     // 2. Fetch Automation Rules (Funnels + God Mode Toggles)
     const { data: rulesData, error: rulesError } = await supabase
       .from("automation_rules")
       .select("*")
-      .eq("email", email)
+      .eq("email", safeEmail)
       .eq("platform", channel)
       .order("created_at", { ascending: false });
 
@@ -41,7 +45,7 @@ export async function GET(req: Request) {
     const formattedRules = (rulesData || []).map((rule: any) => ({
       id: rule.id,
       keyword: rule.keyword || "",
-      postType: rule.type || "Comment on Any Post",
+      postType: "Comment on Any Post", // Hardcoded for UI since 'type' column doesn't exist
       publicReply: rule.public_reply || "",
       dmContent: rule.content || "",
       trigger_on_comment: rule.trigger_on_comment !== false, // Default true
@@ -55,7 +59,7 @@ export async function GET(req: Request) {
       rules: formattedRules,
       settings: {
         storyMentions: configData?.story_mention_enabled || false,
-        autoLikeComments: true, // Placeholder for future DB integration
+        autoLikeComments: true, 
       }
     }, { status: 200 });
 
@@ -75,36 +79,39 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: false, error: "Missing required fields" }, { status: 400 });
     }
 
-    // 1. Save Global Settings to user_configs (e.g., Story Mention)
+    const safeEmail = email.toLowerCase();
+
+    // 1. Save Global Settings to user_configs 
     if (settings) {
       await supabase
         .from("user_configs")
         .update({ 
           story_mention_enabled: settings.storyMentions === true 
         })
-        .eq("email", email);
+        .eq("email", safeEmail);
     }
 
-    // 2. Prepare Rules for Database Injection (Mapping Frontend to DB Columns)
+    // 2. Prepare Rules for Database Injection (🔥 FIXED SCHEMA CACHE ERROR)
     const formattedRulesForDB = rules.map((r: any) => ({
-      email: email,
+      email: safeEmail,
       platform: channel,
       keyword: r.keyword,
-      type: r.postType,
+      match_type: "contains", // 🔥 RESTORED TO PREVENT DB CRASH
+      action_type: "dm",      // 🔥 RESTORED TO PREVENT DB CRASH
       public_reply: r.publicReply,
-      content: r.dmContent, // This is the secret DM
+      content: r.dmContent, // Secret DM
       trigger_on_comment: r.trigger_on_comment !== false,
       trigger_on_dm: r.trigger_on_dm === true,
       ai_handover: r.ai_handover !== false,
-      is_active: r.isActive !== false,
-      updated_at: new Date().toISOString()
+      is_active: r.isActive !== false
+      // 🚫 REMOVED: type: r.postType (This was causing the schema error)
     }));
 
     // 3. Clear old rules for this channel to ensure a clean sync
     const { error: deleteError } = await supabase
       .from("automation_rules")
       .delete()
-      .eq("email", email)
+      .eq("email", safeEmail)
       .eq("platform", channel);
 
     if (deleteError) {
