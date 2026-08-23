@@ -4,6 +4,7 @@
  * ==============================================================================================
  * @description Manages IG DM and Comment automations for REAL users. Integrated with Alert Matrix.
  * 🚀 FEATURE: 100% User-Isolated Data (No Dummies). Supports Add, Edit, Delete & History.
+ * 🔥 UPGRADE: Injected God-Mode Toggles (trigger_on_comment, trigger_on_dm, ai_handover) seamlessly into JSONB.
  * * ALL RIGHTS RESERVED. CLAWLINK INC.
  * ==============================================================================================
  */
@@ -65,7 +66,7 @@ export async function GET(req: NextRequest) {
   }
 }
 
-// 🚀 POST: Save, Edit, or Delete User's Automations
+// 🚀 POST: Save, Edit, or Delete User's Automations (WITH GOD-MODE)
 export async function POST(req: NextRequest) {
   let extractedEmail = "Unknown";
   
@@ -84,7 +85,7 @@ export async function POST(req: NextRequest) {
 
     // 🧠 SMART MODE CHECK: Is the user ADDING a new funnel, or EDITING/DELETING existing ones?
     
-    // MODE A: Append New Funnel (User clicked "Add Funnel")
+    // MODE A: Append New Funnel (User clicked "Add Funnel" directly via API)
     if (body.keyword && body.dmContent) {
         const { data: existingData } = await supabase
           .from('automations')
@@ -103,6 +104,12 @@ export async function POST(req: NextRequest) {
                 publicReply: body.publicReply || "",
                 dmContent: body.dmContent,
                 isActive: body.isActive !== undefined ? body.isActive : true,
+                
+                // 🔥 GOD-MODE INJECTIONS: Added to ensure new toggles are saved
+                trigger_on_comment: body.trigger_on_comment !== false, // Default: true
+                trigger_on_dm: body.trigger_on_dm === true,            // Default: false
+                ai_handover: body.ai_handover !== false,               // Default: true
+                
                 createdAt: new Date().toISOString()
             },
             ...currentRules
@@ -110,13 +117,13 @@ export async function POST(req: NextRequest) {
 
         finalSettings = existingData?.settings || {};
     } 
-    // MODE B: Full Sync (User clicked "Delete" or Toggled a setting)
+    // MODE B: Full Sync (User clicked "Deploy Funnels" sending the whole array)
     else {
-        // If the frontend sends the whole array, we trust it and overwrite (This handles deletions)
+        // If the frontend sends the whole array, we trust it and overwrite (This natively handles God-Mode flags)
         if (!finalRules) throw new Error("Invalid payload: Rules array missing during sync.");
     }
 
-    // 🚀 UPSERT TO REAL DB: Save strictly under this user's email
+    // 🚀 UPSERT TO REAL DB: Save strictly under this user's email into JSONB
     const { error } = await supabase
       .from('automations')
       .upsert({
