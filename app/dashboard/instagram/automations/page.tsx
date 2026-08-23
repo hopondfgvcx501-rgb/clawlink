@@ -160,7 +160,7 @@ export default function InstagramAutomations() {
       const data = await res.json();
       
       if (data.success) {
-        alert("📸 Instagram Viral Funnels and God-Mode settings synced securely with Meta API!");
+        alert("✅ Saved successfully!");
         const refreshRes = await fetch(`/api/automation?email=${encodeURIComponent(session.user.email)}&channel=instagram&t=${Date.now()}`);
         const refreshData = await refreshRes.json();
         if (refreshData.success && refreshData.rules) setAutoDMRules(refreshData.rules);
