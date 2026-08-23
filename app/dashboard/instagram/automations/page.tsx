@@ -5,9 +5,9 @@
  * CLAWLINK ENTERPRISE: INSTAGRAM AUTO-DM & COMMENT AUTOMATION
  * ==============================================================================================
  * @file app/dashboard/instagram/automations/page.tsx
- * @description The "ManyChat Killer" module. 
- * 🚀 UPGRADE: Next-Gen UI with Smart Keyword Tagging and 100% Backend State Mapping.
- * 🚀 FIXED: Variables strictly mapped (keyword, dmContent) to match Supabase API.
+ * @description The Ultimate God-Mode Module. 
+ * 🚀 UPGRADE: Injected Advanced Control Panel (Comment, DM, AI Handover Toggles).
+ * 🚀 FIXED: Variables strictly mapped (keyword, dmContent, trigger_flags) to match Supabase API.
  * * ALL RIGHTS RESERVED. CLAWLINK INC.
  * ==============================================================================================
  */
@@ -19,7 +19,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { 
   Bot, MessageCircle, Zap, Plus, 
   Trash2, Save, Activity, MessageSquare, 
-  Hash, Heart
+  Hash, Heart, ShieldAlert, Inbox, CheckCircle2, XCircle
 } from "lucide-react";
 import TopHeader from "@/components/TopHeader";
 import SpinnerCounter from "@/components/SpinnerCounter";
@@ -31,6 +31,9 @@ interface AutoDMRule {
   postType: string;      // Mapped from 'type'
   publicReply: string;   // Mapped from 'reply'
   dmContent: string;     // Mapped from 'dmText'
+  trigger_on_comment?: boolean; // 🔥 GOD MODE FLAG
+  trigger_on_dm?: boolean;      // 🔥 GOD MODE FLAG
+  ai_handover?: boolean;        // 🔥 GOD MODE FLAG
   isActive?: boolean;
 }
 
@@ -50,12 +53,15 @@ export default function InstagramAutomations() {
   // Auto-DM Rules State (Fetched from DB)
   const [autoDMRules, setAutoDMRules] = useState<AutoDMRule[]>([]);
 
-  // New Funnel Form State
+  // New Funnel Form State (WITH GOD-MODE DEFAULTS)
   const [newRule, setNewRule] = useState({
     keyword: "",
     postType: "Comment on Any Post",
     publicReply: "",
-    dmContent: ""
+    dmContent: "",
+    trigger_on_comment: true,
+    trigger_on_dm: false,
+    ai_handover: true
   });
 
   useEffect(() => {
@@ -93,6 +99,10 @@ export default function InstagramAutomations() {
     setGlobalSettings(prev => ({ ...prev, [key]: !prev[key] }));
   };
 
+  const handleRuleToggle = (key: keyof typeof newRule) => {
+    setNewRule(prev => ({ ...prev, [key]: !prev[key] }));
+  };
+
   const handleAddRule = () => {
     if (!newRule.keyword.trim() || !newRule.dmContent.trim()) {
       alert("Trigger Keyword and Secret DM Text are required to build a funnel.");
@@ -103,8 +113,16 @@ export default function InstagramAutomations() {
     // Add to top of list with smooth animation
     setAutoDMRules([{ id: tempId, ...newRule, isActive: true }, ...autoDMRules]);
     
-    // Reset Form
-    setNewRule({ keyword: "", postType: "Comment on Any Post", publicReply: "", dmContent: "" }); 
+    // Reset Form to defaults
+    setNewRule({ 
+      keyword: "", 
+      postType: "Comment on Any Post", 
+      publicReply: "", 
+      dmContent: "",
+      trigger_on_comment: true,
+      trigger_on_dm: false,
+      ai_handover: true
+    }); 
   };
 
   const handleDeleteRule = (id: string) => {
@@ -142,7 +160,7 @@ export default function InstagramAutomations() {
       const data = await res.json();
       
       if (data.success) {
-        alert("📸 Instagram Viral Funnels and Automations synced securely with Meta Graph API!");
+        alert("📸 Instagram Viral Funnels and God-Mode settings synced securely with Meta API!");
         const refreshRes = await fetch(`/api/automation?email=${encodeURIComponent(session.user.email)}&channel=instagram&t=${Date.now()}`);
         const refreshData = await refreshRes.json();
         if (refreshData.success && refreshData.rules) setAutoDMRules(refreshData.rules);
@@ -240,12 +258,13 @@ export default function InstagramAutomations() {
               </div>
 
               {/* 🚀 FORM: Add New Funnel */}
-              <div className="bg-[#111114] border border-pink-500/20 p-5 rounded-2xl mb-8 flex flex-col gap-4 shadow-inner relative overflow-hidden">
+              <div className="bg-[#111114] border border-pink-500/20 p-5 md:p-7 rounded-2xl mb-8 flex flex-col gap-6 shadow-inner relative overflow-hidden">
                 <div className="absolute top-0 left-0 w-1 h-full bg-pink-500/50"></div>
                 <h4 className="text-[11px] font-black uppercase tracking-widest text-pink-400 flex items-center gap-2">
                   <Plus className="w-4 h-4"/> Create New Viral Funnel
                 </h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                   <div>
                     <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2 block">Target Post Type</label>
                     <select value={newRule.postType} onChange={(e)=> setNewRule({...newRule, postType: e.target.value})} className="w-full bg-[#0A0A0D] border border-white/10 rounded-lg p-3 text-sm text-white outline-none focus:border-pink-500/50 transition-colors">
@@ -263,9 +282,53 @@ export default function InstagramAutomations() {
                   </div>
                   <div>
                     <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2 block">Secret DM Content</label>
-                    <input type="text" placeholder="e.g. Here is the link you requested: https..." value={newRule.dmContent} onChange={(e)=> setNewRule({...newRule, dmContent: e.target.value})} className="w-full bg-[#0A0A0D] border border-pink-500/30 rounded-lg p-3 text-sm text-white outline-none focus:border-pink-500/80 transition-colors shadow-[0_0_10px_rgba(236,72,153,0.1)]" />
+                    <input type="text" placeholder="e.g. Here is the link you requested..." value={newRule.dmContent} onChange={(e)=> setNewRule({...newRule, dmContent: e.target.value})} className="w-full bg-[#0A0A0D] border border-pink-500/30 rounded-lg p-3 text-sm text-white outline-none focus:border-pink-500/80 transition-colors shadow-[0_0_10px_rgba(236,72,153,0.1)]" />
                   </div>
                 </div>
+
+                {/* 🔥 ADVANCED GOD-MODE CONTROLS */}
+                <div className="mt-2 pt-4 border-t border-white/5">
+                  <h4 className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-4 flex items-center gap-1.5">
+                    <ShieldAlert className="w-3.5 h-3.5" /> God-Mode Access Controls
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    
+                    {/* Toggle 1 */}
+                    <div className="bg-[#0A0A0D] border border-white/5 p-3 rounded-xl flex items-center justify-between hover:border-pink-500/20 transition-colors">
+                      <div>
+                        <span className="text-[10px] font-bold text-white uppercase tracking-wider block mb-0.5">Trigger on Comment</span>
+                        <span className="text-[9px] text-gray-500">Fire funnel for post comments.</span>
+                      </div>
+                      <div onClick={() => handleRuleToggle('trigger_on_comment')} className={`w-8 h-4 rounded-full p-0.5 cursor-pointer transition-colors shrink-0 ${newRule.trigger_on_comment ? 'bg-pink-500' : 'bg-white/10'}`}>
+                        <motion.div layout className={`w-3 h-3 bg-white rounded-full shadow-sm ${newRule.trigger_on_comment ? 'ml-4' : 'ml-0'}`} />
+                      </div>
+                    </div>
+
+                    {/* Toggle 2 */}
+                    <div className="bg-[#0A0A0D] border border-white/5 p-3 rounded-xl flex items-center justify-between hover:border-pink-500/20 transition-colors">
+                      <div>
+                        <span className="text-[10px] font-bold text-white uppercase tracking-wider block mb-0.5">Trigger in Inbox DM</span>
+                        <span className="text-[9px] text-gray-500">Bypass AI if user sends DM directly.</span>
+                      </div>
+                      <div onClick={() => handleRuleToggle('trigger_on_dm')} className={`w-8 h-4 rounded-full p-0.5 cursor-pointer transition-colors shrink-0 ${newRule.trigger_on_dm ? 'bg-pink-500' : 'bg-white/10'}`}>
+                        <motion.div layout className={`w-3 h-3 bg-white rounded-full shadow-sm ${newRule.trigger_on_dm ? 'ml-4' : 'ml-0'}`} />
+                      </div>
+                    </div>
+
+                    {/* Toggle 3 */}
+                    <div className="bg-[#0A0A0D] border border-white/5 p-3 rounded-xl flex items-center justify-between hover:border-pink-500/20 transition-colors">
+                      <div>
+                        <span className="text-[10px] font-bold text-white uppercase tracking-wider block mb-0.5">AI Handover Fallback</span>
+                        <span className="text-[9px] text-gray-500">Let Omni-Engine reply if funnel is empty.</span>
+                      </div>
+                      <div onClick={() => handleRuleToggle('ai_handover')} className={`w-8 h-4 rounded-full p-0.5 cursor-pointer transition-colors shrink-0 ${newRule.ai_handover ? 'bg-pink-500' : 'bg-white/10'}`}>
+                        <motion.div layout className={`w-3 h-3 bg-white rounded-full shadow-sm ${newRule.ai_handover ? 'ml-4' : 'ml-0'}`} />
+                      </div>
+                    </div>
+
+                  </div>
+                </div>
+
                 <div className="flex justify-end mt-2">
                   <button onClick={handleAddRule} className={`bg-pink-500/10 hover:bg-pink-500/20 text-pink-400 border border-pink-500/20 px-8 py-3 rounded-lg text-xs font-black uppercase tracking-widest transition-all ${btnHover}`}>
                     Add Funnel
@@ -281,8 +344,8 @@ export default function InstagramAutomations() {
               <div className="space-y-4">
                 {autoDMRules.length === 0 ? (
                   <div className="text-center py-10">
-                      <Activity className="w-8 h-8 text-gray-600 mx-auto mb-3" />
-                      <p className="text-sm text-gray-500">No viral funnels configured yet.</p>
+                    <Activity className="w-8 h-8 text-gray-600 mx-auto mb-3" />
+                    <p className="text-sm text-gray-500">No viral funnels configured yet.</p>
                   </div>
                 ) : (
                   <AnimatePresence>
@@ -305,13 +368,26 @@ export default function InstagramAutomations() {
                           </button>
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {/* 🔥 PREMIUM UI BADGES FOR GOD-MODE */}
+                        <div className="flex flex-wrap gap-2 pt-1">
+                          <span className={`text-[9px] font-bold uppercase tracking-widest px-2 py-1 rounded flex items-center gap-1 border ${rule.trigger_on_comment !== false ? 'bg-pink-500/10 text-pink-400 border-pink-500/20' : 'bg-gray-800 text-gray-500 border-gray-700'}`}>
+                            {rule.trigger_on_comment !== false ? <CheckCircle2 className="w-3 h-3" /> : <XCircle className="w-3 h-3" />} Comments
+                          </span>
+                          <span className={`text-[9px] font-bold uppercase tracking-widest px-2 py-1 rounded flex items-center gap-1 border ${rule.trigger_on_dm === true ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' : 'bg-gray-800 text-gray-500 border-gray-700'}`}>
+                             {rule.trigger_on_dm === true ? <CheckCircle2 className="w-3 h-3" /> : <XCircle className="w-3 h-3" />} Inbox DMs
+                          </span>
+                          <span className={`text-[9px] font-bold uppercase tracking-widest px-2 py-1 rounded flex items-center gap-1 border ${rule.ai_handover !== false ? 'bg-green-500/10 text-green-400 border-green-500/20' : 'bg-gray-800 text-gray-500 border-gray-700'}`}>
+                            <Bot className="w-3 h-3" /> AI Handover: {rule.ai_handover !== false ? 'ON' : 'OFF'}
+                          </span>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-2">
                           <div>
-                            <p className="text-[10px] uppercase tracking-widest text-gray-500 mb-2">If user comments:</p>
+                            <p className="text-[10px] uppercase tracking-widest text-gray-500 mb-2">If user says:</p>
                             <div className="flex flex-wrap gap-2 mb-4">
                               {/* 🧠 ADVANCED FEATURE: Smart Keyword Tags */}
                               {rule.keyword ? rule.keyword.split(',').map((kw, i) => (
-                                <span key={i} className="bg-pink-500/10 border border-pink-500/20 text-pink-400 text-[11px] font-mono px-2.5 py-1 rounded-md uppercase tracking-wide">
+                                <span key={i} className="bg-white/5 border border-white/10 text-gray-300 text-[11px] font-mono px-2.5 py-1 rounded-md uppercase tracking-wide">
                                   {kw.trim()}
                                 </span>
                               )) : <span className="text-gray-600 text-xs italic">No keyword</span>}
