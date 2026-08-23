@@ -268,8 +268,7 @@ export default function LiveCRMInbox() {
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if(e.target.files && e.target.files.length > 0) {
-      const file = e.target.files[0];
-      alert(`📎 Media Selected: ${file.name}\n\n(Note: Supabase Storage Integration for Media Uploads will be active in Phase 3!)`);
+      alert("📎 Media upload coming soon!"); // Simple and clean
       e.target.value = '';
     }
   };
